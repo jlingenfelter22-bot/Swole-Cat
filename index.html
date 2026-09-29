@@ -477,9 +477,14 @@ function load(){
    merged.settings=Object.assign(base.settings,saved.settings||{});
    merged.ui=Object.assign(base.ui,saved.ui||{});
    if((saved.routines?.length||0)||(saved.sessions?.length||0))merged.ui.onboardingDone=true;
+   (merged.sessions||[]).forEach(session=>(session.exercises||[]).forEach(e=>(e.sets||[]).forEach(set=>{set.type=set.type||'working'})));
    if(merged.activeWorkout){
      merged.activeWorkout.status='active';
      merged.activeWorkout.lastSavedAt=merged.activeWorkout.lastSavedAt||merged.activeWorkout.startDate||new Date().toISOString();
+     (merged.activeWorkout.exercises||[]).forEach(e=>{
+       e.supersetId=e.supersetId||null;
+       (e.sets||[]).forEach(set=>{set.type=set.type||'working'});
+     });
    }
    return merged;
  } catch(e){ return freshState(); }
@@ -582,8 +587,8 @@ function startRoutineFresh(id){
    exercises:r.exercises.map((re,routineIndex)=>{
      const prev=previousExercise(re.exerciseId);
      const rec=buildRecommendation({...re,mode:re.mode==='range'?'double':re.mode},prev,re.exerciseId);
-     return {exerciseId:re.exerciseId,routineIndex,config:{trainingGoal:'general',resetPercent:7.5,...re,mode:re.mode==='range'?'double':re.mode},targetOverride:null,expanded:routineIndex===0,sets:Array.from({length:re.sets},(_,i)=>({
-       weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??re.minReps,done:false,rir:''
+     return {exerciseId:re.exerciseId,routineIndex,config:{trainingGoal:'general',resetPercent:7.5,...re,mode:re.mode==='range'?'double':re.mode},targetOverride:null,supersetId:re.supersetGroup||null,expanded:routineIndex===0,sets:Array.from({length:re.sets},(_,i)=>({
+       weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??re.minReps,done:false,rir:'',type:'working'
      })),notes:''};
    })
  };
@@ -623,12 +628,15 @@ function startOfWeek(d=new Date()){
 function sessionVolume(s){
  return s.exercises.reduce((sum,e)=>sum+completedSets(e).reduce((a,x)=>a+(Number(x.weight)||0)*(Number(x.reps)||0),0),0);
 }
-function sessionSetCount(s){return s.exercises.reduce((n,e)=>n+completedSets(e).length,0)}
-function sessionPRCount(s){return s.exercises.reduce((n,e)=>n+(completedSets(e).some(x=>x.pr)?1:0),0)}
+function sessionSetCount(s){return s.exercises.reduce((n,e)=>n+progressionSets(e).length,0)}
+function sessionAllSetCount(s){return s.exercises.reduce((n,e)=>n+completedSets(e).length,0)}
+function sessionPRCount(s){return s.exercises.reduce((n,e)=>n+(progressionSets(e).some(x=>x.pr)?1:0),0)}
 function exerciseHistory(exerciseId){
  const arr=[];
  state.sessions.forEach(s=>s.exercises.forEach(e=>{
-   if(e.exerciseId===exerciseId && completedSets(e).length)arr.push({date:s.date,routineName:s.routineName,sets:completedSets(e),notes:e.notes||''});
+   if(e.exerciseId!==exerciseId)return;
+   const working=progressionSets(e),all=completedSets(e);
+   if(working.length)arr.push({date:s.date,routineName:s.routineName,sets:working,allSets:all,notes:e.notes||''});
  }));
  return arr.sort((a,b)=>a.date.localeCompare(b.date));
 }
@@ -649,7 +657,7 @@ function weeklyMuscleSets(){
  const start=startOfWeek(),counts={};
  state.sessions.filter(s=>new Date(s.date)>=start).forEach(s=>s.exercises.forEach(e=>{
    const ex=exById(e.exerciseId);if(!ex)return;
-   counts[ex.muscle]=(counts[ex.muscle]||0)+completedSets(e).length;
+   counts[ex.muscle]=(counts[ex.muscle]||0)+progressionSets(e).length;
  }));
  return counts;
 }
@@ -1293,7 +1301,20 @@ function previousExercise(exerciseId){
  state.sessions.forEach(s=>s.exercises.forEach(e=>{if(e.exerciseId===exerciseId)arr.push({date:s.date,...e})}));
  return arr.sort((a,b)=>b.date.localeCompare(a.date))[0];
 }
+function setType(set){return ['working','warmup','drop','failure'].includes(set?.type)?set.type:'working'}
+function isProgressionSet(set){return setType(set)==='working'}
 function completedSets(prev){return (prev?.sets||[]).filter(s=>s.done && Number(s.weight)>=0 && Number(s.reps)>0)}
+function progressionSets(prev){return completedSets(prev).filter(isProgressionSet)}
+function workingSetIndexes(e){return (e?.sets||[]).map((s,i)=>isProgressionSet(s)?i:-1).filter(i=>i>=0)}
+function workingSetOrdinal(e,si){
+ const indexes=workingSetIndexes(e),pos=indexes.indexOf(si);
+ return pos>=0?pos:Math.max(0,indexes.filter(i=>i<si).length);
+}
+function firstWorkingSetIndex(e){const a=workingSetIndexes(e);return a.length?a[0]:0}
+function setTypeLabel(type){
+ return type==='warmup'?'Warm-up':type==='drop'?'Drop set':type==='failure'?'Failure':'Working';
+}
+function setTypeShort(type){return type==='warmup'?'W':type==='drop'?'D':type==='failure'?'F':'S'}
 function distributeTarget(previousReps,minReps,maxReps,setCount){
  // "Beat total reps" mode: add one rep somewhere across the exercise.
  const reps=Array.from({length:setCount},(_,i)=>Math.max(minReps,Math.min(maxReps,Number(previousReps[i]??minReps))));
@@ -1371,7 +1392,7 @@ function applyCoachReset(ei){
  const e=state.activeWorkout.exercises[ei],sig=coachSignal(e.exerciseId,e.config);
  if(!sig.canReset)return;
  e.targetOverride={weight:sig.resetWeight,reps:e.config.minReps,reason:`Coach reset ${sig.resetPercent}%`};
- e.sets.forEach(s=>{if(!s.done){s.weight=sig.resetWeight;s.reps=e.config.minReps;}});
+ e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=sig.resetWeight;s.reps=e.config.minReps;}});
  save();renderWorkout();
 }
 function openTargetOverride(ei){
@@ -1387,13 +1408,13 @@ function openTargetOverride(ei){
 function saveTargetOverride(ei){
  const e=state.activeWorkout.exercises[ei],weight=Math.max(0,+document.getElementById('ovWeight').value||0),reps=Math.max(1,+document.getElementById('ovReps').value||1);
  e.targetOverride={weight:roundLoad(weight),reps:Math.round(reps),reason:'Manual override'};
- e.sets.forEach(s=>{if(!s.done){s.weight=e.targetOverride.weight;s.reps=e.targetOverride.reps;}});
+ e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=e.targetOverride.weight;s.reps=e.targetOverride.reps;}});
  save();closeModal();renderWorkout();
 }
 function clearTargetOverride(ei){
  const e=state.activeWorkout.exercises[ei];e.targetOverride=null;
  const prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId);
- e.sets.forEach((s,i)=>{if(!s.done){s.weight=rec.weights?.[i]??rec.weight??0;s.reps=rec.targetReps?.[i]??e.config.minReps;}});
+ let wi=0;e.sets.forEach(s=>{if(!isProgressionSet(s))return;if(!s.done){s.weight=rec.weights?.[wi]??rec.weight??0;s.reps=rec.targetReps?.[wi]??e.config.minReps;}wi++;});
  save();closeModal();renderWorkout();
 }
 function applyLightSession(){
@@ -1402,13 +1423,13 @@ function applyLightSession(){
    const prev=previousExercise(e.exerciseId),base=liveSetTarget(e,0,prev);
    const wt=roundLoad(base.weight*.925);
    e.targetOverride={weight:wt,reps:e.config.minReps,reason:'Light session'};
-   e.sets.forEach(s=>{if(!s.done){s.weight=wt;s.reps=e.config.minReps;}});
+   e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=wt;s.reps=e.config.minReps;}});
  });
  save();renderWorkout();
 }
 
 function buildRecommendation(config,prev,exerciseId=null){
- const done=completedSets(prev);
+ const done=progressionSets(prev);
  const goal=config.trainingGoal||'general';
  const avgRIR=averageLoggedRIR(done);
  if(!done.length){
@@ -1448,23 +1469,27 @@ function buildRecommendation(config,prev,exerciseId=null){
 }
 function roundLoad(n){return Math.round(Number(n)*4)/4}
 function previousSummary(prev){
- const done=completedSets(prev); if(!done.length)return 'No previous working sets logged.';
+ const done=progressionSets(prev); if(!done.length)return 'No previous working sets logged.';
  return done.map((s,i)=>`S${i+1} ${s.weight}×${s.reps}${s.rir!==''&&s.rir!=null?` @${s.rir} RIR`:''}`).join(' · ');
 }
 
-function setReference(prev,si){
- const done=completedSets(prev),s=done[si]||done[done.length-1];
+function setReference(prev,workingIndex){
+ const done=progressionSets(prev),s=done[workingIndex]||done[done.length-1];
  return s?`${s.weight} ${state.profile.unit} × ${s.reps}${s.rir!==''&&s.rir!=null?` @${s.rir} RIR`:''}`:'No prior set';
 }
 function liveSetTarget(e,si,prev){
+ const current=e.sets?.[si],type=setType(current);
+ if(type!=='working')return {weight:roundLoad(Number(current?.weight)||0),reps:Math.max(1,Number(current?.reps)||e.config.minReps)};
+ const wi=workingSetOrdinal(e,si);
  if(e.targetOverride)return {weight:roundLoad(e.targetOverride.weight),reps:Math.max(1,Number(e.targetOverride.reps)||e.config.minReps)};
  const base=buildRecommendation(e.config,prev,e.exerciseId);
- let weight=Number(base.weights?.[si]??base.weight??e.sets[si]?.weight??0);
- let reps=Number(base.targetReps?.[si]??e.config.minReps);
- const earlier=e.sets.slice(0,si).filter(s=>s.done);
+ let weight=Number(base.weights?.[wi]??base.weight??current?.weight??0);
+ let reps=Number(base.targetReps?.[wi]??e.config.minReps);
+ const earlier=e.sets.slice(0,si).filter(s=>s.done&&isProgressionSet(s));
  if(earlier.length){
    const last=earlier[earlier.length-1];
-   const expected=Number(base.targetReps?.[Math.min(si-1,(base.targetReps?.length||1)-1)]??reps);
+   const prevWi=Math.max(0,wi-1);
+   const expected=Number(base.targetReps?.[Math.min(prevWi,(base.targetReps?.length||1)-1)]??reps);
    const miss=Number(last.reps)-expected;
    if(miss<=-2) reps=Math.max(e.config.minReps-2,reps-1);
    else if(miss>=2) reps=Math.min(e.config.maxReps+2,reps+1);
@@ -1506,16 +1531,17 @@ function estimated1RM(weight,reps){
  return weight*(1+Math.min(reps,15)/30);
 }
 function detectPR(exerciseId,set){
+ if(!isProgressionSet(set))return '';
  const prior=[];
  state.sessions.forEach(s=>s.exercises.forEach(e=>{
-   if(e.exerciseId===exerciseId)completedSets(e).forEach(x=>prior.push(x));
+   if(e.exerciseId===exerciseId)progressionSets(e).forEach(x=>prior.push(x));
  }));
- // Include earlier completed sets from the current active workout, but not the
+ // Include earlier completed working sets from the current active workout, but not the
  // set currently being evaluated. This prevents duplicate PR badges when
  // multiple sets tie the same newly achieved record in one session.
  if(state.activeWorkout){
    state.activeWorkout.exercises.forEach(e=>{
-     if(e.exerciseId===exerciseId)completedSets(e).forEach(x=>{if(x!==set)prior.push(x)});
+     if(e.exerciseId===exerciseId)progressionSets(e).forEach(x=>{if(x!==set)prior.push(x)});
    });
  }
  // A first-ever logged performance establishes the baseline. It is not counted
@@ -1879,8 +1905,8 @@ function swapWorkoutExercise(ei,newId,permanent){
  if(permanent){const r=state.routines.find(x=>x.id===state.activeWorkout.routineId);if(r&&Number.isInteger(e.routineIndex)&&r.exercises[e.routineIndex])r.exercises[e.routineIndex].exerciseId=newId;}
  e.exerciseId=newId;e.targetOverride=null;
  const prev=previousExercise(newId),rec=buildRecommendation(e.config,prev,e.exerciseId);
- e.sets=Array.from({length:e.config.sets},(_,i)=>({weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??e.config.minReps,done:false,rir:''}));e.notes='';
- save();closeModal();renderWorkout();
+ e.sets=Array.from({length:e.config.sets},(_,i)=>({weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??e.config.minReps,done:false,rir:'',type:'working'}));e.notes='';
+ saveActiveWorkout();closeModal();renderWorkout();
 }
 function openRoutineSubstitute(routineId,index){
  const r=state.routines.find(x=>x.id===routineId);if(!r||!r.exercises[index])return;const cur=r.exercises[index];
@@ -1986,7 +2012,7 @@ function addExerciseToWorkout(exerciseId,permanent){
      routine.exercises.push(savedCfg);
      w.exercises.forEach((e,i)=>e.expanded=i===existingIndex);
      w.exercises[existingIndex].routineIndex=routine.exercises.length-1;
-     save();haptic([20,30,20]);closeModal();renderWorkout();
+     saveActiveWorkout();haptic([20,30,20]);closeModal();renderWorkout();
      showToast(`${ex.name} saved to routine`);
      scrollToWorkoutExercise(existingIndex);
      return;
@@ -2014,19 +2040,21 @@ function addExerciseToWorkout(exerciseId,permanent){
    routineIndex:newRoutineIndex,
    config:{...cfg},
    targetOverride:null,
+   supersetId:null,
    expanded:true,
    sets:Array.from({length:cfg.sets},(_,i)=>({
      weight:rec.weights?.[i]??rec.weight??0,
      reps:rec.targetReps?.[i]??cfg.minReps,
      done:false,
-     rir:''
+     rir:'',
+     type:'working'
    })),
    notes:''
  };
  w.exercises.forEach(e=>e.expanded=false);
  w.exercises.push(entry);
  const newIndex=w.exercises.length-1;
- save();haptic([20,30,20]);closeModal();renderWorkout();
+ saveActiveWorkout();haptic([20,30,20]);closeModal();renderWorkout();
  showToast(permanent?`${ex.name} added + saved to routine`:`${ex.name} added for today`);
  scrollToWorkoutExercise(newIndex);
 }
