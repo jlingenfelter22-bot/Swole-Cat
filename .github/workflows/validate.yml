@@ -317,3 +317,101 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V26 programs
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const assert = require('assert');
+          const {JSDOM} = require('jsdom');
+
+          const html = fs.readFileSync('index.html','utf8');
+          const dom = new JSDOM(html,{
+            runScripts:'dangerously',
+            url:'https://swole-cat.test/',
+            pretendToBeVisual:true,
+            beforeParse(window){
+              window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+              window.alert=()=>{};
+              window.confirm=()=>true;
+              window.scrollTo=()=>{};
+            }
+          });
+
+          const wait = ms => new Promise(r=>setTimeout(r,ms));
+          const read = () => JSON.parse(dom.window.localStorage.getItem('overload_v3'));
+
+          const run = async () => {
+            await wait(30);
+            const w=dom.window;
+            if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
+
+            // Starter now installs A/B/C as one active program.
+            w.installStarterPlan();
+            let state=read();
+            assert.equal(state.routines.length,3,'starter should create three routines');
+            assert.equal(state.programs.length,1,'starter should create one program');
+            assert.equal(state.activeProgramId,state.programs[0].id,'starter program should become active');
+            const pid=state.programs[0].id;
+            const [a,b,c]=state.programs[0].routineIds;
+            assert.equal(state.programs[0].nextIndex,0,'program should begin at Workout A');
+
+            // Start A from the program and finish it.
+            w.startProgramWorkout(pid);
+            state=read();
+            assert.equal(state.activeWorkout.routineId,a,'program should start Workout A');
+            assert.equal(state.activeWorkout.programId,pid,'active workout should retain program id');
+            w.updateSet(0,0,'weight','100');w.updateSet(0,0,'reps','8');w.toggleSet(0,0);w.stopRestTimer();
+            w.finalizeWorkout(false);
+            state=read();
+            assert.equal(state.programs[0].nextIndex,1,'finishing A should advance to B');
+            assert.equal(state.sessions[0].programId,pid,'finished program session should retain program id');
+            w.closeModal();
+
+            // Start B and finish it, then C becomes next.
+            w.startProgramWorkout(pid);
+            state=read();
+            assert.equal(state.activeWorkout.routineId,b,'program should start Workout B next');
+            w.updateSet(0,0,'weight','100');w.updateSet(0,0,'reps','8');w.toggleSet(0,0);w.stopRestTimer();
+            w.finalizeWorkout(false);
+            state=read();
+            assert.equal(state.programs[0].nextIndex,2,'finishing B should advance to C');
+            w.closeModal();
+
+            // A manual routine start should not alter program sequencing.
+            w.openRoutine(a);
+            state=read();
+            assert.equal(state.activeWorkout.programId,null,'manual routine should not be tagged as a program workout');
+            w.updateSet(0,0,'weight','100');w.updateSet(0,0,'reps','8');w.toggleSet(0,0);w.stopRestTimer();
+            w.finalizeWorkout(false);
+            state=read();
+            assert.equal(state.programs[0].nextIndex,2,'manual workout must not advance program');
+            w.closeModal();
+
+            // Finish C and ensure rotation wraps back to A.
+            w.startProgramWorkout(pid);
+            state=read();
+            assert.equal(state.activeWorkout.routineId,c,'program should still be waiting on C');
+            w.updateSet(0,0,'weight','100');w.updateSet(0,0,'reps','8');w.toggleSet(0,0);w.stopRestTimer();
+            w.finalizeWorkout(false);
+            state=read();
+            assert.equal(state.programs[0].nextIndex,0,'program should wrap back to A after C');
+            assert.equal(state.sessions.filter(s=>s.programId===pid).length,3,'program should count only program-launched sessions');
+            w.closeModal();
+
+            // Deleting a program must preserve routines and history.
+            const routinesBefore=state.routines.length;
+            const sessionsBefore=state.sessions.length;
+            w.deleteProgram(pid);w.runConfirmedAction();
+            state=read();
+            assert.equal(state.programs.length,0,'program should be deletable');
+            assert.equal(state.routines.length,routinesBefore,'deleting program must preserve routines');
+            assert.equal(state.sessions.length,sessionsBefore,'deleting program must preserve history');
+            assert.equal(state.activeProgramId,null,'deleting active program should clear active program id');
+
+            dom.window.close();
+            console.log('Swole Cat V26 program smoke test PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
