@@ -1,4 +1,4 @@
-const CACHE='swole-cat-v28-3';
+const CACHE='swole-cat-v28-4';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.svg','./icon-512.svg'];
 
 self.addEventListener('install',e=>{
@@ -18,8 +18,9 @@ self.addEventListener('activate',e=>e.waitUntil(Promise.all([
 self.addEventListener('fetch',e=>{
   const u=new URL(e.request.url);
   const isFormSource=u.hostname==='exercise-dataset.com';
+  const isWorkoutArt=u.hostname==='raw.githubusercontent.com'&&u.pathname.includes('/bryllim/workout-guide/');
 
-  if(isFormSource){
+  if(isFormSource||isWorkoutArt){
     e.respondWith(caches.open(CACHE).then(async cache=>{
       const hit=await cache.match(e.request);
       if(hit)return hit;
