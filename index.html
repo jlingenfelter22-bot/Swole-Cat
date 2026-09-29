@@ -61,7 +61,14 @@
   .field{margin-bottom:12px}
   .list-item{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #202737}
   .list-item:last-child{border-bottom:0}
-  .iconbox{width:42px;height:42px;border-radius:12px;background:#1c2331;display:grid;place-items:center;font-size:1.15rem;flex:0 0 auto}
+  .iconbox{width:42px;height:42px;border-radius:12px;background:#1c2331;display:grid;place-items:center;font-size:1.15rem;flex:0 0 auto;overflow:hidden}
+  .iconbox .swole-cat-thumb{width:38px;height:38px;display:block}
+  .iconbox .swole-cat-thumb .cat-body{fill:#d89255;stroke:#1a1521;stroke-width:1.45;stroke-linejoin:round}
+  .iconbox .swole-cat-thumb .cat-line{fill:none;stroke:#d89255;stroke-width:3.25;stroke-linecap:round;stroke-linejoin:round}
+  .iconbox .swole-cat-thumb .cat-detail{fill:none;stroke:#1a1521;stroke-width:1.15;stroke-linecap:round;stroke-linejoin:round}
+  .iconbox .swole-cat-thumb .gear{fill:none;stroke:#a78bfa;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .iconbox .swole-cat-thumb .gear-fill{fill:#a78bfa;stroke:#33245c;stroke-width:1}
+  .iconbox .swole-cat-thumb .bench{fill:none;stroke:#64748b;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .grow{flex:1}
   .search{margin-bottom:12px}
   .workout-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
@@ -1500,7 +1507,7 @@ function renderExercises(){
            :'Nothing matched that search.';
  document.getElementById('exerciseList').innerHTML=list.length?list.map(x=>`
    <div class="list-item">
-     <div class="iconbox">${equipmentIcon(x.equipment)}</div>
+     <div class="iconbox">${catExerciseThumbnail(x)}</div>
      <div class="grow exercise-link" onclick="openExerciseProgress('${x.id}')"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini" style="margin:4px 0">${muscleChip(x.muscle)}</div><div class="mini">${esc(x.equipment)} · ${esc(patternLabel(x.pattern))}</div></div>
      <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
      ${x.custom?`<button class="btn small secondary" onclick="editExercise('${x.id}')">Edit</button>`:''}
@@ -1580,6 +1587,144 @@ function exerciseMatchesSearch(x,q){
  return !q||x.name.toLowerCase().includes(q)||x.muscle.toLowerCase().includes(q)||x.equipment.toLowerCase().includes(q)||patternLabel(x.pattern).toLowerCase().includes(q);
 }
 
+function catHead(x,y,flip=false){
+ const eye1=flip?x+1.9:x-1.9,eye2=flip?x-1.2:x+1.2;
+ return `<g><path class="cat-body" d="M${x-4},${y-2.6} L${x-3.2},${y-7} L${x-.8},${y-4.8} Q${x},${y-5.3} ${x+.8},${y-4.8} L${x+3.2},${y-7} L${x+4},${y-2.6} Q${x+4.8},${y+2.2} ${x},${y+3.3} Q${x-4.8},${y+2.2} ${x-4},${y-2.6} Z"/><circle cx="${eye1}" cy="${y-.8}" r=".7" fill="#1a1521"/><circle cx="${eye2}" cy="${y-.8}" r=".7" fill="#1a1521"/><path class="cat-detail" d="M${x-.6},${y+.3} l.6,.5 .6,-.5 M${x},${y+.8} q-1,1.2 -2,0 M${x},${y+.8} q1,1.2 2,0"/></g>`;
+}
+function catBarbell(y,x1=5,x2=37){
+ return `<g class="gear"><path d="M${x1},${y} H${x2}"/><path d="M${x1+2},${y-3} V${y+3} M${x1+4},${y-4} V${y+4} M${x2-2},${y-3} V${y+3} M${x2-4},${y-4} V${y+4}"/></g>`;
+}
+function catDumbbells(points){
+ return points.map(([x,y])=>`<g class="gear"><path d="M${x-2.5},${y} H${x+2.5}"/><path d="M${x-2.5},${y-2} V${y+2} M${x+2.5},${y-2} V${y+2}"/></g>`).join('');
+}
+function catCable(anchor,hand){
+ return `<g class="gear"><circle cx="${anchor[0]}" cy="${anchor[1]}" r="2"/><path d="M${anchor[0]},${anchor[1]+2} L${hand[0]},${hand[1]}"/></g>`;
+}
+function catMachineFrame(x=5,y=5,w=32,h=31){
+ return `<path class="bench" d="M${x},${y+h} V${y} H${x+w} V${y+h} M${x},${y+6} H${x+w}"/>`;
+}
+function catExerciseThumbnail(ex){
+ if(!ex)return '<svg class="swole-cat-thumb" viewBox="0 0 42 42" aria-hidden="true">'+catHead(21,15)+'<path class="cat-line" d="M21 18 L21 29 M21 22 L15 26 M21 22 L27 26 M21 29 L17 36 M21 29 L25 36"/></svg>';
+ const p=ex.pattern||'',eq=ex.equipment||'',name=(ex.name||'').toLowerCase();
+ const machine=eq==='machine'||eq==='smith machine';
+ const cable=eq==='cable';
+ const dumb=eq==='dumbbell'||eq==='kettlebell';
+ const bar=eq==='barbell'||eq==='trap bar'||eq==='smith machine'||eq==='landmine';
+ const frame=machine?catMachineFrame():'';
+ let body='',gear='';
+
+ const standing=(arms='M21 22 L15 26 M21 22 L27 26',legs='M21 29 L17 36 M21 29 L25 36')=>{
+   body=catHead(21,12)+`<path class="cat-line" d="M21 16 L21 29 ${arms} ${legs}"/><path class="cat-detail" d="M24 21 q4 1 5 -3"/>`;
+ };
+
+ if(p==='squat'){
+   const front=name.includes('front')||name.includes('goblet');
+   body=catHead(21,10)+`<path class="cat-line" d="M21 14 L20 24 M20 18 L14 19 M20 18 L27 18 M20 24 L14 31 L11 37 M20 24 L27 30 L31 36"/><path class="cat-detail" d="M24 21 q4 2 5 -2"/>`;
+   if(name.includes('goblet'))gear='<path class="gear" d="M16 18 Q21 14 26 18 M18 18 V22 M24 18 V22"/>';
+   else if(bar)gear=catBarbell(front?16:13,7,35);
+ }else if(p==='lunge'){
+   body=catHead(20,10)+`<path class="cat-line" d="M20 14 L20 25 M20 18 L14 20 M20 18 L27 20 M20 25 L13 31 L8 31 M20 25 L27 32 L31 38"/><path class="cat-detail" d="M24 22 q4 2 5 -1"/>`;
+   gear=bar?catBarbell(14,8,34):dumb?catDumbbells([[13,22],[28,22]]):'';
+ }else if((p==='horizontal_press'||p==='incline_press')&&eq==='bodyweight'){
+   body=catHead(11,22)+`<path class="cat-line" d="M15 23 L29 25 M18 24 L16 31 M23 25 L22 32 M29 25 L35 29"/><path class="cat-detail" d="M13 19 q-2 -4 -5 -1"/>`;
+   gear='<path class="bench" d="M6 34 H37"/>';
+ }else if(p==='horizontal_press'||p==='incline_press'){
+   const incline=p==='incline_press';
+   body=catHead(incline?13:10,incline?19:23,true)+`<path class="cat-line" d="${incline?'M16 20 L27 27':'M14 23 L29 23'} M20 22 L20 13 M25 24 L26 32 M29 23 L34 29"/><path class="cat-detail" d="M12 27 q-3 3 -5 0"/>`;
+   gear=bar?catBarbell(11,7,35):dumb?catDumbbells([[17,12],[24,12]]):'';
+   gear+=incline?'<path class="bench" d="M8 30 L29 23 M27 23 L33 34 M10 29 L8 35"/>':'<path class="bench" d="M7 28 H31 M9 28 L8 35 M29 28 L31 35"/>';
+   if(machine)gear+=frame;
+ }else if(p==='chest_fly'){
+   standing('M21 21 L10 17 M21 21 L32 17');
+   gear=dumb?catDumbbells([[9,17],[33,17]]):cable?catCable([4,8],[10,17])+catCable([38,8],[32,17]):frame;
+ }else if(p==='vertical_press'){
+   standing('M21 21 L15 12 M21 21 L27 12');
+   gear=bar?catBarbell(8,7,35):dumb?catDumbbells([[14,10],[28,10]]):machine?frame:'';
+ }else if(p==='dip_press'){
+   body=catHead(21,11)+`<path class="cat-line" d="M21 15 L21 27 M21 20 L14 23 M21 20 L28 23 M21 27 L17 35 M21 27 L25 35"/>`;
+   gear='<path class="gear" d="M8 23 H16 M26 23 H34 M10 23 V36 M32 23 V36"/>';
+ }else if(p==='lateral_raise'){
+   standing('M21 21 L9 20 M21 21 L33 20');
+   gear=dumb?catDumbbells([[8,20],[34,20]]):cable?catCable([4,34],[9,20])+catCable([38,34],[33,20]):'';
+ }else if(p==='front_raise'){
+   standing('M21 21 L14 16 M21 21 L28 16');
+   gear=dumb?catDumbbells([[13,15],[29,15]]):bar?catBarbell(14,11,31):'';
+ }else if(p==='horizontal_pull'||p==='rear_delt'||p==='upright_row'){
+   const seated=name.includes('seated')||name.includes('chest supported');
+   if(seated){
+     body=catHead(17,12)+`<path class="cat-line" d="M17 16 L18 27 M18 20 L28 19 M18 27 L12 31 M18 27 L26 31"/><path class="cat-detail" d="M14 20 q-4 1 -4 5"/>`;
+     gear=cable?catCable([38,15],[28,19]):bar?catBarbell(20,25,38):dumb?catDumbbells([[29,19]]):frame;
+     gear+='<path class="bench" d="M11 30 H27 M13 30 V36 M25 30 V36"/>';
+   }else{
+     body=catHead(18,11)+`<path class="cat-line" d="M19 15 L24 25 M22 19 L31 22 M24 25 L17 31 M24 25 L30 35"/><path class="cat-detail" d="M15 15 q-5 1 -5 5"/>`;
+     gear=bar?catBarbell(25,13,36):dumb?catDumbbells([[32,22]]):cable?catCable([39,13],[31,22]):'';
+   }
+ }else if(p==='vertical_pull'||p==='pullover'||p==='shoulder_extension'){
+   if(eq==='bodyweight'&&p==='vertical_pull'){
+     body=catHead(21,14)+`<path class="cat-line" d="M21 18 L21 29 M21 20 L14 9 M21 20 L28 9 M21 29 L17 37 M21 29 L25 37"/>`;
+     gear='<path class="gear" d="M7 7 H35"/>';
+   }else{
+     body=catHead(21,15)+`<path class="cat-line" d="M21 19 L21 30 M21 22 L14 12 M21 22 L28 12 M21 30 L17 37 M21 30 L25 37"/>`;
+     gear=cable?catCable([35,5],[28,12])+catCable([7,5],[14,12]):bar?catBarbell(10,12,30):machine?frame:'';
+   }
+ }else if(p==='hinge'||p==='olympic_pull'||p==='back_extension'){
+   body=catHead(17,10)+`<path class="cat-line" d="M18 14 L24 25 M22 19 L29 25 M24 25 L17 32 M24 25 L30 35"/><path class="cat-detail" d="M14 14 q-5 0 -5 5"/>`;
+   gear=bar?catBarbell(30,8,36):dumb?catDumbbells([[30,26]]):eq==='plate'?'<circle class="gear" cx="30" cy="27" r="5"/>':'';
+ }else if(p==='hip_extension'){
+   body=catHead(11,23,true)+`<path class="cat-line" d="M15 23 L25 20 L31 25 M23 21 L23 29 M31 25 L35 34 M25 21 L18 31"/><path class="cat-detail" d="M10 27 q-4 2 -5 -1"/>`;
+   gear=bar?catBarbell(20,18,34):dumb?catDumbbells([[26,20]]):'';
+   gear+='<path class="bench" d="M6 29 H17 M8 29 V36"/>';
+ }else if(p==='elbow_flexion'){
+   standing('M21 21 L15 27 M21 21 L27 27');
+   gear=bar?catBarbell(29,10,32):dumb?catDumbbells([[14,28],[28,28]]):cable?catCable([21,38],[21,28]):'';
+ }else if(p==='elbow_extension'){
+   if(name.includes('overhead')||name.includes('skull')){
+     standing('M21 21 L17 12 M21 21 L25 12');
+     gear=dumb?catDumbbells([[21,9]]):cable?catCable([36,5],[25,12]):bar?catBarbell(9,13,29):'';
+   }else{
+     standing('M21 21 L15 27 M21 21 L27 27');
+     gear=cable?catCable([35,6],[27,27]):bar?catBarbell(29,11,31):'';
+   }
+ }else if(p==='knee_extension'||p==='knee_flexion'){
+   body=catHead(16,11)+`<path class="cat-line" d="M16 15 L17 27 M17 21 L24 22 M17 27 L26 29 ${p==='knee_extension'?'L35 27':'L31 36'} M17 27 L12 35"/>`;
+   gear=frame+'<path class="bench" d="M10 26 H24 M11 26 V36"/><circle class="gear-fill" cx="34" cy="'+(p==='knee_extension'?'27':'36')+'" r="2.8"/>';
+ }else if(p==='calf_raise'||p==='dorsiflexion'){
+   standing('M21 22 L16 24 M21 22 L26 24','M21 29 L17 36 M21 29 L26 35');
+   gear=machine?frame:bar?catBarbell(15,10,32):'';
+   gear+='<path class="bench" d="M13 38 H30"/>';
+ }else if(p==='hip_abduction'||p==='hip_adduction'){
+   body=catHead(21,11)+`<path class="cat-line" d="M21 15 L21 27 M21 20 L16 23 M21 20 L26 23 ${p==='hip_abduction'?'M21 27 L11 35 M21 27 L31 35':'M21 27 L17 36 M21 27 L25 36'}"/>`;
+   gear=machine?frame:cable?catCable([5,35],[11,35]):'';
+ }else if(['anti_extension','spinal_flexion','hip_flexion_core','rotation','anti_rotation','lateral_flexion'].includes(p)){
+   if(p==='anti_extension'){
+     body=catHead(10,24)+`<path class="cat-line" d="M14 25 L29 26 M18 25 L16 33 M24 26 L23 34 M29 26 L35 31"/>`;
+     gear='<path class="bench" d="M5 36 H38"/>';
+   }else if(p==='hip_flexion_core'){
+     body=catHead(21,10)+`<path class="cat-line" d="M21 14 L21 26 M21 17 L14 8 M21 17 L28 8 M21 26 L15 20 M21 26 L28 20"/>`;
+     gear='<path class="gear" d="M9 6 H33"/>';
+   }else{
+     body=catHead(17,17)+`<path class="cat-line" d="M20 20 Q25 24 24 30 M22 23 L13 27 M22 23 L31 25 M24 30 L18 36 M24 30 L30 36"/>`;
+     gear=cable?catCable([38,10],[31,25]):'';
+   }
+ }else if(p==='carry'){
+   standing();
+   gear=dumb?catDumbbells([[14,29],[28,29]]):bar?catBarbell(30,9,33):eq==='trap bar'?'<path class="gear" d="M10 23 L14 18 H28 L32 23 L28 31 H14 Z"/>':'';
+ }else if(p==='sled_push'||p==='sled_pull'){
+   body=catHead(13,12)+`<path class="cat-line" d="M16 15 L22 24 M20 20 L29 22 M22 24 L17 32 M22 24 L28 35"/>`;
+   gear=`<path class="gear" d="M31 18 V32 H39 M31 24 H38 M${p==='sled_push'?29:8} 22 H31"/>`;
+ }else if(['wrist_extension','wrist_flexion','grip'].includes(p)){
+   body=catHead(20,11)+`<path class="cat-line" d="M20 15 L20 27 M20 20 L12 25 M20 20 L28 25 M20 27 L16 36 M20 27 L24 36"/>`;
+   gear=dumb?catDumbbells([[11,26],[29,26]]):bar?catBarbell(27,10,30):eq==='plate'?'<circle class="gear" cx="29" cy="26" r="4"/>':'';
+ }else if(p==='shrug'){
+   standing('M21 21 L14 26 M21 21 L28 26');
+   gear=dumb?catDumbbells([[13,28],[29,28]]):bar?catBarbell(29,10,32):'';
+ }else{
+   standing();
+   gear=bar?catBarbell(29,10,32):dumb?catDumbbells([[14,28],[28,28]]):machine?frame:cable?catCable([37,7],[27,25]):'';
+ }
+
+ return `<svg class="swole-cat-thumb" viewBox="0 0 42 42" aria-hidden="true">${frame&& !gear.includes(frame)?frame:''}${body}${gear}</svg>`;
+}
 function equipmentIcon(e){return {'barbell':'🏋','dumbbell':'◐','machine':'⚙','cable':'⌁','bodyweight':'◆','smith machine':'▥','kettlebell':'●','landmine':'◒','trap bar':'⬡','sled':'▰','plate':'◉'}[e]||'●'}
 
 function renderRoutines(){
@@ -1663,7 +1808,7 @@ function newRoutine(id=null){
 function routinePickerRows(items){
  return sortExerciseChoices(items.filter(x=>!isHiddenExercise(x.id))).map(x=>`<div class="list-item">
    <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
-   <div class="iconbox">${equipmentIcon(x.equipment)}</div>
+   <div class="iconbox">${catExerciseThumbnail(x)}</div>
    <div class="grow" onclick="toggleRoutineExercise('${x.id}')" style="cursor:pointer"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div>
    <input type="checkbox" ${routinePickerSelection.has(x.id)?'checked':''} onchange="toggleRoutineExercise('${x.id}',this.checked)" style="width:22px;height:22px">
  </div>`).join('')||'<div class="empty">No visible exercises here yet.</div>';
@@ -1857,7 +2002,7 @@ function routineSwapRows(id,index,query=''){
  return recommendedSubs(re.exerciseId,query).slice(0,query?60:14).map(({x})=>`<div class="picker-result-card">
    <div class="picker-result-main">
      <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}');refreshRoutineSwap('${id}',${index})">${isFavorite(x.id)?'★':'☆'}</button>
-     <div class="iconbox">${equipmentIcon(x.equipment)}</div>
+     <div class="iconbox">${catExerciseThumbnail(x)}</div>
      <div class="picker-result-copy"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}<br>${esc(substitutionReason(cur,x))}</div></div>
    </div>
    <div class="picker-result-actions one"><button class="btn small" onclick="applyRoutineSwap('${id}',${index},'${x.id}')">Use</button></div>
@@ -1884,7 +2029,7 @@ function renderRoutinePickerAdder(id){
  const q=(document.getElementById('routineExSearch')?.value||'').trim();
  const rows=items=>sortExerciseChoices(items.filter(x=>!isHiddenExercise(x.id))).map(x=>`<div class="list-item">
    <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button>
-   <div class="iconbox">${equipmentIcon(x.equipment)}</div>
+   <div class="iconbox">${catExerciseThumbnail(x)}</div>
    <div class="grow"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div>
    <input type="checkbox" ${routinePickerSelection.has(x.id)?'checked':''} onchange="this.checked?routinePickerSelection.add('${x.id}'):routinePickerSelection.delete('${x.id}')" style="width:22px;height:22px">
  </div>`).join('');
@@ -1899,7 +2044,7 @@ function renderRoutinePickerAdder(id){
 }
 function addRoutineCategoryView(id,cat){
  const host=document.getElementById('routinePicker'),items=sortExerciseChoices(visibleExercises().filter(x=>x.muscle===cat));
- const rows=items.map(x=>`<div class="list-item"><button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button><div class="iconbox">${equipmentIcon(x.equipment)}</div><div class="grow"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div><input type="checkbox" ${routinePickerSelection.has(x.id)?'checked':''} onchange="this.checked?routinePickerSelection.add('${x.id}'):routinePickerSelection.delete('${x.id}')" style="width:22px;height:22px"></div>`).join('');
+ const rows=items.map(x=>`<div class="list-item"><button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button><div class="iconbox">${catExerciseThumbnail(x)}</div><div class="grow"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div><input type="checkbox" ${routinePickerSelection.has(x.id)?'checked':''} onchange="this.checked?routinePickerSelection.add('${x.id}'):routinePickerSelection.delete('${x.id}')" style="width:22px;height:22px"></div>`).join('');
  host.innerHTML=`<div class="breadcrumb"><button onclick="renderRoutinePickerAdder('${id}')">All categories</button><span>›</span><b>${esc(cat)}</b></div><div class="card">${rows}</div>`;
 }
 function appendSelectedRoutineExercises(id){
@@ -2350,7 +2495,7 @@ function openSupersetPicker(ei){
    const ox=exById(other.exerciseId),same=meta&&other.supersetId===meta.id;
    const canSave=Number.isInteger(e.routineIndex)&&Number.isInteger(other.routineIndex);
    return `<div class="picker-result-card">
-    <div class="picker-result-main"><span class="superset-badge">⚡</span><div class="iconbox">${equipmentIcon(ox?.equipment)}</div><div class="picker-result-copy"><div class="exercise-name">${esc(ox?.name||'Exercise')}</div><div class="mini">${esc(ox?.muscle||'')} · ${esc(patternLabel(ox?.pattern||''))}</div></div></div>
+    <div class="picker-result-main"><span class="superset-badge">⚡</span><div class="iconbox">${catExerciseThumbnail(ox)}</div><div class="picker-result-copy"><div class="exercise-name">${esc(ox?.name||'Exercise')}</div><div class="mini">${esc(ox?.muscle||'')} · ${esc(patternLabel(ox?.pattern||''))}</div></div></div>
     <div class="picker-result-actions">
       <button class="btn small" ${same?'disabled':''} onclick="linkSuperset(${ei},${oi},false)">${same?'Already linked':'Pair Today'}</button>
       <button class="btn small secondary" ${same||!canSave?'disabled':''} onclick="linkSuperset(${ei},${oi},true)">Pair + Save</button>
@@ -2441,7 +2586,7 @@ function openRoutineSupersetPicker(routineId,index){
  const rows=r.exercises.map((other,oi)=>{
    if(oi===index)return '';
    const ox=exById(other.exerciseId),same=meta&&other.supersetGroup===meta.id;
-   return `<div class="list-item"><div class="iconbox">${equipmentIcon(ox?.equipment)}</div><div class="grow"><div class="exercise-name">${esc(ox?.name||'Exercise')}</div><div class="mini">${esc(ox?.muscle||'')} · ${esc(patternLabel(ox?.pattern||''))}</div></div><button class="btn small" ${same?'disabled':''} onclick="linkRoutineSuperset('${routineId}',${index},${oi})">${same?'Linked':'Pair'}</button></div>`;
+   return `<div class="list-item"><div class="iconbox">${catExerciseThumbnail(ox)}</div><div class="grow"><div class="exercise-name">${esc(ox?.name||'Exercise')}</div><div class="mini">${esc(ox?.muscle||'')} · ${esc(patternLabel(ox?.pattern||''))}</div></div><button class="btn small" ${same?'disabled':''} onclick="linkRoutineSuperset('${routineId}',${index},${oi})">${same?'Linked':'Pair'}</button></div>`;
  }).join('');
  openModal(`Routine superset · ${esc(cur?.name||'Exercise')}`,`
    <div class="notice">Saved supersets will be restored automatically every time you start this routine.</div>
@@ -3035,7 +3180,7 @@ function subRowsHtml(currentId,context,index,query=''){
  return rows.map(({x,score})=>`<div class="picker-result-card">
    <div class="picker-result-main">
      <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}');${context==='workout'?`refreshWorkoutSubs(${index})`:`refreshRoutineSubs('${context}',${index})`}" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
-     <div class="iconbox">${equipmentIcon(x.equipment)}</div>
+     <div class="iconbox">${catExerciseThumbnail(x)}</div>
      <div class="picker-result-copy"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(x.muscle)} · ${esc(x.equipment)}<br>${esc(substitutionReason(cur,x))}</div></div>
    </div>
    <div class="picker-result-actions ${context==='workout'?'':'one'}">
@@ -3087,7 +3232,7 @@ function addPickerRows(items){
    return `<div class="picker-result-card">
      <div class="picker-result-main">
        <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button>
-       <div class="iconbox">${equipmentIcon(x.equipment)}</div>
+       <div class="iconbox">${catExerciseThumbnail(x)}</div>
        <div class="picker-result-copy"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))}<br>${esc(x.equipment)}</div></div>
      </div>
      <div class="picker-result-actions">
