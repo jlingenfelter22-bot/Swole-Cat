@@ -2235,14 +2235,33 @@ function adjustRestTimer(delta){restLeft=Math.max(0,restLeft+delta);paintRestTim
 function stopRestTimer(){if(restInterval)clearInterval(restInterval);restInterval=null;restLeft=0;document.getElementById('restTimer')?.classList.remove('show');}
 function cancelWorkout(){confirmAction('Cancel active workout?','This deletes the autosaved active workout draft. Completed workout history is not affected.',()=>{state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();go('home');showToast('Active workout cancelled');});}
 function finishWorkout(){
- const w=state.activeWorkout;
+ const w=state.activeWorkout;if(!w)return;
  const completed=w.exercises.some(e=>e.sets.some(s=>s.done));
  if(!completed && !confirm('No sets are marked complete. Save anyway?'))return;
+ const routine=state.routines.find(x=>x.id===w.routineId);
+ if(w.structureDirty&&routine){
+   openModal('Update your routine?',`
+     <div class="notice">You changed today's workout structure. Choose whether those structural changes stay only in this session or become the new saved version of <b>${esc(routine.name)}</b>.<br><br><b>Skip status is always today-only.</b> Updating the routine saves the current exercise order, today-only additions or removals, substitutions, supersets, and number of working sets.</div>
+     <div class="actions">
+       <button class="btn green" onclick="finalizeWorkout(true)">Finish + Update Routine</button>
+       <button class="btn secondary" onclick="finalizeWorkout(false)">Finish · Today Only</button>
+       <button class="btn secondary" onclick="closeModal()">Keep Working Out</button>
+     </div>
+   `);
+   return;
+ }
+ finalizeWorkout(false);
+}
+function finalizeWorkout(updateRoutine=false){
+ const w=state.activeWorkout;if(!w)return;
+ if(updateRoutine)syncActiveWorkoutStructureToRoutine();
+ closeModal();
  const end=new Date(),duration=Math.max(0,Math.round((end-new Date(w.startDate))/60000));
  const session={id:w.id,routineId:w.routineId,routineName:w.routineName,status:'finished',date:end.toISOString(),startDate:w.startDate,durationMinutes:duration,exercises:w.exercises};
  state.sessions.push(session);
  state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();haptic([40,45,100]);renderHome();go('home');
  const sets=sessionSetCount(session),volume=Math.round(sessionVolume(session)),prs=sessionPRCount(session);
+ const skipped=session.exercises.filter(e=>e.skipped).length;
  const wins=session.exercises.map(e=>{
    const ex=exById(e.exerciseId),done=completedSets(e),p=done.filter(s=>s.pr);
    const unique=[...new Set(p.map(x=>x.pr))];return unique.length?`<div class="summary-pr"><b>🏆 ${esc(ex?.name||'Exercise')}</b><div class="mini">${unique.map(x=>esc(x)).join(' · ')}</div></div>`:'';
@@ -2254,6 +2273,8 @@ function finishWorkout(){
      <div class="metric-mini"><b>${duration}m</b><span>Duration</span></div>
      <div class="metric-mini"><b>${prs}</b><span>PRs</span></div>
    </div>
+   ${skipped?`<div class="notice" style="margin-top:10px">${skipped} exercise${skipped===1?' was':'s were'} skipped for this session. Skipped exercises were not removed from the saved routine.</div>`:''}
+   ${updateRoutine?`<div class="summary-win"><b>Routine updated</b><div class="mini">Today's structural changes are now the saved routine layout.</div></div>`:''}
    <div class="summary-win"><b>${volume.toLocaleString()} ${state.profile.unit} × reps</b><div class="mini">Total external-load volume for this session. Use it as context, not a score you must maximize.</div></div>
    ${wins||'<div class="notice" style="margin-top:10px">No PR badge this time, which is completely normal. Consistent quality work still counts.</div>'}
    <div class="actions"><button class="btn" onclick="closeModal();go('analytics')">View progress</button><button class="btn secondary" onclick="closeModal()">Done</button></div>`);
