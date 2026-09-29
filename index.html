@@ -3440,7 +3440,21 @@ document.addEventListener('visibilitychange',()=>{
 });
 window.addEventListener('pagehide',()=>{if(state.activeWorkout)saveActiveWorkout()});
 window.addEventListener('beforeunload',()=>{if(state.activeWorkout)saveActiveWorkout()});
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+if('serviceWorker' in navigator){
+ let swRefreshing=false;
+ navigator.serviceWorker.addEventListener('controllerchange',()=>{
+   if(swRefreshing)return;
+   swRefreshing=true;
+   window.location.reload();
+ });
+ window.addEventListener('load',async()=>{
+   try{
+     const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
+     await reg.update();
+     if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});
+   }catch(e){}
+ });
+}
 renderHome();populateMuscles();updateInstallButton();updateActiveWorkoutChrome();
 if(state.activeWorkout){
  saveActiveWorkout();
