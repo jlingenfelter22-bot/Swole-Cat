@@ -1142,31 +1142,83 @@ function renderAnalytics(){
  const weekStart=startOfWeek(),thisWeek=state.sessions.filter(s=>new Date(s.date)>=weekStart);
  const prs30=last30.reduce((a,s)=>a+sessionPRCount(s),0);
  const sets30=last30.reduce((a,s)=>a+sessionSetCount(s),0);
- const vol30=last30.reduce((a,s)=>a+sessionVolume(s),0);
- const muscle=weeklyMuscleSets(),muscleRows=Object.entries(muscle).sort((a,b)=>b[1]-a[1]);
- const maxMuscle=Math.max(1,...muscleRows.map(x=>x[1]));
+ const trainingDays30=new Set(last30.map(s=>localDateKey(s.date))).size;
  const weeks=lastEightWeeks(),maxWeek=Math.max(1,...weeks.map(x=>x.workouts));
- const used=[...new Set(state.sessions.flatMap(s=>s.exercises.filter(e=>completedSets(e).length).map(e=>e.exerciseId)))];
- const top=used.map(id=>({id,ex:exById(id),...exerciseMetrics(id)})).filter(x=>x.history.length).sort((a,b)=>b.latestE1-a.latestE1).slice(0,8);
- const coachInsights=used.map(id=>{const r=state.routines.flatMap(x=>x.exercises).find(e=>e.exerciseId===id)||{trainingGoal:'general',resetPercent:7.5,increment:state.settings.defaultIncrement,minReps:state.settings.defaultMin,maxReps:state.settings.defaultMax,sets:state.settings.defaultSets};return {id,ex:exById(id),signal:coachSignal(id,r)};}).filter(x=>x.signal.stalled||x.signal.level==='good').slice(0,8);
+ const workloads=muscleWorkloadComparison(),maxWorkload=Math.max(1,...workloads.flatMap(x=>[x.current,x.average]));
+ const records=lifetimeExerciseRecords();
+ const recordCards=[...records].sort((a,b)=>(b.lastPRDate||b.lastDate).localeCompare(a.lastPRDate||a.lastDate)).slice(0,6);
+ const prEvents=recentPREvents(6);
+ const changes=recentStrengthChanges().slice(0,8);
+ const used=[...new Set(state.sessions.flatMap(s=>s.exercises.filter(e=>progressionSets(e).length).map(e=>e.exerciseId)))];
+ const recentExercises=used.map(id=>({id,ex:exById(id),...exerciseMetrics(id)})).filter(x=>x.history.length).sort((a,b)=>b.history.at(-1).date.localeCompare(a.history.at(-1).date)).slice(0,8);
+ const coachInsights=used.map(id=>{
+   const r=state.routines.flatMap(x=>x.exercises).find(e=>e.exerciseId===id)||{trainingGoal:'general',resetPercent:7.5,increment:state.settings.defaultIncrement,minReps:state.settings.defaultMin,maxReps:state.settings.defaultMax,sets:state.settings.defaultSets};
+   return {id,ex:exById(id),signal:coachSignal(id,r)};
+ }).filter(x=>x.signal.stalled||x.signal.level==='good').slice(0,8);
+
  host.innerHTML=`
+ <div class="progress-hero">
+   <div class="row"><div><div class="eyebrow">YOUR TRAINING DATA</div><div class="exercise-name" style="font-size:1.15rem;margin-top:4px">Progress at a glance</div><div class="mini" style="margin-top:4px">Calendar, records, workload, consistency, and exercise trends from your completed workouts.</div></div><span class="tag">${state.sessions.length} workout${state.sessions.length===1?'':'s'}</span></div>
+ </div>
+
  <div class="stat-grid">
    <div class="stat-card"><div class="caption">This week</div><div class="big">${thisWeek.length}</div><div class="mini">workouts</div></div>
-   <div class="stat-card"><div class="caption">Last 30 days</div><div class="big">${sets30}</div><div class="mini">working sets</div></div>
-   <div class="stat-card"><div class="caption">PRs · 30 days</div><div class="big">${prs30}</div><div class="mini">logged wins</div></div>
-   <div class="stat-card"><div class="caption">Load volume</div><div class="big">${Math.round(vol30).toLocaleString()}</div><div class="mini">${state.profile.unit} × reps</div></div>
+   <div class="stat-card"><div class="caption">Last 30 days</div><div class="big">${trainingDays30}</div><div class="mini">training days</div></div>
+   <div class="stat-card"><div class="caption">Working sets · 30d</div><div class="big">${sets30}</div><div class="mini">completed</div></div>
+   <div class="stat-card"><div class="caption">PRs · 30d</div><div class="big">${prs30}</div><div class="mini">exercises with PRs</div></div>
  </div>
+
+ <div class="section-title"><h2>Training calendar</h2><span class="mini">Tap a training day</span></div>
+ ${progressCalendarHtml()}
+
+ <div class="section-title"><h2>Lifetime records</h2><button class="btn small secondary" onclick="openAllRecords()">View All</button></div>
+ ${recordCards.length?`<div class="record-grid">${recordCards.map(r=>`<div class="record-card" onclick="openExerciseProgress('${r.id}')">
+   <div class="record-name">${esc(r.ex?.name||'Exercise')}</div>
+   <div class="record-big">${esc(recordPrimaryText(r))}</div>
+   <div class="record-meta">${esc(recordSecondaryText(r))}<br>${r.sessions} logged session${r.sessions===1?'':'s'}</div>
+ </div>`).join('')}</div>`:'<div class="empty">Complete working sets to build your record book.</div>'}
+
+ <div class="section-title"><h2>Recent PRs</h2><span class="mini">Newest first</span></div>
+ <div class="chart-card">
+   ${prEvents.length?`<div class="pr-feed">${prEvents.map(p=>`<div class="pr-feed-row clickable" onclick="openExerciseProgress('${p.exerciseId}')">
+     <div class="pr-icon">🏆</div>
+     <div><div class="exercise-name">${esc(p.exercise?.name||'Exercise')}</div><div class="mini">${esc(p.label)} · ${p.weight} ${state.profile.unit} × ${p.reps}</div></div>
+     <div class="mini">${new Date(p.date).toLocaleDateString()}</div>
+   </div>`).join('')}</div>`:'<div class="empty">PRs will show here after an exercise has an established baseline to beat.</div>'}
+ </div>
+
+ <div class="section-title"><h2>Muscle workload</h2><span class="mini">This week vs prior 4-week average</span></div>
+ <div class="chart-card">
+   ${workloads.length?`<div class="workload-grid">${workloads.map(x=>`<div class="workload-row">
+     <span>${esc(x.name)}</span>
+     <div class="workload-bars">
+       <div class="workload-track" title="This week"><div class="workload-current" style="width:${Math.round(x.current/maxWorkload*100)}%"></div></div>
+       <div class="workload-track" title="Prior 4-week average"><div class="workload-average" style="width:${Math.round(x.average/maxWorkload*100)}%"></div></div>
+     </div>
+     <div class="workload-values"><b>${x.current}</b> now<br>${x.average.toFixed(1)} avg</div>
+   </div>`).join('')}</div><div class="mini" style="margin-top:11px">Top bar = working sets this week. Bottom bar = average working sets per week across the previous four full weeks.</div>`:'<div class="empty">Complete working sets to populate muscle workload.</div>'}
+ </div>
+
  <div class="section-title"><h2>8-week consistency</h2></div>
  <div class="chart-card">
-   <div class="row"><div class="mini">Workouts completed each week</div><span class="tag">${weeks.reduce((a,x)=>a+x.workouts,0)} total</span></div>
-   <div class="weekbars">${weeks.map(w=>`<div class="weekcol"><div class="weekbar" style="height:${Math.max(3,w.workouts/maxWeek*92)}px" title="${w.workouts} workouts"></div><div class="weeklabel">${w.label}</div></div>`).join('')}</div>
+   <div class="row"><div class="mini">Completed workouts per week</div><span class="tag">${weeks.reduce((a,x)=>a+x.workouts,0)} total</span></div>
+   <div class="weekbars">${weeks.map(w=>`<div class="weekcol"><div class="weekbar" style="height:${Math.max(3,w.workouts/maxWeek*92)}px" title="${w.workouts} workouts · ${w.sets} working sets"></div><div class="weeklabel">${w.label}</div></div>`).join('')}</div>
  </div>
- <div class="section-title"><h2>Working sets this week</h2></div>
- <div class="chart-card">${muscleRows.length?`<div class="barlist">${muscleRows.map(([name,n])=>`<div class="barrow"><span>${esc(name)}</span><div class="bartrack"><div class="barfill" style="width:${Math.round(n/maxMuscle*100)}%"></div></div><b>${n}</b></div>`).join('')}</div>`:'<div class="empty">Complete a workout this week to populate muscle volume.</div>'}</div>
+
+ <div class="section-title"><h2>Recent strength changes</h2><span class="mini">Latest session vs previous session</span></div>
+ <div class="chart-card">
+   ${changes.length?`<div class="progress-change-list">${changes.map(x=>`<div class="progress-change clickable" onclick="openExerciseProgress('${x.id}')">
+     <div><div class="exercise-name">${esc(x.ex?.name||'Exercise')}</div><div class="mini">${x.prior.toFixed(0)} → ${x.latest.toFixed(0)} ${state.profile.unit} est. 1RM · ${new Date(x.date).toLocaleDateString()}</div></div>
+     <div class="progress-change-value ${x.delta>0?'trend-up':x.delta<0?'trend-down':'trend-flat'}">${x.delta>0?'+':''}${x.pct.toFixed(1)}%</div>
+   </div>`).join('')}</div>`:'<div class="empty">Log an exercise at least twice to compare recent strength.</div>'}
+ </div>
+
  <div class="section-title"><h2>Coach insights</h2></div>
  <div class="chart-card">${coachInsights.length?`<div class="insight-list">${coachInsights.map(x=>`<div class="coachbox ${x.signal.level==='info'?'':x.signal.level}" style="margin:0"><div class="row"><div><div class="coach-title">${esc(x.ex?.name||'Exercise')}</div><div class="coach-text">${esc(x.signal.text)}</div></div><span class="${x.signal.level==='good'?'trend-up':x.signal.level==='reset'?'trend-down':'trend-flat'}">${x.signal.level==='good'?'↑':x.signal.level==='reset'?'!':'→'}</span></div></div>`).join('')}</div>`:'<div class="empty">No notable progression patterns yet. Keep logging consistent sessions.</div>'}</div>
- <div class="section-title"><h2>Exercise progress</h2></div>
- <div class="grid">${top.length?top.map(x=>`<div class="card clickable" onclick="openExerciseProgress('${x.id}')"><div class="row"><div><div class="exercise-name">${esc(x.ex?.name||'Exercise')}</div><div class="mini">${x.history.length} logged sessions · best load ${x.bestWeight} ${state.profile.unit}</div></div><span class="${x.trend==='up'?'trend-up':x.trend==='down'?'trend-down':'trend-flat'}">${x.trend==='up'?'↑':x.trend==='down'?'↓':'→'} ${x.latestE1.toFixed(0)}</span></div></div>`).join(''):'<div class="empty">Once you log repeated exercises, your strength trends will live here.</div>'}</div>
+
+ <div class="section-title"><h2>Recently trained exercises</h2></div>
+ <div class="grid">${recentExercises.length?recentExercises.map(x=>`<div class="card clickable" onclick="openExerciseProgress('${x.id}')"><div class="row"><div><div class="exercise-name">${esc(x.ex?.name||'Exercise')}</div><div class="mini">${x.history.length} logged sessions · best load ${x.bestWeight} ${state.profile.unit}</div></div><span class="${x.trend==='up'?'trend-up':x.trend==='down'?'trend-down':'trend-flat'}">${x.trend==='up'?'↑':x.trend==='down'?'↓':'→'} ${x.latestE1.toFixed(0)}</span></div></div>`).join(''):'<div class="empty">Once you log repeated exercises, your strength trends will live here.</div>'}</div>
+
  <div class="section-title"><h2>Bodyweight <span class="mini">(optional)</span></h2><button class="btn small secondary" onclick="logBodyweight()">+ Log</button></div>
  <div class="chart-card">${(state.bodyweight||[]).length?`${svgLine(state.bodyweight.slice(-20).map(x=>Number(x.value)))}<div class="row"><span class="mini">Latest</span><b>${state.bodyweight.at(-1).value} ${state.profile.unit}</b></div>`:'<div class="empty">Optional bodyweight tracking lives only on this device.</div>'}</div>`;
 }
