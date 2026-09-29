@@ -410,6 +410,23 @@ jobs:
             assert.equal(state.sessions.length,sessionsBefore,'deleting program must preserve history');
             assert.equal(state.activeProgramId,null,'deleting active program should clear active program id');
 
+            // Custom program builder should allow a user-defined A/B rotation and preserve its order.
+            w.newProgram();
+            w.document.getElementById('programName').value='Custom AB';
+            w.document.getElementById('programFrequency').value='2';
+            w.addProgramRoutine(a);
+            w.addProgramRoutine(b);
+            w.toggleProgramDay(2);
+            w.toggleProgramDay(4);
+            w.saveProgram();
+            state=read();
+            assert.equal(state.programs.length,1,'custom program should save');
+            assert.equal(state.programs[0].name,'Custom AB','custom program name should save');
+            assert.deepEqual(state.programs[0].routineIds,[a,b],'custom program order should save');
+            assert.equal(state.programs[0].frequency,2,'custom program frequency should save');
+            assert.deepEqual(state.programs[0].preferredDays,[2,4],'preferred training days should save');
+            assert.equal(state.activeProgramId,state.programs[0].id,'first custom program should become active');
+
             dom.window.close();
             console.log('Swole Cat V26 program smoke test PASS');
           };
