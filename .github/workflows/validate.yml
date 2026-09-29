@@ -632,3 +632,62 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test Swole Cat exercise thumbnails
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const assert = require('assert');
+          const {JSDOM} = require('jsdom');
+
+          const html = fs.readFileSync('index.html','utf8');
+          const dom = new JSDOM(html,{
+            runScripts:'dangerously',
+            url:'https://swole-cat.test/',
+            pretendToBeVisual:true,
+            beforeParse(window){
+              window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+              window.alert=()=>{};
+              window.confirm=()=>true;
+              window.scrollTo=()=>{};
+              window.fetch=()=>Promise.reject(new Error('offline test'));
+            }
+          });
+
+          const wait = ms => new Promise(r=>setTimeout(r,ms));
+          const run = async () => {
+            await wait(30);
+            const w=dom.window;
+            const exercises=w.allExercises();
+            assert(exercises.length>=300,'exercise library should still contain the full library');
+
+            // Every exercise gets a local inline SVG mascot, with no broken coordinates/text.
+            for(const ex of exercises){
+              const icon=w.catExerciseThumbnail(ex);
+              assert(icon.includes('class="swole-cat-thumb"'),ex.name+' should render a Swole Cat thumbnail');
+              assert(icon.includes('<svg')&&icon.includes('</svg>'),ex.name+' thumbnail should be valid SVG markup');
+              assert(!/undefined|NaN/.test(icon),ex.name+' thumbnail should not contain broken values');
+            }
+
+            // Similar exercises should still visually differentiate by variation/equipment.
+            const back=exercises.find(x=>x.name==='Back Squat');
+            const front=exercises.find(x=>x.name==='Front Squat');
+            const bb=exercises.find(x=>x.name==='Barbell Bench Press');
+            const db=exercises.find(x=>x.name==='Dumbbell Bench Press');
+            assert(back&&front&&bb&&db,'known exercise variants should exist');
+            assert.notEqual(w.catExerciseThumbnail(back),w.catExerciseThumbnail(front),'front and back squat thumbnails should differ');
+            assert.notEqual(w.catExerciseThumbnail(bb),w.catExerciseThumbnail(db),'barbell and dumbbell bench thumbnails should differ');
+
+            // Exercise list uses the thumbnails while preserving the existing 42px iconbox shell.
+            w.go('exercises');
+            const list=w.document.getElementById('exerciseList');
+            assert(list.querySelector('.iconbox .swole-cat-thumb'),'exercise list should render mascot SVGs inside iconbox');
+            const css=html.match(/\.iconbox\{[^}]+\}/)?.[0]||'';
+            assert(css.includes('width:42px')&&css.includes('height:42px'),'thumbnail container size should remain 42x42');
+
+            dom.window.close();
+            console.log('Swole Cat exercise thumbnail smoke test PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
