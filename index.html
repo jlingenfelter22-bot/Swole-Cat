@@ -1512,7 +1512,7 @@ function routineEditorHtml(r){
         <button class="orderbtn" onclick="moveRoutineExercise('${r.id}',${i},1)" ${i===r.exercises.length-1?'disabled':''}>↓</button>
       </div>
       <div>
-        <div class="exercise-name">${esc(ex?.name||'Exercise')}</div>
+        <div class="exercise-name">${esc(ex?.name||'Exercise')} ${preferenceBadgeHtml(re.exerciseId)}</div>
         <div class="mini">${esc(ex?.muscle||'')} · ${esc(patternLabel(ex?.pattern||''))} · ${esc(ex?.equipment||'')}</div>
         <div class="editor-summary">
           <span class="tag">${re.sets} sets</span>
@@ -1616,7 +1616,7 @@ function routineSwapRows(id,index,query=''){
  const cur=exById(re.exerciseId);
  return recommendedSubs(re.exerciseId,query).slice(0,query?60:14).map(({x})=>`<div class="picker-result-card">
    <div class="picker-result-main">
-     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button>
+     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}');refreshRoutineSwap('${id}',${index})">${isFavorite(x.id)?'★':'☆'}</button>
      <div class="iconbox">${equipmentIcon(x.equipment)}</div>
      <div class="picker-result-copy"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}<br>${esc(substitutionReason(cur,x))}</div></div>
    </div>
@@ -2438,7 +2438,7 @@ function renderWorkout(){
           <div class="exercise-number">${e.skipped?'–':prog.complete?'✓':ei+1}</div>
           <div>
             <div class="exercise-kicker">Exercise ${ei+1} of ${w.exercises.length}</div>
-            <div class="exercise-title">${esc(ex?.name||'Exercise')}</div>
+            <div class="exercise-title">${esc(ex?.name||'Exercise')} ${preferenceBadgeHtml(e.exerciseId)}</div>
             <div class="exercise-meta">${e.skipped?'Skipped for today':`${esc(ex?.muscle||'')} · ${workingSetIndexes(e).length} working sets · ${e.config.minReps}-${e.config.maxReps} reps`}</div>
             ${superset?`<div style="margin-top:6px"><span class="superset-badge">⚡ Superset ${superset.label}</span></div>`:''}
           </div>
@@ -2794,7 +2794,7 @@ function subRowsHtml(currentId,context,index,query=''){
  const rows=recommendedSubs(currentId,query).slice(0,query?60:14);
  return rows.map(({x,score})=>`<div class="picker-result-card">
    <div class="picker-result-main">
-     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
+     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}');${context==='workout'?`refreshWorkoutSubs(${index})`:`refreshRoutineSubs('${context}',${index})`}" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
      <div class="iconbox">${equipmentIcon(x.equipment)}</div>
      <div class="picker-result-copy"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(x.muscle)} · ${esc(x.equipment)}<br>${esc(substitutionReason(cur,x))}</div></div>
    </div>
