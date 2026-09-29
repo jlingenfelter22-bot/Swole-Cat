@@ -811,6 +811,152 @@ function lastEightWeeks(){
  }
  return rows;
 }
+let analyticsMonthOffset=0;
+
+function localDateKey(dateLike){
+ const d=dateLike instanceof Date?dateLike:new Date(dateLike);
+ if(Number.isNaN(d.getTime()))return '';
+ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+ return `${y}-${m}-${day}`;
+}
+function monthAnchor(offset=analyticsMonthOffset){
+ const d=new Date();d.setHours(12,0,0,0);d.setDate(1);d.setMonth(d.getMonth()+offset);return d;
+}
+function changeAnalyticsMonth(delta){
+ analyticsMonthOffset+=delta;renderAnalytics();
+}
+function resetAnalyticsMonth(){
+ analyticsMonthOffset=0;renderAnalytics();
+}
+function sessionsForDateKey(key){return state.sessions.filter(s=>localDateKey(s.date)===key)}
+function calendarMonthData(offset=analyticsMonthOffset){
+ const base=monthAnchor(offset),year=base.getFullYear(),month=base.getMonth();
+ const days=new Date(year,month+1,0).getDate();
+ const mondayOffset=(new Date(year,month,1).getDay()+6)%7;
+ const cells=Array(mondayOffset).fill(null);
+ for(let day=1;day<=days;day++){
+   const d=new Date(year,month,day,12),key=localDateKey(d),sessions=sessionsForDateKey(key);
+   cells.push({day,key,sessions,count:sessions.length,today:key===localDateKey(new Date())});
+ }
+ while(cells.length%7)cells.push(null);
+ return {base,year,month,cells};
+}
+function progressCalendarHtml(){
+ const data=calendarMonthData(),label=data.base.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+ return `<div class="calendar-card">
+   <div class="calendar-head">
+     <div class="progress-nav"><button onclick="changeAnalyticsMonth(-1)" aria-label="Previous month">‹</button><button onclick="resetAnalyticsMonth()">Today</button><button onclick="changeAnalyticsMonth(1)" aria-label="Next month">›</button></div>
+     <div class="calendar-title">${esc(label)}</div>
+   </div>
+   <div class="calendar-weekdays">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>`<div>${x}</div>`).join('')}</div>
+   <div class="calendar-grid">${data.cells.map(cell=>cell
+     ?`<button class="calendar-day ${cell.today?'today':''} ${cell.count?'trained':''}" ${cell.count?`onclick="openProgressDay('${cell.key}')"`:'disabled'}>
+        <span class="daynum">${cell.day}</span>${cell.count?'<span class="calendar-dot"></span>':''}
+        ${cell.count?`<span class="daycount">${cell.count} workout${cell.count===1?'':'s'}</span>`:''}
+       </button>`
+     :'<div class="calendar-day empty"></div>').join('')}</div>
+ </div>`;
+}
+function openProgressDay(key){
+ const sessions=sessionsForDateKey(key).sort((a,b)=>b.date.localeCompare(a.date));
+ if(!sessions.length)return;
+ const d=new Date(key+'T12:00:00');
+ openModal(d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}),`
+   <div class="mini" style="margin-bottom:10px">${sessions.length} workout${sessions.length===1?'':'s'} logged</div>
+   ${sessions.map(s=>`<div class="card" style="margin-bottom:9px">
+     <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})} · ${sessionSetCount(s)} working sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div>${sessionPRCount(s)?`<span class="tag">🏆 ${sessionPRCount(s)}</span>`:''}</div>
+     <div class="mini" style="margin-top:8px">${s.exercises.filter(e=>progressionSets(e).length).map(e=>esc(exById(e.exerciseId)?.name||'Exercise')).join(' · ')}</div>
+     <div class="actions"><button class="btn small secondary" onclick="closeModal();go('history')">Open History</button></div>
+   </div>`).join('')}
+ `);
+}
+function lifetimeExerciseRecords(){
+ const ids=[...new Set(state.sessions.flatMap(s=>(s.exercises||[]).flatMap(e=>progressionSets(e).length?[e.exerciseId]:[])))];
+ return ids.map(id=>{
+   const ex=exById(id),history=exerciseHistory(id);
+   const rows=[];
+   history.forEach(h=>h.sets.forEach(set=>rows.push({set,date:h.date,routineName:h.routineName})));
+   if(!rows.length)return null;
+   const byLoad=[...rows].sort((a,b)=>(Number(b.set.weight)||0)-(Number(a.set.weight)||0)||(Number(b.set.reps)||0)-(Number(a.set.reps)||0))[0];
+   const byE1=[...rows].sort((a,b)=>estimated1RM(b.set.weight,b.set.reps)-estimated1RM(a.set.weight,a.set.reps))[0];
+   const byReps=[...rows].sort((a,b)=>(Number(b.set.reps)||0)-(Number(a.set.reps)||0))[0];
+   const prs=rows.filter(x=>x.set.pr);
+   return {
+     id,ex,history,
+     bestWeight:Number(byLoad?.set.weight)||0,
+     bestWeightReps:Number(byLoad?.set.reps)||0,
+     bestReps:Number(byReps?.set.reps)||0,
+     bestE1:byE1?estimated1RM(byE1.set.weight,byE1.set.reps):0,
+     sessions:history.length,
+     lastDate:history.at(-1)?.date||'',
+     lastPRDate:prs.at(-1)?.date||''
+   };
+ }).filter(Boolean);
+}
+function recordPrimaryText(r){
+ return r.bestWeight>0?`${r.bestWeight} ${state.profile.unit} × ${r.bestWeightReps}`:`${r.bestReps} reps`;
+}
+function recordSecondaryText(r){
+ return r.bestE1>0?`${r.bestE1.toFixed(0)} ${state.profile.unit} est. 1RM`:`${r.sessions} logged session${r.sessions===1?'':'s'}`;
+}
+function recentPREvents(limit=8){
+ const events=[];
+ state.sessions.forEach(s=>(s.exercises||[]).forEach(e=>{
+   const seen=new Set();
+   progressionSets(e).forEach(set=>{
+     if(!set.pr||seen.has(set.pr))return;
+     seen.add(set.pr);
+     events.push({date:s.date,sessionId:s.id,exerciseId:e.exerciseId,exercise:exById(e.exerciseId),label:set.pr,weight:Number(set.weight)||0,reps:Number(set.reps)||0});
+   });
+ }));
+ return events.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,limit);
+}
+function muscleWorkloadComparison(){
+ const currentStart=startOfWeek(),currentEnd=new Date(currentStart);currentEnd.setDate(currentEnd.getDate()+7);
+ const current={},priorTotals={};
+ const addSession=(s,target)=>s.exercises.forEach(e=>{
+   const ex=exById(e.exerciseId);if(!ex)return;
+   target[ex.muscle]=(target[ex.muscle]||0)+progressionSets(e).length;
+ });
+ state.sessions.forEach(s=>{
+   const d=new Date(s.date);
+   if(d>=currentStart&&d<currentEnd)addSession(s,current);
+   else{
+     const priorStart=new Date(currentStart);priorStart.setDate(priorStart.getDate()-28);
+     if(d>=priorStart&&d<currentStart)addSession(s,priorTotals);
+   }
+ });
+ const names=[...new Set([...Object.keys(current),...Object.keys(priorTotals)])];
+ return names.map(name=>({name,current:current[name]||0,average:(priorTotals[name]||0)/4}))
+   .sort((a,b)=>Math.max(b.current,b.average)-Math.max(a.current,a.average)||a.name.localeCompare(b.name));
+}
+function recentStrengthChanges(){
+ const ids=[...new Set(state.sessions.flatMap(s=>(s.exercises||[]).map(e=>e.exerciseId)))];
+ return ids.map(id=>{
+   const m=exerciseMetrics(id);if(m.history.length<2||!m.priorE1)return null;
+   const delta=m.latestE1-m.priorE1,pct=(delta/m.priorE1)*100;
+   return {id,ex:exById(id),latest:m.latestE1,prior:m.priorE1,delta,pct,date:m.history.at(-1).date};
+ }).filter(Boolean).sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct)||b.date.localeCompare(a.date));
+}
+function openAllRecords(){
+ openModal('Lifetime records',`
+   <div class="notice">Records use completed <b>working sets</b>. Warm-ups, drop sets, and failure sets do not set progression records.</div>
+   <div class="records-toolbar"><input id="recordsSearch" placeholder="Search exercise..." oninput="renderRecordsModal()"></div>
+   <div id="recordsList" class="records-list"></div>
+ `);
+ renderRecordsModal();
+}
+function renderRecordsModal(){
+ const host=document.getElementById('recordsList');if(!host)return;
+ const q=(document.getElementById('recordsSearch')?.value||'').trim().toLowerCase();
+ const rows=lifetimeExerciseRecords().filter(r=>!q||(r.ex?.name||'').toLowerCase().includes(q)).sort((a,b)=>(a.ex?.name||'').localeCompare(b.ex?.name||''));
+ host.innerHTML=rows.length?rows.map(r=>`<div class="records-row clickable" onclick="openExerciseProgress('${r.id}')">
+   <div><div class="exercise-name">${esc(r.ex?.name||'Exercise')}</div><div class="mini">${r.sessions} session${r.sessions===1?'':'s'} · last ${new Date(r.lastDate).toLocaleDateString()}</div></div>
+   <div class="records-value"><b>${esc(recordPrimaryText(r))}</b><span>${r.bestWeight>0?'Best load':'Best reps'}</span></div>
+   <div class="records-value e1"><b>${r.bestE1>0?r.bestE1.toFixed(0):'—'}</b><span>Est. 1RM</span></div>
+ </div>`).join(''):'<div class="empty">No matching records yet.</div>';
+}
+
 function svgLine(values,width=600,height=130){
  if(!values.length)return '';
  const pad=14,max=Math.max(...values),min=Math.min(...values),range=Math.max(1,max-min);
