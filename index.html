@@ -2735,7 +2735,7 @@ function deleteCustomExercise(id){
 
 
 function subScore(current,candidate){
- if(!current||!candidate||current.id===candidate.id)return -999;
+ if(!current||!candidate||current.id===candidate.id||isHiddenExercise(candidate.id))return -999;
  let score=0;
  if(current.pattern && candidate.pattern===current.pattern)score+=60;
  if(current.muscle===candidate.muscle)score+=35;
@@ -2743,40 +2743,45 @@ function subScore(current,candidate){
  // close families that commonly substitute reasonably when the exact pattern is unavailable
  const families={horizontal_press:['incline_press','dip_press'],incline_press:['horizontal_press','vertical_press'],horizontal_pull:['vertical_pull'],vertical_pull:['horizontal_pull','shoulder_extension'],squat:['lunge'],lunge:['squat'],hip_extension:['hinge'],hinge:['hip_extension'],rear_delt:['horizontal_pull'],elbow_extension:['dip_press']};
  if((families[current.pattern]||[]).includes(candidate.pattern))score+=14;
+ // Personal preference never replaces movement compatibility, but it strongly breaks ties.
+ score+=preferenceRank(candidate.id);
  return score;
 }
 function substitutionReason(current,c){
  const bits=[];
  if(c.pattern===current.pattern)bits.push('same movement pattern');
- if(c.muscle===current.muscle)bits.push(`same primary muscle`);
+ if(c.muscle===current.muscle)bits.push('same primary muscle');
  if(c.equipment===current.equipment)bits.push('same equipment');
+ if(exercisePreference(c.id)==='prefer')bits.push('you prefer this');
+ else if(exercisePreference(c.id)==='avoid')bits.push('you marked avoid');
+ if(isFavorite(c.id))bits.push('favorite');
  return bits.length?bits.join(' · '):`${c.muscle} alternative`;
 }
 function recommendedSubs(exerciseId,query=''){
  const cur=exById(exerciseId); if(!cur)return [];
- let arr=allExercises().filter(x=>x.id!==exerciseId);
+ let arr=visibleExercises().filter(x=>x.id!==exerciseId);
  if(query){const q=query.toLowerCase();arr=arr.filter(x=>x.name.toLowerCase().includes(q)||x.muscle.toLowerCase().includes(q)||patternLabel(x.pattern).toLowerCase().includes(q));}
- return arr.map(x=>({x,score:subScore(cur,x)})).sort((a,b)=>b.score-a.score||a.x.name.localeCompare(b.x.name));
+ return arr.map(x=>({x,score:subScore(cur,x)})).filter(row=>row.score>-900).sort((a,b)=>b.score-a.score||a.x.name.localeCompare(b.x.name));
 }
 function subRowsHtml(currentId,context,index,query=''){
  const cur=exById(currentId);
  const rows=recommendedSubs(currentId,query).slice(0,query?60:14);
  return rows.map(({x,score})=>`<div class="picker-result-card">
    <div class="picker-result-main">
-     <div></div>
+     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
      <div class="iconbox">${equipmentIcon(x.equipment)}</div>
-     <div class="picker-result-copy"><div class="exercise-name">${esc(x.name)}</div><div class="mini">${esc(x.muscle)} · ${esc(x.equipment)}<br>${esc(substitutionReason(cur,x))}</div></div>
+     <div class="picker-result-copy"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(x.muscle)} · ${esc(x.equipment)}<br>${esc(substitutionReason(cur,x))}</div></div>
    </div>
    <div class="picker-result-actions ${context==='workout'?'':'one'}">
      ${context==='workout'
        ?`<button class="btn small" onclick="swapWorkoutExercise(${index},'${x.id}',false)">Use Today</button><button class="btn small secondary" onclick="swapWorkoutExercise(${index},'${x.id}',true)">Use + Save to Routine</button>`
        :`<button class="btn small" onclick="swapRoutineExercise('${context}',${index},'${x.id}')">Use This Exercise</button>`}
    </div>
- </div>`).join('')||'<div class="empty">No matching exercises.</div>';
+ </div>`).join('')||'<div class="empty">No matching visible exercises.</div>';
 }
 function openWorkoutSubstitute(ei){
  const e=state.activeWorkout?.exercises?.[ei];if(!e)return;const cur=exById(e.exerciseId);
- openModal(`Substitute ${esc(cur?.name||'exercise')}`,`<div class="notice">Recommended swaps prioritize the same movement pattern and primary muscle. <b>Today</b> changes only this session. <b>Routine</b> also replaces the exercise in your saved routine. Progress history stays separate for each exercise.</div><div style="margin:12px 0"><input id="subSearch" placeholder="Search any exercise..." oninput="refreshWorkoutSubs(${ei})"></div><div id="subList" class="picker-result-list">${subRowsHtml(e.exerciseId,'workout',ei)}</div>`);
+ openModal(`Substitute ${esc(cur?.name||'exercise')}`,`<div class="notice">Recommended swaps prioritize movement and muscle match, then use your Favorite / Prefer / Avoid choices to break ties. Hidden exercises are excluded. <b>Today</b> changes only this session. <b>Routine</b> also replaces the exercise in your saved routine. Progress history stays separate for each exercise.</div><div style="margin:12px 0"><input id="subSearch" placeholder="Search any exercise..." oninput="refreshWorkoutSubs(${ei})"></div><div id="subList" class="picker-result-list">${subRowsHtml(e.exerciseId,'workout',ei)}</div>`);
 }
 function refreshWorkoutSubs(ei){const e=state.activeWorkout.exercises[ei];document.getElementById('subList').innerHTML=subRowsHtml(e.exerciseId,'workout',ei,document.getElementById('subSearch').value)}
 function swapWorkoutExercise(ei,newId,permanent){
@@ -2789,7 +2794,7 @@ function swapWorkoutExercise(ei,newId,permanent){
 }
 function openRoutineSubstitute(routineId,index){
  const r=state.routines.find(x=>x.id===routineId);if(!r||!r.exercises[index])return;const cur=r.exercises[index];
- openModal(`Replace ${esc(exById(cur.exerciseId)?.name||'exercise')}`,`<div class="notice">This permanently changes the movement in this routine but does not delete old workout history.</div><div style="margin:12px 0"><input id="subSearch" placeholder="Search any exercise..." oninput="refreshRoutineSubs('${routineId}',${index})"></div><div id="subList" class="picker-result-list">${subRowsHtml(cur.exerciseId,routineId,index)}</div>`);
+ openModal(`Replace ${esc(exById(cur.exerciseId)?.name||'exercise')}`,`<div class="notice">This permanently changes the movement in this routine but does not delete old workout history. Preferred and favorite exercises rank higher, Avoid ranks lower, and Hidden exercises are excluded.</div><div style="margin:12px 0"><input id="subSearch" placeholder="Search any exercise..." oninput="refreshRoutineSubs('${routineId}',${index})"></div><div id="subList" class="picker-result-list">${subRowsHtml(cur.exerciseId,routineId,index)}</div>`);
 }
 function refreshRoutineSubs(routineId,index){const r=state.routines.find(x=>x.id===routineId),cur=r.exercises[index];document.getElementById('subList').innerHTML=subRowsHtml(cur.exerciseId,routineId,index,document.getElementById('subSearch').value)}
 function swapRoutineExercise(routineId,index,newId){const r=state.routines.find(x=>x.id===routineId);if(!r)return;r.exercises[index].exerciseId=newId;save();closeModal();editRoutineDetails(routineId);renderRoutines();renderHome();}
