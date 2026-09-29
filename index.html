@@ -1975,8 +1975,13 @@ function moveWorkoutExercise(ei,dir){
 function toggleSkipWorkoutExercise(ei){
  const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e)return;
  e.skipped=!e.skipped;
- if(e.skipped)e.expanded=false;
- else{
+ if(e.skipped){
+   e.expanded=false;
+   let next=-1;
+   for(let i=ei+1;i<w.exercises.length;i++){if(!exerciseSetProgress(w.exercises[i]).complete){next=i;break}}
+   if(next<0){for(let i=0;i<ei;i++){if(!exerciseSetProgress(w.exercises[i]).complete){next=i;break}}}
+   w.exercises.forEach((x,i)=>x.expanded=i===next);
+ }else{
    w.exercises.forEach((x,i)=>x.expanded=i===ei);
  }
  saveActiveWorkout();renderWorkout();refreshWorkoutStructureEditor();
