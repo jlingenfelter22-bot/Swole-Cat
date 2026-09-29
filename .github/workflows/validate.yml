@@ -1,0 +1,46 @@
+name: Validate Swole Cat
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Extract inline JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path("index.html").read_text(encoding="utf-8")
+          match = re.search(r"<script>([\s\S]*)</script>", html)
+          if not match:
+              raise SystemExit("No inline script found")
+          Path("/tmp/swole-cat-app.js").write_text(match.group(1), encoding="utf-8")
+          PY
+
+      - name: Check app JavaScript syntax
+        run: node --check /tmp/swole-cat-app.js
+
+      - name: Check service worker syntax
+        run: node --check sw.js
+
+      - name: Check PWA manifest
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("manifest.webmanifest").read_text(encoding="utf-8"))
+          assert data["name"]=="Swole Cat"
+          assert data["display"]=="standalone"
+          print("PWA manifest OK")
+          PY
