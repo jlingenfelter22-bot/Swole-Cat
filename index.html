@@ -62,16 +62,14 @@
   .list-item{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #202737}
   .list-item:last-child{border-bottom:0}
   .iconbox{width:42px;height:42px;border-radius:12px;background:#1c2331;display:grid;place-items:center;font-size:1.15rem;flex:0 0 auto;overflow:hidden}
-  .iconbox .swole-cat-thumb{width:38px;height:38px;display:block}
-  .iconbox .swole-cat-thumb .cat-fill{fill:#e8a35f;stroke:#17131c;stroke-width:1.15;stroke-linejoin:round}
-  .iconbox .swole-cat-thumb .cat-stroke{fill:none;stroke:#e8a35f;stroke-width:3.45;stroke-linecap:round;stroke-linejoin:round}
-  .iconbox .swole-cat-thumb .cat-face{fill:#17131c}
-  .iconbox .swole-cat-thumb .accent{fill:none;stroke:#a78bfa;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round}
-  .iconbox .swole-cat-thumb .accent-fill{fill:#a78bfa;stroke:#34245f;stroke-width:.8}
-  .iconbox .swole-cat-thumb .structure{fill:none;stroke:#64748b;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .iconbox .swole-cat-thumb .equipment-badge{fill:#161d2a;stroke:#3b465c;stroke-width:.8}
-  .iconbox .swole-cat-thumb .equipment-mark{fill:none;stroke:#c4b5fd;stroke-width:1.45;stroke-linecap:round;stroke-linejoin:round}
-  .iconbox .swole-cat-thumb .equipment-mark-fill{fill:#c4b5fd}
+  .iconbox{position:relative}
+  .exercise-thumb-shell{width:42px;height:42px;display:grid;place-items:center;position:relative;overflow:hidden}
+  .exercise-thumb-art{width:46px;height:46px;display:block;object-fit:contain;filter:brightness(0) invert(1);opacity:.94;transform:scale(1.08);transform-origin:center}
+  .exercise-thumb-shell.thumb-unavailable .exercise-thumb-art{display:none}
+  .exercise-thumb-shell.thumb-unavailable:before{content:"";width:18px;height:18px;border-radius:50%;border:2px solid #475569;box-shadow:inset 0 0 0 4px #1c2331}
+  .thumb-cat-mark{position:absolute;right:1px;bottom:1px;width:12px;height:12px;display:block;filter:none!important;transform:none!important}
+  .thumb-cat-mark .badge-bg{fill:#312252;stroke:#8b5cf6;stroke-width:.8}
+  .thumb-cat-mark .badge-cat{fill:#ddd6fe}
   .grow{flex:1}
   .search{margin-bottom:12px}
   .workout-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
@@ -1590,146 +1588,204 @@ function exerciseMatchesSearch(x,q){
  return !q||x.name.toLowerCase().includes(q)||x.muscle.toLowerCase().includes(q)||x.equipment.toLowerCase().includes(q)||patternLabel(x.pattern).toLowerCase().includes(q);
 }
 
-function swoleCatThumbnailSpec(ex){
+const WORKOUT_ART_BASE='https://raw.githubusercontent.com/bryllim/workout-guide/main/packages/workout-guide/assets/';
+const WORKOUT_ART_ALIASES={
+ 'barbell-bench-press':'bench-press',
+ 'incline-barbell-bench-press':'incline-bench-press',
+ 'back-squat':'squat',
+ 'dumbbell-row':'one-arm-dumbbell-row',
+ 'seated-cable-row':'seated-row',
+ 'dumbbell-shoulder-press':'seated-dumbbell-shoulder-press',
+ 'dumbbell-lateral-raise':'lateral-raise',
+ 'barbell-curl':'ez-bar-curl',
+ 'dumbbell-curl':'bicep-curl',
+ 'triceps-pushdown':'tricep-pushdown',
+ 'overhead-triceps-extension':'overhead-tricep-extension',
+ 'barbell-shrug':'shrug',
+ 'decline-barbell-bench-press':'decline-bench-press',
+ '45-degree-back-extension':'back-extension',
+ 'ab-crunch-machine':'crunch',
+ 'alternating-dumbbell-curl':'bicep-curl',
+ 'anderson-squat':'squat',
+ 'chest-press-machine':'bench-press',
+ 'floor-press':'bench-press',
+ 'paused-bench-press':'bench-press',
+ 'wide-grip-bench-press':'bench-press',
+ 'dumbbell-floor-press':'dumbbell-bench-press',
+ 'neutral-grip-dumbbell-bench-press':'dumbbell-bench-press',
+ 'single-arm-dumbbell-bench-press':'dumbbell-bench-press',
+ 'low-incline-dumbbell-press':'incline-dumbbell-press',
+ 'incline-dumbbell-fly':'dumbbell-fly',
+ 'standing-cable-chest-press':'cable-fly',
+ 'single-arm-cable-chest-press':'cable-fly',
+ 'low-to-high-cable-fly':'cable-fly',
+ 'high-to-low-cable-fly':'cable-fly',
+ 'single-arm-cable-fly':'cable-fly',
+ 'plate-loaded-chest-press':'bench-press',
+ 'hammer-strength-chest-press':'bench-press',
+ 'yates-row':'barbell-row',
+ 'underhand-barbell-row':'barbell-row',
+ 'landmine-row':'t-bar-row',
+ 'chest-supported-dumbbell-row':'chest-supported-row',
+ 'incline-bench-dumbbell-row':'chest-supported-row',
+ 'wide-grip-seated-cable-row':'seated-row',
+ 'close-grip-seated-cable-row':'seated-row',
+ 'kneeling-cable-row':'single-arm-cable-row',
+ 'high-cable-row':'seated-row',
+ 'plate-loaded-row':'machine-row',
+ 'hammer-strength-row':'machine-row',
+ 'machine-high-row':'machine-row',
+ 'machine-low-row':'machine-row',
+ 'neutral-grip-lat-pulldown':'lat-pulldown',
+ 'underhand-lat-pulldown':'close-grip-lat-pulldown',
+ 'single-arm-lat-pulldown':'lat-pulldown',
+ 'kneeling-single-arm-pulldown':'lat-pulldown',
+ 'plate-loaded-pulldown':'lat-pulldown',
+ 'rope-straight-arm-pulldown':'straight-arm-pulldown',
+ 'single-arm-straight-arm-pulldown':'straight-arm-pulldown',
+ 'cable-pullover':'straight-arm-pulldown',
+ 'dumbbell-pullover':'pullover',
+ 'machine-pullover':'pullover',
+ 'seated-barbell-shoulder-press':'overhead-press',
+ 'smith-machine-shoulder-press':'overhead-press',
+ 'single-arm-dumbbell-shoulder-press':'seated-dumbbell-shoulder-press',
+ 'single-arm-cable-shoulder-press':'overhead-press',
+ 'plate-loaded-shoulder-press':'overhead-press',
+ 'lean-away-dumbbell-lateral-raise':'lateral-raise',
+ 'seated-dumbbell-lateral-raise':'lateral-raise',
+ 'incline-dumbbell-lateral-raise':'lateral-raise',
+ 'behind-the-back-cable-lateral-raise':'cable-lateral-raise',
+ 'lean-away-cable-lateral-raise':'cable-lateral-raise',
+ 'bent-over-dumbbell-reverse-fly':'bent-over-rear-delt-raise',
+ 'incline-rear-delt-raise':'rear-delt-fly',
+ 'cable-reverse-fly':'cable-rear-delt-fly',
+ 'single-arm-rear-delt-cable-fly':'cable-rear-delt-fly',
+ 'rope-face-pull':'face-pull',
+ 'dumbbell-front-raise':'cable-front-raise',
+ 'barbell-front-raise':'cable-front-raise',
+ 'barbell-upright-row':'upright-row',
+ 'cable-upright-row':'upright-row',
+ 'high-bar-squat':'squat',
+ 'low-bar-squat':'squat',
+ 'pause-squat':'squat',
+ 'box-squat':'squat',
+ 'anderson-squat':'squat',
+ 'stationary-lunge':'forward-lunge',
+ 'dumbbell-step-up':'step-up',
+ 'barbell-reverse-lunge':'reverse-lunge',
+ 'barbell-split-squat':'split-squat',
+ 'single-leg-extension':'leg-extension',
+ 'stiff-leg-deadlift':'romanian-deadlift',
+ 'snatch-grip-romanian-deadlift':'romanian-deadlift',
+ 'deficit-romanian-deadlift':'romanian-deadlift',
+ 'standing-leg-curl':'leg-curl',
+ 'single-leg-seated-curl':'seated-leg-curl',
+ 'single-leg-lying-curl':'lying-leg-curl',
+ 'nordic-curl-machine':'nordic-hamstring-curl',
+ 'sliding-leg-curl':'stability-ball-hamstring-curl',
+ 'glute-ham-raise':'back-extension',
+ 'b-stance-hip-thrust':'hip-thrust',
+ 'hip-thrust-machine':'hip-thrust',
+ 'glute-drive-machine':'hip-thrust',
+ 'standing-cable-hip-extension':'cable-kickback',
+ 'standing-hip-abduction-machine':'hip-abduction-machine',
+ 'cable-hip-abduction':'cable-standing-hip-abduction',
+ 'banded-hip-abduction':'banded-standing-hip-abduction',
+ 'cable-hip-adduction':'cable-standing-hip-adduction',
+ 'reverse-barbell-curl':'reverse-curl',
+ 'spider-barbell-curl':'spider-curl',
+ 'spider-dumbbell-curl':'spider-curl',
+ 'cross-body-hammer-curl':'hammer-curl',
+ 'zottman-curl':'reverse-curl',
+ 'reverse-dumbbell-curl':'reverse-curl',
+ 'bayesian-cable-curl':'cable-curl',
+ 'high-cable-curl':'cable-curl',
+ 'single-arm-cable-curl':'cable-curl',
+ 'cable-preacher-curl':'preacher-curl',
+ 'machine-biceps-curl':'preacher-curl',
+ 'plate-loaded-preacher-curl':'preacher-curl',
+ 'rope-triceps-pushdown':'rope-tricep-pushdown',
+ 'straight-bar-pushdown':'tricep-pushdown',
+ 'v-bar-pushdown':'tricep-pushdown',
+ 'single-arm-triceps-pushdown':'tricep-pushdown',
+ 'cross-body-cable-triceps-extension':'tricep-kickback',
+ 'rope-overhead-triceps-extension':'overhead-tricep-extension',
+ 'single-arm-overhead-cable-extension':'overhead-tricep-extension',
+ 'single-dumbbell-overhead-extension':'dumbbell-overhead-tricep-extension',
+ 'dumbbell-kickback':'tricep-kickback',
+ 'machine-triceps-extension':'overhead-tricep-extension',
+ 'plate-loaded-dip':'dip',
+ 'single-leg-standing-calf-raise':'single-leg-calf-raise',
+ 'hack-squat-calf-raise':'leg-press-calf-raise',
+ 'smith-machine-calf-raise':'standing-calf-raise',
+ 'dumbbell-standing-calf-raise':'standing-calf-raise',
+ 'single-leg-dumbbell-calf-raise':'single-leg-calf-raise',
+ 'tibialis-raise-machine':'calf-raise',
+ 'wall-tibialis-raise':'calf-raise',
+ 'behind-the-back-barbell-shrug':'shrug',
+ 'snatch-grip-shrug':'shrug',
+ 'smith-machine-shrug':'shrug',
+ 'machine-shrug':'shrug',
+ 'cable-shrug':'shrug',
+ 'incline-dumbbell-shrug':'dumbbell-shrug'
+};
+function workoutArtSlugify(name){
+ return String(name||'').toLowerCase().replace(/&/g,' and ').replace(/['’]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+function workoutArtExactSlug(ex){
+ const slug=workoutArtSlugify(ex?.name||'');
+ return WORKOUT_ART_ALIASES[slug]||slug;
+}
+function workoutArtFallbackSlug(ex){
  const p=ex?.pattern||'',name=String(ex?.name||'').toLowerCase();
- let family='accessory',variant='';
- if(p==='squat'){family='squat';if(/front|goblet|zercher/.test(name))variant='front';}
- else if(p==='lunge')family='lunge';
- else if(['hinge','olympic_pull','back_extension'].includes(p))family='hinge';
- else if(p==='hip_extension')family='hip_thrust';
- else if(['horizontal_press','dip_press'].includes(p))family='horizontal_press';
- else if(p==='incline_press')family='incline_press';
- else if(p==='vertical_press')family='vertical_press';
- else if(['horizontal_pull','rear_delt','upright_row'].includes(p))family='row';
- else if(['vertical_pull','pullover','shoulder_extension'].includes(p))family='vertical_pull';
- else if(p==='chest_fly')family='chest_fly';
- else if(['lateral_raise','front_raise'].includes(p))family='lateral_raise';
- else if(p==='elbow_flexion')family='curl';
- else if(p==='elbow_extension')family='triceps';
- else if(p==='knee_extension')family='leg_extension';
- else if(p==='knee_flexion')family='leg_curl';
- else if(['calf_raise','dorsiflexion'].includes(p))family='calf';
- else if(['anti_extension','anti_rotation','spinal_flexion','hip_flexion_core','rotation','lateral_flexion'].includes(p))family='core';
- else if(p==='carry')family='carry';
- else if(['sled_push','sled_pull'].includes(p))family='sled';
- return {family,variant};
+ if(p==='squat')return /front|goblet|zercher/.test(name)?'front-squat':'squat';
+ if(p==='lunge')return 'bulgarian-split-squat';
+ if(p==='back_extension'||name.includes('back extension'))return 'back-extension';
+ if(['hinge','olympic_pull'].includes(p))return 'deadlift';
+ if(p==='hip_extension')return 'hip-thrust';
+ if(p==='horizontal_press'||p==='dip_press')return 'bench-press';
+ if(p==='incline_press')return 'incline-bench-press';
+ if(p==='vertical_press')return 'overhead-press';
+ if(['horizontal_pull','upright_row'].includes(p))return 'barbell-row';
+ if(p==='rear_delt')return 'rear-delt-fly';
+ if(['vertical_pull','pullover','shoulder_extension'].includes(p))return 'lat-pulldown';
+ if(p==='chest_fly')return 'cable-fly';
+ if(['lateral_raise','front_raise'].includes(p))return 'lateral-raise';
+ if(p==='elbow_flexion')return 'bicep-curl';
+ if(p==='elbow_extension')return 'tricep-pushdown';
+ if(p==='knee_extension')return 'leg-extension';
+ if(p==='knee_flexion')return 'seated-leg-curl';
+ if(['calf_raise','dorsiflexion'].includes(p))return 'standing-calf-raise';
+ if(p==='spinal_flexion')return 'crunch';
+ if(p==='anti_extension')return 'ab-wheel';
+ if(p==='hip_flexion_core')return 'captains-chair-knee-raise';
+ if(['anti_rotation','rotation','lateral_flexion'].includes(p))return 'cable-pallof-hold';
+ if(p==='carry')return 'farmer-carry';
+ if(p==='shrug')return 'shrug';
+ if(['wrist_extension','wrist_flexion','grip'].includes(p))return 'wrist-curl';
+ if(['hip_abduction','hip_adduction'].includes(p))return 'hip-abduction-machine';
+ return 'cable-pallof-hold';
 }
-function swoleCatHead(cx,cy,scale=1){
- const s=Number(scale)||1;
- const left=cx-4*s,right=cx+4*s,top=cy-3*s,bottom=cy+3.3*s;
- return '<g>'+
-  '<path class="cat-fill" d="M'+left+','+top+' L'+(cx-3.2*s)+','+(cy-7*s)+' L'+(cx-.8*s)+','+(cy-4.9*s)+' Q'+cx+','+(cy-5.35*s)+' '+(cx+.8*s)+','+(cy-4.9*s)+' L'+(cx+3.2*s)+','+(cy-7*s)+' L'+right+','+top+' Q'+(cx+4.5*s)+','+(cy+2*s)+' '+cx+','+bottom+' Q'+(cx-4.5*s)+','+(cy+2*s)+' '+left+','+top+' Z"/>'+
-  '<circle class="cat-face" cx="'+(cx-1.55*s)+'" cy="'+(cy-.8*s)+'" r="'+(.62*s)+'"/>'+
-  '<circle class="cat-face" cx="'+(cx+1.55*s)+'" cy="'+(cy-.8*s)+'" r="'+(.62*s)+'"/>'+
-  '<circle class="cat-face" cx="'+cx+'" cy="'+(cy+.65*s)+'" r="'+(.48*s)+'"/>'+
- '</g>';
-}
-function swoleCatTorso(cx,cy,w,h,rotate=0){
- return '<rect class="cat-fill" x="'+(cx-w/2)+'" y="'+(cy-h/2)+'" width="'+w+'" height="'+h+'" rx="'+Math.min(w,h)*.42+'" transform="rotate('+rotate+' '+cx+' '+cy+')"/>';
-}
-function swoleCatTail(path){return '<path class="cat-stroke" style="stroke-width:2.1" d="'+path+'"/>'}
-function swoleCatEquipmentBadge(eq){
- const x=27.5,y=28,w=12,h=10,cx=33.5,cy=33;
- let mark='';
- if(eq==='barbell'||eq==='smith machine')mark='<path class="equipment-mark" d="M29.5 33 H37.5 M30.8 30.7 V35.3 M36.2 30.7 V35.3"/>';
- else if(eq==='dumbbell')mark='<path class="equipment-mark" d="M30.5 33 H36.5 M30.5 31.4 V34.6 M36.5 31.4 V34.6 M29.5 32 V34 M37.5 32 V34"/>';
- else if(eq==='cable')mark='<circle class="equipment-mark" cx="31" cy="31.5" r="1.7"/><path class="equipment-mark" d="M32.2 32.7 L36.5 36"/>';
- else if(eq==='machine')mark='<path class="equipment-mark" d="M30 36 V30 H37 V36 M30 32 H37"/>';
- else if(eq==='bodyweight')mark='<path class="equipment-mark" d="M30.5 35 Q33.5 29 36.5 35 M31.2 31.3 l-1.2-1.5 M35.8 31.3 l1.2-1.5"/>';
- else if(eq==='kettlebell')mark='<path class="equipment-mark" d="M31 32 Q33.5 29.5 36 32 M31.5 32 V35.7 H35.5 V32"/>';
- else if(eq==='trap bar')mark='<path class="equipment-mark" d="M30 33 L31.8 30.5 H35.2 L37 33 L35.2 35.5 H31.8 Z"/>';
- else if(eq==='landmine')mark='<path class="equipment-mark" d="M30 36 L36.5 30.5 M29.5 36.3 h2 M36.5 29.5 v2"/>';
- else if(eq==='sled')mark='<path class="equipment-mark" d="M31 30 V35 H37 M31 32.5 H36"/>';
- else if(eq==='plate')mark='<circle class="equipment-mark" cx="'+cx+'" cy="'+cy+'" r="3"/><circle class="equipment-mark-fill" cx="'+cx+'" cy="'+cy+'" r=".8"/>';
- else mark='<circle class="equipment-mark-fill" cx="'+cx+'" cy="'+cy+'" r="2.2"/>';
- return '<g><rect class="equipment-badge" x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="3"/>'+mark+'</g>';
-}
-function swoleCatFamilyArt(family,variant=''){
- switch(family){
-  case 'squat':
-   return swoleCatHead(19.5,9.8,.9)+swoleCatTorso(20,20,7.5,11,-4)+
-    '<path class="cat-stroke" d="M17.5 18 L12.5 19.5 M22.5 18 L28 18.5 M18 25 L12.2 31.5 L9.5 36 M22 25 L28.5 31 L32.5 35.5"/>'+
-    (variant==='front'?'<path class="accent" d="M10 16.2 H30 M15 16.2 L18 20 M25 16.2 L22 20"/>':'<path class="accent" d="M8.5 13.2 H31.5 M11 10.7 V15.7 M29 10.7 V15.7"/>')+
-    swoleCatTail('M23 23 Q30 22 30 17');
-  case 'lunge':
-   return swoleCatHead(19,9.5,.9)+swoleCatTorso(19.5,19.5,7.5,11,-2)+
-    '<path class="cat-stroke" d="M17 18 L12 21 M22 18 L27.5 21 M18.5 25 L12 30.5 L6.8 30.5 M21.5 25 L28 31 L31.5 37"/>'+
-    '<path class="accent" d="M12 22.5 V28 M27.5 22.5 V28"/>'+swoleCatTail('M23 22 Q29 23 30 18');
-  case 'hinge':
-   return swoleCatHead(14,10.5,.88)+swoleCatTorso(21,20.5,8,12,48)+
-    '<path class="cat-stroke" d="M19 19 L27.5 25.5 M22 23 L31 28 M24.5 25.5 L18 32 M25.5 26 L31 35"/>'+
-    '<path class="accent" d="M8 31 H35 M10.5 28.5 V33.5 M32.5 28.5 V33.5"/>'+swoleCatTail('M17 18 Q10 20 9 25');
-  case 'hip_thrust':
-   return '<path class="structure" d="M4.5 29 H14 M6 29 V36"/>'+swoleCatHead(10,23,.84)+
-    swoleCatTorso(21,23,15,7,-12)+'<path class="cat-stroke" d="M18 24 L17 31 M26 24 L32 28 L35 35 M24 22 L29 18"/>'+
-    '<path class="accent" d="M18 18.5 H31 M20 16 V21 M29 16 V21"/>'+swoleCatTail('M14 25 Q9 29 7 26');
-  case 'horizontal_press':
-   return '<path class="structure" d="M5 29 H31 M8 29 V36 M28 29 V36"/>'+swoleCatHead(9.5,23,.82)+
-    swoleCatTorso(20,23.5,16,7,0)+'<path class="cat-stroke" d="M17 22 L17 14 M24 22 L24 14 M26 25 L32 31"/>'+
-    '<path class="accent" d="M10 11.5 H31 M12.5 9 V14 M28.5 9 V14"/>'+swoleCatTail('M13 26 Q8 31 5 27');
-  case 'incline_press':
-   return '<path class="structure" d="M7 31 L27 22 M9 30 L7 36 M27 22 L32 34"/>'+swoleCatHead(12,20,.82)+
-    swoleCatTorso(21,22.5,15,7,24)+'<path class="cat-stroke" d="M18 20 L17 12 M24 20 L25 12 M26 25 L32 31"/>'+
-    '<path class="accent" d="M11 9.5 H31 M13 7.5 V11.5 M29 7.5 V11.5"/>'+swoleCatTail('M14 24 Q9 29 7 26');
-  case 'vertical_press':
-   return swoleCatHead(20,11,.88)+swoleCatTorso(20,22,8,12,0)+
-    '<path class="cat-stroke" d="M17.5 19 L13.5 11.5 M22.5 19 L26.5 11.5 M18.5 28 L15 36 M21.5 28 L25 36"/>'+
-    '<path class="accent" d="M10 8 H30 M12.5 5.5 V10.5 M27.5 5.5 V10.5"/>'+swoleCatTail('M24 22 Q30 21 30 16');
-  case 'row':
-   return swoleCatHead(14.5,10.5,.86)+swoleCatTorso(21,20.5,8,12,42)+
-    '<path class="cat-stroke" d="M19 19 L28 21.5 M27.5 21.5 L31 17.5 M24 25 L18 32 M25 25 L31 35"/>'+
-    '<path class="accent" d="M28.5 17.5 H35 M34.5 14.5 V20.5"/>'+swoleCatTail('M18 18 Q11 20 10 25');
-  case 'vertical_pull':
-   return '<path class="accent" d="M7 7 H34"/>'+swoleCatHead(20.5,15,.86)+swoleCatTorso(20.5,25,8,11,0)+
-    '<path class="cat-stroke" d="M17.8 21 L13 9 M23.2 21 L28 9 M19 30 L16 37 M22 30 L25 37"/>'+swoleCatTail('M24 25 Q30 24 30 19');
-  case 'chest_fly':
-   return '<path class="structure" d="M6 30 H31 M8 30 V36 M29 30 V36"/>'+swoleCatHead(10,24,.82)+swoleCatTorso(20,24,15,7,0)+
-    '<path class="cat-stroke" d="M17 22 L8 16 M23 22 L32 16 M26 26 L32 32"/>'+
-    '<circle class="accent-fill" cx="7" cy="15.5" r="2"/><circle class="accent-fill" cx="33" cy="15.5" r="2"/>'+swoleCatTail('M13 27 Q8 31 5 28');
-  case 'lateral_raise':
-   return swoleCatHead(20,11,.88)+swoleCatTorso(20,22,8,12,0)+
-    '<path class="cat-stroke" d="M17 20 L8 18 M23 20 L32 18 M18.5 28 L15 36 M21.5 28 L25 36"/>'+
-    '<circle class="accent-fill" cx="7" cy="18" r="2"/><circle class="accent-fill" cx="33" cy="18" r="2"/>'+swoleCatTail('M24 23 Q30 22 30 17');
-  case 'curl':
-   return swoleCatHead(20,10.5,.88)+swoleCatTorso(20,21.5,8,12,0)+
-    '<path class="cat-stroke" d="M17 19 L13 24 L16 27 M23 19 L27 24 L24 27 M18.5 28 L15 36 M21.5 28 L25 36"/>'+
-    '<path class="accent" d="M13 27 H17 M12.5 25.5 V28.5 M17.5 25.5 V28.5 M23 27 H27 M22.5 25.5 V28.5 M27.5 25.5 V28.5"/>'+swoleCatTail('M24 22 Q30 21 30 16');
-  case 'triceps':
-   return swoleCatHead(20,11,.88)+swoleCatTorso(20,22,8,12,0)+
-    '<path class="cat-stroke" d="M18 19 L17 12 L20 8 M22 19 L23 12 L20 8 M18.5 28 L15 36 M21.5 28 L25 36"/>'+
-    '<circle class="accent-fill" cx="20" cy="6.5" r="2.2"/>'+swoleCatTail('M24 23 Q30 22 30 17');
-  case 'leg_extension':
-   return '<path class="structure" d="M9 26 H24 M10 26 V36 M24 26 V35"/>'+swoleCatHead(15,12,.85)+swoleCatTorso(16,21,7.5,11,0)+
-    '<path class="cat-stroke" d="M14 19 L22 21 M16 26 L25 28 L34 27 M16 26 L12 34"/><circle class="accent-fill" cx="35" cy="27" r="2.3"/>'+swoleCatTail('M12 22 Q7 24 8 29');
-  case 'leg_curl':
-   return '<path class="structure" d="M6 28 H28 M8 28 V35 M27 28 V35"/>'+swoleCatHead(9,22,.8)+swoleCatTorso(19,23,15,7,0)+
-    '<path class="cat-stroke" d="M24 24 L31 27 L30 34 M15 24 L12 31"/><circle class="accent-fill" cx="30" cy="35" r="2.3"/>'+swoleCatTail('M12 25 Q7 30 5 27');
-  case 'calf':
-   return '<path class="structure" d="M11 36 H29"/>'+swoleCatHead(20,10.5,.88)+swoleCatTorso(20,21.5,8,12,0)+
-    '<path class="cat-stroke" d="M17 19 L13 23 M23 19 L27 23 M18.5 28 L16 34 L13 35 M21.5 28 L25 34 L28 34"/>'+
-    '<path class="accent" d="M12 34 Q16 31 20 34 M21 34 Q25 31 29 34"/>'+swoleCatTail('M24 22 Q30 21 30 16');
-  case 'core':
-   return swoleCatHead(9.5,23,.8)+swoleCatTorso(20,24,15,7,4)+
-    '<path class="cat-stroke" d="M15 25 L13 32 M22 25 L22 33 M27 25 L34 29"/><path class="accent" d="M5 35 H37"/>'+swoleCatTail('M13 26 Q8 31 5 27');
-  case 'carry':
-   return swoleCatHead(20,10.5,.88)+swoleCatTorso(20,21.5,8,12,0)+
-    '<path class="cat-stroke" d="M17 19 L13 27 M23 19 L27 27 M18.5 28 L15 36 M21.5 28 L25 36"/>'+
-    '<rect class="accent-fill" x="10.5" y="27" width="5" height="6" rx="1.5"/><rect class="accent-fill" x="24.5" y="27" width="5" height="6" rx="1.5"/>'+swoleCatTail('M24 22 Q30 21 30 16');
-  case 'sled':
-   return swoleCatHead(13,11,.82)+swoleCatTorso(20,20,7.5,11,42)+
-    '<path class="cat-stroke" d="M18 19 L29 21 M22 24 L17 31 M23 24 L28 35"/><path class="accent" d="M30 16 V33 H38 M30 22 H37 M28 21 H31"/>'+swoleCatTail('M16 19 Q10 21 9 26');
-  default:
-   return swoleCatHead(20,10.5,.88)+swoleCatTorso(20,21.5,8,12,0)+
-    '<path class="cat-stroke" d="M17 19 L13 24 M23 19 L27 24 M18.5 28 L15 36 M21.5 28 L25 36"/>'+
-    '<path class="accent" d="M8 31 H32 M10 28.5 V33.5 M30 28.5 V33.5"/>'+swoleCatTail('M24 22 Q30 21 30 16');
+function workoutArtUrl(slug){return WORKOUT_ART_BASE+encodeURIComponent(slug)+'/frame-1.svg'}
+function exerciseThumbFallback(img){
+ const fallback=img?.dataset?.fallback;
+ if(fallback&&img.src!==fallback){
+   img.src=fallback;
+   img.removeAttribute('data-fallback');
+   return;
  }
+ img?.parentElement?.classList.add('thumb-unavailable');
+}
+function swoleCatBadgeSvg(){
+ return '<svg class="thumb-cat-mark" viewBox="0 0 16 16" aria-hidden="true"><circle class="badge-bg" cx="8" cy="8" r="7"/><path class="badge-cat" d="M4.1 6.3 4.6 3l2.1 1.7A5 5 0 0 1 8 4.5a5 5 0 0 1 1.3.2L11.4 3l.5 3.3c.7.8 1.1 1.8 1.1 2.9 0 2.7-2.2 4-5 4s-5-1.3-5-4c0-1.1.4-2.1 1.1-2.9Z"/></svg>';
 }
 function catExerciseThumbnail(ex){
- const spec=swoleCatThumbnailSpec(ex);
- return '<svg class="swole-cat-thumb" viewBox="0 0 42 42" aria-hidden="true">'+
-   swoleCatFamilyArt(spec.family,spec.variant)+
-   swoleCatEquipmentBadge(ex?.equipment||'')+
-  '</svg>';
+ const exact=workoutArtExactSlug(ex),fallback=workoutArtFallbackSlug(ex);
+ const exactUrl=workoutArtUrl(exact),fallbackUrl=workoutArtUrl(fallback);
+ return '<span class="exercise-thumb-shell">'+
+   '<img class="exercise-thumb-art" loading="lazy" decoding="async" alt="" src="'+escAttr(exactUrl)+'" data-fallback="'+escAttr(fallbackUrl)+'" onerror="exerciseThumbFallback(this)">'+
+   swoleCatBadgeSvg()+
+  '</span>';
 }
 function equipmentIcon(e){return {'barbell':'🏋','dumbbell':'◐','machine':'⚙','cable':'⌁','bodyweight':'◆','smith machine':'▥','kettlebell':'●','landmine':'◒','trap bar':'⬡','sled':'▰','plate':'◉'}[e]||'●'}
 
@@ -3406,6 +3462,8 @@ function openSettings(){
  <div class="section-title"><h2>Backup</h2></div>
  <div class="notice"><b>Progression rule:</b> Double progression keeps the same weight while you add reps. Only after every programmed set reaches the top of its rep range will the app suggest exactly one configured weight increment.<br><br>Everything lives on this device. Export a backup occasionally so a lost phone or cleared browser storage doesn't wipe your history.</div>
  <div class="actions"><button class="btn secondary" onclick="exportBackup()">Export backup</button><label class="btn secondary" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json" onchange="importBackup(this.files[0])" style="display:none"></label></div>
+ <div class="section-title"><h2>Exercise illustrations</h2></div>
+ <div class="notice">Exercise thumbnail illustrations are provided by <a href="https://github.com/bryllim/workout-guide" target="_blank" rel="noopener">Workout Guide by Bryl Lim</a>, based in part on Everkinetic artwork, and are licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>. Swole Cat displays the artwork as small in-app thumbnails with a separate Swole Cat badge.</div>
  <div class="actions"><button class="btn danger" onclick="resetAll()">Erase all local data</button></div>
  `);
 }
