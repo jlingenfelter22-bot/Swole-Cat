@@ -509,8 +509,10 @@ function load(){
    if(merged.activeWorkout){
      merged.activeWorkout.status='active';
      merged.activeWorkout.lastSavedAt=merged.activeWorkout.lastSavedAt||merged.activeWorkout.startDate||new Date().toISOString();
+     merged.activeWorkout.structureDirty=!!merged.activeWorkout.structureDirty;
      (merged.activeWorkout.exercises||[]).forEach(e=>{
        e.supersetId=e.supersetId||null;
+       e.skipped=!!e.skipped;
        (e.sets||[]).forEach(set=>{set.type=set.type||'working'});
      });
    }
@@ -578,10 +580,22 @@ function exById(id){return allExercises().find(x=>x.id===id);}
 function fmtWeight(w){return `${Number(w||0)} ${state.profile.unit}`;}
 
 function activeWorkoutCounts(w=state.activeWorkout){
- if(!w)return {total:0,done:0,pct:0};
- const total=(w.exercises||[]).reduce((n,e)=>n+(e.sets||[]).length,0);
- const done=(w.exercises||[]).reduce((n,e)=>n+(e.sets||[]).filter(s=>s.done).length,0);
- return {total,done,pct:total?Math.round(done/total*100):0};
+ if(!w)return {total:0,done:0,pct:0,skipped:0,activeExercises:0};
+ const active=(w.exercises||[]).filter(e=>!e.skipped);
+ const total=active.reduce((n,e)=>n+(e.sets||[]).length,0);
+ const done=active.reduce((n,e)=>n+(e.sets||[]).filter(s=>s.done).length,0);
+ const skipped=(w.exercises||[]).filter(e=>e.skipped).length;
+ return {total,done,pct:total?Math.round(done/total*100):0,skipped,activeExercises:active.length};
+}
+function markWorkoutStructureDirty(){
+ if(!state.activeWorkout)return;
+ state.activeWorkout.structureDirty=true;
+ saveActiveWorkout();
+}
+function clearWorkoutStructureDirty(){
+ if(!state.activeWorkout)return;
+ state.activeWorkout.structureDirty=false;
+ saveActiveWorkout();
 }
 function saveActiveWorkout(){
  if(state.activeWorkout){
@@ -611,11 +625,11 @@ function startRoutineFresh(id){
  const r=state.routines.find(x=>x.id===id); if(!r)return;
  const now=new Date().toISOString();
  const active={
-   id:uid(),routineId:id,routineName:r.name,startDate:now,status:'active',lastSavedAt:now,
+   id:uid(),routineId:id,routineName:r.name,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,
    exercises:r.exercises.map((re,routineIndex)=>{
      const prev=previousExercise(re.exerciseId);
      const rec=buildRecommendation({...re,mode:re.mode==='range'?'double':re.mode},prev,re.exerciseId);
-     return {exerciseId:re.exerciseId,routineIndex,config:{trainingGoal:'general',resetPercent:7.5,...re,mode:re.mode==='range'?'double':re.mode},targetOverride:null,supersetId:re.supersetGroup||null,expanded:routineIndex===0,sets:Array.from({length:re.sets},(_,i)=>({
+     return {exerciseId:re.exerciseId,routineIndex,config:{trainingGoal:'general',resetPercent:7.5,...re,mode:re.mode==='range'?'double':re.mode},targetOverride:null,supersetId:re.supersetGroup||null,skipped:false,expanded:routineIndex===0,sets:Array.from({length:re.sets},(_,i)=>({
        weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??re.minReps,done:false,rir:'',type:'working'
      })),notes:''};
    })
