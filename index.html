@@ -1489,7 +1489,7 @@ function clearTargetOverride(ei){
 function applyLightSession(){
  const w=state.activeWorkout;if(!w)return;
  w.exercises.forEach(e=>{
-   const prev=previousExercise(e.exerciseId),base=liveSetTarget(e,0,prev);
+   const prev=previousExercise(e.exerciseId),base=liveSetTarget(e,firstWorkingSetIndex(e),prev);
    const wt=roundLoad(base.weight*.925);
    e.targetOverride={weight:wt,reps:e.config.minReps,reason:'Light session'};
    e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=wt;s.reps=e.config.minReps;}});
@@ -1679,9 +1679,11 @@ function setWorkoutSetType(ei,si,type){
  if(isProgressionSet(set)&&type!=='working'&&workingSetIndexes(e).length<=1){
    showToast('Keep at least one working set');renderWorkout();return;
  }
+ const oldType=setType(set);
  set.type=type;
  set.pr=type==='working'&&set.done?detectPR(e.exerciseId,set):'';
- saveActiveWorkout();renderWorkout();
+ if((oldType==='working')!==(type==='working'))markWorkoutStructureDirty();else saveActiveWorkout();
+ renderWorkout();
 }
 function addWorkoutSet(ei,type='working'){
  const e=state.activeWorkout?.exercises?.[ei];if(!e)return;
@@ -1706,7 +1708,8 @@ function addWorkoutSet(ei,type='working'){
  else if(type==='working'&&existingWorking.length)at=existingWorking.at(-1)+1;
  e.sets.splice(at,0,item);
  e.expanded=true;
- saveActiveWorkout();renderWorkout();haptic(10);
+ if(type==='working')markWorkoutStructureDirty();else saveActiveWorkout();
+ renderWorkout();haptic(10);
  showToast(`${setTypeLabel(type)} added`);
  setTimeout(()=>document.getElementById(`workoutExercise-${ei}`)?.scrollIntoView({behavior:'smooth',block:'start'}),60);
 }
@@ -1715,8 +1718,10 @@ function removeWorkoutSet(ei,si){
  if(e.sets.length<=1){showToast('Keep at least one set in the exercise');return}
  if(isProgressionSet(set)&&workingSetIndexes(e).length<=1){showToast('Keep at least one working set');return}
  const remove=()=>{
+   const wasWorking=isProgressionSet(set);
    e.sets.splice(si,1);
-   saveActiveWorkout();renderWorkout();showToast('Set removed');
+   if(wasWorking)markWorkoutStructureDirty();else saveActiveWorkout();
+   renderWorkout();showToast('Set removed');
  };
  if(set.done)confirmAction('Remove completed set?','This set is already marked complete. Removing it will delete it from this active workout.',remove);
  else remove();
@@ -1813,7 +1818,7 @@ function linkSuperset(ei,oi,permanent){
      w.exercises.forEach(e=>{if(e.supersetId===group)e.supersetId=persist});
    }
  }
- cleanupActiveSupersets();saveActiveWorkout();closeModal();renderWorkout();haptic([15,25,15]);
+ cleanupActiveSupersets();if(!permanent)markWorkoutStructureDirty();else saveActiveWorkout();closeModal();renderWorkout();haptic([15,25,15]);
  const m=supersetMeta(ei);showToast(m?`Superset ${m.label} linked`:'Superset linked');
 }
 function unlinkSuperset(ei,permanent){
@@ -1833,7 +1838,7 @@ function unlinkSuperset(ei,permanent){
      }
    }
  }
- cleanupActiveSupersets();saveActiveWorkout();closeModal();renderWorkout();showToast('Superset updated');
+ cleanupActiveSupersets();if(!permanent)markWorkoutStructureDirty();else saveActiveWorkout();closeModal();renderWorkout();showToast('Superset updated');
 }
 function workingSetIndexAtRound(e,round){
  const indexes=workingSetIndexes(e);return indexes[round]??-1;
@@ -2086,26 +2091,28 @@ function renderWorkout(){
  if(!w){document.getElementById('workoutArea').innerHTML='<div class="empty">No active workout.</div>';return;}
  ensureExerciseAccordion();
  const counts=workoutCounts(),pct=counts.total?Math.round(counts.done/counts.total*100):0,workoutCoach=workoutCoachSignal();
- const html=`<div class="workout-title"><div><div class="eyebrow"><span class="active-pulse"></span>Active workout</div><h1 style="font-size:1.7rem">${esc(w.routineName)}</h1><div class="mini">${w.exercises.length} exercises · ${counts.total} programmed sets</div><div class="autosave-note">✓ Changes save automatically on this device</div></div><button class="btn small danger" onclick="cancelWorkout()">Cancel</button></div>
+ const html=`<div class="workout-title"><div><div class="eyebrow"><span class="active-pulse"></span>Active workout</div><h1 style="font-size:1.7rem">${esc(w.routineName)}</h1><div class="mini">${counts.activeExercises} active exercise${counts.activeExercises===1?'':'s'}${counts.skipped?` · ${counts.skipped} skipped`:''} · ${counts.total} programmed sets</div><div class="autosave-note">✓ Changes save automatically on this device</div></div><button class="btn small danger" onclick="cancelWorkout()">Cancel</button></div>
  <div class="workout-overview">
-   <div class="row"><div><b>${counts.done} of ${counts.total} sets complete</b><div class="mini">Tap an exercise to open the full sets and coaching. Collapsed exercises stay compact.</div></div><span class="tag">${pct}%</span></div>
+   <div class="row"><div><b>${counts.done} of ${counts.total} sets complete</b><div class="mini">Tap an exercise to open the full sets and coaching. Use Manage Workout to reorder, skip, or remove movements.</div></div><span class="tag">${pct}%</span></div>
+   <div class="actions" style="margin-top:9px"><button class="btn small secondary" onclick="openWorkoutStructureEditor()">☰ Manage Workout</button></div>
+   ${w.structureDirty?`<div class="workout-structure-note"><b>Today's workout structure changed.</b> Your saved routine is still untouched. When you finish, Swole Cat will ask whether to keep these changes today-only or update the routine.</div>`:''}
    ${workoutCoach?`<div class="coachbox ${workoutCoach.level}"><div class="coach-title">Workout coach</div><div class="coach-text">${esc(workoutCoach.text)}</div>${workoutCoach.level==='reset'?`<div class="actions" style="margin-top:8px"><button class="btn small secondary" onclick="applyLightSession()">Use a 7.5% lighter session</button></div>`:''}</div>`:''}
    <div class="progress-bar"><div style="width:${pct}%"></div></div>
-   <div class="workout-stats"><div class="workout-stat"><b>${w.exercises.length}</b><span>Exercises</span></div><div class="workout-stat"><b>${counts.done}</b><span>Sets done</span></div><div class="workout-stat"><b>${workoutElapsed()}</b><span>Elapsed</span></div></div>
+   <div class="workout-stats"><div class="workout-stat"><b>${counts.activeExercises}</b><span>Active moves</span></div><div class="workout-stat"><b>${counts.done}</b><span>Sets done</span></div><div class="workout-stat"><b>${workoutElapsed()}</b><span>Elapsed</span></div></div>
  </div>
  ${w.exercises.map((e,ei)=>{
    const ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId),coach=coachSignal(e.exerciseId,e.config);
    const firstWorking=firstWorkingSetIndex(e),firstTarget=liveSetTarget(e,firstWorking,prev),plateText=plateLoadText(firstTarget.weight,ex),warmups=warmupGuide(firstTarget.weight,ex);
    const prog=exerciseSetProgress(e),status=exerciseStatus(e,ei),compactTarget=compactTargetText(e,ex,prev),superset=supersetMeta(ei);
-   return `<div id="workoutExercise-${ei}" class="card live-card exercise-block tone-${ei%4} ${e.expanded?'':'collapsed'} ${prog.complete?'complete-block':''} ${superset?'superset-member':''}">
+   return `<div id="workoutExercise-${ei}" class="card live-card exercise-block tone-${ei%4} ${e.expanded?'':'collapsed'} ${prog.complete?'complete-block':''} ${superset?'superset-member':''} ${e.skipped?'skipped-exercise':''}">
     <div class="live-head exercise-head-click" onclick="toggleExercisePanel(${ei})">
       <div class="row">
         <div class="exercise-identity">
-          <div class="exercise-number">${prog.complete?'✓':ei+1}</div>
+          <div class="exercise-number">${e.skipped?'–':prog.complete?'✓':ei+1}</div>
           <div>
             <div class="exercise-kicker">Exercise ${ei+1} of ${w.exercises.length}</div>
             <div class="exercise-title">${esc(ex?.name||'Exercise')}</div>
-            <div class="exercise-meta">${esc(ex?.muscle||'')} · ${workingSetIndexes(e).length} working sets · ${e.config.minReps}-${e.config.maxReps} reps</div>
+            <div class="exercise-meta">${e.skipped?'Skipped for today':`${esc(ex?.muscle||'')} · ${workingSetIndexes(e).length} working sets · ${e.config.minReps}-${e.config.maxReps} reps`}</div>
             ${superset?`<div style="margin-top:6px"><span class="superset-badge">⚡ Superset ${superset.label}</span></div>`:''}
           </div>
         </div>
@@ -2451,10 +2458,10 @@ function refreshWorkoutSubs(ei){const e=state.activeWorkout.exercises[ei];docume
 function swapWorkoutExercise(ei,newId,permanent){
  const e=state.activeWorkout.exercises[ei], old=e.exerciseId;
  if(permanent){const r=state.routines.find(x=>x.id===state.activeWorkout.routineId);if(r&&Number.isInteger(e.routineIndex)&&r.exercises[e.routineIndex])r.exercises[e.routineIndex].exerciseId=newId;}
- e.exerciseId=newId;e.targetOverride=null;
+ e.exerciseId=newId;e.targetOverride=null;e.skipped=false;
  const prev=previousExercise(newId),rec=buildRecommendation(e.config,prev,e.exerciseId);
  e.sets=Array.from({length:e.config.sets},(_,i)=>({weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??e.config.minReps,done:false,rir:'',type:'working'}));e.notes='';
- saveActiveWorkout();closeModal();renderWorkout();
+ if(!permanent)markWorkoutStructureDirty();else saveActiveWorkout();closeModal();renderWorkout();
 }
 function openRoutineSubstitute(routineId,index){
  const r=state.routines.find(x=>x.id===routineId);if(!r||!r.exercises[index])return;const cur=r.exercises[index];
@@ -2590,6 +2597,7 @@ function addExerciseToWorkout(exerciseId,permanent){
    config:{...cfg},
    targetOverride:null,
    supersetId:null,
+   skipped:false,
    expanded:true,
    sets:Array.from({length:cfg.sets},(_,i)=>({
      weight:rec.weights?.[i]??rec.weight??0,
@@ -2603,7 +2611,7 @@ function addExerciseToWorkout(exerciseId,permanent){
  w.exercises.forEach(e=>e.expanded=false);
  w.exercises.push(entry);
  const newIndex=w.exercises.length-1;
- saveActiveWorkout();haptic([20,30,20]);closeModal();renderWorkout();
+ if(!permanent)markWorkoutStructureDirty();else saveActiveWorkout();haptic([20,30,20]);closeModal();renderWorkout();
  showToast(permanent?`${ex.name} added + saved to routine`:`${ex.name} added for today`);
  scrollToWorkoutExercise(newIndex);
 }
