@@ -1631,11 +1631,11 @@ function advanceFromCompletedExercise(ei){
  if(next>=0){
    w.exercises.forEach((x,i)=>x.expanded=i===next);
    const ex=exById(w.exercises[next].exerciseId);
-   save();renderWorkout();
+   saveActiveWorkout();renderWorkout();
    showToast(`Up next: ${ex?.name||'next exercise'}`);
    scrollToWorkoutExercise(next);
  }else{
-   save();renderWorkout();
+   saveActiveWorkout();renderWorkout();
    showToast('All programmed sets complete');
  }
  return true;
@@ -1744,7 +1744,7 @@ function toggleSet(ei,si){
    set.pr=detectPR(e.exerciseId,set);
    haptic(set.pr?[35,40,70]:25);
    startRestTimer(e.config.restSeconds||120);
-   save();
+   saveActiveWorkout();
    if(advanceFromCompletedExercise(ei))return;
  } else{
    set.pr='';
