@@ -44,3 +44,116 @@ jobs:
           assert data["display"]=="standalone"
           print("PWA manifest OK")
           PY
+
+      - name: Install DOM smoke-test dependency
+        run: npm install --no-save --package-lock=false jsdom@24
+
+      - name: Smoke test active workouts, set types, progression, and supersets
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const assert = require('assert');
+          const {JSDOM} = require('jsdom');
+
+          const html = fs.readFileSync('index.html','utf8');
+          const dom = new JSDOM(html,{
+            runScripts:'dangerously',
+            url:'https://swole-cat.test/',
+            pretendToBeVisual:true,
+            beforeParse(window){
+              window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+              window.alert=()=>{};
+              window.confirm=()=>true;
+              window.scrollTo=()=>{};
+            }
+          });
+
+          const wait = ms => new Promise(r=>setTimeout(r,ms));
+          const read = () => JSON.parse(dom.window.localStorage.getItem('overload_v3'));
+          const run = async () => {
+            await wait(30);
+            const w=dom.window;
+            if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
+
+            w.installStarterPlan();
+            let state=read();
+            assert.equal(state.routines.length,3,'starter routines should install');
+            const rid=state.routines[0].id;
+
+            w.openRoutine(rid);
+            state=read();
+            assert(state.activeWorkout,'workout should become active');
+            const firstWorkoutId=state.activeWorkout.id;
+
+            w.addWorkoutSet(0,'warmup');
+            state=read();
+            assert.equal(state.activeWorkout.exercises[0].sets[0].type,'warmup','warm-up should insert before working sets');
+
+            w.addWorkoutSet(0,'drop');
+            state=read();
+            assert.equal(state.activeWorkout.exercises[0].sets.at(-1).type,'drop','drop set should append');
+
+            // Log a warm-up and drop set that must NOT affect next-session progression.
+            w.updateSet(0,0,'weight','50');w.updateSet(0,0,'reps','5');w.toggleSet(0,0);w.stopRestTimer();
+            state=read();
+            const workingIndexes=state.activeWorkout.exercises[0].sets.map((s,i)=>s.type==='working'?i:-1).filter(i=>i>=0);
+            assert.equal(workingIndexes.length,3,'routine should still have three working sets');
+            for(const i of workingIndexes){
+              w.updateSet(0,i,'weight','100');w.updateSet(0,i,'reps','8');w.toggleSet(0,i);w.stopRestTimer();
+            }
+            state=read();
+            const dropIndex=state.activeWorkout.exercises[0].sets.findIndex(s=>s.type==='drop');
+            w.updateSet(0,dropIndex,'weight','60');w.updateSet(0,dropIndex,'reps','20');w.toggleSet(0,dropIndex);w.stopRestTimer();
+
+            // Navigating away and reopening the same routine must resume the same draft.
+            w.go('exercises');
+            w.openRoutine(rid);
+            state=read();
+            assert.equal(state.activeWorkout.id,firstWorkoutId,'same routine should resume, not overwrite active workout');
+
+            w.stopRestTimer();
+            w.finishWorkout();
+            state=read();
+            assert.equal(state.sessions.length,1,'finished workout should enter history');
+            assert.equal(state.activeWorkout,null,'finished workout should clear active state');
+
+            // Next session should progress from 100x8 working sets, ignoring 50x5 warm-up and 60x20 drop.
+            w.openRoutine(rid);
+            state=read();
+            const next=state.activeWorkout.exercises[0];
+            assert(next.sets.every(s=>s.type==='working'),'fresh routine sets should be working sets');
+            assert(next.sets.slice(0,3).every(s=>Number(s.weight)===100),'special sets must not change next working weight');
+            assert(next.sets.slice(0,3).every(s=>Number(s.reps)===9),'double progression should recommend +1 rep on every working set');
+
+            // Live superset pairing can be saved back to the routine.
+            w.linkSuperset(0,1,true);
+            state=read();
+            const a=state.activeWorkout.exercises[0],b=state.activeWorkout.exercises[1];
+            assert(a.supersetId && a.supersetId===b.supersetId,'active exercises should share a superset id');
+            assert(state.routines[0].exercises[0].supersetGroup===state.routines[0].exercises[1].supersetGroup,'saved routine should retain superset');
+
+            // Completing A1 should rotate to B without losing the active workout.
+            w.toggleSet(0,0);
+            state=read();
+            assert.equal(state.activeWorkout.exercises[1].expanded,true,'superset should rotate to the paired exercise');
+            assert(state.activeWorkout,'superset rotation should preserve active workout');
+
+            // Add/move/remove special sets should persist.
+            w.addWorkoutSet(1,'failure');
+            state=read();
+            let failureIndex=state.activeWorkout.exercises[1].sets.findIndex(s=>s.type==='failure');
+            assert(failureIndex>=0,'failure set should be addable');
+            w.moveWorkoutSet(1,failureIndex,-1);
+            state=read();
+            failureIndex=state.activeWorkout.exercises[1].sets.findIndex(s=>s.type==='failure');
+            assert(failureIndex<state.activeWorkout.exercises[1].sets.length-1,'set should be reorderable');
+            w.removeWorkoutSet(1,failureIndex);
+            state=read();
+            assert(!state.activeWorkout.exercises[1].sets.some(s=>s.type==='failure'),'unfinished set should be removable');
+
+            w.stopRestTimer();
+            dom.window.close();
+            console.log('Swole Cat V23 smoke test PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
