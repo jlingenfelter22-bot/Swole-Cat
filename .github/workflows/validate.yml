@@ -662,38 +662,43 @@ jobs:
             const exercises=w.allExercises();
             assert(exercises.length>=300,'exercise library should still contain the full library');
 
-            // Every exercise gets a local inline SVG mascot, with no broken coordinates/text.
-            const families=new Set();
+            // Every exercise renders professional source artwork plus the small Swole Cat brand badge.
             for(const ex of exercises){
-              const spec=w.swoleCatThumbnailSpec(ex);
-              families.add(spec.family);
               const icon=w.catExerciseThumbnail(ex);
-              assert(icon.includes('class="swole-cat-thumb"'),ex.name+' should render a Swole Cat thumbnail');
-              assert(icon.includes('<svg')&&icon.includes('</svg>'),ex.name+' thumbnail should be valid SVG markup');
-              assert(icon.includes('equipment-badge'),ex.name+' thumbnail should include a compact equipment cue');
-              assert(!/undefined|NaN/.test(icon),ex.name+' thumbnail should not contain broken values');
+              assert(icon.includes('class="exercise-thumb-art"'),ex.name+' should render exercise artwork');
+              assert(icon.includes('raw.githubusercontent.com/bryllim/workout-guide'),ex.name+' should use Workout Guide artwork');
+              assert(icon.includes('class="thumb-cat-mark"'),ex.name+' should retain a subtle Swole Cat brand mark');
+              assert(icon.includes('data-fallback='),ex.name+' should have a movement-family fallback');
+              assert(!/undefined|NaN/.test(icon),ex.name+' thumbnail markup should not contain broken values');
+              assert(w.workoutArtFallbackSlug(ex),'every exercise should resolve a fallback art slug');
             }
-            assert(families.size<=20,'thumbnail system should stay within 20 master movement families');
-            assert(families.size>=15,'thumbnail system should retain enough movement-family variety');
 
-            // Similar exercises should still visually differentiate by variation/equipment.
-            const back=exercises.find(x=>x.name==='Back Squat');
-            const front=exercises.find(x=>x.name==='Front Squat');
-            const bb=exercises.find(x=>x.name==='Barbell Bench Press');
-            const db=exercises.find(x=>x.name==='Dumbbell Bench Press');
+            // High-visibility examples from the exercise list should map to sensible source art.
+            const byName=name=>exercises.find(x=>x.name===name);
+            assert.equal(w.workoutArtExactSlug(byName('45-Degree Back Extension')),'back-extension');
+            assert.equal(w.workoutArtExactSlug(byName('Ab Crunch Machine')),'crunch');
+            assert.equal(w.workoutArtExactSlug(byName('Alternating Dumbbell Curl')),'bicep-curl');
+            assert.equal(w.workoutArtExactSlug(byName('Anderson Squat')),'squat');
+
+            // Similar variations still get distinct artwork when the source library supports it.
+            const back=byName('Back Squat');
+            const front=byName('Front Squat');
+            const bb=byName('Barbell Bench Press');
+            const db=byName('Dumbbell Bench Press');
             assert(back&&front&&bb&&db,'known exercise variants should exist');
-            assert.notEqual(w.catExerciseThumbnail(back),w.catExerciseThumbnail(front),'front and back squat thumbnails should differ');
-            assert.notEqual(w.catExerciseThumbnail(bb),w.catExerciseThumbnail(db),'barbell and dumbbell bench thumbnails should differ');
+            assert.notEqual(w.workoutArtExactSlug(back),w.workoutArtExactSlug(front),'front and back squat artwork should differ');
+            assert.notEqual(w.workoutArtExactSlug(bb),w.workoutArtExactSlug(db),'barbell and dumbbell bench artwork should differ');
 
-            // Exercise list uses the thumbnails while preserving the existing 42px iconbox shell.
+            // Exercise list uses the artwork while preserving the original 42px thumbnail shell.
             w.go('exercises');
             const list=w.document.getElementById('exerciseList');
-            assert(list.querySelector('.iconbox .swole-cat-thumb'),'exercise list should render mascot SVGs inside iconbox');
+            assert(list.querySelector('.iconbox .exercise-thumb-art'),'exercise list should render professional artwork inside iconbox');
+            assert(list.querySelector('.iconbox .thumb-cat-mark'),'exercise list should show the small brand badge');
             const css=html.match(/\.iconbox\{[^}]+\}/)?.[0]||'';
             assert(css.includes('width:42px')&&css.includes('height:42px'),'thumbnail container size should remain 42x42');
 
             dom.window.close();
-            console.log('Swole Cat exercise thumbnail smoke test PASS');
+            console.log('Swole Cat professional exercise thumbnail smoke test PASS');
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
