@@ -1592,22 +1592,34 @@ function saveRoutineExerciseSettings(id,index){
  save();editRoutineDetails(id);
 }
 function openRoutineSwap(id,index){
- const r=state.routines.find(x=>x.id===id),re=r?.exercises[index]; if(!re)return;
- const current=exById(re.exerciseId),sugs=getSubstitutes(re.exerciseId);
+ const r=state.routines.find(x=>x.id===id),re=r?.exercises[index];if(!re)return;
+ const current=exById(re.exerciseId);
  openModal(`Substitute ${esc(current?.name||'exercise')}`,`
- <div class="notice">These are ranked by similar muscle group and movement pattern. Swapping the routine does not merge exercise histories.</div>
- <div class="card" style="margin-top:12px">
- ${sugs.map(x=>`<div class="list-item">
-   <div class="iconbox">${equipmentIcon(x.equipment)}</div>
-   <div class="grow"><div class="exercise-name">${esc(x.name)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div>
-   <button class="btn small" onclick="applyRoutineSwap('${id}',${index},'${x.id}')">Use</button>
- </div>`).join('')||'<div class="empty">No close substitutes found.</div>'}
- </div>
- <div class="actions"><button class="btn secondary" onclick="editRoutineDetails('${id}')">Back</button></div>`);
+   <div class="notice">Matches prioritize movement pattern and primary muscle, then your exercise preferences. Preferred and favorite movements rise, Avoid moves down, and Hidden exercises stay out of suggestions.</div>
+   <div style="margin:12px 0"><input id="routineSwapSearch" placeholder="Search visible exercises..." oninput="refreshRoutineSwap('${id}',${index})"></div>
+   <div id="routineSwapList" class="picker-result-list">${routineSwapRows(id,index)}</div>
+   <div class="actions"><button class="btn secondary" onclick="editRoutineDetails('${id}')">Back</button></div>
+ `);
+}
+function routineSwapRows(id,index,query=''){
+ const r=state.routines.find(x=>x.id===id),re=r?.exercises?.[index];if(!re)return '';
+ const cur=exById(re.exerciseId);
+ return recommendedSubs(re.exerciseId,query).slice(0,query?60:14).map(({x})=>`<div class="picker-result-card">
+   <div class="picker-result-main">
+     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button>
+     <div class="iconbox">${equipmentIcon(x.equipment)}</div>
+     <div class="picker-result-copy"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}<br>${esc(substitutionReason(cur,x))}</div></div>
+   </div>
+   <div class="picker-result-actions one"><button class="btn small" onclick="applyRoutineSwap('${id}',${index},'${x.id}')">Use</button></div>
+ </div>`).join('')||'<div class="empty">No matching visible exercises.</div>';
+}
+function refreshRoutineSwap(id,index){
+ const q=document.getElementById('routineSwapSearch')?.value||'';
+ const host=document.getElementById('routineSwapList');if(host)host.innerHTML=routineSwapRows(id,index,q);
 }
 function applyRoutineSwap(id,index,newExerciseId){
- const r=state.routines.find(x=>x.id===id); if(!r)return;
- r.exercises[index].exerciseId=newExerciseId; save(); editRoutineDetails(id);
+ const r=state.routines.find(x=>x.id===id);if(!r)return;
+ r.exercises[index].exerciseId=newExerciseId;save();editRoutineDetails(id);
 }
 function openRoutineExerciseAdder(id){
  routinePickerSelection=new Set(); routinePickerCategory='home';routinePickerMovement='';
@@ -1618,22 +1630,26 @@ function openRoutineExerciseAdder(id){
  renderRoutinePickerAdder(id);
 }
 function renderRoutinePickerAdder(id){
- const host=document.getElementById('routinePicker'); if(!host)return;
+ const host=document.getElementById('routinePicker');if(!host)return;
  const q=(document.getElementById('routineExSearch')?.value||'').trim();
- const rows=items=>items.map(x=>`<div class="list-item">
- <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button>
- <div class="iconbox">${equipmentIcon(x.equipment)}</div>
- <div class="grow"><div class="exercise-name">${esc(x.name)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div>
- <input type="checkbox" ${routinePickerSelection.has(x.id)?'checked':''} onchange="this.checked?routinePickerSelection.add('${x.id}'):routinePickerSelection.delete('${x.id}')" style="width:22px;height:22px"></div>`).join('');
- if(q){host.innerHTML=`<div class="card">${rows(allExercises().filter(x=>exerciseMatchesSearch(x,q)).slice(0,100))}</div>`;return;}
- const fav=allExercises().filter(x=>isFavorite(x.id)),recent=recentExerciseIds().map(exById).filter(Boolean);
+ const rows=items=>sortExerciseChoices(items.filter(x=>!isHiddenExercise(x.id))).map(x=>`<div class="list-item">
+   <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button>
+   <div class="iconbox">${equipmentIcon(x.equipment)}</div>
+   <div class="grow"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div>
+   <input type="checkbox" ${routinePickerSelection.has(x.id)?'checked':''} onchange="this.checked?routinePickerSelection.add('${x.id}'):routinePickerSelection.delete('${x.id}')" style="width:22px;height:22px">
+ </div>`).join('');
+ if(q){host.innerHTML=`<div class="card">${rows(visibleExercises().filter(x=>exerciseMatchesSearch(x,q)).slice(0,100))}</div>`;return}
+ const fav=visibleExercises().filter(x=>isFavorite(x.id));
+ const preferred=visibleExercises().filter(x=>exercisePreference(x.id)==='prefer'&&!isFavorite(x.id));
+ const recent=recentExerciseIds().map(exById).filter(x=>x&&!isHiddenExercise(x.id));
  host.innerHTML=`${fav.length?`<div class="picker-section">★ Favorites</div><div class="card">${rows(fav)}</div>`:''}
+ ${preferred.length?`<div class="picker-section">↑ Preferred</div><div class="card">${rows(preferred.slice(0,12))}</div>`:''}
  ${recent.length?`<div class="picker-section">↺ Recently used</div><div class="card">${rows(recent.slice(0,10))}</div>`:''}
  <div class="picker-section">Browse by muscle group</div><div class="category-grid">${muscleCategories().map(c=>`<button class="category-card" onclick="addRoutineCategoryView('${id}','${escAttr(c.name)}')"><b>${categoryIcon(c.name)} ${esc(c.name)}</b><span>${c.count} exercises</span></button>`).join('')}</div>`;
 }
 function addRoutineCategoryView(id,cat){
- const host=document.getElementById('routinePicker'),items=allExercises().filter(x=>x.muscle===cat);
- const rows=items.map(x=>`<div class="list-item"><button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button><div class="iconbox">${equipmentIcon(x.equipment)}</div><div class="grow"><div class="exercise-name">${esc(x.name)}</div><div class="mini">${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div><input type="checkbox" ${routinePickerSelection.has(x.id)?'checked':''} onchange="this.checked?routinePickerSelection.add('${x.id}'):routinePickerSelection.delete('${x.id}')" style="width:22px;height:22px"></div>`).join('');
+ const host=document.getElementById('routinePicker'),items=sortExerciseChoices(visibleExercises().filter(x=>x.muscle===cat));
+ const rows=items.map(x=>`<div class="list-item"><button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button><div class="iconbox">${equipmentIcon(x.equipment)}</div><div class="grow"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div><input type="checkbox" ${routinePickerSelection.has(x.id)?'checked':''} onchange="this.checked?routinePickerSelection.add('${x.id}'):routinePickerSelection.delete('${x.id}')" style="width:22px;height:22px"></div>`).join('');
  host.innerHTML=`<div class="breadcrumb"><button onclick="renderRoutinePickerAdder('${id}')">All categories</button><span>›</span><b>${esc(cat)}</b></div><div class="card">${rows}</div>`;
 }
 function appendSelectedRoutineExercises(id){
