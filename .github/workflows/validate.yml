@@ -663,12 +663,18 @@ jobs:
             assert(exercises.length>=300,'exercise library should still contain the full library');
 
             // Every exercise gets a local inline SVG mascot, with no broken coordinates/text.
+            const families=new Set();
             for(const ex of exercises){
+              const spec=w.swoleCatThumbnailSpec(ex);
+              families.add(spec.family);
               const icon=w.catExerciseThumbnail(ex);
               assert(icon.includes('class="swole-cat-thumb"'),ex.name+' should render a Swole Cat thumbnail');
               assert(icon.includes('<svg')&&icon.includes('</svg>'),ex.name+' thumbnail should be valid SVG markup');
+              assert(icon.includes('equipment-badge'),ex.name+' thumbnail should include a compact equipment cue');
               assert(!/undefined|NaN/.test(icon),ex.name+' thumbnail should not contain broken values');
             }
+            assert(families.size<=20,'thumbnail system should stay within 20 master movement families');
+            assert(families.size>=15,'thumbnail system should retain enough movement-family variety');
 
             // Similar exercises should still visually differentiate by variation/equipment.
             const back=exercises.find(x=>x.name==='Back Squat');
