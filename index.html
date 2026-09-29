@@ -143,6 +143,17 @@
   .superset-badge{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(244,114,182,.36);background:rgba(244,114,182,.09);color:#fbcfe8;border-radius:999px;padding:5px 8px;font-size:.66rem;font-weight:950;letter-spacing:.05em;white-space:nowrap}
   .superset-note{margin-top:9px;border:1px solid rgba(244,114,182,.24);background:rgba(244,114,182,.055);border-radius:11px;padding:8px 10px;color:#e5c9db;font-size:.76rem;line-height:1.35}
   .exercise-block.superset-member{box-shadow:inset 4px 0 0 var(--ex-accent),inset 0 3px 0 rgba(244,114,182,.55),0 10px 26px rgba(0,0,0,.16)}
+  .exercise-block.skipped-exercise{opacity:.72;border-style:dashed!important}
+  .exercise-block.skipped-exercise .live-head{background:linear-gradient(135deg,rgba(148,163,184,.07),transparent)}
+  .exercise-status.skipped{border-color:rgba(148,163,184,.35);background:rgba(148,163,184,.08);color:#cbd5e1}
+  .workout-structure-note{margin-top:10px;border:1px solid rgba(251,191,36,.3);background:rgba(251,191,36,.065);border-radius:12px;padding:10px 11px;color:#f5ddb0;font-size:.77rem;line-height:1.4}
+  .workout-manage-list{display:grid;gap:9px;margin-top:12px}
+  .workout-manage-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;background:#121925;border:1px solid #293449;border-radius:14px;padding:10px}
+  .workout-manage-row.skipped{opacity:.7;border-style:dashed}
+  .workout-order-controls{display:grid;gap:4px}
+  .workout-order-controls button{width:34px;height:29px;border:1px solid #344057;background:#1a2230;color:#e6ebf2;border-radius:8px;font-weight:950}
+  .workout-manage-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  @media(max-width:480px){.workout-manage-row{grid-template-columns:auto minmax(0,1fr)}.workout-manage-actions{grid-column:1/-1;justify-content:stretch}.workout-manage-actions .btn{flex:1}}
   .set-reference{font-size:.76rem;color:#9da8ba}
   .set-target{font-size:.76rem;font-weight:850;color:#c4b5fd;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.28);border-radius:999px;padding:5px 8px}
   .live-entry{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.9fr) 64px;gap:9px;align-items:end}
@@ -1440,7 +1451,7 @@ function coachSignal(exerciseId,config){
 }
 function workoutCoachSignal(){
  const w=state.activeWorkout;if(!w)return null;
- const signals=w.exercises.map(e=>coachSignal(e.exerciseId,e.config));
+ const signals=w.exercises.filter(e=>!e.skipped).map(e=>coachSignal(e.exerciseId,e.config));
  const reset=signals.filter(x=>x.canReset).length,stalls=signals.filter(x=>x.stalled).length;
  if(reset>=2)return {level:'reset',text:`${reset} exercises are showing repeated high-effort stalls. A lighter session may be worth considering, but it is optional.`};
  if(stalls>=3)return {level:'watch',text:`Several movements are flat right now. That can happen normally. Watch the next session before making large changes.`};
@@ -1734,13 +1745,13 @@ function workoutSupersetGroups(){
 function supersetMeta(ei){
  const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e?.supersetId)return null;
  const groups=workoutSupersetGroups(),idx=groups.indexOf(e.supersetId);
- const members=w.exercises.map((x,i)=>x.supersetId===e.supersetId?i:-1).filter(i=>i>=0);
+ const members=w.exercises.map((x,i)=>x.supersetId===e.supersetId&&!x.skipped?i:-1).filter(i=>i>=0);
  if(members.length<2)return null;
  return {id:e.supersetId,label:String.fromCharCode(65+Math.max(0,idx)),members};
 }
 function supersetNames(groupId){
  const w=state.activeWorkout;if(!w||!groupId)return '';
- return w.exercises.filter(e=>e.supersetId===groupId).map(e=>exById(e.exerciseId)?.name||'Exercise').join(' ↔ ');
+ return w.exercises.filter(e=>e.supersetId===groupId&&!e.skipped).map(e=>exById(e.exerciseId)?.name||'Exercise').join(' ↔ ');
 }
 function cleanupActiveSupersets(){
  const w=state.activeWorkout;if(!w)return;
@@ -1883,9 +1894,117 @@ function unlinkRoutineSuperset(routineId,index){
  re.supersetGroup=null;cleanupRoutineSupersets(r);save();editRoutineDetails(routineId);
 }
 
+function routineExerciseFromWorkout(e){
+ const cfg=e.config||{};
+ return {
+   exerciseId:e.exerciseId,
+   sets:Math.max(1,workingSetIndexes(e).length||Number(cfg.sets)||1),
+   minReps:Math.max(1,Number(cfg.minReps)||1),
+   maxReps:Math.max(Math.max(1,Number(cfg.minReps)||1),Number(cfg.maxReps)||12),
+   increment:Math.max(0,Number(cfg.increment)||0),
+   mode:cfg.mode==='range'?'double':(cfg.mode||'double'),
+   trainingGoal:cfg.trainingGoal||'general',
+   resetPercent:Number(cfg.resetPercent)||7.5,
+   restSeconds:Math.max(15,Number(cfg.restSeconds)||120),
+   supersetGroup:e.supersetId||null
+ };
+}
+function syncActiveWorkoutStructureToRoutine(){
+ const w=state.activeWorkout;if(!w)return false;
+ const r=state.routines.find(x=>x.id===w.routineId);if(!r)return false;
+ r.name=w.routineName||r.name;
+ r.exercises=w.exercises.map(routineExerciseFromWorkout);
+ cleanupRoutineSupersets(r);
+ w.exercises.forEach((e,i)=>{
+   e.routineIndex=i;
+   e.config={...e.config,sets:Math.max(1,workingSetIndexes(e).length||Number(e.config?.sets)||1)};
+   e.supersetId=r.exercises[i]?.supersetGroup||null;
+ });
+ w.structureDirty=false;
+ saveActiveWorkout();renderRoutines();renderHome();
+ return true;
+}
+function workoutStructureRowsHtml(){
+ const w=state.activeWorkout;if(!w)return '';
+ return w.exercises.map((e,ei)=>{
+   const ex=exById(e.exerciseId),p=exerciseSetProgress(e);
+   const done=(e.sets||[]).filter(s=>s.done).length;
+   return `<div class="workout-manage-row ${e.skipped?'skipped':''}">
+     <div class="workout-order-controls">
+       <button aria-label="Move exercise earlier" onclick="moveWorkoutExercise(${ei},-1)" ${ei===0?'disabled':''}>↑</button>
+       <button aria-label="Move exercise later" onclick="moveWorkoutExercise(${ei},1)" ${ei===w.exercises.length-1?'disabled':''}>↓</button>
+     </div>
+     <div>
+       <div class="exercise-name">${esc(ex?.name||'Exercise')}</div>
+       <div class="mini">${e.skipped?'Skipped for today':`${done} of ${e.sets.length} sets complete`}${e.supersetId?' · superset':''}</div>
+     </div>
+     <div class="workout-manage-actions">
+       <button class="btn small secondary" onclick="toggleSkipWorkoutExercise(${ei})">${e.skipped?'Unskip':'Skip'}</button>
+       <button class="btn small danger" onclick="removeWorkoutExercise(${ei})">Remove</button>
+     </div>
+   </div>`;
+ }).join('');
+}
+function openWorkoutStructureEditor(){
+ const w=state.activeWorkout;if(!w)return;
+ const r=state.routines.find(x=>x.id===w.routineId);
+ openModal('Manage active workout',`
+   <div class="notice">Reorder, skip, or remove exercises without ending the workout. Skip is always today-only. Reordering, removals, today-only additions, substitutions, supersets, and working-set count changes can be saved back to the routine only when you explicitly choose to.</div>
+   <div id="workoutStructureList" class="workout-manage-list">${workoutStructureRowsHtml()}</div>
+   <div class="actions">
+     ${r?`<button class="btn secondary" onclick="saveWorkoutStructureNow()">Save current structure to routine</button>`:''}
+     <button class="btn" onclick="closeModal()">Done</button>
+   </div>
+ `);
+}
+function refreshWorkoutStructureEditor(){
+ const host=document.getElementById('workoutStructureList');
+ if(host)host.innerHTML=workoutStructureRowsHtml();
+}
+function moveWorkoutExercise(ei,dir){
+ const w=state.activeWorkout;if(!w)return;
+ const ni=ei+dir;if(ni<0||ni>=w.exercises.length)return;
+ [w.exercises[ei],w.exercises[ni]]=[w.exercises[ni],w.exercises[ei]];
+ markWorkoutStructureDirty();renderWorkout();refreshWorkoutStructureEditor();haptic(8);
+}
+function toggleSkipWorkoutExercise(ei){
+ const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e)return;
+ e.skipped=!e.skipped;
+ if(e.skipped)e.expanded=false;
+ else{
+   w.exercises.forEach((x,i)=>x.expanded=i===ei);
+ }
+ saveActiveWorkout();renderWorkout();refreshWorkoutStructureEditor();
+ showToast(e.skipped?'Exercise skipped for today':'Exercise restored');
+}
+function removeWorkoutExercise(ei){
+ const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e)return;
+ const ex=exById(e.exerciseId),hasLogged=(e.sets||[]).some(s=>s.done);
+ const remove=()=>{
+   w.exercises.splice(ei,1);
+   cleanupActiveSupersets();
+   markWorkoutStructureDirty();
+   const next=w.exercises.findIndex(x=>!exerciseSetProgress(x).complete);
+   w.exercises.forEach((x,i)=>x.expanded=i===(next>=0?next:-1));
+   closeModal();renderWorkout();showToast(`${ex?.name||'Exercise'} removed for today`);
+ };
+ if(hasLogged)confirmAction('Remove logged exercise?',`Remove ${ex?.name||'this exercise'} from today's workout? Completed sets for it will also be removed from this active session.`,remove);
+ else confirmAction('Remove exercise for today?',`Remove ${ex?.name||'this exercise'} from today's workout? Your saved routine stays unchanged unless you later choose to update it.`,remove);
+}
+function saveWorkoutStructureNow(){
+ const w=state.activeWorkout;if(!w)return;
+ const r=state.routines.find(x=>x.id===w.routineId);if(!r){showToast('No saved routine to update');return}
+ confirmAction('Update saved routine?',`Replace ${r.name}'s exercise order and structure with the current workout layout? Skipped exercises remain in the routine.`,()=>{
+   if(syncActiveWorkoutStructureToRoutine()){
+     closeModal();renderWorkout();showToast('Routine updated from active workout');
+   }
+ });
+}
+
 function exerciseSetProgress(e){
- const done=e.sets.filter(s=>s.done).length;
- return {done,total:e.sets.length,pct:e.sets.length?Math.round(done/e.sets.length*100):0,complete:e.sets.length>0&&done===e.sets.length};
+ const done=e.sets.filter(s=>s.done).length,total=e.sets.length;
+ if(e.skipped)return {done,total,pct:100,complete:true,skipped:true};
+ return {done,total,pct:total?Math.round(done/total*100):0,complete:total>0&&done===total,skipped:false};
 }
 function ensureExerciseAccordion(){
  const w=state.activeWorkout;if(!w)return;
@@ -1906,6 +2025,7 @@ function ensureExerciseAccordion(){
 }
 function exerciseStatus(e,ei){
  const p=exerciseSetProgress(e);
+ if(p.skipped)return {label:'Skipped',cls:'skipped'};
  if(p.complete)return {label:'✓ Complete',cls:'complete'};
  if(e.expanded)return {label:p.done?`${p.done}/${p.total} sets · Current`:'Current',cls:'current'};
  if(p.done)return {label:`${p.done}/${p.total} sets`,cls:''};
@@ -1919,6 +2039,7 @@ function compactTargetText(e,ex,prev){
 }
 function toggleExercisePanel(ei){
  const w=state.activeWorkout;if(!w||!w.exercises[ei])return;
+ if(w.exercises[ei].skipped){showToast('This exercise is skipped for today. Use Manage Workout to restore it.');return}
  const opening=!w.exercises[ei].expanded;
  if(opening){
    w.exercises.forEach((e,i)=>e.expanded=i===ei);
