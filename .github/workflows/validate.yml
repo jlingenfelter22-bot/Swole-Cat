@@ -224,3 +224,96 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V25 active workout structure
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const assert = require('assert');
+          const {JSDOM} = require('jsdom');
+
+          const html = fs.readFileSync('index.html','utf8');
+          const dom = new JSDOM(html,{
+            runScripts:'dangerously',
+            url:'https://swole-cat.test/',
+            pretendToBeVisual:true,
+            beforeParse(window){
+              window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+              window.alert=()=>{};
+              window.confirm=()=>true;
+              window.scrollTo=()=>{};
+            }
+          });
+
+          const wait = ms => new Promise(r=>setTimeout(r,ms));
+          const read = () => JSON.parse(dom.window.localStorage.getItem('overload_v3'));
+
+          const run = async () => {
+            await wait(30);
+            const w=dom.window;
+            if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
+
+            w.installStarterPlan();
+            let state=read();
+            const rid=state.routines[0].id;
+            const originalOrder=state.routines[0].exercises.map(e=>e.exerciseId);
+            const originalCount=originalOrder.length;
+
+            // Today-only structural edits must not rewrite the saved routine.
+            w.openRoutine(rid);
+            w.moveWorkoutExercise(0,1);
+            w.toggleSkipWorkoutExercise(1);
+            state=read();
+            assert.equal(state.activeWorkout.structureDirty,true,'reordering should mark the workout structure changed');
+            assert.equal(state.activeWorkout.exercises[1].skipped,true,'exercise should be skippable for today');
+            const skippedId=state.activeWorkout.exercises[1].exerciseId;
+
+            const removedTodayId=state.activeWorkout.exercises[2].exerciseId;
+            w.removeWorkoutExercise(2);
+            w.runConfirmedAction();
+            state=read();
+            assert.equal(state.activeWorkout.exercises.length,originalCount-1,'exercise should be removable from today');
+            assert.deepEqual(state.routines[0].exercises.map(e=>e.exerciseId),originalOrder,'today-only edits must not rewrite routine');
+
+            w.finalizeWorkout(false);
+            state=read();
+            assert.equal(state.activeWorkout,null,'today-only workout should finish normally');
+            assert.deepEqual(state.routines[0].exercises.map(e=>e.exerciseId),originalOrder,'finishing today-only must preserve routine');
+            assert(state.sessions[0].exercises.some(e=>e.exerciseId===skippedId && e.skipped),'skipped status should be recorded in that session');
+            assert(!state.sessions[0].exercises.some(e=>e.exerciseId===removedTodayId),'removed today exercise should not enter session');
+            w.closeModal();
+
+            // A second workout can explicitly promote structural edits to the routine.
+            w.openRoutine(rid);
+            w.moveWorkoutExercise(0,1);
+            w.toggleSkipWorkoutExercise(1);
+            state=read();
+            const skippedSavedId=state.activeWorkout.exercises[1].exerciseId;
+
+            const beforeWorking=state.activeWorkout.exercises[0].sets.filter(s=>(s.type||'working')==='working').length;
+            w.addWorkoutSet(0,'working');
+            state=read();
+            const afterWorking=state.activeWorkout.exercises[0].sets.filter(s=>(s.type||'working')==='working').length;
+            assert.equal(afterWorking,beforeWorking+1,'working set should be addable');
+
+            const removedSavedId=state.activeWorkout.exercises[2].exerciseId;
+            w.removeWorkoutExercise(2);
+            w.runConfirmedAction();
+            state=read();
+            const activeOrder=state.activeWorkout.exercises.map(e=>e.exerciseId);
+            assert.equal(state.activeWorkout.structureDirty,true,'routine-update candidate should remain dirty until explicitly saved');
+
+            w.finalizeWorkout(true);
+            state=read();
+            assert.deepEqual(state.routines[0].exercises.map(e=>e.exerciseId),activeOrder,'Finish + Update Routine should save active order and removals');
+            assert(state.routines[0].exercises.some(e=>e.exerciseId===skippedSavedId),'skipped exercise must remain in saved routine');
+            assert(!state.routines[0].exercises.some(e=>e.exerciseId===removedSavedId),'removed exercise should leave routine when update is chosen');
+            assert.equal(state.routines[0].exercises[0].sets,afterWorking,'working-set count change should save to routine');
+            assert.equal(state.sessions.length,2,'both structure test workouts should be saved');
+
+            dom.window.close();
+            console.log('Swole Cat V25 structure smoke test PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
