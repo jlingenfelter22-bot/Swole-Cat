@@ -628,10 +628,10 @@ function clearFormGuideChoice(exerciseId){
 }
 function guideKey(s){
  return String(s||'').toLowerCase()
-  .replace(/push[\\s-]?ups?/g,'push up').replace(/pull[\\s-]?ups?/g,'pull up').replace(/chin[\\s-]?ups?/g,'chin up')
-  .replace(/\\bflyes\\b/g,'fly').replace(/\\bflies\\b/g,'fly').replace(/\\brows\\b/g,'row').replace(/\\bcurls\\b/g,'curl')
-  .replace(/\\braises\\b/g,'raise').replace(/\\bextensions\\b/g,'extension').replace(/\\bpresses\\b/g,'press')
-  .replace(/\\bsquats\\b/g,'squat').replace(/\\blunges\\b/g,'lunge').replace(/\\bone arm\\b/g,'single arm').replace(/\\bone leg\\b/g,'single leg')
+  .replace(/push[\s-]?ups?/g,'push up').replace(/pull[\s-]?ups?/g,'pull up').replace(/chin[\s-]?ups?/g,'chin up')
+  .replace(/\bflyes\b/g,'fly').replace(/\bflies\b/g,'fly').replace(/\brows\b/g,'row').replace(/\bcurls\b/g,'curl')
+  .replace(/\braises\b/g,'raise').replace(/\bextensions\b/g,'extension').replace(/\bpresses\b/g,'press')
+  .replace(/\bsquats\b/g,'squat').replace(/\blunges\b/g,'lunge').replace(/\bone arm\b/g,'single arm').replace(/\bone leg\b/g,'single leg')
   .replace(/[^a-z0-9]+/g,' ').trim();
 }
 function guideTokens(s){return guideKey(s).split(' ').filter(Boolean)}
@@ -649,7 +649,7 @@ function guideScore(ex,g){
  return score;
 }
 function prettyGuideTerm(s){
- return String(s||'').replaceAll('_',' ').replace(/\\b\\w/g,x=>x.toUpperCase());
+ return String(s||'').replaceAll('_',' ').replace(/\b\w/g,x=>x.toUpperCase());
 }
 async function loadRepdbGuides(){
  if(repdbGuideData)return repdbGuideData;
@@ -664,7 +664,7 @@ async function loadRepdbGuides(){
 function repdbImageUrl(path){
  if(!path)return '';
  if(/^https?:/i.test(path))return path;
- return REPDB_ASSET_BASE+String(path).replace(/^\\/+/, '');
+ return REPDB_ASSET_BASE+String(path).replace(/^\/+/, '');
 }
 function exactRepdbGuide(ex,data){
  const key=guideKey(ex?.name||'');
