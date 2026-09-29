@@ -140,6 +140,9 @@
   .set-add-btn.warmup{border-color:rgba(56,189,248,.3);color:#bae6fd}
   .set-add-btn.drop{border-color:rgba(245,158,11,.3);color:#fde68a}
   .set-add-btn.failure{border-color:rgba(248,113,113,.3);color:#fecaca}
+  .superset-badge{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(244,114,182,.36);background:rgba(244,114,182,.09);color:#fbcfe8;border-radius:999px;padding:5px 8px;font-size:.66rem;font-weight:950;letter-spacing:.05em;white-space:nowrap}
+  .superset-note{margin-top:9px;border:1px solid rgba(244,114,182,.24);background:rgba(244,114,182,.055);border-radius:11px;padding:8px 10px;color:#e5c9db;font-size:.76rem;line-height:1.35}
+  .exercise-block.superset-member{box-shadow:inset 4px 0 0 var(--ex-accent),inset 0 3px 0 rgba(244,114,182,.55),0 10px 26px rgba(0,0,0,.16)}
   .set-reference{font-size:.76rem;color:#9da8ba}
   .set-target{font-size:.76rem;font-weight:850;color:#c4b5fd;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.28);border-radius:999px;padding:5px 8px}
   .live-entry{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.9fr) 64px;gap:9px;align-items:end}
@@ -1166,6 +1169,7 @@ function routineEditorHtml(r){
           <span class="tag">+${re.increment} ${state.profile.unit}</span>
           <span class="tag">${(re.mode==='range'||re.mode==='double')?'Double progression · +1/set':re.mode==='total'?'Beat total reps':'Manual'}</span>
           <span class="tag">${goalLabel(re.trainingGoal||'general')}</span>
+          ${routineSupersetMeta(r,i)?`<span class="superset-badge">⚡ Superset ${routineSupersetMeta(r,i).label}</span>`:''}
         </div>
       </div>
       <span class="pickcount">#${i+1}</span>
@@ -1173,6 +1177,7 @@ function routineEditorHtml(r){
     <div class="routine-tools">
       <button class="btn small secondary" onclick="editRoutineExerciseSettings('${r.id}',${i})">⚙ Progression</button>
       <button class="btn small secondary" onclick="openRoutineSwap('${r.id}',${i})">⇄ Substitute</button>
+      <button class="btn small secondary" onclick="openRoutineSupersetPicker('${r.id}',${i})">⚡ Superset</button>
       <button class="btn small secondary" onclick="duplicateRoutineExercise('${r.id}',${i})">Duplicate</button>
       <button class="btn small danger" onclick="removeRoutineExercise('${r.id}',${i})">Remove</button>
     </div>
@@ -1191,14 +1196,14 @@ function moveRoutineExercise(id,index,dir){
 }
 function duplicateRoutineExercise(id,index){
  const r=state.routines.find(x=>x.id===id); if(!r)return;
- const copy=JSON.parse(JSON.stringify(r.exercises[index]));
+ const copy=JSON.parse(JSON.stringify(r.exercises[index]));copy.supersetGroup=null;
  r.exercises.splice(index+1,0,copy); save();refreshRoutineEditor(id);
 }
 function removeRoutineExercise(id,index){
  const r=state.routines.find(x=>x.id===id); if(!r)return;
  const ex=exById(r.exercises[index]?.exerciseId);
  if(!confirm(`Remove ${ex?.name||'this exercise'} from the routine? Your old workout history will stay saved.`))return;
- r.exercises.splice(index,1); save();refreshRoutineEditor(id);
+ r.exercises.splice(index,1);cleanupRoutineSupersets(r); save();refreshRoutineEditor(id);
 }
 function editRoutineExerciseSettings(id,index){
  const r=state.routines.find(x=>x.id===id),re=r?.exercises[index]; if(!re)return;
@@ -1684,6 +1689,162 @@ function addSuggestedWarmups(ei){
  saveActiveWorkout();closeModal();renderWorkout();showToast(`${suggested.length} warm-up sets added`);
 }
 
+function workoutSupersetGroups(){
+ const w=state.activeWorkout;if(!w)return [];
+ return [...new Set(w.exercises.map(e=>e.supersetId).filter(Boolean))];
+}
+function supersetMeta(ei){
+ const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e?.supersetId)return null;
+ const groups=workoutSupersetGroups(),idx=groups.indexOf(e.supersetId);
+ const members=w.exercises.map((x,i)=>x.supersetId===e.supersetId?i:-1).filter(i=>i>=0);
+ if(members.length<2)return null;
+ return {id:e.supersetId,label:String.fromCharCode(65+Math.max(0,idx)),members};
+}
+function supersetNames(groupId){
+ const w=state.activeWorkout;if(!w||!groupId)return '';
+ return w.exercises.filter(e=>e.supersetId===groupId).map(e=>exById(e.exerciseId)?.name||'Exercise').join(' ↔ ');
+}
+function cleanupActiveSupersets(){
+ const w=state.activeWorkout;if(!w)return;
+ const groups=[...new Set(w.exercises.map(e=>e.supersetId).filter(Boolean))];
+ groups.forEach(g=>{
+   const members=w.exercises.filter(e=>e.supersetId===g);
+   if(members.length<2)members.forEach(e=>e.supersetId=null);
+ });
+}
+function cleanupRoutineSupersets(r){
+ if(!r)return;
+ const groups=[...new Set(r.exercises.map(e=>e.supersetGroup).filter(Boolean))];
+ groups.forEach(g=>{
+   const members=r.exercises.filter(e=>e.supersetGroup===g);
+   if(members.length<2)members.forEach(e=>e.supersetGroup=null);
+ });
+}
+function routineSupersetMeta(r,index){
+ const re=r?.exercises?.[index];if(!re?.supersetGroup)return null;
+ const groups=[...new Set(r.exercises.map(e=>e.supersetGroup).filter(Boolean))],idx=groups.indexOf(re.supersetGroup);
+ const members=r.exercises.map((e,i)=>e.supersetGroup===re.supersetGroup?i:-1).filter(i=>i>=0);
+ return members.length>=2?{id:re.supersetGroup,label:String.fromCharCode(65+Math.max(0,idx)),members}:null;
+}
+function openSupersetPicker(ei){
+ const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e)return;
+ const cur=exById(e.exerciseId),meta=supersetMeta(ei);
+ const rows=w.exercises.map((other,oi)=>{
+   if(oi===ei)return '';
+   const ox=exById(other.exerciseId),same=meta&&other.supersetId===meta.id;
+   const canSave=Number.isInteger(e.routineIndex)&&Number.isInteger(other.routineIndex);
+   return `<div class="picker-result-card">
+    <div class="picker-result-main"><div class="iconbox">${equipmentIcon(ox?.equipment)}</div><div class="picker-result-copy"><div class="exercise-name">${esc(ox?.name||'Exercise')}</div><div class="mini">${esc(ox?.muscle||'')} · ${esc(patternLabel(ox?.pattern||''))}</div></div></div>
+    <div class="picker-result-actions">
+      <button class="btn small" ${same?'disabled':''} onclick="linkSuperset(${ei},${oi},false)">${same?'Already linked':'Pair Today'}</button>
+      <button class="btn small secondary" ${same||!canSave?'disabled':''} onclick="linkSuperset(${ei},${oi},true)">Pair + Save</button>
+    </div>
+   </div>`;
+ }).join('');
+ openModal(`Superset · ${esc(cur?.name||'Exercise')}`,`
+  <div class="notice">Linked exercises rotate set-to-set. Swole Cat skips the rest timer between exercises in the same round, then starts your rest after the round is complete. Only working sets participate in the rotation.</div>
+  ${meta?`<div class="superset-note"><b>Superset ${meta.label}</b><br>${esc(supersetNames(meta.id))}</div><div class="actions"><button class="btn danger" onclick="unlinkSuperset(${ei},false)">Remove for today</button>${Number.isInteger(e.routineIndex)?`<button class="btn secondary" onclick="unlinkSuperset(${ei},true)">Remove + routine</button>`:''}</div>`:''}
+  <div class="picker-section">Pair with</div><div class="picker-result-list">${rows||'<div class="empty">Add another exercise to this workout first.</div>'}</div>
+ `);
+}
+function linkSuperset(ei,oi,permanent){
+ const w=state.activeWorkout,a=w?.exercises?.[ei],b=w?.exercises?.[oi];if(!a||!b)return;
+ const oldA=a.supersetId,oldB=b.supersetId,group=oldA||oldB||('ss_'+uid());
+ const merge=new Set([oldA,oldB].filter(Boolean));
+ w.exercises.forEach(e=>{if(merge.has(e.supersetId))e.supersetId=group});
+ a.supersetId=group;b.supersetId=group;
+ if(permanent){
+   const r=state.routines.find(x=>x.id===w.routineId);
+   const mapped=w.exercises.filter(e=>e.supersetId===group&&Number.isInteger(e.routineIndex));
+   if(r&&mapped.length>=2){
+     const oldRoutineGroups=new Set(mapped.map(e=>r.exercises[e.routineIndex]?.supersetGroup).filter(Boolean));
+     const persist=[...oldRoutineGroups][0]||group;
+     r.exercises.forEach(re=>{if(oldRoutineGroups.has(re.supersetGroup))re.supersetGroup=persist});
+     mapped.forEach(e=>{if(r.exercises[e.routineIndex])r.exercises[e.routineIndex].supersetGroup=persist;e.supersetId=persist});
+     w.exercises.forEach(e=>{if(e.supersetId===group&&mapped.includes(e))e.supersetId=persist});
+   }
+ }
+ cleanupActiveSupersets();saveActiveWorkout();closeModal();renderWorkout();haptic([15,25,15]);
+ const m=supersetMeta(ei);showToast(m?`Superset ${m.label} linked`:'Superset linked');
+}
+function unlinkSuperset(ei,permanent){
+ const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e?.supersetId)return;
+ const old=e.supersetId;
+ e.supersetId=null;
+ if(permanent&&Number.isInteger(e.routineIndex)){
+   const r=state.routines.find(x=>x.id===w.routineId);
+   if(r?.exercises?.[e.routineIndex]){
+     const rg=r.exercises[e.routineIndex].supersetGroup;
+     r.exercises[e.routineIndex].supersetGroup=null;
+     cleanupRoutineSupersets(r);
+     if(rg){
+       w.exercises.forEach(x=>{
+         if(Number.isInteger(x.routineIndex)&&r.exercises[x.routineIndex]?.supersetGroup!==rg&&x.supersetId===rg)x.supersetId=null;
+       });
+     }
+   }
+ }
+ cleanupActiveSupersets();saveActiveWorkout();closeModal();renderWorkout();showToast('Superset updated');
+}
+function workingSetIndexAtRound(e,round){
+ const indexes=workingSetIndexes(e);return indexes[round]??-1;
+}
+function advanceSupersetAfterSet(ei,si){
+ const w=state.activeWorkout,e=w?.exercises?.[ei],meta=supersetMeta(ei);
+ if(!w||!e||!meta||!isProgressionSet(e.sets[si]))return false;
+ const round=workingSetOrdinal(e,si),members=meta.members,pos=members.indexOf(ei);
+ const ordered=members.slice(pos+1).concat(members.slice(0,pos));
+ for(const oi of ordered){
+   const oe=w.exercises[oi],targetSi=workingSetIndexAtRound(oe,round);
+   if(targetSi>=0&&!oe.sets[targetSi].done){
+     w.exercises.forEach((x,i)=>x.expanded=i===oi);
+     saveActiveWorkout();renderWorkout();
+     showToast(`Superset ${meta.label}: ${exById(oe.exerciseId)?.name||'next exercise'}`);
+     scrollToWorkoutExercise(oi);
+     return true;
+   }
+ }
+ // Everyone who has this round is finished. Rest once, then start the next round.
+ startRestTimer(e.config.restSeconds||120);
+ let next=members.find(oi=>workingSetIndexes(w.exercises[oi]).some(idx=>!w.exercises[oi].sets[idx].done));
+ if(next==null)next=members.find(oi=>!exerciseSetProgress(w.exercises[oi]).complete);
+ if(next!=null){
+   w.exercises.forEach((x,i)=>x.expanded=i===next);
+   saveActiveWorkout();renderWorkout();
+   showToast(`Superset ${meta.label} round complete · rest`);
+   scrollToWorkoutExercise(next);
+   return true;
+ }
+ // Whole group is complete. Advance outside the group.
+ if(advanceFromCompletedExercise(ei))return true;
+ saveActiveWorkout();renderWorkout();return true;
+}
+function openRoutineSupersetPicker(routineId,index){
+ const r=state.routines.find(x=>x.id===routineId),re=r?.exercises?.[index];if(!re)return;
+ const cur=exById(re.exerciseId),meta=routineSupersetMeta(r,index);
+ const rows=r.exercises.map((other,oi)=>{
+   if(oi===index)return '';
+   const ox=exById(other.exerciseId),same=meta&&other.supersetGroup===meta.id;
+   return `<div class="list-item"><div class="iconbox">${equipmentIcon(ox?.equipment)}</div><div class="grow"><div class="exercise-name">${esc(ox?.name||'Exercise')}</div><div class="mini">${esc(ox?.muscle||'')} · ${esc(patternLabel(ox?.pattern||''))}</div></div><button class="btn small" ${same?'disabled':''} onclick="linkRoutineSuperset('${routineId}',${index},${oi})">${same?'Linked':'Pair'}</button></div>`;
+ }).join('');
+ openModal(`Routine superset · ${esc(cur?.name||'Exercise')}`,`
+   <div class="notice">Saved supersets will be restored automatically every time you start this routine.</div>
+   ${meta?`<div class="superset-note"><b>Superset ${meta.label}</b><br>${meta.members.map(i=>esc(exById(r.exercises[i].exerciseId)?.name||'Exercise')).join(' ↔ ')}</div><div class="actions"><button class="btn danger" onclick="unlinkRoutineSuperset('${routineId}',${index})">Remove from superset</button></div>`:''}
+   <div class="card" style="margin-top:12px">${rows}</div>
+   <div class="actions"><button class="btn secondary" onclick="editRoutineDetails('${routineId}')">Back</button></div>
+ `);
+}
+function linkRoutineSuperset(routineId,index,otherIndex){
+ const r=state.routines.find(x=>x.id===routineId),a=r?.exercises?.[index],b=r?.exercises?.[otherIndex];if(!a||!b)return;
+ const oldA=a.supersetGroup,oldB=b.supersetGroup,group=oldA||oldB||('ss_'+uid()),merge=new Set([oldA,oldB].filter(Boolean));
+ r.exercises.forEach(re=>{if(merge.has(re.supersetGroup))re.supersetGroup=group});
+ a.supersetGroup=group;b.supersetGroup=group;cleanupRoutineSupersets(r);save();openRoutineSupersetPicker(routineId,index);refreshRoutineEditor(routineId);
+}
+function unlinkRoutineSuperset(routineId,index){
+ const r=state.routines.find(x=>x.id===routineId),re=r?.exercises?.[index];if(!re)return;
+ re.supersetGroup=null;cleanupRoutineSupersets(r);save();editRoutineDetails(routineId);
+}
+
 function exerciseSetProgress(e){
  const done=e.sets.filter(s=>s.done).length;
  return {done,total:e.sets.length,pct:e.sets.length?Math.round(done/e.sets.length*100):0,complete:e.sets.length>0&&done===e.sets.length};
@@ -1776,8 +1937,8 @@ function renderWorkout(){
  ${w.exercises.map((e,ei)=>{
    const ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId),coach=coachSignal(e.exerciseId,e.config);
    const firstWorking=firstWorkingSetIndex(e),firstTarget=liveSetTarget(e,firstWorking,prev),plateText=plateLoadText(firstTarget.weight,ex),warmups=warmupGuide(firstTarget.weight,ex);
-   const prog=exerciseSetProgress(e),status=exerciseStatus(e,ei),compactTarget=compactTargetText(e,ex,prev);
-   return `<div id="workoutExercise-${ei}" class="card live-card exercise-block tone-${ei%4} ${e.expanded?'':'collapsed'} ${prog.complete?'complete-block':''}">
+   const prog=exerciseSetProgress(e),status=exerciseStatus(e,ei),compactTarget=compactTargetText(e,ex,prev),superset=supersetMeta(ei);
+   return `<div id="workoutExercise-${ei}" class="card live-card exercise-block tone-${ei%4} ${e.expanded?'':'collapsed'} ${prog.complete?'complete-block':''} ${superset?'superset-member':''}">
     <div class="live-head exercise-head-click" onclick="toggleExercisePanel(${ei})">
       <div class="row">
         <div class="exercise-identity">
@@ -1785,7 +1946,8 @@ function renderWorkout(){
           <div>
             <div class="exercise-kicker">Exercise ${ei+1} of ${w.exercises.length}</div>
             <div class="exercise-title">${esc(ex?.name||'Exercise')}</div>
-            <div class="exercise-meta">${esc(ex?.muscle||'')} · ${e.config.sets} sets · ${e.config.minReps}-${e.config.maxReps} reps</div>
+            <div class="exercise-meta">${esc(ex?.muscle||'')} · ${workingSetIndexes(e).length} working sets · ${e.config.minReps}-${e.config.maxReps} reps</div>
+            ${superset?`<div style="margin-top:6px"><span class="superset-badge">⚡ Superset ${superset.label}</span></div>`:''}
           </div>
         </div>
         <div class="exercise-header-actions">
@@ -1798,7 +1960,8 @@ function renderWorkout(){
     <div class="exercise-expanded-content">
       <div class="targetbox"><div class="eyebrow">SESSION GOAL</div><div class="exercise-name" style="margin-top:5px">${esc(e.targetOverride?`${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`:rec.headline)}</div><div class="mini" style="margin-top:5px">${esc(e.targetOverride?`Session-only ${e.targetOverride.reason||'override'}. Routine progression is unchanged.`:rec.detail)}</div>${plateText?`<div class="plates">🏋 ${esc(plateText)}</div>`:''}${e.targetOverride?`<div class="override-note">Manual/session target active</div>`:''}</div>
       <div class="coachbox ${coach.level==='info'?'':coach.level}"><div class="coach-title">${esc(coach.title)}</div><div class="coach-text">${esc(coach.text)}</div>${coach.canReset&&!e.targetOverride?`<div class="actions" style="margin-top:8px"><button class="btn small secondary" onclick="applyCoachReset(${ei})">Apply ${coach.resetPercent}% reset for today</button></div>`:''}</div>
-      <div class="toolrow">${warmups.length?`<button class="toolchip" onclick="openWarmupGuide(${ei})">Warm-up guide</button>`:''}<button class="toolchip" onclick="openTargetOverride(${ei})">Override target</button><button class="toolchip" onclick="openWorkoutSubstitute(${ei})">Substitute</button><span class="toolchip">${e.config.restSeconds||120}s rest</span></div>
+      <div class="toolrow">${warmups.length?`<button class="toolchip" onclick="openWarmupGuide(${ei})">Warm-up guide</button>`:''}<button class="toolchip" onclick="openTargetOverride(${ei})">Override target</button><button class="toolchip" onclick="openWorkoutSubstitute(${ei})">Substitute</button><button class="toolchip" onclick="openSupersetPicker(${ei})">⚡ ${superset?`Superset ${superset.label}`:'Superset'}</button><span class="toolchip">${e.config.restSeconds||120}s rest</span></div>
+      ${superset?`<div class="superset-note"><b>Superset ${superset.label}</b> · ${esc(supersetNames(superset.id))}<br>Rotate through working sets, then rest after the round.</div>`:''}
     <div class="live-body">
      ${e.sets.map((s,si)=>{
        const type=setType(s),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev),ref=type==='working'?setReference(prev,wi):'Not used for progression',pt=plateLoadText(s.weight||target.weight,ex);
@@ -1880,8 +2043,9 @@ function toggleSet(ei,si){
  if(set.done){
    set.pr=isProgressionSet(set)?detectPR(e.exerciseId,set):'';
    haptic(set.pr?[35,40,70]:25);
-   startRestTimer(e.config.restSeconds||120);
    saveActiveWorkout();
+   if(isProgressionSet(set)&&advanceSupersetAfterSet(ei,si))return;
+   startRestTimer(e.config.restSeconds||120);
    if(advanceFromCompletedExercise(ei))return;
  } else{
    set.pr='';
@@ -2118,7 +2282,8 @@ function addExerciseToWorkout(exerciseId,permanent){
        mode:cfg.mode==='double'?'double':cfg.mode,
        trainingGoal:cfg.trainingGoal||'general',
        resetPercent:cfg.resetPercent||7.5,
-       restSeconds:cfg.restSeconds||120
+       restSeconds:cfg.restSeconds||120,
+       supersetGroup:null
      };
      routine.exercises.push(savedCfg);
      w.exercises.forEach((e,i)=>e.expanded=i===existingIndex);
