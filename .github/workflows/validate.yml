@@ -521,3 +521,114 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V28 progress dashboard
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const assert = require('assert');
+          const {JSDOM} = require('jsdom');
+
+          const html = fs.readFileSync('index.html','utf8');
+          const dom = new JSDOM(html,{
+            runScripts:'dangerously',
+            url:'https://swole-cat.test/',
+            pretendToBeVisual:true,
+            beforeParse(window){
+              window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+              window.alert=()=>{};
+              window.confirm=()=>true;
+              window.scrollTo=()=>{};
+              window.fetch=()=>Promise.reject(new Error('offline test'));
+            }
+          });
+
+          const wait = ms => new Promise(r=>setTimeout(r,ms));
+          const read = () => JSON.parse(dom.window.localStorage.getItem('overload_v3'));
+
+          const run = async () => {
+            await wait(30);
+            const w=dom.window;
+            if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
+
+            w.installStarterPlan();
+            let state=read();
+            const routine=state.routines.find(r=>r.name==='Full Body A');
+            const squat=w.allExercises().find(x=>x.name==='Back Squat');
+            assert(routine&&squat,'starter routine and squat should exist');
+
+            // Establish a baseline workout.
+            w.openRoutine(routine.id);
+            let active=read().activeWorkout;
+            const squatIndex=active.exercises.findIndex(e=>e.exerciseId===squat.id);
+            assert(squatIndex>=0,'Back Squat should be in workout');
+            w.updateSet(squatIndex,0,'weight','100');
+            w.updateSet(squatIndex,0,'reps','8');
+            w.toggleSet(squatIndex,0);
+            w.stopRestTimer();
+            w.finalizeWorkout(false);
+            w.closeModal();
+
+            // Beat it in a second session so records, PR feed, and recent strength changes populate.
+            w.openRoutine(routine.id);
+            active=read().activeWorkout;
+            const squatIndex2=active.exercises.findIndex(e=>e.exerciseId===squat.id);
+            w.updateSet(squatIndex2,0,'weight','105');
+            w.updateSet(squatIndex2,0,'reps','8');
+            w.toggleSet(squatIndex2,0);
+            w.stopRestTimer();
+            w.finalizeWorkout(false);
+            w.closeModal();
+
+            state=read();
+            assert.equal(state.sessions.length,2,'two workouts should be saved');
+
+            const records=w.lifetimeExerciseRecords();
+            const squatRecord=records.find(r=>r.id===squat.id);
+            assert(squatRecord,'Back Squat record should exist');
+            assert.equal(squatRecord.bestWeight,105,'record book should keep best working-set load');
+
+            const prs=w.recentPREvents(10);
+            assert(prs.some(p=>p.exerciseId===squat.id),'second session should produce a squat PR event');
+
+            const changes=w.recentStrengthChanges();
+            const squatChange=changes.find(x=>x.id===squat.id);
+            assert(squatChange&&squatChange.delta>0,'recent strength changes should show improvement');
+
+            const workload=w.muscleWorkloadComparison();
+            const quadWork=workload.find(x=>x.name==='Quads');
+            assert(quadWork&&quadWork.current>=2,'current-week workload should count working squat sets');
+
+            const today=w.localDateKey(new Date());
+            const cal=w.calendarMonthData(0);
+            const todayCell=cal.cells.find(x=>x&&x.key===today);
+            assert(todayCell&&todayCell.count===2,'calendar should show both workouts on today');
+
+            w.go('analytics');
+            const analytics=w.document.getElementById('analyticsArea').textContent;
+            for(const label of ['Training calendar','Lifetime records','Recent PRs','Muscle workload','8-week consistency','Recent strength changes']){
+              assert(analytics.includes(label),`progress dashboard should include ${label}`);
+            }
+
+            w.openProgressDay(today);
+            assert(w.document.getElementById('modalBody').textContent.includes('2 workouts logged'),'calendar day detail should show both workouts');
+            w.closeModal();
+
+            w.openAllRecords();
+            assert(w.document.getElementById('recordsList').textContent.includes('Back Squat'),'records browser should list Back Squat');
+            w.document.getElementById('recordsSearch').value='bench';
+            w.renderRecordsModal();
+            assert(!w.document.getElementById('recordsList').textContent.includes('Back Squat'),'records search should filter results');
+            w.closeModal();
+
+            w.changeAnalyticsMonth(-1);
+            assert.equal(w.calendarMonthData().month,w.monthAnchor(-1).getMonth(),'calendar should navigate to prior month');
+            w.resetAnalyticsMonth();
+            assert.equal(w.calendarMonthData().month,new Date().getMonth(),'calendar Today should return to current month');
+
+            dom.window.close();
+            console.log('Swole Cat V28 progress dashboard smoke test PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
