@@ -1411,12 +1411,12 @@ function newRoutine(id=null){
  renderRoutinePicker();
 }
 function routinePickerRows(items){
- return items.map(x=>`<div class="list-item">
+ return sortExerciseChoices(items.filter(x=>!isHiddenExercise(x.id))).map(x=>`<div class="list-item">
    <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
    <div class="iconbox">${equipmentIcon(x.equipment)}</div>
-   <div class="grow" onclick="toggleRoutineExercise('${x.id}')" style="cursor:pointer"><div class="exercise-name">${esc(x.name)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div>
+   <div class="grow" onclick="toggleRoutineExercise('${x.id}')" style="cursor:pointer"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div>
    <input type="checkbox" ${routinePickerSelection.has(x.id)?'checked':''} onchange="toggleRoutineExercise('${x.id}',this.checked)" style="width:22px;height:22px">
- </div>`).join('')||'<div class="empty">No exercises here yet.</div>';
+ </div>`).join('')||'<div class="empty">No visible exercises here yet.</div>';
 }
 function toggleRoutineExercise(id,forced){
  const add=forced===undefined?!routinePickerSelection.has(id):forced;
@@ -1430,20 +1430,22 @@ function renderRoutinePicker(){
  const host=document.getElementById('routinePicker');if(!host)return;
  const q=(document.getElementById('routineExSearch')?.value||'').trim();
  if(q){
-   host.innerHTML=`<div class="picker-section">Search results</div><div class="card">${routinePickerRows(allExercises().filter(x=>exerciseMatchesSearch(x,q)).slice(0,100))}</div>`;
+   host.innerHTML=`<div class="picker-section">Search results</div><div class="card">${routinePickerRows(visibleExercises().filter(x=>exerciseMatchesSearch(x,q)).slice(0,100))}</div>`;
    return;
  }
  if(routinePickerCategory==='home'){
-   const fav=allExercises().filter(x=>isFavorite(x.id));
-   const recent=recentExerciseIds().map(exById).filter(Boolean);
+   const fav=visibleExercises().filter(x=>isFavorite(x.id));
+   const preferred=visibleExercises().filter(x=>exercisePreference(x.id)==='prefer'&&!isFavorite(x.id));
+   const recent=recentExerciseIds().map(exById).filter(x=>x&&!isHiddenExercise(x.id));
    host.innerHTML=`
     ${fav.length?`<div class="picker-section">★ Favorites</div><div class="card">${routinePickerRows(fav)}</div>`:''}
+    ${preferred.length?`<div class="picker-section">↑ Preferred</div><div class="card">${routinePickerRows(preferred.slice(0,12))}</div>`:''}
     ${recent.length?`<div class="picker-section">↺ Recently used</div><div class="card">${routinePickerRows(recent.slice(0,10))}</div>`:''}
     <div class="picker-section">Browse by muscle group</div>
     <div class="category-grid">${muscleCategories().map(c=>`<button class="category-card" onclick="setRoutineCategory('${escAttr(c.name)}')"><b>${categoryIcon(c.name)} ${esc(c.name)}</b><span>${c.count} exercises</span></button>`).join('')}</div>`;
    return;
  }
- const inCat=allExercises().filter(x=>x.muscle===routinePickerCategory);
+ const inCat=visibleExercises().filter(x=>x.muscle===routinePickerCategory);
  const patterns=[...new Set(inCat.map(x=>x.pattern))].sort((a,b)=>patternLabel(a).localeCompare(patternLabel(b)));
  const filtered=routinePickerMovement?inCat.filter(x=>x.pattern===routinePickerMovement):inCat;
  host.innerHTML=`<div class="breadcrumb"><button onclick="setRoutineCategory('home')">All categories</button><span>›</span><b>${esc(routinePickerCategory)}</b></div>
@@ -2806,7 +2808,7 @@ function openAddWorkoutExercise(){
 function addPickerRows(items){
  const w=state.activeWorkout;
  const routine=state.routines.find(r=>r.id===w?.routineId);
- return items.map(x=>{
+ return sortExerciseChoices(items.filter(x=>!isHiddenExercise(x.id))).map(x=>{
    const inWorkout=!!w?.exercises.some(e=>e.exerciseId===x.id);
    const inRoutine=!!routine?.exercises.some(e=>e.exerciseId===x.id);
    const todayText=inWorkout?'Already in Workout':'+ Add Today';
@@ -2815,29 +2817,32 @@ function addPickerRows(items){
      <div class="picker-result-main">
        <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button>
        <div class="iconbox">${equipmentIcon(x.equipment)}</div>
-       <div class="picker-result-copy"><div class="exercise-name">${esc(x.name)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))}<br>${esc(x.equipment)}</div></div>
+       <div class="picker-result-copy"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))}<br>${esc(x.equipment)}</div></div>
      </div>
      <div class="picker-result-actions">
        <button class="btn small" ${inWorkout?'disabled':''} onclick="addExerciseToWorkout('${x.id}',false)">${todayText}</button>
        <button class="btn small secondary" ${inRoutine?'disabled':''} onclick="addExerciseToWorkout('${x.id}',true)">${routineText}</button>
      </div>
    </div>`;
- }).join('')||'<div class="empty">No exercises here yet.</div>';
+ }).join('')||'<div class="empty">No visible exercises here yet.</div>';
 }
 function setAddCategory(cat){addPickerCategory=cat;addPickerMovement='';document.getElementById('addExSearch').value='';renderAddExercisePicker()}
 function setAddMovement(p){addPickerMovement=p;renderAddExercisePicker()}
 function renderAddExercisePicker(){
  const host=document.getElementById('addExList');if(!host)return;
  const q=(document.getElementById('addExSearch')?.value||'').trim();
- if(q){host.innerHTML=`<div class="picker-section">Search results</div><div class="picker-result-list">${addPickerRows(allExercises().filter(x=>exerciseMatchesSearch(x,q)).slice(0,100))}</div>`;return;}
+ if(q){host.innerHTML=`<div class="picker-section">Search results</div><div class="picker-result-list">${addPickerRows(visibleExercises().filter(x=>exerciseMatchesSearch(x,q)).slice(0,100))}</div>`;return;}
  if(addPickerCategory==='home'){
-   const fav=allExercises().filter(x=>isFavorite(x.id)),recent=recentExerciseIds().map(exById).filter(Boolean);
+   const fav=visibleExercises().filter(x=>isFavorite(x.id));
+   const preferred=visibleExercises().filter(x=>exercisePreference(x.id)==='prefer'&&!isFavorite(x.id));
+   const recent=recentExerciseIds().map(exById).filter(x=>x&&!isHiddenExercise(x.id));
    host.innerHTML=`${fav.length?`<div class="picker-section">★ Favorites</div><div class="picker-result-list">${addPickerRows(fav)}</div>`:''}
+   ${preferred.length?`<div class="picker-section">↑ Preferred</div><div class="picker-result-list">${addPickerRows(preferred.slice(0,12))}</div>`:''}
    ${recent.length?`<div class="picker-section">↺ Recently used</div><div class="picker-result-list">${addPickerRows(recent.slice(0,10))}</div>`:''}
    <div class="picker-section">Browse by muscle group</div><div class="category-grid">${muscleCategories().map(c=>`<button class="category-card" onclick="setAddCategory('${escAttr(c.name)}')"><b>${categoryIcon(c.name)} ${esc(c.name)}</b><span>${c.count} exercises</span></button>`).join('')}</div>`;
    return;
  }
- const inCat=allExercises().filter(x=>x.muscle===addPickerCategory);
+ const inCat=visibleExercises().filter(x=>x.muscle===addPickerCategory);
  const patterns=[...new Set(inCat.map(x=>x.pattern))].sort((a,b)=>patternLabel(a).localeCompare(patternLabel(b)));
  const filtered=addPickerMovement?inCat.filter(x=>x.pattern===addPickerMovement):inCat;
  host.innerHTML=`<div class="breadcrumb"><button onclick="setAddCategory('home')">All categories</button><span>›</span><b>${esc(addPickerCategory)}</b></div>
