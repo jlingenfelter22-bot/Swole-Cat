@@ -1417,7 +1417,7 @@ function applyCoachReset(ei){
  if(!sig.canReset)return;
  e.targetOverride={weight:sig.resetWeight,reps:e.config.minReps,reason:`Coach reset ${sig.resetPercent}%`};
  e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=sig.resetWeight;s.reps=e.config.minReps;}});
- save();renderWorkout();
+ saveActiveWorkout();renderWorkout();
 }
 function openTargetOverride(ei){
  const e=state.activeWorkout.exercises[ei],prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
@@ -1433,13 +1433,13 @@ function saveTargetOverride(ei){
  const e=state.activeWorkout.exercises[ei],weight=Math.max(0,+document.getElementById('ovWeight').value||0),reps=Math.max(1,+document.getElementById('ovReps').value||1);
  e.targetOverride={weight:roundLoad(weight),reps:Math.round(reps),reason:'Manual override'};
  e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=e.targetOverride.weight;s.reps=e.targetOverride.reps;}});
- save();closeModal();renderWorkout();
+ saveActiveWorkout();closeModal();renderWorkout();
 }
 function clearTargetOverride(ei){
  const e=state.activeWorkout.exercises[ei];e.targetOverride=null;
  const prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId);
  let wi=0;e.sets.forEach(s=>{if(!isProgressionSet(s))return;if(!s.done){s.weight=rec.weights?.[wi]??rec.weight??0;s.reps=rec.targetReps?.[wi]??e.config.minReps;}wi++;});
- save();closeModal();renderWorkout();
+ saveActiveWorkout();closeModal();renderWorkout();
 }
 function applyLightSession(){
  const w=state.activeWorkout;if(!w)return;
@@ -1449,7 +1449,7 @@ function applyLightSession(){
    e.targetOverride={weight:wt,reps:e.config.minReps,reason:'Light session'};
    e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=wt;s.reps=e.config.minReps;}});
  });
- save();renderWorkout();
+ saveActiveWorkout();renderWorkout();
 }
 
 function buildRecommendation(config,prev,exerciseId=null){
@@ -1631,6 +1631,9 @@ function setProgressionNote(type){
 function setWorkoutSetType(ei,si,type){
  const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];if(!set)return;
  if(!['working','warmup','drop','failure'].includes(type))type='working';
+ if(isProgressionSet(set)&&type!=='working'&&workingSetIndexes(e).length<=1){
+   showToast('Keep at least one working set');renderWorkout();return;
+ }
  set.type=type;
  set.pr=type==='working'&&set.done?detectPR(e.exerciseId,set):'';
  saveActiveWorkout();renderWorkout();
@@ -1665,6 +1668,7 @@ function addWorkoutSet(ei,type='working'){
 function removeWorkoutSet(ei,si){
  const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];if(!set)return;
  if(e.sets.length<=1){showToast('Keep at least one set in the exercise');return}
+ if(isProgressionSet(set)&&workingSetIndexes(e).length<=1){showToast('Keep at least one working set');return}
  const remove=()=>{
    e.sets.splice(si,1);
    saveActiveWorkout();renderWorkout();showToast('Set removed');
@@ -1734,7 +1738,7 @@ function openSupersetPicker(ei){
    const ox=exById(other.exerciseId),same=meta&&other.supersetId===meta.id;
    const canSave=Number.isInteger(e.routineIndex)&&Number.isInteger(other.routineIndex);
    return `<div class="picker-result-card">
-    <div class="picker-result-main"><div class="iconbox">${equipmentIcon(ox?.equipment)}</div><div class="picker-result-copy"><div class="exercise-name">${esc(ox?.name||'Exercise')}</div><div class="mini">${esc(ox?.muscle||'')} · ${esc(patternLabel(ox?.pattern||''))}</div></div></div>
+    <div class="picker-result-main"><span class="superset-badge">⚡</span><div class="iconbox">${equipmentIcon(ox?.equipment)}</div><div class="picker-result-copy"><div class="exercise-name">${esc(ox?.name||'Exercise')}</div><div class="mini">${esc(ox?.muscle||'')} · ${esc(patternLabel(ox?.pattern||''))}</div></div></div>
     <div class="picker-result-actions">
       <button class="btn small" ${same?'disabled':''} onclick="linkSuperset(${ei},${oi},false)">${same?'Already linked':'Pair Today'}</button>
       <button class="btn small secondary" ${same||!canSave?'disabled':''} onclick="linkSuperset(${ei},${oi},true)">Pair + Save</button>
@@ -1760,8 +1764,8 @@ function linkSuperset(ei,oi,permanent){
      const oldRoutineGroups=new Set(mapped.map(e=>r.exercises[e.routineIndex]?.supersetGroup).filter(Boolean));
      const persist=[...oldRoutineGroups][0]||group;
      r.exercises.forEach(re=>{if(oldRoutineGroups.has(re.supersetGroup))re.supersetGroup=persist});
-     mapped.forEach(e=>{if(r.exercises[e.routineIndex])r.exercises[e.routineIndex].supersetGroup=persist;e.supersetId=persist});
-     w.exercises.forEach(e=>{if(e.supersetId===group&&mapped.includes(e))e.supersetId=persist});
+     mapped.forEach(e=>{if(r.exercises[e.routineIndex])r.exercises[e.routineIndex].supersetGroup=persist});
+     w.exercises.forEach(e=>{if(e.supersetId===group)e.supersetId=persist});
    }
  }
  cleanupActiveSupersets();saveActiveWorkout();closeModal();renderWorkout();haptic([15,25,15]);
@@ -2098,7 +2102,7 @@ function renderHistory(){
  const sessions=state.sessions.slice().sort((a,b)=>b.date.localeCompare(a.date));
  if(!sessions.length){el.innerHTML='<div class="empty"><div class="empty-illustration">▤</div><strong>No workout history yet</strong>Finish your first session and it will be saved here.</div>';return;}
  el.innerHTML=sessions.map(s=>`<div class="card">
-   <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleString()} · ${sessionSetCount(s)} sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div><button class="btn small danger" onclick="deleteSession('${s.id}')">Delete</button></div>
+   <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleString()} · ${sessionSetCount(s)} working sets${sessionAllSetCount(s)!==sessionSetCount(s)?` · ${sessionAllSetCount(s)} total`:''}${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div><button class="btn small danger" onclick="deleteSession('${s.id}')">Delete</button></div>
    <div class="editor-summary"><span class="tag">${Math.round(sessionVolume(s)).toLocaleString()} ${state.profile.unit}×reps</span>${sessionPRCount(s)?`<span class="tag">🏆 ${sessionPRCount(s)} PR</span>`:''}</div>
    ${s.exercises.map(e=>{const ex=exById(e.exerciseId),sets=completedSets(e); return sets.length?`<table class="history-table"><tr><th colspan="3"><span class="exercise-link" onclick="openExerciseProgress('${e.exerciseId}')">${esc(ex?.name||'Exercise')}</span></th></tr>${sets.map((x,i)=>`<tr><td>${esc(setTypeLabel(setType(x)))} ${e.sets.slice(0,e.sets.indexOf(x)+1).filter(y=>setType(y)===setType(x)).length}</td><td>${x.weight} ${state.profile.unit}</td><td>${x.reps} reps${x.rir!==''&&x.rir!=null?` · ${x.rir} RIR`:''}</td></tr>`).join('')}</table>`:''}).join('')}
  </div>`).join('');
