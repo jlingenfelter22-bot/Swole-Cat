@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0d12" />
+<link rel="manifest" href="manifest.webmanifest">
+<title>Swole Cat</title>
+<style>
+  :root{
+    --bg:#0b0d12; --panel:#121722; --panel2:#171d2a; --muted:#8992a6; --text:#f5f7fb;
+    --accent:#8b5cf6; --accent2:#22c55e; --danger:#ef4444; --border:#252d3d; --input:#0f141e;
+    --shadow:0 12px 30px rgba(0,0,0,.28);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0b0d12 0%,#0e1118 100%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  button,input,select,textarea{font:inherit}
+  button{cursor:pointer}
+  .app{max-width:760px;margin:auto;min-height:100vh;padding-bottom:92px}
+  header{position:sticky;top:0;z-index:20;padding:18px 18px 12px;background:rgba(11,13,18,.92);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.04)}
+  .topline{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .brand{font-weight:900;font-size:1.35rem;letter-spacing:.3px}
+  .brand span{color:var(--accent)}
+  .sub{color:var(--muted);font-size:.9rem;margin-top:3px}
+  .pill{background:var(--panel2);border:1px solid var(--border);color:#d8deea;border-radius:999px;padding:8px 11px;font-size:.82rem}
+  main{padding:18px}
+  .view{display:none}.view.active{display:block}
+  .hero{background:radial-gradient(circle at top right,rgba(139,92,246,.28),transparent 40%),var(--panel);border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow)}
+  .eyebrow{color:#b7bfd0;font-size:.76rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+  h1{font-size:2rem;margin:8px 0 6px;line-height:1.05}
+  h2{font-size:1.12rem;margin:0}
+  .muted{color:var(--muted)}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .btn{border:0;border-radius:14px;padding:13px 16px;font-weight:800;background:var(--accent);color:white}
+  .btn.secondary{background:var(--panel2);border:1px solid var(--border);color:var(--text)}
+  .btn.green{background:var(--accent2);color:#07110a}
+  .btn.danger{background:rgba(239,68,68,.13);color:#fecaca;border:1px solid rgba(239,68,68,.3)}
+  .btn.small{padding:8px 10px;border-radius:10px;font-size:.82rem}
+  .section-title{display:flex;align-items:center;justify-content:space-between;margin:26px 2px 12px}
+  .grid{display:grid;gap:12px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px}
+  .card.clickable:hover{border-color:#3b465d}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .exercise-name{font-weight:850;font-size:1.02rem}
+  .tag{font-size:.72rem;padding:5px 8px;border-radius:999px;background:#1c2331;color:#bec7d9;border:1px solid #2a3448}
+  .metric{font-size:1.45rem;font-weight:900;margin-top:5px}
+  .metric small{font-size:.75rem;color:var(--muted);font-weight:700}
+  .mini{font-size:.83rem;color:var(--muted)}
+  .progress-bar{height:8px;background:#0d1119;border-radius:999px;overflow:hidden;margin-top:12px;border:1px solid #1f2634}
+  .progress-bar > div{height:100%;background:linear-gradient(90deg,var(--accent),#c084fc);width:0}
+  .empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed #30384a;border-radius:18px}
+  nav{position:fixed;bottom:0;left:0;right:0;background:rgba(12,15,21,.96);backdrop-filter:blur(18px);border-top:1px solid var(--border);z-index:50}
+  nav .inner{max-width:760px;margin:auto;display:grid;grid-template-columns:repeat(5,1fr);padding:9px 8px calc(9px + env(safe-area-inset-bottom))}
+  .navbtn{background:none;border:0;color:var(--muted);padding:8px 4px;font-size:.73rem;font-weight:750}
+  .navbtn.active{color:white}
+  .navbtn b{display:block;font-size:1.1rem;margin-bottom:2px}
+  label{display:block;color:#c8d0de;font-size:.8rem;font-weight:800;margin-bottom:6px}
+  input,select,textarea{width:100%;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:12px}
+  textarea{min-height:80px;resize:vertical}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .field{margin-bottom:12px}
+  .list-item{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #202737}
+  .list-item:last-child{border-bottom:0}
+  .iconbox{width:42px;height:42px;border-radius:12px;background:#1c2331;display:grid;place-items:center;font-size:1.15rem;flex:0 0 auto}
+  .grow{flex:1}
+  .search{margin-bottom:12px}
+  .workout-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .setrow{display:grid;grid-template-columns:44px 1fr 1fr 48px;gap:8px;align-items:center;margin-top:8px}
+  .setnum{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#20283a;font-weight:900;color:#d8deea}
+  .setrow input{text-align:center;font-weight:850}
+  .check{width:44px;height:44px;border-radius:12px;background:#172019;border:1px solid #28452f;color:#7ee29a;font-weight:900}
+  .check.done{background:#22c55e;color:#07110a;border-color:#22c55e}
+  .history-table{width:100%;border-collapse:collapse;margin-top:8px}
+  .history-table td,.history-table th{padding:9px 5px;border-bottom:1px solid #222a39;text-align:left;font-size:.84rem}
+  .history-table th{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:100;display:none;align-items:flex-end}
+  .modal.open{display:flex}
+  .sheet{width:100%;max-width:760px;margin:auto;background:#111722;border-radius:24px 24px 0 0;border:1px solid var(--border);padding:18px;max-height:88vh;overflow:auto}
+  .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .x{background:#1d2533;color:white;border:1px solid #303a4d;border-radius:10px;width:38px;height:38px}
+  .notice{background:#161f2e;border:1px solid #273550;border-radius:14px;padding:12px;color:#c9d3e7;font-size:.86rem}
+  .good{color:#7ee29a}.warn{color:#fbbf24}
+  .targetbox{background:linear-gradient(180deg,rgba(139,92,246,.12),rgba(139,92,246,.04));border:1px solid rgba(139,92,246,.35);border-radius:14px;padding:12px;margin-top:12px}
+  .lastline{color:#b8c1d3;font-size:.84rem;margin-top:6px;line-height:1.45}
+
+  .picker-tools{position:sticky;top:-18px;z-index:4;background:#111722;padding:4px 0 10px}
+  .picker-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none}
+  .picker-chips::-webkit-scrollbar{display:none}
+  .chip{white-space:nowrap;background:#171e2b;border:1px solid #2a3448;color:#c7d0e0;border-radius:999px;padding:9px 12px;font-size:.8rem;font-weight:800}
+  .chip.active{background:#312252;border-color:#754fd0;color:white}
+  .category-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
+  .category-card{background:#151c29;border:1px solid #283246;border-radius:16px;padding:14px;text-align:left;color:white}
+  .category-card b{display:block;font-size:.98rem}
+  .category-card span{display:block;color:var(--muted);font-size:.76rem;margin-top:4px}
+  .picker-section{font-size:.72rem;text-transform:uppercase;letter-spacing:.11em;color:#929db1;font-weight:900;margin:16px 2px 8px}
+  .favbtn{border:0;background:transparent;color:#6f788b;font-size:1.25rem;padding:7px;line-height:1}
+  .favbtn.on{color:#fbbf24}
+  .breadcrumb{display:flex;align-items:center;gap:7px;color:#b8c1d2;font-size:.82rem;margin:7px 0 10px}
+  .breadcrumb button{border:0;background:none;color:#a78bfa;padding:0;font-weight:800}
+  .pickcount{background:#262f42;color:#dce3ef;border-radius:999px;padding:5px 9px;font-size:.72rem;font-weight:900}
+
+
+  .routine-edit-list{display:grid;gap:10px}
+  .routine-edit-card{background:#141b27;border:1px solid #293347;border-radius:16px;padding:13px}
+  .routine-edit-head{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center}
+  .orderbox{display:grid;gap:5px}
+  .orderbtn{width:36px;height:30px;border-radius:9px;border:1px solid #303b50;background:#1b2332;color:white;font-weight:900}
+  .routine-tools{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+  .routine-tools .btn{padding:8px 10px}
+  .editor-summary{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .editor-summary .tag{font-size:.68rem}
+
+
+  .workout-overview{background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(34,197,94,.07)),var(--panel);border:1px solid var(--border);border-radius:20px;padding:15px;margin-bottom:14px}
+  .workout-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .workout-stat{background:#101620;border:1px solid #252f42;border-radius:12px;padding:10px;text-align:center}
+  .workout-stat b{display:block;font-size:1.05rem}.workout-stat span{color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.07em}
+  .live-card{padding:0;overflow:hidden}
+  .live-head{padding:15px 15px 12px;background:linear-gradient(180deg,rgba(255,255,255,.025),transparent)}
+  .live-body{padding:0 15px 15px}
+  .set-card{background:#0f151f;border:1px solid #273147;border-radius:15px;padding:10px;margin-top:10px}
+  .set-card.completed{border-color:rgba(34,197,94,.45);background:rgba(34,197,94,.055)}
+  .set-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .set-reference{font-size:.76rem;color:#9da8ba}
+  .set-target{font-size:.76rem;font-weight:850;color:#c4b5fd;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.28);border-radius:999px;padding:5px 8px}
+  .live-entry{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.9fr) 64px;gap:9px;align-items:end}
+  .live-input-wrap label{font-size:.67rem;color:#8e99aa;text-transform:uppercase;letter-spacing:.06em;margin:0}
+  .input-label-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;min-height:24px}
+  .micro-step{display:flex;gap:4px}
+  .micro-step button{width:25px;height:25px;padding:0;border:1px solid #303a50;background:#1a2230;color:#cfd7e5;border-radius:7px;font-weight:950;font-size:.88rem;line-height:1}
+  .direct-number{height:52px!important;border:1px solid #303b51!important;border-radius:13px!important;background:#0d131d!important;padding:7px 8px!important;text-align:center!important;font-size:1.28rem!important;font-weight:950!important;color:#f5f7fb!important;min-width:0}
+  .direct-number:focus{outline:none;border-color:#8b5cf6!important;box-shadow:0 0 0 3px rgba(139,92,246,.14)}
+  .direct-number::placeholder{color:#596579;font-weight:800;font-size:.9rem}
+  .rir-small select{height:52px;padding:6px;text-align:center;font-weight:850}
+  @media(max-width:390px){
+    .live-entry{grid-template-columns:minmax(0,1.2fr) minmax(0,.85fr) 58px;gap:7px}
+    .micro-step button{width:23px;height:23px}
+    .direct-number{font-size:1.18rem!important}
+  }
+  .complete-set{width:100%;margin-top:8px;border:1px solid #31533a;background:#16241a;color:#8be7a3;border-radius:11px;padding:10px;font-weight:900}
+  .complete-set.done{background:#22c55e;border-color:#22c55e;color:#07110a}
+  .pr-banner{margin-top:8px;border-radius:10px;padding:8px 10px;background:rgba(251,191,36,.11);border:1px solid rgba(251,191,36,.3);color:#fde68a;font-size:.78rem;font-weight:800}
+  .toolrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+  .toolchip{border:1px solid #303a50;background:#171f2d;color:#cdd5e4;border-radius:999px;padding:7px 10px;font-size:.74rem;font-weight:800}
+  .plates{color:#cbd5e1;font-size:.76rem;margin-top:6px}
+  .resttimer{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:80;background:#171d2a;border:1px solid #46526c;border-radius:18px;padding:10px 12px;box-shadow:var(--shadow);font-weight:900;display:none;width:min(94vw,520px)}
+  .resttimer.show{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .rest-main{display:flex;align-items:baseline;gap:7px}.rest-main span{font-size:1.35rem}.rest-main small{color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em}
+  .rest-actions{display:flex;gap:6px}.rest-actions button{border:1px solid #36425a;background:#20293a;color:#eef2f7;border-radius:10px;padding:8px 9px;font-weight:850}
+
+
+  .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .stat-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px}
+  .stat-card .big{font-size:1.55rem;font-weight:950;margin-top:3px}
+  .stat-card .caption{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;font-weight:800}
+  .chart-card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:15px;overflow:hidden}
+  .barlist{display:grid;gap:10px;margin-top:12px}
+  .barrow{display:grid;grid-template-columns:86px 1fr 36px;gap:9px;align-items:center;font-size:.78rem}
+  .bartrack{height:9px;background:#0d121a;border:1px solid #222c3d;border-radius:999px;overflow:hidden}
+  .barfill{height:100%;background:linear-gradient(90deg,#8b5cf6,#a78bfa);border-radius:999px}
+  .weekbars{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;height:120px;align-items:end;margin-top:12px}
+  .weekcol{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:6px}
+  .weekbar{width:100%;min-height:3px;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,#8b5cf6,#5b36b5)}
+  .weeklabel{font-size:.62rem;color:var(--muted)}
+  .spark{width:100%;height:130px;margin-top:10px;display:block}
+  .metric-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+  .metric-mini{background:#101620;border:1px solid #252f42;border-radius:12px;padding:10px;text-align:center}
+  .metric-mini b{display:block;font-size:1.05rem}.metric-mini span{font-size:.65rem;color:var(--muted);text-transform:uppercase}
+  .summary-win{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.26);border-radius:14px;padding:12px;margin-top:10px}
+  .summary-pr{background:rgba(251,191,36,.09);border:1px solid rgba(251,191,36,.3);border-radius:14px;padding:12px;margin-top:10px}
+  .trend-up{color:#86efac}.trend-flat{color:#cbd5e1}.trend-down{color:#fca5a5}
+  .exercise-link{cursor:pointer}.exercise-link:hover .exercise-name{text-decoration:underline}
+  @media(min-width:680px){.stat-grid{grid-template-columns:repeat(4,1fr)}}
+
+
+  .coachbox{margin-top:10px;border-radius:13px;padding:11px 12px;border:1px solid #2b3850;background:#121a27}
+  .coachbox.good{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.06)}
+  .coachbox.watch{border-color:rgba(251,191,36,.32);background:rgba(251,191,36,.07)}
+  .coachbox.reset{border-color:rgba(248,113,113,.32);background:rgba(248,113,113,.07)}
+  .coach-title{font-size:.75rem;font-weight:950;text-transform:uppercase;letter-spacing:.08em}
+  .coach-text{font-size:.82rem;color:#c8d1df;margin-top:4px;line-height:1.4}
+  .goalbadge{font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em;border:1px solid #344058;background:#1a2231;color:#d8dfeb;border-radius:999px;padding:5px 8px}
+  .override-note{margin-top:8px;color:#c4b5fd;font-size:.76rem;font-weight:850}
+  .insight-list{display:grid;gap:9px}
+
+
+  .navbtn{position:relative;transition:transform .15s ease,color .15s ease}
+  .navbtn:active{transform:scale(.96)}
+  .navbtn.active:after{content:"";position:absolute;left:50%;bottom:2px;transform:translateX(-50%);width:24px;height:3px;border-radius:999px;background:var(--accent)}
+  .btn,.pill,.toolchip,.chip,.category-card,.check,.complete-set,.orderbtn{transition:transform .12s ease,filter .12s ease,border-color .12s ease}
+  .btn:active,.pill:active,.toolchip:active,.chip:active,.category-card:active,.check:active,.complete-set:active,.orderbtn:active{transform:scale(.97)}
+  .install-pill{display:none;background:rgba(139,92,246,.16);border-color:rgba(139,92,246,.4);color:#ddd6fe}
+  .install-pill.show{display:inline-block}
+  .onboard-hero{text-align:center;padding:8px 5px 2px}
+  .onboard-logo{width:76px;height:76px;border-radius:22px;margin:0 auto 14px;display:grid;place-items:center;background:linear-gradient(135deg,#8b5cf6,#5b21b6);box-shadow:0 14px 36px rgba(139,92,246,.3);font-size:2rem;font-weight:950}
+  .onboard-step{display:flex;gap:10px;align-items:flex-start;margin:12px 0}
+  .onboard-step .num{width:30px;height:30px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;background:#252d40;color:#ddd6fe;font-weight:950}
+  .muscle-chip{display:inline-flex;align-items:center;gap:6px;background:#171f2d;border:1px solid #2b364b;border-radius:999px;padding:5px 8px;font-size:.7rem;color:#cbd5e1;font-weight:850}
+  .muscle-dot{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.9}
+  .chart-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:.65rem;margin-top:3px}
+  .empty-illustration{font-size:2rem;margin-bottom:7px;opacity:.8}
+  .empty strong{display:block;color:#dfe5ef;margin-bottom:5px}
+  .toast{position:fixed;left:50%;top:78px;transform:translate(-50%,-10px);z-index:140;background:#1b2230;border:1px solid #3a465e;color:white;border-radius:13px;padding:10px 13px;box-shadow:var(--shadow);font-size:.82rem;font-weight:800;opacity:0;pointer-events:none;transition:.18s ease}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;margin-right:5px}
+  .setting-toggle{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #202737}
+  .toggle{width:48px;height:28px;border-radius:999px;border:1px solid #39455d;background:#202838;position:relative;padding:0}
+  .toggle:after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#aab3c2;transition:.18s ease}
+  .toggle.on{background:#5b3ca6;border-color:#8b5cf6}.toggle.on:after{left:23px;background:white}
+  .native-note{font-size:.72rem;color:#8e99aa;line-height:1.4}
+
+
+  .exercise-block{--ex-accent:#a78bfa;--ex-soft:rgba(167,139,250,.10);position:relative;margin:18px 0 30px!important;border-color:color-mix(in srgb,var(--ex-accent) 35%,#252d3d)!important;box-shadow:inset 4px 0 0 var(--ex-accent),0 10px 26px rgba(0,0,0,.16)}
+  .exercise-block.tone-0{--ex-accent:#a78bfa;--ex-soft:rgba(167,139,250,.11)}
+  .exercise-block.tone-1{--ex-accent:#38bdf8;--ex-soft:rgba(56,189,248,.10)}
+  .exercise-block.tone-2{--ex-accent:#34d399;--ex-soft:rgba(52,211,153,.09)}
+  .exercise-block.tone-3{--ex-accent:#f59e0b;--ex-soft:rgba(245,158,11,.09)}
+  .exercise-block .live-head{background:linear-gradient(135deg,var(--ex-soft),rgba(255,255,255,.015) 62%,transparent);border-bottom:1px solid color-mix(in srgb,var(--ex-accent) 24%,#252d3d)}
+  .exercise-identity{display:flex;align-items:flex-start;gap:11px;min-width:0}
+  .exercise-number{width:34px;height:34px;flex:0 0 auto;border-radius:11px;display:grid;place-items:center;background:var(--ex-soft);border:1px solid color-mix(in srgb,var(--ex-accent) 45%,transparent);color:var(--ex-accent);font-weight:950;font-size:.9rem}
+  .exercise-kicker{font-size:.67rem;line-height:1;text-transform:uppercase;letter-spacing:.12em;color:var(--ex-accent);font-weight:950;margin-bottom:5px}
+  .exercise-title{font-weight:950;line-height:1.08;letter-spacing:.01em;color:#fff;text-shadow:0 0 18px color-mix(in srgb,var(--ex-accent) 18%,transparent)}
+  .exercise-meta{margin-top:5px;color:#9da8ba;font-size:.76rem}
+  .exercise-divider{display:flex;align-items:center;gap:10px;margin:28px 4px 12px;color:#727e92;font-size:.67rem;font-weight:950;letter-spacing:.14em;text-transform:uppercase}
+  .exercise-divider:before,.exercise-divider:after{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,#303a4d)}
+  .exercise-divider:after{background:linear-gradient(90deg,#303a4d,transparent)}
+  .exercise-block .targetbox{border-left:3px solid var(--ex-accent);background:linear-gradient(90deg,var(--ex-soft),rgba(20,25,36,.88) 55%)}
+  .exercise-block .set-target{border-color:color-mix(in srgb,var(--ex-accent) 40%,#2d3750);background:var(--ex-soft);color:color-mix(in srgb,var(--ex-accent) 72%,white)}
+  .exercise-block .set-card{position:relative}
+  .exercise-block .set-card:before{content:"";position:absolute;left:-1px;top:14px;bottom:14px;width:2px;border-radius:99px;background:color-mix(in srgb,var(--ex-accent) 34%,transparent)}
+
+
+  .picker-result-list{display:grid;gap:9px}
+  .picker-result-card{background:#121925;border:1px solid #273248;border-radius:15px;padding:11px;min-width:0}
+  .picker-result-main{display:grid;grid-template-columns:auto 42px minmax(0,1fr);gap:9px;align-items:center;min-width:0}
+  .picker-result-main .favbtn{align-self:center}
+  .picker-result-copy{min-width:0}
+  .picker-result-copy .exercise-name{line-height:1.15}
+  .picker-result-copy .mini{margin-top:4px;line-height:1.28;overflow-wrap:anywhere}
+  .picker-result-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;padding-left:0}
+  .picker-result-actions.one{grid-template-columns:1fr}
+  .picker-result-actions .btn{width:100%;min-width:0;padding:10px 8px;text-align:center}
+  .picker-result-actions .btn[disabled]{opacity:.48;cursor:default;filter:none}
+  .picker-result-actions .btn[disabled]:active{transform:none}
+  .add-picker-help{display:flex;gap:7px;align-items:center;margin-top:8px;color:#909bad;font-size:.72rem}
+  @media(max-width:380px){
+    .picker-result-card{padding:10px}
+    .picker-result-main{grid-template-columns:auto 38px minmax(0,1fr);gap:7px}
+    .picker-result-actions{gap:6px}
+    .picker-result-actions .btn{font-size:.76rem;padding:9px 6px}
+  }
+
+
+  .exercise-block{transition:border-color .18s ease,background .18s ease,box-shadow .18s ease}
+  .exercise-block.collapsed{margin:12px 0 14px!important;box-shadow:inset 4px 0 0 var(--ex-accent),0 5px 16px rgba(0,0,0,.12)}
+  .exercise-block.collapsed .live-head{border-bottom:0}
+  .exercise-head-click{cursor:pointer;user-select:none}
+  .exercise-head-click:active{filter:brightness(1.08)}
+  .exercise-header-actions{display:flex;gap:6px;align-items:center;flex:0 0 auto}
+  .exercise-toggle-btn{width:38px;height:38px;border-radius:11px;border:1px solid color-mix(in srgb,var(--ex-accent) 35%,#303a50);background:var(--ex-soft);color:var(--ex-accent);font-size:1rem;font-weight:950;display:grid;place-items:center;padding:0}
+  .exercise-toggle-btn:active{transform:scale(.95)}
+  .exercise-status{display:inline-flex;align-items:center;gap:5px;border:1px solid #334056;background:#151d2a;color:#b9c3d3;border-radius:999px;padding:5px 8px;font-size:.66rem;font-weight:900;white-space:nowrap}
+  .exercise-status.current{border-color:color-mix(in srgb,var(--ex-accent) 45%,#334056);background:var(--ex-soft);color:color-mix(in srgb,var(--ex-accent) 76%,white)}
+  .exercise-status.complete{border-color:rgba(34,197,94,.38);background:rgba(34,197,94,.08);color:#8ce9a4}
+  .collapsed-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding-top:9px;border-top:1px solid color-mix(in srgb,var(--ex-accent) 18%,#20283a)}
+  .collapsed-summary-main{min-width:0}
+  .collapsed-target{color:#c8d1df;font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:58vw}
+  .collapsed-progress{height:4px;background:#101621;border-radius:999px;overflow:hidden;margin-top:7px;border:1px solid #252f42}
+  .collapsed-progress>div{height:100%;background:var(--ex-accent);border-radius:999px;transition:width .2s ease}
+  .exercise-expanded-content{display:block}
+  .exercise-block.collapsed .exercise-expanded-content{display:none}
+  .exercise-block.collapsed .exercise-title{font-size:1rem}
+  .exercise-block.collapsed .exercise-meta{margin-top:3px}
+  .exercise-block.collapsed .live-head{padding:12px 14px}
+  .exercise-block.collapsed .exercise-number{width:31px;height:31px;border-radius:10px}
+  .exercise-block.collapsed .exercise-kicker{margin-bottom:4px}
+  .exercise-divider.compact-divider{margin:12px 4px 8px;opacity:.68}
+  .exercise-block.complete-block{opacity:.9}
+  .exercise-block.complete-block.collapsed{opacity:.78}
+  @media(max-width:420px){
+    .goalbadge.exercise-goal-mobile{display:none}
+    .exercise-header-actions{gap:5px}
+    .exercise-toggle-btn{width:36px;height:36px}
+    .collapsed-target{max-width:54vw}
+  }
+
+
+  .exercise-block.collapsed .exercise-kicker,
+  .exercise-block.collapsed .exercise-meta,
+  .exercise-block.collapsed .goalbadge,
+  .exercise-block.collapsed .exercise-status{display:none!important}
+  .exercise-block.collapsed .exercise-identity{align-items:center}
+  .exercise-block.collapsed .exercise-header-actions{margin-left:auto}
+  .exercise-block.collapsed .live-head{padding:12px 14px}
+  .exercise-block.collapsed .exercise-title{font-size:1.02rem;line-height:1.1}
+  .exercise-block.collapsed .exercise-number{width:32px;height:32px}
+  .exercise-block.collapsed{margin:10px 0 12px!important}
+  .exercise-block.collapsed .exercise-expanded-content{display:none!important}
+
+
+  /* V15 hard collapse guarantee */
+  .exercise-block.collapsed .exercise-expanded-content,
+  .exercise-block.collapsed .live-body,
+  .exercise-block.collapsed .targetbox,
+  .exercise-block.collapsed .coachbox,
+  .exercise-block.collapsed .toolrow,
+  .exercise-block.collapsed .field{display:none!important}
+
+
+  .exercise-block.collapsed > .live-head{display:block!important}
+  .exercise-block.collapsed{min-height:0!important}
+
+  .hidden{display:none!important}
+  @media(min-width:680px){
+    .form-grid.three{grid-template-columns:repeat(3,1fr)}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="topline">
+    <div>
+      <div class="brand">SWOLE <span>CAT</span></div>
+      <div class="sub" id="headerSub"><span class="status-dot"></span>Local-only workout data</div>
+    </div>
+    <div style="display:flex;gap:7px;align-items:center">
+      <button id="installBtn" class="pill install-pill" onclick="installApp()">↓ Install</button>
+      <button class="pill" onclick="openSettings()">⚙ Settings</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="home" class="view active">
+    <div class="hero">
+      <div class="eyebrow">Ready when you are</div>
+      <h1 id="helloTitle">Build your training.</h1>
+      <div class="muted" id="helloText">Create a routine, log your sets, and come back next week knowing exactly what to beat.</div>
+      <div class="actions">
+        <button class="btn" onclick="go('routines')">Start / Build Workout</button>
+        <button class="btn secondary" onclick="go('exercises')">Browse Exercises</button>
+      </div>
+    </div>
+
+    <div class="section-title"><h2>Your routines</h2><div><button class="btn small secondary" onclick="installStarterPlan()">3-Day starter</button> <button class="btn small secondary" onclick="newRoutine()">+ New</button></div></div>
+    <div id="homeRoutines" class="grid"></div>
+
+    <div class="section-title"><h2>Recent progress</h2></div>
+    <div id="recentProgress" class="grid"></div>
+  </section>
+
+  <section id="routines" class="view">
+    <div class="section-title"><h2>Workout routines</h2><div><button class="btn small secondary" onclick="installStarterPlan()">3-Day starter</button> <button class="btn small" onclick="newRoutine()">+ Create</button></div></div>
+    <div id="routineList" class="grid"></div>
+  </section>
+
+  <section id="exercises" class="view">
+    <div class="section-title"><h2>Exercise library</h2><button class="btn small" onclick="newExercise()">+ Custom</button></div>
+    <input id="exerciseSearch" class="search" placeholder="Search bench, row, squat..." oninput="renderExercises()">
+    <div class="form-grid" style="margin-bottom:12px">
+      <select id="muscleFilter" onchange="renderExercises()"><option value="">All muscle groups</option></select>
+      <select id="equipmentFilter" onchange="renderExercises()"><option value="">All equipment</option></select>
+    </div>
+    <div id="exerciseList" class="card"></div>
+  </section>
+
+  <section id="history" class="view">
+    <div class="section-title"><h2>History</h2></div>
+    <div id="historyList" class="grid"></div>
+  </section>
+
+  <section id="analytics" class="view">
+    <div class="section-title"><h2>Progress</h2><span class="tag">LOCAL ANALYTICS</span></div>
+    <div id="analyticsArea"></div>
+  </section>
+
+  <section id="workout" class="view">
+    <div id="workoutArea"></div>
+  </section>
+</main>
+
+<nav>
+  <div class="inner">
+    <button class="navbtn active" data-go="home" onclick="go('home')"><b>⌂</b>Home</button>
+    <button class="navbtn" data-go="routines" onclick="go('routines')"><b>▤</b>Routines</button>
+    <button class="navbtn" data-go="exercises" onclick="go('exercises')"><b>＋</b>Exercises</button>
+    <button class="navbtn" data-go="analytics" onclick="go('analytics')"><b>⌁</b>Progress</button>
+    <button class="navbtn" data-go="history" onclick="go('history')"><b>↺</b>History</button>
+  </div>
+</nav>
+</div>
+
+<div id="toast" class="toast">Saved</div>
+
+<div id="restTimer" class="resttimer">
+  <div class="rest-main"><small>Rest</small><span id="restTimerText">2:00</span></div>
+  <div class="rest-actions">
+    <button onclick="adjustRestTimer(-30)">−30</button>
+    <button onclick="adjustRestTimer(30)">+30</button>
+    <button onclick="stopRestTimer()">Skip</button>
+  </div>
+</div>
+
+<div id="modal" class="modal" onclick="if(event.target===this) closeModal()">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2 id="modalTitle">Edit</h2>
+      <button class="x" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const LSKEY='overload_v3';
+
+const LIBRARY=[{"id":"lib_0","name":"Barbell Bench Press","muscle":"Chest","equipment":"barbell","pattern":"horizontal_press","custom":false},{"id":"lib_1","name":"Incline Barbell Bench Press","muscle":"Chest","equipment":"barbell","pattern":"incline_press","custom":false},{"id":"lib_2","name":"Dumbbell Bench Press","muscle":"Chest","equipment":"dumbbell","pattern":"horizontal_press","custom":false},{"id":"lib_3","name":"Incline Dumbbell Press","muscle":"Chest","equipment":"dumbbell","pattern":"incline_press","custom":false},{"id":"lib_4","name":"Chest Press Machine","muscle":"Chest","equipment":"machine","pattern":"horizontal_press","custom":false},{"id":"lib_5","name":"Cable Fly","muscle":"Chest","equipment":"cable","pattern":"chest_fly","custom":false},{"id":"lib_6","name":"Pec Deck","muscle":"Chest","equipment":"machine","pattern":"chest_fly","custom":false},{"id":"lib_7","name":"Push-Up","muscle":"Chest","equipment":"bodyweight","pattern":"horizontal_press","custom":false},{"id":"lib_8","name":"Back Squat","muscle":"Quads","equipment":"barbell","pattern":"squat","custom":false},{"id":"lib_9","name":"Front Squat","muscle":"Quads","equipment":"barbell","pattern":"squat","custom":false},{"id":"lib_10","name":"Goblet Squat","muscle":"Quads","equipment":"dumbbell","pattern":"squat","custom":false},{"id":"lib_11","name":"Leg Press","muscle":"Quads","equipment":"machine","pattern":"squat","custom":false},{"id":"lib_12","name":"Hack Squat","muscle":"Quads","equipment":"machine","pattern":"squat","custom":false},{"id":"lib_13","name":"Bulgarian Split Squat","muscle":"Quads","equipment":"dumbbell","pattern":"lunge","custom":false},{"id":"lib_14","name":"Walking Lunge","muscle":"Quads","equipment":"dumbbell","pattern":"lunge","custom":false},{"id":"lib_15","name":"Leg Extension","muscle":"Quads","equipment":"machine","pattern":"knee_extension","custom":false},{"id":"lib_16","name":"Deadlift","muscle":"Back","equipment":"barbell","pattern":"hinge","custom":false},{"id":"lib_17","name":"Romanian Deadlift","muscle":"Hamstrings","equipment":"barbell","pattern":"hinge","custom":false},{"id":"lib_18","name":"Dumbbell Romanian Deadlift","muscle":"Hamstrings","equipment":"dumbbell","pattern":"hinge","custom":false},{"id":"lib_19","name":"Seated Leg Curl","muscle":"Hamstrings","equipment":"machine","pattern":"knee_flexion","custom":false},{"id":"lib_20","name":"Lying Leg Curl","muscle":"Hamstrings","equipment":"machine","pattern":"knee_flexion","custom":false},{"id":"lib_21","name":"Good Morning","muscle":"Hamstrings","equipment":"barbell","pattern":"hinge","custom":false},{"id":"lib_22","name":"Hip Thrust","muscle":"Glutes","equipment":"barbell","pattern":"hip_extension","custom":false},{"id":"lib_23","name":"Glute Bridge","muscle":"Glutes","equipment":"bodyweight","pattern":"hip_extension","custom":false},{"id":"lib_24","name":"Cable Kickback","muscle":"Glutes","equipment":"cable","pattern":"hip_extension","custom":false},{"id":"lib_25","name":"Hip Abduction Machine","muscle":"Glutes","equipment":"machine","pattern":"hip_abduction","custom":false},{"id":"lib_26","name":"Barbell Row","muscle":"Back","equipment":"barbell","pattern":"horizontal_pull","custom":false},{"id":"lib_27","name":"Dumbbell Row","muscle":"Back","equipment":"dumbbell","pattern":"horizontal_pull","custom":false},{"id":"lib_28","name":"Seated Cable Row","muscle":"Back","equipment":"cable","pattern":"horizontal_pull","custom":false},{"id":"lib_29","name":"Chest Supported Row","muscle":"Back","equipment":"machine","pattern":"horizontal_pull","custom":false},{"id":"lib_30","name":"Lat Pulldown","muscle":"Back","equipment":"cable","pattern":"vertical_pull","custom":false},{"id":"lib_31","name":"Pull-Up","muscle":"Back","equipment":"bodyweight","pattern":"vertical_pull","custom":false},{"id":"lib_32","name":"Assisted Pull-Up","muscle":"Back","equipment":"machine","pattern":"vertical_pull","custom":false},{"id":"lib_33","name":"Straight Arm Pulldown","muscle":"Back","equipment":"cable","pattern":"shoulder_extension","custom":false},{"id":"lib_34","name":"Overhead Press","muscle":"Shoulders","equipment":"barbell","pattern":"vertical_press","custom":false},{"id":"lib_35","name":"Dumbbell Shoulder Press","muscle":"Shoulders","equipment":"dumbbell","pattern":"vertical_press","custom":false},{"id":"lib_36","name":"Machine Shoulder Press","muscle":"Shoulders","equipment":"machine","pattern":"vertical_press","custom":false},{"id":"lib_37","name":"Dumbbell Lateral Raise","muscle":"Shoulders","equipment":"dumbbell","pattern":"lateral_raise","custom":false},{"id":"lib_38","name":"Cable Lateral Raise","muscle":"Shoulders","equipment":"cable","pattern":"lateral_raise","custom":false},{"id":"lib_39","name":"Rear Delt Fly","muscle":"Shoulders","equipment":"machine","pattern":"rear_delt","custom":false},{"id":"lib_40","name":"Face Pull","muscle":"Shoulders","equipment":"cable","pattern":"rear_delt","custom":false},{"id":"lib_41","name":"Barbell Curl","muscle":"Biceps","equipment":"barbell","pattern":"elbow_flexion","custom":false},{"id":"lib_42","name":"Dumbbell Curl","muscle":"Biceps","equipment":"dumbbell","pattern":"elbow_flexion","custom":false},{"id":"lib_43","name":"Hammer Curl","muscle":"Biceps","equipment":"dumbbell","pattern":"elbow_flexion","custom":false},{"id":"lib_44","name":"Preacher Curl","muscle":"Biceps","equipment":"machine","pattern":"elbow_flexion","custom":false},{"id":"lib_45","name":"Cable Curl","muscle":"Biceps","equipment":"cable","pattern":"elbow_flexion","custom":false},{"id":"lib_46","name":"Triceps Pushdown","muscle":"Triceps","equipment":"cable","pattern":"elbow_extension","custom":false},{"id":"lib_47","name":"Overhead Triceps Extension","muscle":"Triceps","equipment":"cable","pattern":"elbow_extension","custom":false},{"id":"lib_48","name":"Skull Crusher","muscle":"Triceps","equipment":"barbell","pattern":"elbow_extension","custom":false},{"id":"lib_49","name":"Close Grip Bench Press","muscle":"Triceps","equipment":"barbell","pattern":"horizontal_press","custom":false},{"id":"lib_50","name":"Dip","muscle":"Triceps","equipment":"bodyweight","pattern":"dip_press","custom":false},{"id":"lib_51","name":"Standing Calf Raise","muscle":"Calves","equipment":"machine","pattern":"calf_raise","custom":false},{"id":"lib_52","name":"Seated Calf Raise","muscle":"Calves","equipment":"machine","pattern":"calf_raise","custom":false},{"id":"lib_53","name":"Leg Press Calf Raise","muscle":"Calves","equipment":"machine","pattern":"calf_raise","custom":false},{"id":"lib_54","name":"Cable Crunch","muscle":"Core","equipment":"cable","pattern":"spinal_flexion","custom":false},{"id":"lib_55","name":"Hanging Leg Raise","muscle":"Core","equipment":"bodyweight","pattern":"hip_flexion_core","custom":false},{"id":"lib_56","name":"Ab Wheel","muscle":"Core","equipment":"bodyweight","pattern":"anti_extension","custom":false},{"id":"lib_57","name":"Plank","muscle":"Core","equipment":"bodyweight","pattern":"anti_extension","custom":false},{"id":"lib_58","name":"Barbell Shrug","muscle":"Traps","equipment":"barbell","pattern":"shrug","custom":false},{"id":"lib_59","name":"Dumbbell Shrug","muscle":"Traps","equipment":"dumbbell","pattern":"shrug","custom":false},{"id":"lib_60","name":"Decline Barbell Bench Press","muscle":"Chest","equipment":"barbell","pattern":"horizontal_press","custom":false},{"id":"lib_61","name":"Floor Press","muscle":"Chest","equipment":"barbell","pattern":"horizontal_press","custom":false},{"id":"lib_62","name":"Paused Bench Press","muscle":"Chest","equipment":"barbell","pattern":"horizontal_press","custom":false},{"id":"lib_63","name":"Spoto Press","muscle":"Chest","equipment":"barbell","pattern":"horizontal_press","custom":false},{"id":"lib_64","name":"Board Press","muscle":"Chest","equipment":"barbell","pattern":"horizontal_press","custom":false},{"id":"lib_65","name":"Wide Grip Bench Press","muscle":"Chest","equipment":"barbell","pattern":"horizontal_press","custom":false},{"id":"lib_66","name":"Smith Machine Bench Press","muscle":"Chest","equipment":"smith machine","pattern":"horizontal_press","custom":false},{"id":"lib_67","name":"Smith Machine Decline Bench Press","muscle":"Chest","equipment":"smith machine","pattern":"horizontal_press","custom":false},{"id":"lib_68","name":"Smith Machine Incline Press","muscle":"Chest","equipment":"smith machine","pattern":"incline_press","custom":false},{"id":"lib_69","name":"Dumbbell Floor Press","muscle":"Chest","equipment":"dumbbell","pattern":"horizontal_press","custom":false},{"id":"lib_70","name":"Neutral Grip Dumbbell Bench Press","muscle":"Chest","equipment":"dumbbell","pattern":"horizontal_press","custom":false},{"id":"lib_71","name":"Single Arm Dumbbell Bench Press","muscle":"Chest","equipment":"dumbbell","pattern":"horizontal_press","custom":false},{"id":"lib_72","name":"Low Incline Dumbbell Press","muscle":"Chest","equipment":"dumbbell","pattern":"incline_press","custom":false},{"id":"lib_73","name":"Dumbbell Fly","muscle":"Chest","equipment":"dumbbell","pattern":"chest_fly","custom":false},{"id":"lib_74","name":"Incline Dumbbell Fly","muscle":"Chest","equipment":"dumbbell","pattern":"chest_fly","custom":false},{"id":"lib_75","name":"Standing Cable Chest Press","muscle":"Chest","equipment":"cable","pattern":"horizontal_press","custom":false},{"id":"lib_76","name":"Single Arm Cable Chest Press","muscle":"Chest","equipment":"cable","pattern":"horizontal_press","custom":false},{"id":"lib_77","name":"Low-to-High Cable Fly","muscle":"Chest","equipment":"cable","pattern":"chest_fly","custom":false},{"id":"lib_78","name":"High-to-Low Cable Fly","muscle":"Chest","equipment":"cable","pattern":"chest_fly","custom":false},{"id":"lib_79","name":"Single Arm Cable Fly","muscle":"Chest","equipment":"cable","pattern":"chest_fly","custom":false},{"id":"lib_80","name":"Plate Loaded Chest Press","muscle":"Chest","equipment":"machine","pattern":"horizontal_press","custom":false},{"id":"lib_81","name":"Iso-Lateral Chest Press","muscle":"Chest","equipment":"machine","pattern":"horizontal_press","custom":false},{"id":"lib_82","name":"Hammer Strength Chest Press","muscle":"Chest","equipment":"machine","pattern":"horizontal_press","custom":false},{"id":"lib_83","name":"Deficit Push-Up","muscle":"Chest","equipment":"bodyweight","pattern":"horizontal_press","custom":false},{"id":"lib_84","name":"Weighted Push-Up","muscle":"Chest","equipment":"bodyweight","pattern":"horizontal_press","custom":false},{"id":"lib_85","name":"Feet Elevated Push-Up","muscle":"Chest","equipment":"bodyweight","pattern":"horizontal_press","custom":false},{"id":"lib_86","name":"Pendlay Row","muscle":"Back","equipment":"barbell","pattern":"horizontal_pull","custom":false},{"id":"lib_87","name":"Yates Row","muscle":"Back","equipment":"barbell","pattern":"horizontal_pull","custom":false},{"id":"lib_88","name":"Underhand Barbell Row","muscle":"Back","equipment":"barbell","pattern":"horizontal_pull","custom":false},{"id":"lib_89","name":"Landmine Row","muscle":"Back","equipment":"barbell","pattern":"horizontal_pull","custom":false},{"id":"lib_90","name":"T-Bar Row","muscle":"Back","equipment":"barbell","pattern":"horizontal_pull","custom":false},{"id":"lib_91","name":"Chest Supported Dumbbell Row","muscle":"Back","equipment":"dumbbell","pattern":"horizontal_pull","custom":false},{"id":"lib_92","name":"Incline Bench Dumbbell Row","muscle":"Back","equipment":"dumbbell","pattern":"horizontal_pull","custom":false},{"id":"lib_93","name":"Renegade Row","muscle":"Back","equipment":"dumbbell","pattern":"horizontal_pull","custom":false},{"id":"lib_94","name":"Meadows Row","muscle":"Back","equipment":"dumbbell","pattern":"horizontal_pull","custom":false},{"id":"lib_95","name":"Wide Grip Seated Cable Row","muscle":"Back","equipment":"cable","pattern":"horizontal_pull","custom":false},{"id":"lib_96","name":"Close Grip Seated Cable Row","muscle":"Back","equipment":"cable","pattern":"horizontal_pull","custom":false},{"id":"lib_97","name":"Single Arm Cable Row","muscle":"Back","equipment":"cable","pattern":"horizontal_pull","custom":false},{"id":"lib_98","name":"Kneeling Cable Row","muscle":"Back","equipment":"cable","pattern":"horizontal_pull","custom":false},{"id":"lib_99","name":"High Cable Row","muscle":"Back","equipment":"cable","pattern":"horizontal_pull","custom":false},{"id":"lib_100","name":"Plate Loaded Row","muscle":"Back","equipment":"machine","pattern":"horizontal_pull","custom":false},{"id":"lib_101","name":"Iso-Lateral Row","muscle":"Back","equipment":"machine","pattern":"horizontal_pull","custom":false},{"id":"lib_102","name":"Hammer Strength Row","muscle":"Back","equipment":"machine","pattern":"horizontal_pull","custom":false},{"id":"lib_103","name":"Machine High Row","muscle":"Back","equipment":"machine","pattern":"horizontal_pull","custom":false},{"id":"lib_104","name":"Machine Low Row","muscle":"Back","equipment":"machine","pattern":"horizontal_pull","custom":false},{"id":"lib_105","name":"Wide Grip Lat Pulldown","muscle":"Back","equipment":"cable","pattern":"vertical_pull","custom":false},{"id":"lib_106","name":"Close Grip Lat Pulldown","muscle":"Back","equipment":"cable","pattern":"vertical_pull","custom":false},{"id":"lib_107","name":"Neutral Grip Lat Pulldown","muscle":"Back","equipment":"cable","pattern":"vertical_pull","custom":false},{"id":"lib_108","name":"Underhand Lat Pulldown","muscle":"Back","equipment":"cable","pattern":"vertical_pull","custom":false},{"id":"lib_109","name":"Single Arm Lat Pulldown","muscle":"Back","equipment":"cable","pattern":"vertical_pull","custom":false},{"id":"lib_110","name":"Kneeling Single Arm Pulldown","muscle":"Back","equipment":"cable","pattern":"vertical_pull","custom":false},{"id":"lib_111","name":"Plate Loaded Pulldown","muscle":"Back","equipment":"machine","pattern":"vertical_pull","custom":false},{"id":"lib_112","name":"Iso-Lateral Pulldown","muscle":"Back","equipment":"machine","pattern":"vertical_pull","custom":false},{"id":"lib_113","name":"Assisted Chin-Up","muscle":"Back","equipment":"machine","pattern":"vertical_pull","custom":false},{"id":"lib_114","name":"Chin-Up","muscle":"Back","equipment":"bodyweight","pattern":"vertical_pull","custom":false},{"id":"lib_115","name":"Neutral Grip Pull-Up","muscle":"Back","equipment":"bodyweight","pattern":"vertical_pull","custom":false},{"id":"lib_116","name":"Weighted Pull-Up","muscle":"Back","equipment":"bodyweight","pattern":"vertical_pull","custom":false},{"id":"lib_117","name":"Weighted Chin-Up","muscle":"Back","equipment":"bodyweight","pattern":"vertical_pull","custom":false},{"id":"lib_118","name":"Rope Straight Arm Pulldown","muscle":"Back","equipment":"cable","pattern":"shoulder_extension","custom":false},{"id":"lib_119","name":"Single Arm Straight Arm Pulldown","muscle":"Back","equipment":"cable","pattern":"shoulder_extension","custom":false},{"id":"lib_120","name":"Cable Pullover","muscle":"Back","equipment":"cable","pattern":"shoulder_extension","custom":false},{"id":"lib_121","name":"Dumbbell Pullover","muscle":"Back","equipment":"dumbbell","pattern":"pullover","custom":false},{"id":"lib_122","name":"Machine Pullover","muscle":"Back","equipment":"machine","pattern":"pullover","custom":false},{"id":"lib_123","name":"Push Press","muscle":"Shoulders","equipment":"barbell","pattern":"vertical_press","custom":false},{"id":"lib_124","name":"Behind-the-Neck Press","muscle":"Shoulders","equipment":"barbell","pattern":"vertical_press","custom":false},{"id":"lib_125","name":"Seated Barbell Shoulder Press","muscle":"Shoulders","equipment":"barbell","pattern":"vertical_press","custom":false},{"id":"lib_126","name":"Z Press","muscle":"Shoulders","equipment":"barbell","pattern":"vertical_press","custom":false},{"id":"lib_127","name":"Smith Machine Shoulder Press","muscle":"Shoulders","equipment":"smith machine","pattern":"vertical_press","custom":false},{"id":"lib_128","name":"Arnold Press","muscle":"Shoulders","equipment":"dumbbell","pattern":"vertical_press","custom":false},{"id":"lib_129","name":"Seated Dumbbell Shoulder Press","muscle":"Shoulders","equipment":"dumbbell","pattern":"vertical_press","custom":false},{"id":"lib_130","name":"Single Arm Dumbbell Shoulder Press","muscle":"Shoulders","equipment":"dumbbell","pattern":"vertical_press","custom":false},{"id":"lib_131","name":"Single Arm Cable Shoulder Press","muscle":"Shoulders","equipment":"cable","pattern":"vertical_press","custom":false},{"id":"lib_132","name":"Plate Loaded Shoulder Press","muscle":"Shoulders","equipment":"machine","pattern":"vertical_press","custom":false},{"id":"lib_133","name":"Iso-Lateral Shoulder Press","muscle":"Shoulders","equipment":"machine","pattern":"vertical_press","custom":false},{"id":"lib_134","name":"Lean-Away Dumbbell Lateral Raise","muscle":"Shoulders","equipment":"dumbbell","pattern":"lateral_raise","custom":false},{"id":"lib_135","name":"Seated Dumbbell Lateral Raise","muscle":"Shoulders","equipment":"dumbbell","pattern":"lateral_raise","custom":false},{"id":"lib_136","name":"Incline Dumbbell Lateral Raise","muscle":"Shoulders","equipment":"dumbbell","pattern":"lateral_raise","custom":false},{"id":"lib_137","name":"Behind-the-Back Cable Lateral Raise","muscle":"Shoulders","equipment":"cable","pattern":"lateral_raise","custom":false},{"id":"lib_138","name":"Lean-Away Cable Lateral Raise","muscle":"Shoulders","equipment":"cable","pattern":"lateral_raise","custom":false},{"id":"lib_139","name":"Machine Lateral Raise","muscle":"Shoulders","equipment":"machine","pattern":"lateral_raise","custom":false},{"id":"lib_140","name":"Bent Over Dumbbell Reverse Fly","muscle":"Shoulders","equipment":"dumbbell","pattern":"rear_delt","custom":false},{"id":"lib_141","name":"Incline Rear Delt Raise","muscle":"Shoulders","equipment":"dumbbell","pattern":"rear_delt","custom":false},{"id":"lib_142","name":"Cable Reverse Fly","muscle":"Shoulders","equipment":"cable","pattern":"rear_delt","custom":false},{"id":"lib_143","name":"Single Arm Rear Delt Cable Fly","muscle":"Shoulders","equipment":"cable","pattern":"rear_delt","custom":false},{"id":"lib_144","name":"Rope Face Pull","muscle":"Shoulders","equipment":"cable","pattern":"rear_delt","custom":false},{"id":"lib_145","name":"Reverse Pec Deck","muscle":"Shoulders","equipment":"machine","pattern":"rear_delt","custom":false},{"id":"lib_146","name":"Barbell Front Raise","muscle":"Shoulders","equipment":"barbell","pattern":"front_raise","custom":false},{"id":"lib_147","name":"Dumbbell Front Raise","muscle":"Shoulders","equipment":"dumbbell","pattern":"front_raise","custom":false},{"id":"lib_148","name":"Cable Front Raise","muscle":"Shoulders","equipment":"cable","pattern":"front_raise","custom":false},{"id":"lib_149","name":"Barbell Upright Row","muscle":"Shoulders","equipment":"barbell","pattern":"upright_row","custom":false},{"id":"lib_150","name":"Cable Upright Row","muscle":"Shoulders","equipment":"cable","pattern":"upright_row","custom":false},{"id":"lib_151","name":"High Bar Squat","muscle":"Quads","equipment":"barbell","pattern":"squat","custom":false},{"id":"lib_152","name":"Low Bar Squat","muscle":"Quads","equipment":"barbell","pattern":"squat","custom":false},{"id":"lib_153","name":"Pause Squat","muscle":"Quads","equipment":"barbell","pattern":"squat","custom":false},{"id":"lib_154","name":"Box Squat","muscle":"Quads","equipment":"barbell","pattern":"squat","custom":false},{"id":"lib_155","name":"Zercher Squat","muscle":"Quads","equipment":"barbell","pattern":"squat","custom":false},{"id":"lib_156","name":"Anderson Squat","muscle":"Quads","equipment":"barbell","pattern":"squat","custom":false},{"id":"lib_157","name":"Smith Machine Squat","muscle":"Quads","equipment":"smith machine","pattern":"squat","custom":false},{"id":"lib_158","name":"Smith Machine Hack Squat","muscle":"Quads","equipment":"smith machine","pattern":"squat","custom":false},{"id":"lib_159","name":"Pendulum Squat","muscle":"Quads","equipment":"machine","pattern":"squat","custom":false},{"id":"lib_160","name":"Belt Squat","muscle":"Quads","equipment":"machine","pattern":"squat","custom":false},{"id":"lib_161","name":"V-Squat","muscle":"Quads","equipment":"machine","pattern":"squat","custom":false},{"id":"lib_162","name":"Horizontal Leg Press","muscle":"Quads","equipment":"machine","pattern":"squat","custom":false},{"id":"lib_163","name":"Single Leg Press","muscle":"Quads","equipment":"machine","pattern":"squat","custom":false},{"id":"lib_164","name":"Reverse Lunge","muscle":"Quads","equipment":"dumbbell","pattern":"lunge","custom":false},{"id":"lib_165","name":"Stationary Lunge","muscle":"Quads","equipment":"dumbbell","pattern":"lunge","custom":false},{"id":"lib_166","name":"Front Foot Elevated Split Squat","muscle":"Quads","equipment":"dumbbell","pattern":"lunge","custom":false},{"id":"lib_167","name":"Step-Up","muscle":"Quads","equipment":"dumbbell","pattern":"lunge","custom":false},{"id":"lib_168","name":"Dumbbell Step-Up","muscle":"Quads","equipment":"dumbbell","pattern":"lunge","custom":false},{"id":"lib_169","name":"Barbell Reverse Lunge","muscle":"Quads","equipment":"barbell","pattern":"lunge","custom":false},{"id":"lib_170","name":"Barbell Split Squat","muscle":"Quads","equipment":"barbell","pattern":"lunge","custom":false},{"id":"lib_171","name":"Smith Machine Split Squat","muscle":"Quads","equipment":"smith machine","pattern":"lunge","custom":false},{"id":"lib_172","name":"Smith Machine Reverse Lunge","muscle":"Quads","equipment":"smith machine","pattern":"lunge","custom":false},{"id":"lib_173","name":"Single Leg Extension","muscle":"Quads","equipment":"machine","pattern":"knee_extension","custom":false},{"id":"lib_174","name":"Sled Push","muscle":"Quads","equipment":"sled","pattern":"sled_push","custom":false},{"id":"lib_175","name":"Stiff-Leg Deadlift","muscle":"Hamstrings","equipment":"barbell","pattern":"hinge","custom":false},{"id":"lib_176","name":"Snatch Grip Romanian Deadlift","muscle":"Hamstrings","equipment":"barbell","pattern":"hinge","custom":false},{"id":"lib_177","name":"Deficit Romanian Deadlift","muscle":"Hamstrings","equipment":"barbell","pattern":"hinge","custom":false},{"id":"lib_178","name":"Smith Machine Romanian Deadlift","muscle":"Hamstrings","equipment":"smith machine","pattern":"hinge","custom":false},{"id":"lib_179","name":"Cable Pull-Through","muscle":"Hamstrings","equipment":"cable","pattern":"hinge","custom":false},{"id":"lib_180","name":"Standing Leg Curl","muscle":"Hamstrings","equipment":"machine","pattern":"knee_flexion","custom":false},{"id":"lib_181","name":"Single Leg Seated Curl","muscle":"Hamstrings","equipment":"machine","pattern":"knee_flexion","custom":false},{"id":"lib_182","name":"Single Leg Lying Curl","muscle":"Hamstrings","equipment":"machine","pattern":"knee_flexion","custom":false},{"id":"lib_183","name":"Nordic Curl Machine","muscle":"Hamstrings","equipment":"machine","pattern":"knee_flexion","custom":false},{"id":"lib_184","name":"Nordic Hamstring Curl","muscle":"Hamstrings","equipment":"bodyweight","pattern":"knee_flexion","custom":false},{"id":"lib_185","name":"Sliding Leg Curl","muscle":"Hamstrings","equipment":"bodyweight","pattern":"knee_flexion","custom":false},{"id":"lib_186","name":"45-Degree Back Extension","muscle":"Hamstrings","equipment":"machine","pattern":"hinge","custom":false},{"id":"lib_187","name":"Glute Ham Raise","muscle":"Hamstrings","equipment":"machine","pattern":"hinge","custom":false},{"id":"lib_188","name":"Barbell Glute Bridge","muscle":"Glutes","equipment":"barbell","pattern":"hip_extension","custom":false},{"id":"lib_189","name":"B-Stance Hip Thrust","muscle":"Glutes","equipment":"barbell","pattern":"hip_extension","custom":false},{"id":"lib_190","name":"Smith Machine Hip Thrust","muscle":"Glutes","equipment":"smith machine","pattern":"hip_extension","custom":false},{"id":"lib_191","name":"Hip Thrust Machine","muscle":"Glutes","equipment":"machine","pattern":"hip_extension","custom":false},{"id":"lib_192","name":"Glute Drive Machine","muscle":"Glutes","equipment":"machine","pattern":"hip_extension","custom":false},{"id":"lib_193","name":"Reverse Hyperextension","muscle":"Glutes","equipment":"machine","pattern":"hip_extension","custom":false},{"id":"lib_194","name":"Standing Cable Hip Extension","muscle":"Glutes","equipment":"cable","pattern":"hip_extension","custom":false},{"id":"lib_195","name":"Standing Hip Abduction Machine","muscle":"Glutes","equipment":"machine","pattern":"hip_abduction","custom":false},{"id":"lib_196","name":"Cable Hip Abduction","muscle":"Glutes","equipment":"cable","pattern":"hip_abduction","custom":false},{"id":"lib_197","name":"Side-Lying Hip Abduction","muscle":"Glutes","equipment":"bodyweight","pattern":"hip_abduction","custom":false},{"id":"lib_198","name":"Banded Hip Abduction","muscle":"Glutes","equipment":"bodyweight","pattern":"hip_abduction","custom":false},{"id":"lib_199","name":"Hip Adduction Machine","muscle":"Adductors","equipment":"machine","pattern":"hip_adduction","custom":false},{"id":"lib_200","name":"Cable Hip Adduction","muscle":"Adductors","equipment":"cable","pattern":"hip_adduction","custom":false},{"id":"lib_201","name":"EZ-Bar Curl","muscle":"Biceps","equipment":"barbell","pattern":"elbow_flexion","custom":false},{"id":"lib_202","name":"Reverse Barbell Curl","muscle":"Biceps","equipment":"barbell","pattern":"elbow_flexion","custom":false},{"id":"lib_203","name":"Drag Curl","muscle":"Biceps","equipment":"barbell","pattern":"elbow_flexion","custom":false},{"id":"lib_204","name":"Spider Barbell Curl","muscle":"Biceps","equipment":"barbell","pattern":"elbow_flexion","custom":false},{"id":"lib_205","name":"Alternating Dumbbell Curl","muscle":"Biceps","equipment":"dumbbell","pattern":"elbow_flexion","custom":false},{"id":"lib_206","name":"Incline Dumbbell Curl","muscle":"Biceps","equipment":"dumbbell","pattern":"elbow_flexion","custom":false},{"id":"lib_207","name":"Concentration Curl","muscle":"Biceps","equipment":"dumbbell","pattern":"elbow_flexion","custom":false},{"id":"lib_208","name":"Spider Dumbbell Curl","muscle":"Biceps","equipment":"dumbbell","pattern":"elbow_flexion","custom":false},{"id":"lib_209","name":"Cross-Body Hammer Curl","muscle":"Biceps","equipment":"dumbbell","pattern":"elbow_flexion","custom":false},{"id":"lib_210","name":"Zottman Curl","muscle":"Biceps","equipment":"dumbbell","pattern":"elbow_flexion","custom":false},{"id":"lib_211","name":"Reverse Dumbbell Curl","muscle":"Biceps","equipment":"dumbbell","pattern":"elbow_flexion","custom":false},{"id":"lib_212","name":"Rope Hammer Curl","muscle":"Biceps","equipment":"cable","pattern":"elbow_flexion","custom":false},{"id":"lib_213","name":"Bayesian Cable Curl","muscle":"Biceps","equipment":"cable","pattern":"elbow_flexion","custom":false},{"id":"lib_214","name":"High Cable Curl","muscle":"Biceps","equipment":"cable","pattern":"elbow_flexion","custom":false},{"id":"lib_215","name":"Single Arm Cable Curl","muscle":"Biceps","equipment":"cable","pattern":"elbow_flexion","custom":false},{"id":"lib_216","name":"Cable Preacher Curl","muscle":"Biceps","equipment":"cable","pattern":"elbow_flexion","custom":false},{"id":"lib_217","name":"Machine Biceps Curl","muscle":"Biceps","equipment":"machine","pattern":"elbow_flexion","custom":false},{"id":"lib_218","name":"Plate Loaded Preacher Curl","muscle":"Biceps","equipment":"machine","pattern":"elbow_flexion","custom":false},{"id":"lib_219","name":"Rope Triceps Pushdown","muscle":"Triceps","equipment":"cable","pattern":"elbow_extension","custom":false},{"id":"lib_220","name":"Straight Bar Pushdown","muscle":"Triceps","equipment":"cable","pattern":"elbow_extension","custom":false},{"id":"lib_221","name":"V-Bar Pushdown","muscle":"Triceps","equipment":"cable","pattern":"elbow_extension","custom":false},{"id":"lib_222","name":"Single Arm Triceps Pushdown","muscle":"Triceps","equipment":"cable","pattern":"elbow_extension","custom":false},{"id":"lib_223","name":"Cross-Body Cable Triceps Extension","muscle":"Triceps","equipment":"cable","pattern":"elbow_extension","custom":false},{"id":"lib_224","name":"Rope Overhead Triceps Extension","muscle":"Triceps","equipment":"cable","pattern":"elbow_extension","custom":false},{"id":"lib_225","name":"Single Arm Overhead Cable Extension","muscle":"Triceps","equipment":"cable","pattern":"elbow_extension","custom":false},{"id":"lib_226","name":"EZ-Bar Skull Crusher","muscle":"Triceps","equipment":"barbell","pattern":"elbow_extension","custom":false},{"id":"lib_227","name":"JM Press","muscle":"Triceps","equipment":"barbell","pattern":"elbow_extension","custom":false},{"id":"lib_228","name":"Dumbbell Skull Crusher","muscle":"Triceps","equipment":"dumbbell","pattern":"elbow_extension","custom":false},{"id":"lib_229","name":"Single Dumbbell Overhead Extension","muscle":"Triceps","equipment":"dumbbell","pattern":"elbow_extension","custom":false},{"id":"lib_230","name":"Dumbbell Tate Press","muscle":"Triceps","equipment":"dumbbell","pattern":"elbow_extension","custom":false},{"id":"lib_231","name":"Dumbbell Kickback","muscle":"Triceps","equipment":"dumbbell","pattern":"elbow_extension","custom":false},{"id":"lib_232","name":"Machine Triceps Extension","muscle":"Triceps","equipment":"machine","pattern":"elbow_extension","custom":false},{"id":"lib_233","name":"Assisted Dip","muscle":"Triceps","equipment":"machine","pattern":"elbow_extension","custom":false},{"id":"lib_234","name":"Plate Loaded Dip","muscle":"Triceps","equipment":"machine","pattern":"elbow_extension","custom":false},{"id":"lib_235","name":"Bench Dip","muscle":"Triceps","equipment":"bodyweight","pattern":"elbow_extension","custom":false},{"id":"lib_236","name":"Diamond Push-Up","muscle":"Triceps","equipment":"bodyweight","pattern":"elbow_extension","custom":false},{"id":"lib_237","name":"Donkey Calf Raise","muscle":"Calves","equipment":"machine","pattern":"calf_raise","custom":false},{"id":"lib_238","name":"Single Leg Standing Calf Raise","muscle":"Calves","equipment":"machine","pattern":"calf_raise","custom":false},{"id":"lib_239","name":"Hack Squat Calf Raise","muscle":"Calves","equipment":"machine","pattern":"calf_raise","custom":false},{"id":"lib_240","name":"Smith Machine Calf Raise","muscle":"Calves","equipment":"smith machine","pattern":"calf_raise","custom":false},{"id":"lib_241","name":"Dumbbell Standing Calf Raise","muscle":"Calves","equipment":"dumbbell","pattern":"calf_raise","custom":false},{"id":"lib_242","name":"Single Leg Dumbbell Calf Raise","muscle":"Calves","equipment":"dumbbell","pattern":"calf_raise","custom":false},{"id":"lib_243","name":"Single Leg Calf Raise","muscle":"Calves","equipment":"bodyweight","pattern":"calf_raise","custom":false},{"id":"lib_244","name":"Tibialis Raise Machine","muscle":"Tibialis","equipment":"machine","pattern":"dorsiflexion","custom":false},{"id":"lib_245","name":"Wall Tibialis Raise","muscle":"Tibialis","equipment":"bodyweight","pattern":"dorsiflexion","custom":false},{"id":"lib_246","name":"Behind-the-Back Barbell Shrug","muscle":"Traps","equipment":"barbell","pattern":"shrug","custom":false},{"id":"lib_247","name":"Snatch Grip Shrug","muscle":"Traps","equipment":"barbell","pattern":"shrug","custom":false},{"id":"lib_248","name":"Smith Machine Shrug","muscle":"Traps","equipment":"smith machine","pattern":"shrug","custom":false},{"id":"lib_249","name":"Machine Shrug","muscle":"Traps","equipment":"machine","pattern":"shrug","custom":false},{"id":"lib_250","name":"Cable Shrug","muscle":"Traps","equipment":"cable","pattern":"shrug","custom":false},{"id":"lib_251","name":"Incline Dumbbell Shrug","muscle":"Traps","equipment":"dumbbell","pattern":"shrug","custom":false},{"id":"lib_252","name":"Barbell Wrist Curl","muscle":"Forearms","equipment":"barbell","pattern":"wrist_flexion","custom":false},{"id":"lib_253","name":"Behind-the-Back Wrist Curl","muscle":"Forearms","equipment":"barbell","pattern":"wrist_flexion","custom":false},{"id":"lib_254","name":"Barbell Reverse Wrist Curl","muscle":"Forearms","equipment":"barbell","pattern":"wrist_extension","custom":false},{"id":"lib_255","name":"Dumbbell Wrist Curl","muscle":"Forearms","equipment":"dumbbell","pattern":"wrist_flexion","custom":false},{"id":"lib_256","name":"Dumbbell Reverse Wrist Curl","muscle":"Forearms","equipment":"dumbbell","pattern":"wrist_extension","custom":false},{"id":"lib_257","name":"Cable Wrist Curl","muscle":"Forearms","equipment":"cable","pattern":"wrist_flexion","custom":false},{"id":"lib_258","name":"Dumbbell Farmer Carry","muscle":"Forearms","equipment":"dumbbell","pattern":"grip","custom":false},{"id":"lib_259","name":"Trap Bar Farmer Carry","muscle":"Forearms","equipment":"trap bar","pattern":"grip","custom":false},{"id":"lib_260","name":"Plate Pinch Carry","muscle":"Forearms","equipment":"plate","pattern":"grip","custom":false},{"id":"lib_261","name":"Kneeling Cable Crunch","muscle":"Core","equipment":"cable","pattern":"spinal_flexion","custom":false},{"id":"lib_262","name":"Standing Cable Crunch","muscle":"Core","equipment":"cable","pattern":"spinal_flexion","custom":false},{"id":"lib_263","name":"Ab Crunch Machine","muscle":"Core","equipment":"machine","pattern":"spinal_flexion","custom":false},{"id":"lib_264","name":"Crunch","muscle":"Core","equipment":"bodyweight","pattern":"spinal_flexion","custom":false},{"id":"lib_265","name":"Decline Crunch","muscle":"Core","equipment":"bodyweight","pattern":"spinal_flexion","custom":false},{"id":"lib_266","name":"Sit-Up","muscle":"Core","equipment":"bodyweight","pattern":"spinal_flexion","custom":false},{"id":"lib_267","name":"Captain Chair Leg Raise","muscle":"Core","equipment":"bodyweight","pattern":"hip_flexion_core","custom":false},{"id":"lib_268","name":"Lying Leg Raise","muscle":"Core","equipment":"bodyweight","pattern":"hip_flexion_core","custom":false},{"id":"lib_269","name":"Reverse Crunch","muscle":"Core","equipment":"bodyweight","pattern":"hip_flexion_core","custom":false},{"id":"lib_270","name":"Hanging Knee Raise","muscle":"Core","equipment":"bodyweight","pattern":"hip_flexion_core","custom":false},{"id":"lib_271","name":"Cable Woodchop","muscle":"Core","equipment":"cable","pattern":"rotation","custom":false},{"id":"lib_272","name":"Cable Rotation","muscle":"Core","equipment":"cable","pattern":"rotation","custom":false},{"id":"lib_273","name":"Pallof Press","muscle":"Core","equipment":"cable","pattern":"anti_rotation","custom":false},{"id":"lib_274","name":"Body Saw Plank","muscle":"Core","equipment":"bodyweight","pattern":"anti_extension","custom":false},{"id":"lib_275","name":"RKC Plank","muscle":"Core","equipment":"bodyweight","pattern":"anti_extension","custom":false},{"id":"lib_276","name":"Dead Bug","muscle":"Core","equipment":"bodyweight","pattern":"anti_extension","custom":false},{"id":"lib_277","name":"Dumbbell Side Bend","muscle":"Core","equipment":"dumbbell","pattern":"lateral_flexion","custom":false},{"id":"lib_278","name":"Cable Side Bend","muscle":"Core","equipment":"cable","pattern":"lateral_flexion","custom":false},{"id":"lib_279","name":"Side Plank","muscle":"Core","equipment":"bodyweight","pattern":"lateral_flexion","custom":false},{"id":"lib_280","name":"Rack Pull","muscle":"Lower Back","equipment":"barbell","pattern":"hinge","custom":false},{"id":"lib_281","name":"Block Pull","muscle":"Lower Back","equipment":"barbell","pattern":"hinge","custom":false},{"id":"lib_282","name":"Deficit Deadlift","muscle":"Lower Back","equipment":"barbell","pattern":"hinge","custom":false},{"id":"lib_283","name":"Sumo Deadlift","muscle":"Lower Back","equipment":"barbell","pattern":"hinge","custom":false},{"id":"lib_284","name":"Trap Bar Deadlift","muscle":"Lower Back","equipment":"trap bar","pattern":"hinge","custom":false},{"id":"lib_285","name":"Roman Chair Back Extension","muscle":"Lower Back","equipment":"machine","pattern":"back_extension","custom":false},{"id":"lib_286","name":"Seated Back Extension Machine","muscle":"Lower Back","equipment":"machine","pattern":"back_extension","custom":false},{"id":"lib_287","name":"Power Clean","muscle":"Full Body","equipment":"barbell","pattern":"olympic_pull","custom":false},{"id":"lib_288","name":"Hang Power Clean","muscle":"Full Body","equipment":"barbell","pattern":"olympic_pull","custom":false},{"id":"lib_289","name":"Clean Pull","muscle":"Full Body","equipment":"barbell","pattern":"olympic_pull","custom":false},{"id":"lib_290","name":"High Pull","muscle":"Full Body","equipment":"barbell","pattern":"olympic_pull","custom":false},{"id":"lib_291","name":"Power Snatch","muscle":"Full Body","equipment":"barbell","pattern":"olympic_pull","custom":false},{"id":"lib_292","name":"Hang Power Snatch","muscle":"Full Body","equipment":"barbell","pattern":"olympic_pull","custom":false},{"id":"lib_293","name":"Kettlebell Swing","muscle":"Full Body","equipment":"kettlebell","pattern":"hinge","custom":false},{"id":"lib_294","name":"Kettlebell Romanian Deadlift","muscle":"Full Body","equipment":"kettlebell","pattern":"hinge","custom":false},{"id":"lib_295","name":"Kettlebell Goblet Squat","muscle":"Full Body","equipment":"kettlebell","pattern":"squat","custom":false},{"id":"lib_296","name":"Double Kettlebell Front Squat","muscle":"Full Body","equipment":"kettlebell","pattern":"squat","custom":false},{"id":"lib_297","name":"Kettlebell Press","muscle":"Full Body","equipment":"kettlebell","pattern":"vertical_press","custom":false},{"id":"lib_298","name":"Double Kettlebell Press","muscle":"Full Body","equipment":"kettlebell","pattern":"vertical_press","custom":false},{"id":"lib_299","name":"Kettlebell Farmer Carry","muscle":"Full Body","equipment":"kettlebell","pattern":"carry","custom":false},{"id":"lib_300","name":"Kettlebell Suitcase Carry","muscle":"Full Body","equipment":"kettlebell","pattern":"carry","custom":false},{"id":"lib_301","name":"Landmine Press","muscle":"Full Body","equipment":"landmine","pattern":"vertical_press","custom":false},{"id":"lib_302","name":"Half-Kneeling Landmine Press","muscle":"Full Body","equipment":"landmine","pattern":"vertical_press","custom":false},{"id":"lib_303","name":"Landmine Squat","muscle":"Full Body","equipment":"landmine","pattern":"squat","custom":false},{"id":"lib_304","name":"Landmine Reverse Lunge","muscle":"Full Body","equipment":"landmine","pattern":"lunge","custom":false},{"id":"lib_305","name":"Backward Sled Drag","muscle":"Full Body","equipment":"sled","pattern":"sled_pull","custom":false},{"id":"lib_306","name":"Sled Drag","muscle":"Full Body","equipment":"sled","pattern":"sled_pull","custom":false}];
+
+function freshState(){
+ return {
+   profile:{name:'',unit:'lb'},
+   customExercises:[],
+   routines:[],
+   sessions:[],
+   activeWorkout:null,
+   favorites:[],
+   bodyweight:[],
+   ui:{onboardingDone:false,haptics:true,keepAwake:true},
+   settings:{defaultMin:8,defaultMax:12,defaultSets:3,defaultIncrement:5}
+ };
+}
+let state=load();
+
+function load(){
+ try{
+   const base=freshState(),saved=JSON.parse(localStorage.getItem(LSKEY)||'{}');
+   const merged=Object.assign(base,saved);
+   merged.profile=Object.assign(base.profile,saved.profile||{});
+   merged.settings=Object.assign(base.settings,saved.settings||{});
+   merged.ui=Object.assign(base.ui,saved.ui||{});
+   if((saved.routines?.length||0)||(saved.sessions?.length||0))merged.ui.onboardingDone=true;
+   return merged;
+ } catch(e){ return freshState(); }
+}
+function save(){localStorage.setItem(LSKEY,JSON.stringify(state));}
+
+let deferredInstallPrompt=null,wakeLock=null,confirmCallback=null,toastTimer=null;
+function haptic(pattern=20){
+ if(state.ui?.haptics!==false && navigator.vibrate)navigator.vibrate(pattern);
+}
+function showToast(msg){
+ const el=document.getElementById('toast');if(!el)return;
+ el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);
+ toastTimer=setTimeout(()=>el.classList.remove('show'),1700);
+}
+function muscleChip(muscle){
+ return `<span class="muscle-chip"><span class="muscle-dot"></span>${categoryIcon(muscle)} ${esc(muscle||'Other')}</span>`;
+}
+async function requestWakeLock(){
+ if(state.ui?.keepAwake===false||!('wakeLock' in navigator))return;
+ try{wakeLock=await navigator.wakeLock.request('screen');}catch(e){}
+}
+async function releaseWakeLock(){
+ try{if(wakeLock)await wakeLock.release();}catch(e){} wakeLock=null;
+}
+function confirmAction(title,message,callback){
+ confirmCallback=callback;
+ openModal(title,`<div class="notice">${esc(message)}</div><div class="actions"><button class="btn danger" onclick="runConfirmedAction()">Confirm</button><button class="btn secondary" onclick="closeModal();confirmCallback=null">Cancel</button></div>`);
+}
+function runConfirmedAction(){
+ const fn=confirmCallback;confirmCallback=null;closeModal();if(fn)fn();
+}
+function updateInstallButton(){
+ const b=document.getElementById('installBtn');if(b)b.classList.toggle('show',!!deferredInstallPrompt);
+}
+async function installApp(){
+ if(!deferredInstallPrompt){showToast('Install option is not available in this browser yet.');return;}
+ deferredInstallPrompt.prompt();
+ try{await deferredInstallPrompt.userChoice;}catch(e){}
+ deferredInstallPrompt=null;updateInstallButton();
+}
+function onboarding(){
+ openModal('Welcome to Swole Cat',`
+ <div class="onboard-hero"><div class="onboard-logo">🐱</div><div class="eyebrow">LOCAL. FAST. YOURS.</div><h1 style="font-size:1.8rem;margin:7px 0">Train, log, progress.</h1><div class="muted">No account, no subscription, no cloud workout profile. Your training data stays on this device.</div></div>
+ <div class="onboard-step"><div class="num">1</div><div><b>Build your routines</b><div class="mini">Start from the editable 3-day plan or create your own from the full exercise library.</div></div></div>
+ <div class="onboard-step"><div class="num">2</div><div><b>Log what actually happened</b><div class="mini">Weight, reps, optional RIR, substitutions, rest timing, and notes.</div></div></div>
+ <div class="onboard-step"><div class="num">3</div><div><b>Beat the right thing next time</b><div class="mini">The coach uses your own history to suggest conservative progression.</div></div></div>
+ <div class="field"><label>Your name (optional)</label><input id="onName" value="${escAttr(state.profile.name||'')}" placeholder="Jake"></div>
+ <div class="field"><label>Units</label><select id="onUnit"><option value="lb" ${state.profile.unit==='lb'?'selected':''}>Pounds (lb)</option><option value="kg" ${state.profile.unit==='kg'?'selected':''}>Kilograms (kg)</option></select></div>
+ <div class="actions"><button class="btn" onclick="finishOnboarding(false)">Start empty</button><button class="btn secondary" onclick="finishOnboarding(true)">Use 3-day starter</button></div>
+ `);
+}
+function finishOnboarding(starter){
+ state.profile.name=document.getElementById('onName').value.trim();
+ state.profile.unit=document.getElementById('onUnit').value;
+ state.ui.onboardingDone=true;save();closeModal();
+ if(starter)installStarterPlan();
+ renderHome();showToast('You’re ready to train.');
+}
+
+function allExercises(){return [...LIBRARY,...state.customExercises];}
+function exById(id){return allExercises().find(x=>x.id===id);}
+function fmtWeight(w){return `${Number(w||0)} ${state.profile.unit}`;}
+
+function go(id){
+ haptic(8);
+ document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.go===id));
+ if(id==='home') renderHome();
+ if(id==='routines') renderRoutines();
+ if(id==='exercises') renderExercises();
+ if(id==='history') renderHistory();
+ if(id==='analytics') renderAnalytics();
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+
+
+function startOfWeek(d=new Date()){
+ const x=new Date(d);x.setHours(0,0,0,0);const day=(x.getDay()+6)%7;x.setDate(x.getDate()-day);return x;
+}
+function sessionVolume(s){
+ return s.exercises.reduce((sum,e)=>sum+completedSets(e).reduce((a,x)=>a+(Number(x.weight)||0)*(Number(x.reps)||0),0),0);
+}
+function sessionSetCount(s){return s.exercises.reduce((n,e)=>n+completedSets(e).length,0)}
+function sessionPRCount(s){return s.exercises.reduce((n,e)=>n+(completedSets(e).some(x=>x.pr)?1:0),0)}
+function exerciseHistory(exerciseId){
+ const arr=[];
+ state.sessions.forEach(s=>s.exercises.forEach(e=>{
+   if(e.exerciseId===exerciseId && completedSets(e).length)arr.push({date:s.date,routineName:s.routineName,sets:completedSets(e),notes:e.notes||''});
+ }));
+ return arr.sort((a,b)=>a.date.localeCompare(b.date));
+}
+function exerciseMetrics(exerciseId){
+ const h=exerciseHistory(exerciseId),sets=h.flatMap(x=>x.sets);
+ const bestWeight=sets.length?Math.max(...sets.map(x=>Number(x.weight)||0)):0;
+ const bestE1=sets.length?Math.max(...sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ const bestVolume=h.length?Math.max(...h.map(x=>x.sets.reduce((a,s)=>a+(Number(s.weight)||0)*(Number(s.reps)||0),0))):0;
+ const latest=h.at(-1),prior=h.at(-2);
+ const latestE1=latest?Math.max(...latest.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ const priorE1=prior?Math.max(...prior.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ let trend='flat';
+ if(priorE1 && latestE1>priorE1*1.01)trend='up';
+ else if(priorE1 && latestE1<priorE1*.99)trend='down';
+ return {history:h,sets,bestWeight,bestE1,bestVolume,latestE1,priorE1,trend};
+}
+function weeklyMuscleSets(){
+ const start=startOfWeek(),counts={};
+ state.sessions.filter(s=>new Date(s.date)>=start).forEach(s=>s.exercises.forEach(e=>{
+   const ex=exById(e.exerciseId);if(!ex)return;
+   counts[ex.muscle]=(counts[ex.muscle]||0)+completedSets(e).length;
+ }));
+ return counts;
+}
+function lastEightWeeks(){
+ const now=startOfWeek(),rows=[];
+ for(let i=7;i>=0;i--){
+   const start=new Date(now);start.setDate(start.getDate()-i*7);
+   const end=new Date(start);end.setDate(end.getDate()+7);
+   const sessions=state.sessions.filter(s=>{const d=new Date(s.date);return d>=start&&d<end});
+   rows.push({label:`${start.getMonth()+1}/${start.getDate()}`,workouts:sessions.length,sets:sessions.reduce((a,s)=>a+sessionSetCount(s),0)});
+ }
+ return rows;
+}
+function svgLine(values,width=600,height=130){
+ if(!values.length)return '';
+ const pad=14,max=Math.max(...values),min=Math.min(...values),range=Math.max(1,max-min);
+ const points=values.map((v,i)=>{
+   const x=pad+(width-pad*2)*(values.length===1?.5:i/(values.length-1));
+   const y=height-pad-(height-pad*2)*((v-min)/range);
+   return {x,y,v};
+ });
+ const pts=points.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+ const fillPts=`${points[0].x},${height-pad} ${pts} ${points.at(-1).x},${height-pad}`;
+ return `<svg class="spark" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="progress chart">
+   <defs><linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8b5cf6" stop-opacity=".34"/><stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/></linearGradient></defs>
+   <line x1="${pad}" y1="${height/2}" x2="${width-pad}" y2="${height/2}" stroke="#253047" stroke-width="1"/>
+   <polygon points="${fillPts}" fill="url(#areaFill)"/>
+   <polyline points="${pts}" fill="none" stroke="#9b77f7" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+   ${points.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="5" fill="#ddd6fe" stroke="#6d49bd" stroke-width="2"/>`).join('')}
+ </svg><div class="chart-labels"><span>${min.toFixed(0)}</span><span>${max.toFixed(0)}</span></div>`;
+}
+function openExerciseProgress(exerciseId){
+ const ex=exById(exerciseId),m=exerciseMetrics(exerciseId),h=m.history;
+ const recent=h.slice(-12);
+ const e1s=recent.map(x=>Math.max(...x.sets.map(s=>estimated1RM(s.weight,s.reps))));
+ const trend=m.trend==='up'?'<span class="trend-up">↑ Trending up</span>':m.trend==='down'?'<span class="trend-down">↓ Recent dip</span>':'<span class="trend-flat">→ Holding steady</span>';
+ openModal(`${esc(ex?.name||'Exercise')} progress`,`
+ ${!h.length?'<div class="empty">Log this exercise in a workout and its progress will appear here.</div>':`
+ <div class="row"><div><div class="mini">${esc(ex?.muscle||'')} · ${esc(ex?.equipment||'')} · ${esc(patternLabel(ex?.pattern||''))}</div><div style="margin-top:6px;font-weight:850">${trend}</div></div><button class="favbtn ${isFavorite(exerciseId)?'on':''}" onclick="toggleFavorite('${exerciseId}')">${isFavorite(exerciseId)?'★':'☆'}</button></div>
+ <div class="metric-row">
+   <div class="metric-mini"><b>${m.bestWeight} ${state.profile.unit}</b><span>Best load</span></div>
+   <div class="metric-mini"><b>${m.bestE1.toFixed(0)} ${state.profile.unit}</b><span>Est. 1RM</span></div>
+   <div class="metric-mini"><b>${h.length}</b><span>Sessions</span></div>
+ </div>
+ <div class="chart-card"><div class="row"><b>Estimated strength</b><span class="mini">Last ${recent.length}</span></div>${svgLine(e1s)}</div>
+ <div class="picker-section">Recent sessions</div>
+ <div class="card">${h.slice().reverse().slice(0,8).map(x=>`<div class="list-item"><div class="grow"><b>${new Date(x.date).toLocaleDateString()}</b><div class="mini">${x.sets.map(s=>`${s.weight}×${s.reps}`).join(' · ')}</div></div><span class="tag">${Math.max(...x.sets.map(s=>estimated1RM(s.weight,s.reps))).toFixed(0)} e1RM</span></div>`).join('')}</div>
+ `}`);
+}
+function renderAnalytics(){
+ const host=document.getElementById('analyticsArea');if(!host)return;
+ const now=Date.now(),last30=state.sessions.filter(s=>now-new Date(s.date).getTime()<=30*86400000);
+ const weekStart=startOfWeek(),thisWeek=state.sessions.filter(s=>new Date(s.date)>=weekStart);
+ const prs30=last30.reduce((a,s)=>a+sessionPRCount(s),0);
+ const sets30=last30.reduce((a,s)=>a+sessionSetCount(s),0);
+ const vol30=last30.reduce((a,s)=>a+sessionVolume(s),0);
+ const muscle=weeklyMuscleSets(),muscleRows=Object.entries(muscle).sort((a,b)=>b[1]-a[1]);
+ const maxMuscle=Math.max(1,...muscleRows.map(x=>x[1]));
+ const weeks=lastEightWeeks(),maxWeek=Math.max(1,...weeks.map(x=>x.workouts));
+ const used=[...new Set(state.sessions.flatMap(s=>s.exercises.filter(e=>completedSets(e).length).map(e=>e.exerciseId)))];
+ const top=used.map(id=>({id,ex:exById(id),...exerciseMetrics(id)})).filter(x=>x.history.length).sort((a,b)=>b.latestE1-a.latestE1).slice(0,8);
+ const coachInsights=used.map(id=>{const r=state.routines.flatMap(x=>x.exercises).find(e=>e.exerciseId===id)||{trainingGoal:'general',resetPercent:7.5,increment:state.settings.defaultIncrement,minReps:state.settings.defaultMin,maxReps:state.settings.defaultMax,sets:state.settings.defaultSets};return {id,ex:exById(id),signal:coachSignal(id,r)};}).filter(x=>x.signal.stalled||x.signal.level==='good').slice(0,8);
+ host.innerHTML=`
+ <div class="stat-grid">
+   <div class="stat-card"><div class="caption">This week</div><div class="big">${thisWeek.length}</div><div class="mini">workouts</div></div>
+   <div class="stat-card"><div class="caption">Last 30 days</div><div class="big">${sets30}</div><div class="mini">working sets</div></div>
+   <div class="stat-card"><div class="caption">PRs · 30 days</div><div class="big">${prs30}</div><div class="mini">logged wins</div></div>
+   <div class="stat-card"><div class="caption">Load volume</div><div class="big">${Math.round(vol30).toLocaleString()}</div><div class="mini">${state.profile.unit} × reps</div></div>
+ </div>
+ <div class="section-title"><h2>8-week consistency</h2></div>
+ <div class="chart-card">
+   <div class="row"><div class="mini">Workouts completed each week</div><span class="tag">${weeks.reduce((a,x)=>a+x.workouts,0)} total</span></div>
+   <div class="weekbars">${weeks.map(w=>`<div class="weekcol"><div class="weekbar" style="height:${Math.max(3,w.workouts/maxWeek*92)}px" title="${w.workouts} workouts"></div><div class="weeklabel">${w.label}</div></div>`).join('')}</div>
+ </div>
+ <div class="section-title"><h2>Working sets this week</h2></div>
+ <div class="chart-card">${muscleRows.length?`<div class="barlist">${muscleRows.map(([name,n])=>`<div class="barrow"><span>${esc(name)}</span><div class="bartrack"><div class="barfill" style="width:${Math.round(n/maxMuscle*100)}%"></div></div><b>${n}</b></div>`).join('')}</div>`:'<div class="empty">Complete a workout this week to populate muscle volume.</div>'}</div>
+ <div class="section-title"><h2>Coach insights</h2></div>
+ <div class="chart-card">${coachInsights.length?`<div class="insight-list">${coachInsights.map(x=>`<div class="coachbox ${x.signal.level==='info'?'':x.signal.level}" style="margin:0"><div class="row"><div><div class="coach-title">${esc(x.ex?.name||'Exercise')}</div><div class="coach-text">${esc(x.signal.text)}</div></div><span class="${x.signal.level==='good'?'trend-up':x.signal.level==='reset'?'trend-down':'trend-flat'}">${x.signal.level==='good'?'↑':x.signal.level==='reset'?'!':'→'}</span></div></div>`).join('')}</div>`:'<div class="empty">No notable progression patterns yet. Keep logging consistent sessions.</div>'}</div>
+ <div class="section-title"><h2>Exercise progress</h2></div>
+ <div class="grid">${top.length?top.map(x=>`<div class="card clickable" onclick="openExerciseProgress('${x.id}')"><div class="row"><div><div class="exercise-name">${esc(x.ex?.name||'Exercise')}</div><div class="mini">${x.history.length} logged sessions · best load ${x.bestWeight} ${state.profile.unit}</div></div><span class="${x.trend==='up'?'trend-up':x.trend==='down'?'trend-down':'trend-flat'}">${x.trend==='up'?'↑':x.trend==='down'?'↓':'→'} ${x.latestE1.toFixed(0)}</span></div></div>`).join(''):'<div class="empty">Once you log repeated exercises, your strength trends will live here.</div>'}</div>
+ <div class="section-title"><h2>Bodyweight <span class="mini">(optional)</span></h2><button class="btn small secondary" onclick="logBodyweight()">+ Log</button></div>
+ <div class="chart-card">${(state.bodyweight||[]).length?`${svgLine(state.bodyweight.slice(-20).map(x=>Number(x.value)))}<div class="row"><span class="mini">Latest</span><b>${state.bodyweight.at(-1).value} ${state.profile.unit}</b></div>`:'<div class="empty">Optional bodyweight tracking lives only on this device.</div>'}</div>`;
+}
+function logBodyweight(){
+ openModal('Log bodyweight',`<div class="field"><label>Bodyweight (${state.profile.unit})</label><input id="bwValue" type="number" step=".1" placeholder="150"></div><button class="btn" onclick="saveBodyweight()">Save</button>`);
+}
+function saveBodyweight(){
+ const v=Number(document.getElementById('bwValue').value);if(!v)return;
+ state.bodyweight=state.bodyweight||[];state.bodyweight.push({date:new Date().toISOString(),value:v});save();closeModal();renderAnalytics();
+}
+
+function renderHome(){
+ const n=state.profile.name?.trim();
+ document.getElementById('helloTitle').textContent=n?`Let’s work, ${n}.`:'Build your training.';
+ document.getElementById('helloText').textContent=state.routines.length?'Your previous numbers are ready. Pick a routine and beat them.':'Create a routine, log your sets, and come back next week knowing exactly what to beat.';
+ const wrap=document.getElementById('homeRoutines');
+ if(!state.routines.length) wrap.innerHTML=`<div class="empty"><div class="empty-illustration">🏋</div><strong>No routines yet</strong>Build your own workout or install the editable 3-day starter above.</div>`;
+ else wrap.innerHTML=state.routines.slice(0,4).map(r=>routineCard(r)).join('');
+ const recent=document.getElementById('recentProgress');
+ const s=state.sessions.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4);
+ if(!s.length) recent.innerHTML=`<div class="empty"><div class="empty-illustration">↗</div><strong>Your progress starts with workout one</strong>PRs, strength trends, and recent sessions will show here.</div>`;
+ else recent.innerHTML=s.map(sessionCard).join('');
+}
+
+function routineCard(r){
+ return `<div class="card clickable" onclick="openRoutine('${r.id}')">
+   <div class="row"><div><div class="exercise-name">${esc(r.name)}</div><div class="mini">${r.exercises.length} exercise${r.exercises.length===1?'':'s'}</div></div><span class="tag">START ›</span></div>
+ </div>`;
+}
+function sessionCard(s){
+ let sets=sessionSetCount(s),prs=sessionPRCount(s);
+ return `<div class="card clickable" onclick="go('history')"><div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleDateString()} · ${sets} working sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div><span class="tag">${prs?`🏆 ${prs} PR`:`${s.exercises.length} moves`}</span></div></div>`;
+}
+
+function populateMuscles(){
+ const msel=document.getElementById('muscleFilter'), esel=document.getElementById('equipmentFilter');
+ const muscles=[...new Set(allExercises().map(x=>x.muscle))].sort();
+ const equipment=[...new Set(allExercises().map(x=>x.equipment))].sort();
+ if(msel){const old=msel.value;msel.innerHTML='<option value="">All muscle groups</option>'+muscles.map(m=>`<option>${esc(m)}</option>`).join('');msel.value=old;}
+ if(esel){const old=esel.value;esel.innerHTML='<option value="">All equipment</option>'+equipment.map(e=>`<option>${esc(e)}</option>`).join('');esel.value=old;}
+}
+function renderExercises(){
+ populateMuscles();
+ const q=(document.getElementById('exerciseSearch')?.value||'').toLowerCase();
+ const m=document.getElementById('muscleFilter')?.value||'';
+ const eq=document.getElementById('equipmentFilter')?.value||'';
+ const list=allExercises().filter(x=>(!q||x.name.toLowerCase().includes(q)||x.muscle.toLowerCase().includes(q)||(x.pattern||'').toLowerCase().includes(q))&&(!m||x.muscle===m)&&(!eq||x.equipment===eq));
+ document.getElementById('exerciseList').innerHTML=list.length?list.map(x=>`
+   <div class="list-item">
+     <div class="iconbox">${equipmentIcon(x.equipment)}</div>
+     <div class="grow exercise-link" onclick="openExerciseProgress('${x.id}')"><div class="exercise-name">${esc(x.name)}</div><div class="mini" style="margin:4px 0">${muscleChip(x.muscle)}</div><div class="mini">${esc(x.equipment)} · ${esc(patternLabel(x.pattern))}</div></div>
+     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button>
+     ${x.custom?`<button class="btn small secondary" onclick="editExercise('${x.id}')">Edit</button>`:''}
+   </div>`).join(''):`<div class="empty">Nothing matched that search.</div>`;
+}
+function patternLabel(p){return String(p||'other').replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())}
+
+function favoriteIds(){return new Set(state.favorites||[])}
+function isFavorite(id){return (state.favorites||[]).includes(id)}
+function toggleFavorite(id){
+ state.favorites=state.favorites||[];
+ state.favorites=isFavorite(id)?state.favorites.filter(x=>x!==id):[...state.favorites,id];
+ save();
+ if(document.getElementById('routinePicker'))renderRoutinePicker();
+ if(document.getElementById('addExList'))renderAddExercisePicker();
+ if(document.getElementById('exerciseList'))renderExercises();
+}
+function recentExerciseIds(limit=18){
+ const out=[],seen=new Set();
+ const add=id=>{if(id&&!seen.has(id)){seen.add(id);out.push(id)}};
+ if(state.activeWorkout) [...state.activeWorkout.exercises].reverse().forEach(e=>add(e.exerciseId));
+ [...state.sessions].sort((a,b)=>b.date.localeCompare(a.date)).forEach(s=>[...s.exercises].reverse().forEach(e=>add(e.exerciseId)));
+ state.routines.forEach(r=>r.exercises.forEach(e=>{if(out.length<limit)add(e.exerciseId)}));
+ return out.slice(0,limit);
+}
+function categoryIcon(m){
+ return ({Chest:'▰',Back:'↔',Shoulders:'△',Biceps:'◒',Triceps:'◓',Quads:'⬟',Hamstrings:'⌁',Glutes:'●',Calves:'⌃',Core:'◆',Traps:'⌂',Forearms:'✦','Lower Back':'◇',Tibialis:'⌄',Adductors:'◫','Full Body':'★'})[m]||'•';
+}
+function muscleCategories(){
+ const counts={}; allExercises().forEach(x=>counts[x.muscle]=(counts[x.muscle]||0)+1);
+ const preferred=['Chest','Back','Shoulders','Biceps','Triceps','Quads','Hamstrings','Glutes','Calves','Core','Traps','Forearms','Lower Back','Tibialis','Adductors','Full Body'];
+ return Object.keys(counts).sort((a,b)=>{
+   const ai=preferred.indexOf(a),bi=preferred.indexOf(b);
+   if(ai>=0||bi>=0)return (ai<0?999:ai)-(bi<0?999:bi);
+   return a.localeCompare(b);
+ }).map(name=>({name,count:counts[name]}));
+}
+function exerciseMatchesSearch(x,q){
+ q=q.trim().toLowerCase();
+ return !q||x.name.toLowerCase().includes(q)||x.muscle.toLowerCase().includes(q)||x.equipment.toLowerCase().includes(q)||patternLabel(x.pattern).toLowerCase().includes(q);
+}
+
+function equipmentIcon(e){return {'barbell':'🏋','dumbbell':'◐','machine':'⚙','cable':'⌁','bodyweight':'◆','smith machine':'▥','kettlebell':'●','landmine':'◒','trap bar':'⬡','sled':'▰','plate':'◉'}[e]||'●'}
+
+function renderRoutines(){
+ const el=document.getElementById('routineList');
+ el.innerHTML=state.routines.length?state.routines.map(r=>`
+ <div class="card">
+   <div class="row">
+     <div class="grow"><div class="exercise-name">${esc(r.name)}</div><div class="mini">${r.exercises.map(x=>esc(exById(x.exerciseId)?.name||'Unknown')).join(' · ')||'No exercises yet'}</div></div>
+     <button class="btn small" onclick="openRoutine('${r.id}')">Start</button>
+   </div>
+   <div class="actions"><button class="btn small secondary" onclick="editRoutine('${r.id}')">Edit routine</button><button class="btn small danger" onclick="deleteRoutine('${r.id}')">Delete</button></div>
+ </div>`).join(''):`<div class="empty">You haven't built a workout yet.</div>`;
+}
+
+function installStarterPlan(){
+ const names=['Full Body A','Full Body B','Full Body C'];
+ if(names.some(n=>state.routines.some(r=>r.name===n))){ alert('The 3-day starter is already installed.'); return; }
+ const find=name=>allExercises().find(x=>x.name===name)?.id;
+ const make=(name,items)=>({id:uid(),name,exercises:items.map(([exercise,sets,min,max,inc,rest])=>({
+   exerciseId:find(exercise),sets,minReps:min,maxReps:max,increment:inc,mode:'double',restSeconds:rest
+ })).filter(x=>x.exerciseId)});
+ state.routines.push(
+   make('Full Body A',[
+    ['Back Squat',3,6,10,5,150],['Barbell Bench Press',3,6,10,5,150],['Seated Cable Row',3,8,12,5,120],['Romanian Deadlift',2,8,12,5,150],['Dumbbell Lateral Raise',2,10,15,5,75],['Cable Crunch',2,10,15,5,75]
+   ]),
+   make('Full Body B',[
+    ['Deadlift',2,5,8,5,180],['Dumbbell Shoulder Press',3,8,12,5,120],['Lat Pulldown',3,8,12,5,120],['Bulgarian Split Squat',3,8,12,5,120],['Incline Dumbbell Press',2,8,12,5,120],['Cable Curl',2,10,15,5,75],['Triceps Pushdown',2,10,15,5,75]
+   ]),
+   make('Full Body C',[
+    ['Leg Press',3,8,12,10,150],['Dumbbell Bench Press',3,8,12,5,120],['Chest Supported Row',3,8,12,5,120],['Hip Thrust',3,8,12,5,150],['Seated Leg Curl',2,10,15,5,90],['Cable Lateral Raise',2,10,15,5,75]
+   ])
+ );
+ save(); renderHome(); renderRoutines(); alert('Added Full Body A, B, and C. Every exercise is editable.');
+}
+
+let routinePickerSelection=new Set(),routinePickerCategory='home',routinePickerMovement='';
+
+function newRoutine(id=null){
+ const r=id?state.routines.find(x=>x.id===id):{id:uid(),name:'',exercises:[]};
+ routinePickerSelection=new Set(r.exercises.map(x=>x.exerciseId));
+ routinePickerCategory='home'; routinePickerMovement='';
+ const body=`<div class="field"><label>Routine name</label><input id="rName" value="${escAttr(r.name)}" placeholder="Push Day"></div>
+ <div class="notice">Search anything instantly, or browse by muscle group → movement. Star exercises you use a lot and they'll stay in Favorites.</div>
+ <div class="picker-tools" style="margin-top:12px">
+   <input id="routineExSearch" placeholder="Search exercise, muscle, equipment..." oninput="renderRoutinePicker()">
+   <div class="row" style="margin-top:9px"><span class="mini">Exercise picker</span><span id="routinePickCount" class="pickcount">${routinePickerSelection.size} selected</span></div>
+ </div>
+ <div id="routinePicker" style="max-height:52vh;overflow:auto"></div>
+ <div class="actions"><button class="btn" onclick="saveRoutine('${r.id}',${id?'true':'false'})">Save routine</button></div>`;
+ openModal(id?'Edit routine':'New routine',body);
+ renderRoutinePicker();
+}
+function routinePickerRows(items){
+ return items.map(x=>`<div class="list-item">
+   <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
+   <div class="iconbox">${equipmentIcon(x.equipment)}</div>
+   <div class="grow" onclick="toggleRoutineExercise('${x.id}')" style="cursor:pointer"><div class="exercise-name">${esc(x.name)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div>
+   <input type="checkbox" ${routinePickerSelection.has(x.id)?'checked':''} onchange="toggleRoutineExercise('${x.id}',this.checked)" style="width:22px;height:22px">
+ </div>`).join('')||'<div class="empty">No exercises here yet.</div>';
+}
+function toggleRoutineExercise(id,forced){
+ const add=forced===undefined?!routinePickerSelection.has(id):forced;
+ if(add)routinePickerSelection.add(id);else routinePickerSelection.delete(id);
+ const c=document.getElementById('routinePickCount');if(c)c.textContent=`${routinePickerSelection.size} selected`;
+ renderRoutinePicker();
+}
+function setRoutineCategory(cat){routinePickerCategory=cat;routinePickerMovement='';document.getElementById('routineExSearch').value='';renderRoutinePicker()}
+function setRoutineMovement(p){routinePickerMovement=p;renderRoutinePicker()}
+function renderRoutinePicker(){
+ const host=document.getElementById('routinePicker');if(!host)return;
+ const q=(document.getElementById('routineExSearch')?.value||'').trim();
+ if(q){
+   host.innerHTML=`<div class="picker-section">Search results</div><div class="card">${routinePickerRows(allExercises().filter(x=>exerciseMatchesSearch(x,q)).slice(0,100))}</div>`;
+   return;
+ }
+ if(routinePickerCategory==='home'){
+   const fav=allExercises().filter(x=>isFavorite(x.id));
+   const recent=recentExerciseIds().map(exById).filter(Boolean);
+   host.innerHTML=`
+    ${fav.length?`<div class="picker-section">★ Favorites</div><div class="card">${routinePickerRows(fav)}</div>`:''}
+    ${recent.length?`<div class="picker-section">↺ Recently used</div><div class="card">${routinePickerRows(recent.slice(0,10))}</div>`:''}
+    <div class="picker-section">Browse by muscle group</div>
+    <div class="category-grid">${muscleCategories().map(c=>`<button class="category-card" onclick="setRoutineCategory('${escAttr(c.name)}')"><b>${categoryIcon(c.name)} ${esc(c.name)}</b><span>${c.count} exercises</span></button>`).join('')}</div>`;
+   return;
+ }
+ const inCat=allExercises().filter(x=>x.muscle===routinePickerCategory);
+ const patterns=[...new Set(inCat.map(x=>x.pattern))].sort((a,b)=>patternLabel(a).localeCompare(patternLabel(b)));
+ const filtered=routinePickerMovement?inCat.filter(x=>x.pattern===routinePickerMovement):inCat;
+ host.innerHTML=`<div class="breadcrumb"><button onclick="setRoutineCategory('home')">All categories</button><span>›</span><b>${esc(routinePickerCategory)}</b></div>
+ <div class="picker-chips"><button class="chip ${!routinePickerMovement?'active':''}" onclick="setRoutineMovement('')">All</button>${patterns.map(p=>`<button class="chip ${routinePickerMovement===p?'active':''}" onclick="setRoutineMovement('${p}')">${esc(patternLabel(p))}</button>`).join('')}</div>
+ <div class="card">${routinePickerRows(filtered)}</div>`;
+}
+function saveRoutine(id,editing){
+ const name=document.getElementById('rName').value.trim()||'Untitled Workout';
+ const ids=[...routinePickerSelection];
+ let old=state.routines.find(x=>x.id===id);
+ const oldMap=new Map((old?.exercises||[]).map(x=>[x.exerciseId,x]));
+ const exercises=ids.map(exerciseId=>oldMap.get(exerciseId)||{
+   exerciseId,sets:state.settings.defaultSets,minReps:state.settings.defaultMin,maxReps:state.settings.defaultMax,
+   increment:state.settings.defaultIncrement,mode:'double',restSeconds:120
+ });
+ const obj={id,name,exercises};
+ if(editing) state.routines=state.routines.map(x=>x.id===id?obj:x); else state.routines.push(obj);
+ save();closeModal();renderRoutines();renderHome();
+ if(exercises.length) editRoutineDetails(id);
+}
+function editRoutine(id){newRoutine(id)}
+function deleteRoutine(id){if(confirm('Delete this routine?')){state.routines=state.routines.filter(x=>x.id!==id);save();renderRoutines();renderHome();}}
+
+function editRoutineDetails(id){
+ const r=state.routines.find(x=>x.id===id); if(!r)return;
+ openModal(`${esc(r.name)} editor`,`
+ <div class="notice">Reorder exercises, edit progression, duplicate movements, remove them, or swap to a recommended substitute without rebuilding the routine.</div>
+ <div id="routineEditorList" class="routine-edit-list" style="margin-top:12px">${routineEditorHtml(r)}</div>
+ <div class="actions"><button class="btn secondary" onclick="openRoutineExerciseAdder('${id}')">+ Add exercise</button><button class="btn" onclick="saveRoutineEditor('${id}')">Done</button></div>`);
+}
+function routineEditorHtml(r){
+ return r.exercises.map((re,i)=>{
+   const ex=exById(re.exerciseId);
+   return `<div class="routine-edit-card" data-index="${i}">
+    <div class="routine-edit-head">
+      <div class="orderbox">
+        <button class="orderbtn" onclick="moveRoutineExercise('${r.id}',${i},-1)" ${i===0?'disabled':''}>↑</button>
+        <button class="orderbtn" onclick="moveRoutineExercise('${r.id}',${i},1)" ${i===r.exercises.length-1?'disabled':''}>↓</button>
+      </div>
+      <div>
+        <div class="exercise-name">${esc(ex?.name||'Exercise')}</div>
+        <div class="mini">${esc(ex?.muscle||'')} · ${esc(patternLabel(ex?.pattern||''))} · ${esc(ex?.equipment||'')}</div>
+        <div class="editor-summary">
+          <span class="tag">${re.sets} sets</span>
+          <span class="tag">${re.minReps}-${re.maxReps} reps</span>
+          <span class="tag">+${re.increment} ${state.profile.unit}</span>
+          <span class="tag">${(re.mode==='range'||re.mode==='double')?'Double progression · +1/set':re.mode==='total'?'Beat total reps':'Manual'}</span>
+          <span class="tag">${goalLabel(re.trainingGoal||'general')}</span>
+        </div>
+      </div>
+      <span class="pickcount">#${i+1}</span>
+    </div>
+    <div class="routine-tools">
+      <button class="btn small secondary" onclick="editRoutineExerciseSettings('${r.id}',${i})">⚙ Progression</button>
+      <button class="btn small secondary" onclick="openRoutineSwap('${r.id}',${i})">⇄ Substitute</button>
+      <button class="btn small secondary" onclick="duplicateRoutineExercise('${r.id}',${i})">Duplicate</button>
+      <button class="btn small danger" onclick="removeRoutineExercise('${r.id}',${i})">Remove</button>
+    </div>
+   </div>`;
+ }).join('')||'<div class="empty">No exercises in this routine yet.</div>';
+}
+function refreshRoutineEditor(id){
+ const r=state.routines.find(x=>x.id===id),host=document.getElementById('routineEditorList');
+ if(r&&host)host.innerHTML=routineEditorHtml(r);
+}
+function moveRoutineExercise(id,index,dir){
+ const r=state.routines.find(x=>x.id===id); if(!r)return;
+ const ni=index+dir; if(ni<0||ni>=r.exercises.length)return;
+ [r.exercises[index],r.exercises[ni]]=[r.exercises[ni],r.exercises[index]];
+ save();refreshRoutineEditor(id);
+}
+function duplicateRoutineExercise(id,index){
+ const r=state.routines.find(x=>x.id===id); if(!r)return;
+ const copy=JSON.parse(JSON.stringify(r.exercises[index]));
+ r.exercises.splice(index+1,0,copy); save();refreshRoutineEditor(id);
+}
+function removeRoutineExercise(id,index){
+ const r=state.routines.find(x=>x.id===id); if(!r)return;
+ const ex=exById(r.exercises[index]?.exerciseId);
+ if(!confirm(`Remove ${ex?.name||'this exercise'} from the routine? Your old workout history will stay saved.`))return;
+ r.exercises.splice(index,1); save();refreshRoutineEditor(id);
+}
+function editRoutineExerciseSettings(id,index){
+ const r=state.routines.find(x=>x.id===id),re=r?.exercises[index]; if(!re)return;
+ const ex=exById(re.exerciseId);
+ openModal(`${esc(ex?.name||'Exercise')} progression`,`
+ <div class="form-grid three">
+   <div><label>Sets</label><input type="number" min="1" max="10" id="reSets" value="${re.sets}"></div>
+   <div><label>Min reps</label><input type="number" id="reMin" value="${re.minReps}"></div>
+   <div><label>Max reps</label><input type="number" id="reMax" value="${re.maxReps}"></div>
+ </div>
+ <div class="form-grid">
+   <div><label>Weight jump (${state.profile.unit})</label><input type="number" step=".5" id="reInc" value="${re.increment}"></div>
+   <div><label>Progression</label><select id="reMode">
+    <option value="double" ${(re.mode==='range'||re.mode==='double')?'selected':''}>Double progression (+1 rep each set)</option>
+    <option value="total" ${re.mode==='total'?'selected':''}>Beat total reps</option>
+    <option value="manual" ${re.mode==='manual'?'selected':''}>Manual</option>
+   </select></div>
+ </div>
+ <div class="form-grid">
+   <div><label>Training goal</label><select id="reGoal">
+    <option value="general" ${(re.trainingGoal||'general')==='general'?'selected':''}>General progression</option>
+    <option value="hypertrophy" ${re.trainingGoal==='hypertrophy'?'selected':''}>Muscle growth</option>
+    <option value="strength" ${re.trainingGoal==='strength'?'selected':''}>Strength</option>
+   </select></div>
+   <div><label>Reset suggestion</label><select id="reReset">
+    <option value="5" ${Number(re.resetPercent||7.5)===5?'selected':''}>5%</option>
+    <option value="7.5" ${Number(re.resetPercent||7.5)===7.5?'selected':''}>7.5%</option>
+    <option value="10" ${Number(re.resetPercent||7.5)===10?'selected':''}>10%</option>
+   </select></div>
+ </div>
+ <div class="field"><label>Rest seconds</label><input type="number" id="reRest" value="${re.restSeconds||120}"></div>
+ <div class="notice">Goal changes how the coach interprets effort and stalls. It does not silently change your rep range or weights.</div>
+ <div class="actions"><button class="btn" onclick="saveRoutineExerciseSettings('${id}',${index})">Save</button><button class="btn secondary" onclick="editRoutineDetails('${id}')">Back</button></div>`);
+}
+function saveRoutineExerciseSettings(id,index){
+ const r=state.routines.find(x=>x.id===id),re=r?.exercises[index]; if(!re)return;
+ re.sets=Math.max(1,+document.getElementById('reSets').value||3);
+ re.minReps=Math.max(1,+document.getElementById('reMin').value||8);
+ re.maxReps=Math.max(re.minReps,+document.getElementById('reMax').value||12);
+ re.increment=Math.max(0,+document.getElementById('reInc').value||0);
+ re.mode=document.getElementById('reMode').value;
+ re.trainingGoal=document.getElementById('reGoal').value;
+ re.resetPercent=+document.getElementById('reReset').value||7.5;
+ re.restSeconds=Math.max(15,+document.getElementById('reRest').value||120);
+ save();editRoutineDetails(id);
+}
+function openRoutineSwap(id,index){
+ const r=state.routines.find(x=>x.id===id),re=r?.exercises[index]; if(!re)return;
+ const current=exById(re.exerciseId),sugs=getSubstitutes(re.exerciseId);
+ openModal(`Substitute ${esc(current?.name||'exercise')}`,`
+ <div class="notice">These are ranked by similar muscle group and movement pattern. Swapping the routine does not merge exercise histories.</div>
+ <div class="card" style="margin-top:12px">
+ ${sugs.map(x=>`<div class="list-item">
+   <div class="iconbox">${equipmentIcon(x.equipment)}</div>
+   <div class="grow"><div class="exercise-name">${esc(x.name)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div>
+   <button class="btn small" onclick="applyRoutineSwap('${id}',${index},'${x.id}')">Use</button>
+ </div>`).join('')||'<div class="empty">No close substitutes found.</div>'}
+ </div>
+ <div class="actions"><button class="btn secondary" onclick="editRoutineDetails('${id}')">Back</button></div>`);
+}
+function applyRoutineSwap(id,index,newExerciseId){
+ const r=state.routines.find(x=>x.id===id); if(!r)return;
+ r.exercises[index].exerciseId=newExerciseId; save(); editRoutineDetails(id);
+}
+function openRoutineExerciseAdder(id){
+ routinePickerSelection=new Set(); routinePickerCategory='home';routinePickerMovement='';
+ openModal('Add exercise to routine',`
+ <div class="picker-tools"><input id="routineExSearch" placeholder="Search exercise, muscle, equipment..." oninput="renderRoutinePickerAdder('${id}')"></div>
+ <div id="routinePicker" style="max-height:58vh;overflow:auto"></div>
+ <div class="actions"><button class="btn" onclick="appendSelectedRoutineExercises('${id}')">Add selected</button><button class="btn secondary" onclick="editRoutineDetails('${id}')">Back</button></div>`);
+ renderRoutinePickerAdder(id);
+}
+function renderRoutinePickerAdder(id){
+ const host=document.getElementById('routinePicker'); if(!host)return;
+ const q=(document.getElementById('routineExSearch')?.value||'').trim();
+ const rows=items=>items.map(x=>`<div class="list-item">
+ <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button>
+ <div class="iconbox">${equipmentIcon(x.equipment)}</div>
+ <div class="grow"><div class="exercise-name">${esc(x.name)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div>
+ <input type="checkbox" ${routinePickerSelection.has(x.id)?'checked':''} onchange="this.checked?routinePickerSelection.add('${x.id}'):routinePickerSelection.delete('${x.id}')" style="width:22px;height:22px"></div>`).join('');
+ if(q){host.innerHTML=`<div class="card">${rows(allExercises().filter(x=>exerciseMatchesSearch(x,q)).slice(0,100))}</div>`;return;}
+ const fav=allExercises().filter(x=>isFavorite(x.id)),recent=recentExerciseIds().map(exById).filter(Boolean);
+ host.innerHTML=`${fav.length?`<div class="picker-section">★ Favorites</div><div class="card">${rows(fav)}</div>`:''}
+ ${recent.length?`<div class="picker-section">↺ Recently used</div><div class="card">${rows(recent.slice(0,10))}</div>`:''}
+ <div class="picker-section">Browse by muscle group</div><div class="category-grid">${muscleCategories().map(c=>`<button class="category-card" onclick="addRoutineCategoryView('${id}','${escAttr(c.name)}')"><b>${categoryIcon(c.name)} ${esc(c.name)}</b><span>${c.count} exercises</span></button>`).join('')}</div>`;
+}
+function addRoutineCategoryView(id,cat){
+ const host=document.getElementById('routinePicker'),items=allExercises().filter(x=>x.muscle===cat);
+ const rows=items.map(x=>`<div class="list-item"><button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button><div class="iconbox">${equipmentIcon(x.equipment)}</div><div class="grow"><div class="exercise-name">${esc(x.name)}</div><div class="mini">${esc(patternLabel(x.pattern))} · ${esc(x.equipment)}</div></div><input type="checkbox" ${routinePickerSelection.has(x.id)?'checked':''} onchange="this.checked?routinePickerSelection.add('${x.id}'):routinePickerSelection.delete('${x.id}')" style="width:22px;height:22px"></div>`).join('');
+ host.innerHTML=`<div class="breadcrumb"><button onclick="renderRoutinePickerAdder('${id}')">All categories</button><span>›</span><b>${esc(cat)}</b></div><div class="card">${rows}</div>`;
+}
+function appendSelectedRoutineExercises(id){
+ const r=state.routines.find(x=>x.id===id); if(!r)return;
+ for(const exerciseId of routinePickerSelection){
+   r.exercises.push({exerciseId,sets:state.settings.defaultSets,minReps:state.settings.defaultMin,maxReps:state.settings.defaultMax,increment:state.settings.defaultIncrement,mode:'double',trainingGoal:'general',resetPercent:7.5,restSeconds:120});
+ }
+ save(); editRoutineDetails(id);
+}
+function saveRoutineEditor(id){save();closeModal();renderRoutines();renderHome();}
+
+function openRoutine(id){
+ const r=state.routines.find(x=>x.id===id); if(!r)return;
+ const active={
+   id:uid(),routineId:id,routineName:r.name,startDate:new Date().toISOString(),
+   exercises:r.exercises.map((re,routineIndex)=>{
+     const prev=previousExercise(re.exerciseId);
+     const rec=buildRecommendation({...re,mode:re.mode==='range'?'double':re.mode},prev,re.exerciseId);
+     return {exerciseId:re.exerciseId,routineIndex,config:{trainingGoal:'general',resetPercent:7.5,...re,mode:re.mode==='range'?'double':re.mode},targetOverride:null,expanded:routineIndex===0,sets:Array.from({length:re.sets},(_,i)=>({
+       weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??re.minReps,done:false,rir:''     })),notes:''};
+   })
+ };
+ state.activeWorkout=active; save(); requestWakeLock(); haptic([20,35,20]); renderWorkout(); go('workout');showToast('Workout started');
+}
+function previousExercise(exerciseId){
+ const arr=[];
+ state.sessions.forEach(s=>s.exercises.forEach(e=>{if(e.exerciseId===exerciseId)arr.push({date:s.date,...e})}));
+ return arr.sort((a,b)=>b.date.localeCompare(a.date))[0];
+}
+function completedSets(prev){return (prev?.sets||[]).filter(s=>s.done && Number(s.weight)>=0 && Number(s.reps)>0)}
+function distributeTarget(previousReps,minReps,maxReps,setCount){
+ // "Beat total reps" mode: add one rep somewhere across the exercise.
+ const reps=Array.from({length:setCount},(_,i)=>Math.max(minReps,Math.min(maxReps,Number(previousReps[i]??minReps))));
+ for(let i=0;i<reps.length;i++){ if(reps[i]<maxReps){ reps[i]++; break; } }
+ return reps;
+}
+function progressEverySetTarget(previousReps,minReps,maxReps,setCount){
+ // Default double progression: every programmed set gets +1 rep next exposure,
+ // capped at the top of the rep range.
+ return Array.from({length:setCount},(_,i)=>{
+   const previous=Math.max(minReps-1,Number(previousReps[i]??(minReps-1)));
+   return Math.min(maxReps,Math.max(minReps,previous+1));
+ });
+}
+
+function goalLabel(goal){
+ return goal==='strength'?'Strength':goal==='hypertrophy'?'Muscle growth':'General';
+}
+function goalRIRText(goal){
+ return goal==='hypertrophy'?'Usually aim to finish hard working sets with roughly 1-3 reps in reserve.':
+        goal==='strength'?'Quality reps matter more than grinding. Strength can progress without taking every set close to failure.':
+        'Use the rep target as the main guide and RIR as optional context.';
+}
+function averageLoggedRIR(sets){
+ const vals=(sets||[]).map(s=>s.rir).filter(v=>v!==''&&v!=null&&Number.isFinite(Number(v))).map(Number);
+ return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
+}
+function recentExerciseSessions(exerciseId,n=4){
+ return exerciseHistory(exerciseId).slice(-n);
+}
+function coachSignal(exerciseId,config){
+ const hist=recentExerciseSessions(exerciseId,4);
+ if(hist.length<2)return {level:'info',title:'Building baseline',text:`Keep logging this movement. The coach waits for repeated sessions before calling anything a stall.`,stalled:false,canReset:false};
+ const scores=hist.map(h=>({
+   e1:Math.max(...h.sets.map(s=>estimated1RM(s.weight,s.reps))),
+   reps:h.sets.reduce((a,s)=>a+Number(s.reps||0),0),
+   avgRIR:averageLoggedRIR(h.sets),
+   weight:Math.max(...h.sets.map(s=>Number(s.weight)||0))
+ }));
+ const latest=scores.at(-1),prev=scores.at(-2);
+ const first=scores[0];
+ const gain=(latest.e1-first.e1)/Math.max(1,first.e1);
+ const recentGain=(latest.e1-prev.e1)/Math.max(1,prev.e1);
+ const highEffort=[...scores].reverse().find(x=>x.avgRIR!=null)?.avgRIR;
+ const sameLoadish=Math.abs(latest.weight-first.weight)<=Math.max(.5,Number(config.increment||5));
+ const enoughForStall=hist.length>=3;
+ const stalled=enoughForStall && sameLoadish && gain<0.012 && latest.reps<=Math.max(...scores.slice(0,-1).map(x=>x.reps))+1;
+ const regressing=enoughForStall && recentGain<-0.04 && gain<-0.02;
+ const highEffortKnown=highEffort!=null && highEffort<=1;
+ const resetPercent=Number(config.resetPercent||7.5);
+ const resetWeight=roundLoad(latest.weight*(1-resetPercent/100));
+ if(regressing && highEffortKnown){
+   return {level:'reset',title:'Repeated hard-session drop',text:`Recent performance is down and your latest logged effort was very high. Consider a ${resetPercent}% session-only reset to ${resetWeight} ${state.profile.unit}, then rebuild.`,stalled:true,canReset:true,resetWeight,resetPercent};
+ }
+ if(stalled && highEffortKnown){
+   return {level:'reset',title:'Stall detected',text:`Performance has been essentially flat across ${hist.length} exposures while effort is high. A small ${resetPercent}% reset is available, or you can keep the current load and try again.`,stalled:true,canReset:true,resetWeight,resetPercent};
+ }
+ if(stalled){
+   return {level:'watch',title:'Holding pattern',text:`Progress has been flat across ${hist.length} exposures, but there isn't enough evidence of excessive effort to force a reset. Hold the plan, improve execution, or override the target if needed.`,stalled:true,canReset:false};
+ }
+ if(recentGain>0.015){
+   return {level:'good',title:'Progressing',text:`Your recent estimated strength trend is moving up. Keep the current progression rules unless the sets feel meaningfully different than the log suggests.`,stalled:false,canReset:false};
+ }
+ return {level:'info',title:'On track',text:goalRIRText(config.trainingGoal||'general'),stalled:false,canReset:false};
+}
+function workoutCoachSignal(){
+ const w=state.activeWorkout;if(!w)return null;
+ const signals=w.exercises.map(e=>coachSignal(e.exerciseId,e.config));
+ const reset=signals.filter(x=>x.canReset).length,stalls=signals.filter(x=>x.stalled).length;
+ if(reset>=2)return {level:'reset',text:`${reset} exercises are showing repeated high-effort stalls. A lighter session may be worth considering, but it is optional.`};
+ if(stalls>=3)return {level:'watch',text:`Several movements are flat right now. That can happen normally. Watch the next session before making large changes.`};
+ return null;
+}
+function applyCoachReset(ei){
+ const e=state.activeWorkout.exercises[ei],sig=coachSignal(e.exerciseId,e.config);
+ if(!sig.canReset)return;
+ e.targetOverride={weight:sig.resetWeight,reps:e.config.minReps,reason:`Coach reset ${sig.resetPercent}%`};
+ e.sets.forEach(s=>{if(!s.done){s.weight=sig.resetWeight;s.reps=e.config.minReps;}});
+ save();renderWorkout();
+}
+function openTargetOverride(ei){
+ const e=state.activeWorkout.exercises[ei],prev=previousExercise(e.exerciseId),t=liveSetTarget(e,0,prev);
+ openModal('Override session target',`
+ <div class="notice">This changes the target for this workout only. It does not rewrite your routine or old history.</div>
+ <div class="form-grid" style="margin-top:12px">
+   <div><label>Target weight (${state.profile.unit})</label><input id="ovWeight" type="number" step=".25" value="${e.targetOverride?.weight??t.weight}"></div>
+   <div><label>Target reps</label><input id="ovReps" type="number" min="1" value="${e.targetOverride?.reps??t.reps}"></div>
+ </div>
+ <div class="actions"><button class="btn" onclick="saveTargetOverride(${ei})">Use for this session</button>${e.targetOverride?`<button class="btn secondary" onclick="clearTargetOverride(${ei})">Clear override</button>`:''}<button class="btn secondary" onclick="closeModal()">Cancel</button></div>`);
+}
+function saveTargetOverride(ei){
+ const e=state.activeWorkout.exercises[ei],weight=Math.max(0,+document.getElementById('ovWeight').value||0),reps=Math.max(1,+document.getElementById('ovReps').value||1);
+ e.targetOverride={weight:roundLoad(weight),reps:Math.round(reps),reason:'Manual override'};
+ e.sets.forEach(s=>{if(!s.done){s.weight=e.targetOverride.weight;s.reps=e.targetOverride.reps;}});
+ save();closeModal();renderWorkout();
+}
+function clearTargetOverride(ei){
+ const e=state.activeWorkout.exercises[ei];e.targetOverride=null;
+ const prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId);
+ e.sets.forEach((s,i)=>{if(!s.done){s.weight=rec.weights?.[i]??rec.weight??0;s.reps=rec.targetReps?.[i]??e.config.minReps;}});
+ save();closeModal();renderWorkout();
+}
+function applyLightSession(){
+ const w=state.activeWorkout;if(!w)return;
+ w.exercises.forEach(e=>{
+   const prev=previousExercise(e.exerciseId),base=liveSetTarget(e,0,prev);
+   const wt=roundLoad(base.weight*.925);
+   e.targetOverride={weight:wt,reps:e.config.minReps,reason:'Light session'};
+   e.sets.forEach(s=>{if(!s.done){s.weight=wt;s.reps=e.config.minReps;}});
+ });
+ save();renderWorkout();
+}
+
+function buildRecommendation(config,prev,exerciseId=null){
+ const done=completedSets(prev);
+ const goal=config.trainingGoal||'general';
+ const avgRIR=averageLoggedRIR(done);
+ if(!done.length){
+   return {status:'baseline',weight:0,weights:Array(config.sets).fill(0),targetReps:Array(config.sets).fill(config.minReps),
+     headline:'Set your starting weight',detail:`Choose a clean starting load for about ${config.minReps}-${config.maxReps} reps. ${goalRIRText(goal)}`};
+ }
+ const weights=done.map(s=>Number(s.weight)||0);
+ const reps=done.map(s=>Number(s.reps)||0);
+ const sameWeight=weights.every(w=>w===weights[0]);
+ const baseWeight=weights[0];
+ const total=reps.reduce((a,b)=>a+b,0);
+ if(config.mode==='manual'){
+   return {status:'manual',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),
+     headline:'Repeat or adjust manually',detail:`Last session: ${done.map(s=>`${s.weight}×${s.reps}`).join(' · ')}`};
+ }
+ if(config.mode==='total'){
+   const target=distributeTarget(reps,config.minReps,config.maxReps,config.sets);
+   return {status:'reps',weight:baseWeight,weights:Array(config.sets).fill(baseWeight),targetReps:target,
+     headline:`Beat ${total} total reps at ${baseWeight} ${state.profile.unit}`,detail:`Keep the same load. A one-rep improvement anywhere counts as progress.`};
+ }
+ // Double progression: add one rep to every programmed set on the next exposure, capped at the top of the rep range. Add load only after every set reaches the top of the range at one stable weight.
+ const enoughSets=done.length>=config.sets;
+ const allTop=enoughSets && done.slice(0,config.sets).every(s=>Number(s.reps)>=config.maxReps);
+ if(sameWeight && allTop){
+   if(goal==='strength' && avgRIR!=null && avgRIR<1){
+     return {status:'reps',weight:baseWeight,weights:Array(config.sets).fill(baseWeight),targetReps:Array(config.sets).fill(config.maxReps),
+       headline:`Own ${baseWeight} ${state.profile.unit} once more`,detail:`You reached the top of the rep range, but the logged effort was very high. For a strength goal, repeating clean quality reps before adding load is reasonable.`};
+   }
+   const next=roundLoad(baseWeight+Number(config.increment||0));
+   return {status:'load',weight:next,weights:Array(config.sets).fill(next),targetReps:Array(config.sets).fill(config.minReps),
+     headline:`Increase to ${next} ${state.profile.unit}`,detail:`You earned one configured load step after reaching the top of the rep range across all working sets. ${goalRIRText(goal)}`};
+ }
+ const target=progressEverySetTarget(reps,config.minReps,config.maxReps,config.sets);
+ return {status:'reps',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:target,
+   headline:`Stay at ${baseWeight} ${state.profile.unit} and add 1 rep to each set`,
+   detail:`Last session: ${done.map(s=>`${s.weight}×${s.reps}`).join(' · ')}. Next target: ${target.map(r=>`${baseWeight}×${r}`).join(' · ')}. Each set progresses by one rep until all ${config.sets} sets reach ${config.maxReps}, then the load increases by your configured increment. ${goalRIRText(goal)}`};
+}
+function roundLoad(n){return Math.round(Number(n)*4)/4}
+function previousSummary(prev){
+ const done=completedSets(prev); if(!done.length)return 'No previous working sets logged.';
+ return done.map((s,i)=>`S${i+1} ${s.weight}×${s.reps}${s.rir!==''&&s.rir!=null?` @${s.rir} RIR`:''}`).join(' · ');
+}
+
+function setReference(prev,si){
+ const done=completedSets(prev),s=done[si]||done[done.length-1];
+ return s?`${s.weight} ${state.profile.unit} × ${s.reps}${s.rir!==''&&s.rir!=null?` @${s.rir} RIR`:''}`:'No prior set';
+}
+function liveSetTarget(e,si,prev){
+ if(e.targetOverride)return {weight:roundLoad(e.targetOverride.weight),reps:Math.max(1,Number(e.targetOverride.reps)||e.config.minReps)};
+ const base=buildRecommendation(e.config,prev,e.exerciseId);
+ let weight=Number(base.weights?.[si]??base.weight??e.sets[si]?.weight??0);
+ let reps=Number(base.targetReps?.[si]??e.config.minReps);
+ const earlier=e.sets.slice(0,si).filter(s=>s.done);
+ if(earlier.length){
+   const last=earlier[earlier.length-1];
+   const expected=Number(base.targetReps?.[Math.min(si-1,(base.targetReps?.length||1)-1)]??reps);
+   const miss=Number(last.reps)-expected;
+   if(miss<=-2) reps=Math.max(e.config.minReps-2,reps-1);
+   else if(miss>=2) reps=Math.min(e.config.maxReps+2,reps+1);
+   if(last.rir!=='' && Number(last.rir)===0) reps=Math.max(e.config.minReps-2,reps-1);
+ }
+ return {weight:roundLoad(weight),reps:Math.max(1,reps)};
+}
+function smartNumberFocus(el){
+ requestAnimationFrame(()=>{try{el.select();}catch(e){}});
+}
+function displaySetWeightValue(value){
+ const n=Number(value);
+ return n>0?n:'';
+}
+function targetBadgeText(target,ex){
+ const wt=Number(target?.weight)||0,reps=Math.max(1,Number(target?.reps)||1);
+ if(wt<=0){
+   return ex?.equipment==='bodyweight'?`Bodyweight · ${reps} reps`:`Choose weight · ${reps} reps`;
+ }
+ return `Target ${wt} × ${reps}`;
+}
+
+function changeSetValue(ei,si,key,delta){
+ const s=state.activeWorkout.exercises[ei].sets[si];
+ let v=Number(s[key])||0;
+ v=Math.max(0,roundLoad(v+delta));
+ s[key]=key==='reps'?Math.round(v):v;
+ haptic(8);save();renderWorkout();
+}
+function workoutCounts(){
+ const w=state.activeWorkout;
+ const total=w?w.exercises.reduce((n,e)=>n+e.sets.length,0):0;
+ const done=w?w.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.done).length,0):0;
+ return {total,done};
+}
+function workoutElapsed(){
+ const w=state.activeWorkout;if(!w)return '0m';
+ const mins=Math.max(0,Math.floor((Date.now()-new Date(w.startDate).getTime())/60000));
+ return mins<60?`${mins}m`:`${Math.floor(mins/60)}h ${mins%60}m`;
+}
+function estimated1RM(weight,reps){
+ weight=Number(weight)||0;reps=Number(reps)||0;
+ if(weight<=0||reps<=0)return 0;
+ return weight*(1+Math.min(reps,15)/30);
+}
+function detectPR(exerciseId,set){
+ const prior=[];
+ state.sessions.forEach(s=>s.exercises.forEach(e=>{
+   if(e.exerciseId===exerciseId)completedSets(e).forEach(x=>prior.push(x));
+ }));
+ // Include earlier completed sets from the current active workout, but not the
+ // set currently being evaluated. This prevents duplicate PR badges when
+ // multiple sets tie the same newly achieved record in one session.
+ if(state.activeWorkout){
+   state.activeWorkout.exercises.forEach(e=>{
+     if(e.exerciseId===exerciseId)completedSets(e).forEach(x=>{if(x!==set)prior.push(x)});
+   });
+ }
+ // A first-ever logged performance establishes the baseline. It is not counted
+ // as a PR until a future performance actually beats it.
+ if(!prior.length)return '';
+ const w=Number(set.weight)||0,r=Number(set.reps)||0;
+ const maxWeight=Math.max(...prior.map(x=>Number(x.weight)||0));
+ const sameWeightMax=Math.max(0,...prior.filter(x=>Number(x.weight)===w).map(x=>Number(x.reps)||0));
+ const priorE1=Math.max(0,...prior.map(x=>estimated1RM(x.weight,x.reps)));
+ const curE1=estimated1RM(w,r);
+ if(w>maxWeight)return `Load PR: ${w} ${state.profile.unit}`;
+ if(r>sameWeightMax)return `Rep PR: ${w} ${state.profile.unit} × ${r}`;
+ if(curE1>priorE1*1.01)return `Estimated strength PR`;
+ return '';
+}
+function plateLoadText(weight,ex){
+ if(!ex || !['barbell','trap bar'].includes(ex.equipment) || Number(weight)<=0)return '';
+ const kg=state.profile.unit==='kg',bar=kg?20:45,plates=kg?[25,20,15,10,5,2.5,1.25]:[45,35,25,10,5,2.5];
+ let side=(Number(weight)-bar)/2;
+ if(side<0)return '';
+ const used=[];
+ for(const plate of plates){
+   const count=Math.floor((side+1e-9)/plate);
+   for(let i=0;i<count;i++){used.push(plate);side-=plate;}
+ }
+ if(side>0.26)return '';
+ return used.length?`Per side: ${used.join(' + ')} ${state.profile.unit}`:`Bar only (${bar} ${state.profile.unit})`;
+}
+function warmupGuide(weight,ex){
+ const compound=['horizontal_press','incline_press','vertical_press','horizontal_pull','squat','hinge','lunge'];
+ if(!ex||!compound.includes(ex.pattern)||Number(weight)<=0)return [];
+ const inc=state.profile.unit==='kg'?2.5:5;
+ const round=x=>Math.max(0,Math.round(x/inc)*inc);
+ const w=Number(weight);
+ return [
+   {weight:round(w*.4),reps:8},
+   {weight:round(w*.6),reps:5},
+   {weight:round(w*.8),reps:3}
+ ].filter((x,i,a)=>x.weight>0 && (i===0||x.weight!==a[i-1].weight) && x.weight<w);
+}
+function openWarmupGuide(ei){
+ const e=state.activeWorkout.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),t=liveSetTarget(e,0,prev),sets=warmupGuide(t.weight,ex);
+ openModal(`${esc(ex?.name||'Exercise')} warm-up`,sets.length?`
+ <div class="notice">Optional ramp-up sets before your working sets. Adjust or skip them based on how you feel and how heavy the working weight is.</div>
+ <div class="card" style="margin-top:12px">${sets.map((s,i)=>`<div class="list-item"><div class="setnum">${i+1}</div><div class="grow"><b>${s.weight} ${state.profile.unit} × ${s.reps}</b><div class="mini">${plateLoadText(s.weight,ex)}</div></div></div>`).join('')}</div>
+ <div class="actions"><button class="btn" onclick="closeModal()">Got it</button></div>`:`<div class="empty">No warm-up ramp is needed from the current target.</div>`);
+}
+
+function exerciseSetProgress(e){
+ const done=e.sets.filter(s=>s.done).length;
+ return {done,total:e.sets.length,pct:e.sets.length?Math.round(done/e.sets.length*100):0,complete:e.sets.length>0&&done===e.sets.length};
+}
+function ensureExerciseAccordion(){
+ const w=state.activeWorkout;if(!w)return;
+ const hasDefined=w.exercises.some(e=>typeof e.expanded==='boolean');
+ if(!hasDefined){
+   const current=w.exercises.findIndex(e=>!exerciseSetProgress(e).complete);
+   w.exercises.forEach((e,i)=>e.expanded=i===(current>=0?current:0));
+   save();
+   return;
+ }
+ // Never allow a legacy/edited workout to accidentally have every unfinished movement expanded.
+ const expanded=w.exercises.filter(e=>e.expanded);
+ if(expanded.length>1){
+   let kept=false;
+   w.exercises.forEach(e=>{if(e.expanded&&!kept){kept=true}else if(e.expanded)e.expanded=false});
+   save();
+ }
+}
+function exerciseStatus(e,ei){
+ const p=exerciseSetProgress(e);
+ if(p.complete)return {label:'✓ Complete',cls:'complete'};
+ if(e.expanded)return {label:p.done?`${p.done}/${p.total} sets · Current`:'Current',cls:'current'};
+ if(p.done)return {label:`${p.done}/${p.total} sets`,cls:''};
+ return {label:'Up next',cls:''};
+}
+function compactTargetText(e,ex,prev){
+ const t=liveSetTarget(e,0,prev);
+ if(e.targetOverride)return `Target ${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`;
+ if((Number(t.weight)||0)<=0)return ex?.equipment==='bodyweight'?`${t.reps} reps · bodyweight`:`Choose starting weight · ${t.reps} reps`;
+ return `${t.weight} ${state.profile.unit} × ${t.reps} target`;
+}
+function toggleExercisePanel(ei){
+ const w=state.activeWorkout;if(!w||!w.exercises[ei])return;
+ const opening=!w.exercises[ei].expanded;
+ if(opening){
+   w.exercises.forEach((e,i)=>e.expanded=i===ei);
+ }else{
+   w.exercises[ei].expanded=false;
+ }
+ haptic(10);save();renderWorkout();
+ if(opening)scrollToWorkoutExercise(ei);
+}
+function openExercisePanel(ei){
+ const w=state.activeWorkout;if(!w||!w.exercises[ei])return;
+ w.exercises.forEach((e,i)=>e.expanded=i===ei);
+ save();renderWorkout();scrollToWorkoutExercise(ei);
+}
+function advanceFromCompletedExercise(ei){
+ const w=state.activeWorkout;if(!w)return;
+ const e=w.exercises[ei],p=exerciseSetProgress(e);
+ if(!p.complete)return false;
+ e.expanded=false;
+ let next=-1;
+ for(let i=ei+1;i<w.exercises.length;i++){
+   if(!exerciseSetProgress(w.exercises[i]).complete){next=i;break;}
+ }
+ if(next<0){
+   for(let i=0;i<ei;i++){
+     if(!exerciseSetProgress(w.exercises[i]).complete){next=i;break;}
+   }
+ }
+ if(next>=0){
+   w.exercises.forEach((x,i)=>x.expanded=i===next);
+   const ex=exById(w.exercises[next].exerciseId);
+   save();renderWorkout();
+   showToast(`Up next: ${ex?.name||'next exercise'}`);
+   scrollToWorkoutExercise(next);
+ }else{
+   save();renderWorkout();
+   showToast('All programmed sets complete');
+ }
+ return true;
+}
+
+function renderWorkout(){
+ const w=state.activeWorkout;
+ if(!w){document.getElementById('workoutArea').innerHTML='<div class="empty">No active workout.</div>';return;}
+ ensureExerciseAccordion();
+ const counts=workoutCounts(),pct=counts.total?Math.round(counts.done/counts.total*100):0,workoutCoach=workoutCoachSignal();
+ const html=`<div class="workout-title"><div><div class="eyebrow">Active workout</div><h1 style="font-size:1.7rem">${esc(w.routineName)}</h1><div class="mini">${w.exercises.length} exercises · ${counts.total} programmed sets</div></div><button class="btn small danger" onclick="cancelWorkout()">Cancel</button></div>
+ <div class="workout-overview">
+   <div class="row"><div><b>${counts.done} of ${counts.total} sets complete</b><div class="mini">Tap an exercise to open the full sets and coaching. Collapsed exercises stay compact.</div></div><span class="tag">${pct}%</span></div>
+   ${workoutCoach?`<div class="coachbox ${workoutCoach.level}"><div class="coach-title">Workout coach</div><div class="coach-text">${esc(workoutCoach.text)}</div>${workoutCoach.level==='reset'?`<div class="actions" style="margin-top:8px"><button class="btn small secondary" onclick="applyLightSession()">Use a 7.5% lighter session</button></div>`:''}</div>`:''}
+   <div class="progress-bar"><div style="width:${pct}%"></div></div>
+   <div class="workout-stats"><div class="workout-stat"><b>${w.exercises.length}</b><span>Exercises</span></div><div class="workout-stat"><b>${counts.done}</b><span>Sets done</span></div><div class="workout-stat"><b>${workoutElapsed()}</b><span>Elapsed</span></div></div>
+ </div>
+ ${w.exercises.map((e,ei)=>{
+   const ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId),coach=coachSignal(e.exerciseId,e.config);
+   const firstTarget=liveSetTarget(e,0,prev),plateText=plateLoadText(firstTarget.weight,ex),warmups=warmupGuide(firstTarget.weight,ex);
+   const prog=exerciseSetProgress(e),status=exerciseStatus(e,ei),compactTarget=compactTargetText(e,ex,prev);
+   return `<div id="workoutExercise-${ei}" class="card live-card exercise-block tone-${ei%4} ${e.expanded?'':'collapsed'} ${prog.complete?'complete-block':''}">
+    <div class="live-head exercise-head-click" onclick="toggleExercisePanel(${ei})">
+      <div class="row">
+        <div class="exercise-identity">
+          <div class="exercise-number">${prog.complete?'✓':ei+1}</div>
+          <div>
+            <div class="exercise-kicker">Exercise ${ei+1} of ${w.exercises.length}</div>
+            <div class="exercise-title">${esc(ex?.name||'Exercise')}</div>
+            <div class="exercise-meta">${esc(ex?.muscle||'')} · ${e.config.sets} sets · ${e.config.minReps}-${e.config.maxReps} reps</div>
+          </div>
+        </div>
+        <div class="exercise-header-actions">
+          <span class="goalbadge exercise-goal-mobile">${goalLabel(e.config.trainingGoal||'general')}</span>
+          <span class="exercise-status ${status.cls}">${status.label}</span>
+          <button class="exercise-toggle-btn" aria-label="${e.expanded?'Collapse':'Expand'} exercise" aria-expanded="${e.expanded?'true':'false'}" onclick="event.stopPropagation();toggleExercisePanel(${ei})">${e.expanded?'⌃':'⌄'}</button>
+        </div>
+      </div>
+    </div>
+    <div class="exercise-expanded-content">
+      <div class="targetbox"><div class="eyebrow">SESSION GOAL</div><div class="exercise-name" style="margin-top:5px">${esc(e.targetOverride?`${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`:rec.headline)}</div><div class="mini" style="margin-top:5px">${esc(e.targetOverride?`Session-only ${e.targetOverride.reason||'override'}. Routine progression is unchanged.`:rec.detail)}</div>${plateText?`<div class="plates">🏋 ${esc(plateText)}</div>`:''}${e.targetOverride?`<div class="override-note">Manual/session target active</div>`:''}</div>
+      <div class="coachbox ${coach.level==='info'?'':coach.level}"><div class="coach-title">${esc(coach.title)}</div><div class="coach-text">${esc(coach.text)}</div>${coach.canReset&&!e.targetOverride?`<div class="actions" style="margin-top:8px"><button class="btn small secondary" onclick="applyCoachReset(${ei})">Apply ${coach.resetPercent}% reset for today</button></div>`:''}</div>
+      <div class="toolrow">${warmups.length?`<button class="toolchip" onclick="openWarmupGuide(${ei})">Warm-up guide</button>`:''}<button class="toolchip" onclick="openTargetOverride(${ei})">Override target</button><button class="toolchip" onclick="openWorkoutSubstitute(${ei})">Substitute</button><span class="toolchip">${e.config.restSeconds||120}s rest</span></div>
+    <div class="live-body">
+     ${e.sets.map((s,si)=>{
+       const target=liveSetTarget(e,si,prev),ref=setReference(prev,si),pt=plateLoadText(s.weight||target.weight,ex);
+       return `<div class="set-card ${s.done?'completed':''}">
+        <div class="set-top"><div><b>Set ${si+1}</b><div class="set-reference">Previous: ${esc(ref)}</div></div><span class="set-target">${esc(targetBadgeText(target,ex))}</span></div>
+        <div class="live-entry">
+          <div class="live-input-wrap">
+            <div class="input-label-row">
+              <label>${ex?.equipment==='bodyweight'?'Added weight':'Weight'} (${state.profile.unit})</label>
+              <div class="micro-step">
+                <button aria-label="decrease weight" onclick="changeSetValue(${ei},${si},'weight',-${Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5))})">−</button>
+                <button aria-label="increase weight" onclick="changeSetValue(${ei},${si},'weight',${Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5))})">+</button>
+              </div>
+            </div>
+            <input class="direct-number" type="number" inputmode="decimal" enterkeyhint="done" step=".25" min="0"
+              value="${displaySetWeightValue(s.weight)}" placeholder="${ex?.equipment==='bodyweight'?'0':'Enter'}"
+              onfocus="smartNumberFocus(this)" onclick="smartNumberFocus(this)"
+              oninput="updateSet(${ei},${si},'weight',this.value)" aria-label="weight">
+          </div>
+          <div class="live-input-wrap">
+            <div class="input-label-row">
+              <label>Reps</label>
+              <div class="micro-step">
+                <button aria-label="decrease reps" onclick="changeSetValue(${ei},${si},'reps',-1)">−</button>
+                <button aria-label="increase reps" onclick="changeSetValue(${ei},${si},'reps',1)">+</button>
+              </div>
+            </div>
+            <input class="direct-number" type="number" inputmode="numeric" enterkeyhint="done" min="0"
+              value="${s.reps}" placeholder="Reps"
+              onfocus="smartNumberFocus(this)" onclick="smartNumberFocus(this)"
+              oninput="updateSet(${ei},${si},'reps',this.value)" aria-label="reps">
+          </div>
+          <div class="live-input-wrap rir-small">
+            <div class="input-label-row"><label>RIR</label></div>
+            <select onchange="updateSet(${ei},${si},'rir',this.value)"><option value="">—</option>${[0,1,2,3,4,5].map(v=>`<option value="${v}" ${String(s.rir)===String(v)?'selected':''}>${v}</option>`).join('')}</select>
+          </div>
+        </div>
+        ${pt?`<div class="plates">${esc(pt)}</div>`:''}
+        <button class="complete-set ${s.done?'done':''}" onclick="toggleSet(${ei},${si})">${s.done?'✓ Completed':'Complete set'}</button>
+        ${s.pr?`<div class="pr-banner">🏆 ${esc(s.pr)}</div>`:''}
+       </div>`;
+     }).join('')}
+     <div class="field" style="margin-top:12px"><label>Exercise notes</label><textarea onchange="updateNotes(${ei},this.value)" placeholder="Seat setting, grip, tempo, machine used...">${esc(e.notes||'')}</textarea></div>
+    </div>
+    </div>
+   </div>`;
+ }).join('')}
+ <button class="btn secondary" style="width:100%;padding:15px;margin:8px 0 12px" onclick="openAddWorkoutExercise()">+ Add Exercise</button>
+ <button class="btn green" style="width:100%;padding:16px" onclick="finishWorkout()">Finish & Save Workout</button>`;
+ document.getElementById('workoutArea').innerHTML=html;
+}
+function updateSet(ei,si,k,v){
+ const s=state.activeWorkout.exercises[ei].sets[si];
+ if(k==='rir')s[k]=(v===''?'':+v);
+ else s[k]=(v===''?0:Math.max(0,+v||0));
+ if(k!=='rir')s.pr='';
+ save();
+}
+function toggleSet(ei,si){
+ const e=state.activeWorkout.exercises[ei],set=e.sets[si];
+ set.done=!set.done;
+ if(set.done){
+   set.pr=detectPR(e.exerciseId,set);
+   haptic(set.pr?[35,40,70]:25);
+   startRestTimer(e.config.restSeconds||120);
+   save();
+   if(advanceFromCompletedExercise(ei))return;
+ } else{
+   set.pr='';
+   // Re-open an exercise if a completed set is unchecked later.
+   if(!e.expanded){state.activeWorkout.exercises.forEach((x,i)=>x.expanded=i===ei);}
+ }
+ save();renderWorkout();
+}
+function updateNotes(ei,v){state.activeWorkout.exercises[ei].notes=v;save();}
+let restInterval=null,restLeft=0;
+function paintRestTimer(){
+ const box=document.getElementById('restTimer'),txt=document.getElementById('restTimerText');if(!box||!txt)return;
+ const m=Math.floor(restLeft/60),s=String(Math.max(0,restLeft%60)).padStart(2,'0');txt.textContent=`${m}:${s}`;
+}
+function startRestTimer(seconds){
+ stopRestTimer();restLeft=Math.max(0,Number(seconds)||120);
+ const box=document.getElementById('restTimer');box?.classList.add('show');paintRestTimer();
+ restInterval=setInterval(()=>{restLeft--;paintRestTimer();if(restLeft<=0){stopRestTimer();haptic([120,80,120]);}},1000);
+}
+function adjustRestTimer(delta){restLeft=Math.max(0,restLeft+delta);paintRestTimer();if(restLeft===0)stopRestTimer();}
+function stopRestTimer(){if(restInterval)clearInterval(restInterval);restInterval=null;restLeft=0;document.getElementById('restTimer')?.classList.remove('show');}
+function cancelWorkout(){confirmAction('Cancel workout?','Unsaved set entries in this workout will be discarded.',()=>{state.activeWorkout=null;save();releaseWakeLock();go('home');showToast('Workout cancelled');});}
+function finishWorkout(){
+ const w=state.activeWorkout;
+ const completed=w.exercises.some(e=>e.sets.some(s=>s.done));
+ if(!completed && !confirm('No sets are marked complete. Save anyway?'))return;
+ const end=new Date(),duration=Math.max(0,Math.round((end-new Date(w.startDate))/60000));
+ const session={id:w.id,routineId:w.routineId,routineName:w.routineName,date:end.toISOString(),startDate:w.startDate,durationMinutes:duration,exercises:w.exercises};
+ state.sessions.push(session);
+ state.activeWorkout=null;save();releaseWakeLock();haptic([40,45,100]);renderHome();go('home');
+ const sets=sessionSetCount(session),volume=Math.round(sessionVolume(session)),prs=sessionPRCount(session);
+ const wins=session.exercises.map(e=>{
+   const ex=exById(e.exerciseId),done=completedSets(e),p=done.filter(s=>s.pr);
+   const unique=[...new Set(p.map(x=>x.pr))];return unique.length?`<div class="summary-pr"><b>🏆 ${esc(ex?.name||'Exercise')}</b><div class="mini">${unique.map(x=>esc(x)).join(' · ')}</div></div>`:'';
+ }).join('');
+ openModal('Workout complete',`
+   <div class="hero" style="box-shadow:none"><div class="eyebrow">SESSION SAVED</div><h1 style="font-size:1.8rem">${esc(session.routineName)}</h1><div class="muted">Nice work. Everything is stored locally on this device.</div></div>
+   <div class="metric-row">
+     <div class="metric-mini"><b>${sets}</b><span>Working sets</span></div>
+     <div class="metric-mini"><b>${duration}m</b><span>Duration</span></div>
+     <div class="metric-mini"><b>${prs}</b><span>PRs</span></div>
+   </div>
+   <div class="summary-win"><b>${volume.toLocaleString()} ${state.profile.unit} × reps</b><div class="mini">Total external-load volume for this session. Use it as context, not a score you must maximize.</div></div>
+   ${wins||'<div class="notice" style="margin-top:10px">No PR badge this time, which is completely normal. Consistent quality work still counts.</div>'}
+   <div class="actions"><button class="btn" onclick="closeModal();go('analytics')">View progress</button><button class="btn secondary" onclick="closeModal()">Done</button></div>`);
+}
+
+function renderHistory(){
+ const el=document.getElementById('historyList');
+ const sessions=state.sessions.slice().sort((a,b)=>b.date.localeCompare(a.date));
+ if(!sessions.length){el.innerHTML='<div class="empty"><div class="empty-illustration">▤</div><strong>No workout history yet</strong>Finish your first session and it will be saved here.</div>';return;}
+ el.innerHTML=sessions.map(s=>`<div class="card">
+   <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleString()} · ${sessionSetCount(s)} sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div><button class="btn small danger" onclick="deleteSession('${s.id}')">Delete</button></div>
+   <div class="editor-summary"><span class="tag">${Math.round(sessionVolume(s)).toLocaleString()} ${state.profile.unit}×reps</span>${sessionPRCount(s)?`<span class="tag">🏆 ${sessionPRCount(s)} PR</span>`:''}</div>
+   ${s.exercises.map(e=>{const ex=exById(e.exerciseId),sets=completedSets(e); return sets.length?`<table class="history-table"><tr><th colspan="3"><span class="exercise-link" onclick="openExerciseProgress('${e.exerciseId}')">${esc(ex?.name||'Exercise')}</span></th></tr>${sets.map((x,i)=>`<tr><td>Set ${i+1}</td><td>${x.weight} ${state.profile.unit}</td><td>${x.reps} reps${x.rir!==''&&x.rir!=null?` · ${x.rir} RIR`:''}</td></tr>`).join('')}</table>`:''}).join('')}
+ </div>`).join('');
+}
+function deleteSession(id){confirmAction('Delete workout?','This removes the logged session from your local history. This cannot be undone.',()=>{state.sessions=state.sessions.filter(x=>x.id!==id);save();renderHistory();renderHome();showToast('Workout deleted');});}
+
+function newExercise(){editExercise(null)}
+function editExercise(id){
+ const ex=id?state.customExercises.find(x=>x.id===id):{id:uid(),name:'',muscle:'Other',equipment:'machine',pattern:'other'};
+ openModal(id?'Edit custom exercise':'Create custom exercise',`
+ <div class="field"><label>Exercise name</label><input id="exName" value="${escAttr(ex.name)}" placeholder="My weird cable thing"></div>
+ <div class="form-grid">
+  <div><label>Muscle group</label><input id="exMuscle" value="${escAttr(ex.muscle)}"></div>
+  <div><label>Equipment</label><select id="exEquip">${['barbell','dumbbell','machine','cable','bodyweight','smith machine','kettlebell','landmine','trap bar','sled'].map(v=>`<option ${ex.equipment===v?'selected':''}>${v}</option>`).join('')}</select></div>
+ </div>
+ <div class="field"><label>Movement pattern (helps substitutions)</label><select id="exPattern">${['horizontal_press','incline_press','vertical_press','chest_fly','horizontal_pull','vertical_pull','shoulder_extension','squat','lunge','hinge','knee_extension','knee_flexion','hip_extension','hip_abduction','hip_adduction','lateral_raise','rear_delt','elbow_flexion','elbow_extension','calf_raise','spinal_flexion','anti_extension','anti_rotation','rotation','shrug','carry','grip','other'].map(v=>`<option value="${v}" ${(ex.pattern||'other')===v?'selected':''}>${patternLabel(v)}</option>`).join('')}</select></div>
+ <div class="actions"><button class="btn" onclick="saveCustomExercise('${ex.id}',${id?'true':'false'})">Save exercise</button>${id?`<button class="btn danger" onclick="deleteCustomExercise('${ex.id}')">Delete</button>`:''}</div>`);
+}
+function saveCustomExercise(id,editing){
+ const name=document.getElementById('exName').value.trim(); if(!name)return alert('Give the exercise a name.');
+ const obj={id,name,muscle:document.getElementById('exMuscle').value.trim()||'Other',equipment:document.getElementById('exEquip').value,pattern:document.getElementById('exPattern').value,custom:true};
+ if(editing)state.customExercises=state.customExercises.map(x=>x.id===id?obj:x); else state.customExercises.push(obj);
+ save();closeModal();renderExercises();
+}
+function deleteCustomExercise(id){
+ state.customExercises=state.customExercises.filter(x=>x.id!==id);
+ state.routines.forEach(r=>r.exercises=r.exercises.filter(x=>x.exerciseId!==id));
+ save();closeModal();renderExercises();renderRoutines();
+}
+
+
+function subScore(current,candidate){
+ if(!current||!candidate||current.id===candidate.id)return -999;
+ let score=0;
+ if(current.pattern && candidate.pattern===current.pattern)score+=60;
+ if(current.muscle===candidate.muscle)score+=35;
+ if(current.equipment===candidate.equipment)score+=8;
+ // close families that commonly substitute reasonably when the exact pattern is unavailable
+ const families={horizontal_press:['incline_press','dip_press'],incline_press:['horizontal_press','vertical_press'],horizontal_pull:['vertical_pull'],vertical_pull:['horizontal_pull','shoulder_extension'],squat:['lunge'],lunge:['squat'],hip_extension:['hinge'],hinge:['hip_extension'],rear_delt:['horizontal_pull'],elbow_extension:['dip_press']};
+ if((families[current.pattern]||[]).includes(candidate.pattern))score+=14;
+ return score;
+}
+function substitutionReason(current,c){
+ const bits=[];
+ if(c.pattern===current.pattern)bits.push('same movement pattern');
+ if(c.muscle===current.muscle)bits.push(`same primary muscle`);
+ if(c.equipment===current.equipment)bits.push('same equipment');
+ return bits.length?bits.join(' · '):`${c.muscle} alternative`;
+}
+function recommendedSubs(exerciseId,query=''){
+ const cur=exById(exerciseId); if(!cur)return [];
+ let arr=allExercises().filter(x=>x.id!==exerciseId);
+ if(query){const q=query.toLowerCase();arr=arr.filter(x=>x.name.toLowerCase().includes(q)||x.muscle.toLowerCase().includes(q)||patternLabel(x.pattern).toLowerCase().includes(q));}
+ return arr.map(x=>({x,score:subScore(cur,x)})).sort((a,b)=>b.score-a.score||a.x.name.localeCompare(b.x.name));
+}
+function subRowsHtml(currentId,context,index,query=''){
+ const cur=exById(currentId);
+ const rows=recommendedSubs(currentId,query).slice(0,query?60:14);
+ return rows.map(({x,score})=>`<div class="picker-result-card">
+   <div class="picker-result-main">
+     <div></div>
+     <div class="iconbox">${equipmentIcon(x.equipment)}</div>
+     <div class="picker-result-copy"><div class="exercise-name">${esc(x.name)}</div><div class="mini">${esc(x.muscle)} · ${esc(x.equipment)}<br>${esc(substitutionReason(cur,x))}</div></div>
+   </div>
+   <div class="picker-result-actions ${context==='workout'?'':'one'}">
+     ${context==='workout'
+       ?`<button class="btn small" onclick="swapWorkoutExercise(${index},'${x.id}',false)">Use Today</button><button class="btn small secondary" onclick="swapWorkoutExercise(${index},'${x.id}',true)">Use + Save to Routine</button>`
+       :`<button class="btn small" onclick="swapRoutineExercise('${context}',${index},'${x.id}')">Use This Exercise</button>`}
+   </div>
+ </div>`).join('')||'<div class="empty">No matching exercises.</div>';
+}
+function openWorkoutSubstitute(ei){
+ const e=state.activeWorkout?.exercises?.[ei];if(!e)return;const cur=exById(e.exerciseId);
+ openModal(`Substitute ${esc(cur?.name||'exercise')}`,`<div class="notice">Recommended swaps prioritize the same movement pattern and primary muscle. <b>Today</b> changes only this session. <b>Routine</b> also replaces the exercise in your saved routine. Progress history stays separate for each exercise.</div><div style="margin:12px 0"><input id="subSearch" placeholder="Search any exercise..." oninput="refreshWorkoutSubs(${ei})"></div><div id="subList" class="picker-result-list">${subRowsHtml(e.exerciseId,'workout',ei)}</div>`);
+}
+function refreshWorkoutSubs(ei){const e=state.activeWorkout.exercises[ei];document.getElementById('subList').innerHTML=subRowsHtml(e.exerciseId,'workout',ei,document.getElementById('subSearch').value)}
+function swapWorkoutExercise(ei,newId,permanent){
+ const e=state.activeWorkout.exercises[ei], old=e.exerciseId;
+ if(permanent){const r=state.routines.find(x=>x.id===state.activeWorkout.routineId);if(r&&Number.isInteger(e.routineIndex)&&r.exercises[e.routineIndex])r.exercises[e.routineIndex].exerciseId=newId;}
+ e.exerciseId=newId;e.targetOverride=null;
+ const prev=previousExercise(newId),rec=buildRecommendation(e.config,prev,e.exerciseId);
+ e.sets=Array.from({length:e.config.sets},(_,i)=>({weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??e.config.minReps,done:false,rir:''}));e.notes='';
+ save();closeModal();renderWorkout();
+}
+function openRoutineSubstitute(routineId,index){
+ const r=state.routines.find(x=>x.id===routineId);if(!r||!r.exercises[index])return;const cur=r.exercises[index];
+ openModal(`Replace ${esc(exById(cur.exerciseId)?.name||'exercise')}`,`<div class="notice">This permanently changes the movement in this routine but does not delete old workout history.</div><div style="margin:12px 0"><input id="subSearch" placeholder="Search any exercise..." oninput="refreshRoutineSubs('${routineId}',${index})"></div><div id="subList" class="picker-result-list">${subRowsHtml(cur.exerciseId,routineId,index)}</div>`);
+}
+function refreshRoutineSubs(routineId,index){const r=state.routines.find(x=>x.id===routineId),cur=r.exercises[index];document.getElementById('subList').innerHTML=subRowsHtml(cur.exerciseId,routineId,index,document.getElementById('subSearch').value)}
+function swapRoutineExercise(routineId,index,newId){const r=state.routines.find(x=>x.id===routineId);if(!r)return;r.exercises[index].exerciseId=newId;save();closeModal();editRoutineDetails(routineId);renderRoutines();renderHome();}
+
+let addPickerCategory='home',addPickerMovement='';
+
+function openAddWorkoutExercise(){
+ if(!state.activeWorkout)return;
+ addPickerCategory='home';addPickerMovement='';
+ openModal('Add exercise',`<div class="notice">Search directly or browse by muscle group and movement. <b>Add Today</b> changes only this workout. <b>Add + Save to Routine</b> adds it now and keeps it in this workout routine next time.</div>
+ <div class="add-picker-help"><span>Tip:</span><span>After adding, the app will jump you directly to the new exercise.</span></div>
+ <div class="picker-tools" style="margin-top:12px"><input id="addExSearch" placeholder="Search exercise, muscle, equipment..." oninput="renderAddExercisePicker()"></div>
+ <div id="addExList" style="max-height:58vh;overflow:auto"></div>`);
+ renderAddExercisePicker();
+}
+function addPickerRows(items){
+ const w=state.activeWorkout;
+ const routine=state.routines.find(r=>r.id===w?.routineId);
+ return items.map(x=>{
+   const inWorkout=!!w?.exercises.some(e=>e.exerciseId===x.id);
+   const inRoutine=!!routine?.exercises.some(e=>e.exerciseId===x.id);
+   const todayText=inWorkout?'Already in Workout':'+ Add Today';
+   const routineText=inRoutine?'Already in Routine':(inWorkout?'+ Save to Routine':'+ Add + Save to Routine');
+   return `<div class="picker-result-card">
+     <div class="picker-result-main">
+       <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button>
+       <div class="iconbox">${equipmentIcon(x.equipment)}</div>
+       <div class="picker-result-copy"><div class="exercise-name">${esc(x.name)}</div><div class="mini">${esc(x.muscle)} · ${esc(patternLabel(x.pattern))}<br>${esc(x.equipment)}</div></div>
+     </div>
+     <div class="picker-result-actions">
+       <button class="btn small" ${inWorkout?'disabled':''} onclick="addExerciseToWorkout('${x.id}',false)">${todayText}</button>
+       <button class="btn small secondary" ${inRoutine?'disabled':''} onclick="addExerciseToWorkout('${x.id}',true)">${routineText}</button>
+     </div>
+   </div>`;
+ }).join('')||'<div class="empty">No exercises here yet.</div>';
+}
+function setAddCategory(cat){addPickerCategory=cat;addPickerMovement='';document.getElementById('addExSearch').value='';renderAddExercisePicker()}
+function setAddMovement(p){addPickerMovement=p;renderAddExercisePicker()}
+function renderAddExercisePicker(){
+ const host=document.getElementById('addExList');if(!host)return;
+ const q=(document.getElementById('addExSearch')?.value||'').trim();
+ if(q){host.innerHTML=`<div class="picker-section">Search results</div><div class="picker-result-list">${addPickerRows(allExercises().filter(x=>exerciseMatchesSearch(x,q)).slice(0,100))}</div>`;return;}
+ if(addPickerCategory==='home'){
+   const fav=allExercises().filter(x=>isFavorite(x.id)),recent=recentExerciseIds().map(exById).filter(Boolean);
+   host.innerHTML=`${fav.length?`<div class="picker-section">★ Favorites</div><div class="picker-result-list">${addPickerRows(fav)}</div>`:''}
+   ${recent.length?`<div class="picker-section">↺ Recently used</div><div class="picker-result-list">${addPickerRows(recent.slice(0,10))}</div>`:''}
+   <div class="picker-section">Browse by muscle group</div><div class="category-grid">${muscleCategories().map(c=>`<button class="category-card" onclick="setAddCategory('${escAttr(c.name)}')"><b>${categoryIcon(c.name)} ${esc(c.name)}</b><span>${c.count} exercises</span></button>`).join('')}</div>`;
+   return;
+ }
+ const inCat=allExercises().filter(x=>x.muscle===addPickerCategory);
+ const patterns=[...new Set(inCat.map(x=>x.pattern))].sort((a,b)=>patternLabel(a).localeCompare(patternLabel(b)));
+ const filtered=addPickerMovement?inCat.filter(x=>x.pattern===addPickerMovement):inCat;
+ host.innerHTML=`<div class="breadcrumb"><button onclick="setAddCategory('home')">All categories</button><span>›</span><b>${esc(addPickerCategory)}</b></div>
+ <div class="picker-chips"><button class="chip ${!addPickerMovement?'active':''}" onclick="setAddMovement('')">All</button>${patterns.map(p=>`<button class="chip ${addPickerMovement===p?'active':''}" onclick="setAddMovement('${p}')">${esc(patternLabel(p))}</button>`).join('')}</div>
+ <div class="picker-result-list">${addPickerRows(filtered)}</div>`;
+}
+function refreshAddExercisePicker(){renderAddExercisePicker()}
+
+function defaultWorkoutExerciseConfig(){
+ return {
+   sets:state.settings.defaultSets,
+   minReps:state.settings.defaultMin,
+   maxReps:state.settings.defaultMax,
+   increment:state.settings.defaultIncrement,
+   mode:'double',
+   trainingGoal:'general',
+   resetPercent:7.5,
+   restSeconds:120
+ };
+}
+function scrollToWorkoutExercise(index){
+ setTimeout(()=>{
+   const el=document.getElementById(`workoutExercise-${index}`);
+   if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+ },90);
+}
+function addExerciseToWorkout(exerciseId,permanent){
+ const w=state.activeWorkout;if(!w)return;
+ const ex=exById(exerciseId);if(!ex)return;
+ const routine=state.routines.find(r=>r.id===w.routineId);
+ const existingIndex=w.exercises.findIndex(e=>e.exerciseId===exerciseId);
+ const routineIndex=routine?.exercises.findIndex(e=>e.exerciseId===exerciseId)??-1;
+
+ // If it is already in today's workout, "Routine" can still promote a today-only addition.
+ if(existingIndex>=0){
+   if(permanent && routine && routineIndex<0){
+     const cfg={...w.exercises[existingIndex].config};
+     const savedCfg={
+       exerciseId,
+       sets:cfg.sets,
+       minReps:cfg.minReps,
+       maxReps:cfg.maxReps,
+       increment:cfg.increment,
+       mode:cfg.mode==='double'?'double':cfg.mode,
+       trainingGoal:cfg.trainingGoal||'general',
+       resetPercent:cfg.resetPercent||7.5,
+       restSeconds:cfg.restSeconds||120
+     };
+     routine.exercises.push(savedCfg);
+     w.exercises.forEach((e,i)=>e.expanded=i===existingIndex);
+     w.exercises[existingIndex].routineIndex=routine.exercises.length-1;
+     save();haptic([20,30,20]);closeModal();renderWorkout();
+     showToast(`${ex.name} saved to routine`);
+     scrollToWorkoutExercise(existingIndex);
+     return;
+   }
+   showToast(`${ex.name} is already in this workout`);
+   return;
+ }
+
+ const cfg=defaultWorkoutExerciseConfig();
+ let newRoutineIndex=null;
+
+ if(permanent && routine){
+   if(routineIndex<0){
+     routine.exercises.push({exerciseId,...cfg});
+     newRoutineIndex=routine.exercises.length-1;
+   }else{
+     newRoutineIndex=routineIndex;
+   }
+ }
+
+ const prev=previousExercise(exerciseId);
+ const rec=buildRecommendation(cfg,prev,exerciseId);
+ const entry={
+   exerciseId,
+   routineIndex:newRoutineIndex,
+   config:{...cfg},
+   targetOverride:null,
+   expanded:true,
+   sets:Array.from({length:cfg.sets},(_,i)=>({
+     weight:rec.weights?.[i]??rec.weight??0,
+     reps:rec.targetReps?.[i]??cfg.minReps,
+     done:false,
+     rir:''
+   })),
+   notes:''
+ };
+ w.exercises.forEach(e=>e.expanded=false);
+ w.exercises.push(entry);
+ const newIndex=w.exercises.length-1;
+ save();haptic([20,30,20]);closeModal();renderWorkout();
+ showToast(permanent?`${ex.name} added + saved to routine`:`${ex.name} added for today`);
+ scrollToWorkoutExercise(newIndex);
+}
+
+
+
+function convertStoredUnits(fromUnit,toUnit){
+ if(fromUnit===toUnit)return;
+ const factor=fromUnit==='lb'&&toUnit==='kg'?0.45359237:
+              fromUnit==='kg'&&toUnit==='lb'?2.2046226218:1;
+ const cv=v=>Math.round((Number(v)||0)*factor*100)/100;
+ state.settings.defaultIncrement=cv(state.settings.defaultIncrement);
+ state.routines.forEach(r=>r.exercises.forEach(e=>{e.increment=cv(e.increment)}));
+ state.sessions.forEach(s=>s.exercises.forEach(e=>e.sets.forEach(set=>{set.weight=cv(set.weight)})));
+ (state.bodyweight||[]).forEach(x=>{x.value=cv(x.value)});
+ if(state.activeWorkout){
+   state.activeWorkout.exercises.forEach(e=>{
+     e.config.increment=cv(e.config.increment);
+     e.sets.forEach(set=>{set.weight=cv(set.weight)});
+     if(e.targetOverride)e.targetOverride.weight=cv(e.targetOverride.weight);
+   });
+ }
+}
+
+function openSettings(){
+ openModal('Settings & backup',`
+ <div class="field"><label>Your name</label><input id="pName" value="${escAttr(state.profile.name||'')}" placeholder="Jake"></div>
+ <div class="field"><label>Units</label><select id="pUnit"><option value="lb" ${state.profile.unit==='lb'?'selected':''}>Pounds (lb)</option><option value="kg" ${state.profile.unit==='kg'?'selected':''}>Kilograms (kg)</option></select><div class="native-note" style="margin-top:6px">Changing units converts your stored workout weights, bodyweight entries, and progression increments.</div></div>
+ <div class="form-grid three">
+   <div><label>Default sets</label><input type="number" id="dSets" value="${state.settings.defaultSets}"></div>
+   <div><label>Min reps</label><input type="number" id="dMin" value="${state.settings.defaultMin}"></div>
+   <div><label>Max reps</label><input type="number" id="dMax" value="${state.settings.defaultMax}"></div>
+ </div>
+ <div class="field"><label>Default weight jump</label><input type="number" step=".5" id="dInc" value="${state.settings.defaultIncrement}"></div>
+ <div class="section-title"><h2>App feel</h2></div>
+ <div class="card">
+   <div class="setting-toggle"><div><b>Haptic feedback</b><div class="mini">Short vibrations for completed sets, PRs, and timers.</div></div><button id="hapticToggle" class="toggle ${state.ui?.haptics!==false?'on':''}" onclick="this.classList.toggle('on')"></button></div>
+   <div class="setting-toggle" style="border-bottom:0"><div><b>Keep screen awake</b><div class="mini">Ask Android to keep the screen awake during an active workout when supported.</div></div><button id="awakeToggle" class="toggle ${state.ui?.keepAwake!==false?'on':''}" onclick="this.classList.toggle('on')"></button></div>
+ </div>
+ <div class="actions"><button class="btn" onclick="saveSettings()">Save settings</button></div>
+ <div class="section-title"><h2>Coach behavior</h2></div>
+ <div class="notice">The coach uses repeated logged performance, your optional RIR entries, and each exercise's selected goal. Stall and reset flags are intentionally conservative. They are suggestions, and manual session targets always remain available.</div>
+ <div class="section-title"><h2>Backup</h2></div>
+ <div class="notice"><b>Progression rule:</b> Double progression keeps the same weight while you add reps. Only after every programmed set reaches the top of its rep range will the app suggest exactly one configured weight increment.<br><br>Everything lives on this device. Export a backup occasionally so a lost phone or cleared browser storage doesn't wipe your history.</div>
+ <div class="actions"><button class="btn secondary" onclick="exportBackup()">Export backup</button><label class="btn secondary" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json" onchange="importBackup(this.files[0])" style="display:none"></label></div>
+ <div class="actions"><button class="btn danger" onclick="resetAll()">Erase all local data</button></div>
+ `);
+}
+function saveSettings(){
+ const oldUnit=state.profile.unit;
+ const newUnit=document.getElementById('pUnit').value;
+ state.profile.name=document.getElementById('pName').value.trim();
+ state.settings.defaultSets=+document.getElementById('dSets').value||3;
+ state.settings.defaultMin=+document.getElementById('dMin').value||8;
+ state.settings.defaultMax=+document.getElementById('dMax').value||12;
+ state.settings.defaultIncrement=+document.getElementById('dInc').value||5;
+ state.ui.haptics=document.getElementById('hapticToggle').classList.contains('on');
+ state.ui.keepAwake=document.getElementById('awakeToggle').classList.contains('on');
+ if(newUnit!==oldUnit)convertStoredUnits(oldUnit,newUnit);
+ state.profile.unit=newUnit;
+ save();haptic(15);closeModal();renderHome();showToast(newUnit!==oldUnit?`Converted workout data to ${newUnit}`:'Settings saved');
+}
+function exportBackup(){
+ const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='swole-cat-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);
+}
+function importBackup(file){
+ if(!file)return; const r=new FileReader(); r.onload=()=>{try{state=Object.assign(freshState(),JSON.parse(r.result));save();closeModal();renderHome();alert('Backup imported.');}catch(e){alert('That backup file could not be read.')}}; r.readAsText(file);
+}
+function resetAll(){closeModal();confirmAction('Erase all local data?','This permanently removes every workout, routine, custom exercise, favorite, bodyweight entry, and setting stored on this device.',()=>{localStorage.removeItem(LSKEY);state=freshState();renderHome();showToast('Local data erased');setTimeout(onboarding,250);});}
+
+function openModal(title,body){document.getElementById('modalTitle').innerHTML=title;document.getElementById('modalBody').innerHTML=body;document.getElementById('modal').classList.add('open')}
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+function uid(){return 'id_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function escAttr(s){return esc(s)}
+
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;updateInstallButton();});
+window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;updateInstallButton();showToast('Swole Cat installed');});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&state.activeWorkout)requestWakeLock();});
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+renderHome();populateMuscles();updateInstallButton();
+if(state.activeWorkout){
+ confirmAction('Resume workout?','You have an unfinished workout saved on this device.',()=>{requestWakeLock();renderWorkout();go('workout');});
+} else if(!state.ui?.onboardingDone){
+ setTimeout(onboarding,180);
+}
+</script>
+</body>
+</html>
