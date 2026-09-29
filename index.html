@@ -1030,6 +1030,9 @@ function startProgramWorkout(programId,index=null){
  const rid=p.routineIds[targetIndex],r=state.routines.find(x=>x.id===rid);
  if(!r){showToast('That routine no longer exists');return}
  if(state.activeProgramId!==programId){state.activeProgramId=programId;save()}
+ if(state.activeWorkout?.routineId===rid&&!state.activeWorkout.programId){
+   state.activeWorkout.programId=programId;saveActiveWorkout();resumeActiveWorkout();showToast('Active workout attached to program');return;
+ }
  openRoutine(rid,programId);
 }
 function advanceProgramAfterWorkout(session){
@@ -1108,6 +1111,7 @@ function saveProgram(){
 }
 function deleteProgram(id){
  const p=programById(id);if(!p)return;
+ if(state.activeWorkout?.programId===id){showToast('Finish or cancel the active program workout before deleting this program');return}
  confirmAction('Delete program?',`Delete "${p.name}"? Your routines and completed workout history will stay saved.`,()=>{
    state.programs=state.programs.filter(x=>x.id!==id);
    if(state.activeProgramId===id)state.activeProgramId=null;
