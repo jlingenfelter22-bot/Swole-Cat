@@ -310,6 +310,30 @@
   .exercise-block.collapsed > .live-head{display:block!important}
   .exercise-block.collapsed{min-height:0!important}
 
+  .form-guide-card{background:#101620;border:1px solid #29354a;border-radius:18px;padding:14px;margin-top:10px}
+  .form-guide-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .form-guide-title{font-size:1.08rem;font-weight:950;line-height:1.15}
+  .source-badge{display:inline-flex;align-items:center;gap:6px;font-size:.65rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase;color:#bfdbfe;background:rgba(56,189,248,.09);border:1px solid rgba(56,189,248,.25);padding:5px 8px;border-radius:999px}
+  .form-guide-images{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+  .form-guide-images figure{margin:0;background:#0b1018;border:1px solid #273147;border-radius:14px;overflow:hidden}
+  .form-guide-images img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:#171d2a}
+  .form-guide-images figcaption{font-size:.68rem;color:var(--muted);padding:7px 8px;text-align:center}
+  .form-guide-muscles{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .form-guide-section{margin-top:14px}
+  .form-guide-section h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:#cbd5e1;margin:0 0 8px}
+  .form-guide-steps{margin:0;padding-left:21px;color:#dbe2ed}
+  .form-guide-steps li{margin:0 0 8px;line-height:1.45;font-size:.87rem}
+  .form-guide-tips{display:grid;gap:7px}
+  .form-guide-tip{background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.2);border-radius:11px;padding:9px 10px;font-size:.82rem;line-height:1.4;color:#d7d9e4}
+  .form-guide-credit{margin-top:13px;padding-top:10px;border-top:1px solid #273147;color:#8992a6;font-size:.7rem;line-height:1.45}
+  .form-guide-credit a{color:#a78bfa}
+  .guide-picker{display:grid;gap:8px;margin-top:10px}
+  .guide-choice{display:flex;gap:10px;align-items:center;text-align:left;width:100%;background:#121a27;border:1px solid #29354a;color:white;border-radius:13px;padding:10px}
+  .guide-choice:hover{border-color:#4a5a76}
+  .guide-choice .grow{min-width:0}
+  .guide-choice .mini{margin-top:3px}
+  @media(max-width:420px){.form-guide-images{grid-template-columns:1fr 1fr}.form-guide-card{padding:12px}}
+
   .hidden{display:none!important}
   @media(min-width:680px){
     .form-grid.three{grid-template-columns:repeat(3,1fr)}
@@ -586,23 +610,156 @@ function svgLine(values,width=600,height=130){
    ${points.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="5" fill="#ddd6fe" stroke="#6d49bd" stroke-width="2"/>`).join('')}
  </svg><div class="chart-labels"><span>${min.toFixed(0)}</span><span>${max.toFixed(0)}</span></div>`;
 }
+const FORM_GUIDE_MAP_KEY='swole_cat_form_guide_map_v1';
+const REPDB_DATA_URL='https://exercise-dataset.com/exercises.json';
+const REPDB_ASSET_BASE='https://exercise-dataset.com/';
+let repdbGuideData=null,repdbGuidePromise=null;
+
+function formGuideMap(){
+ try{return JSON.parse(localStorage.getItem(FORM_GUIDE_MAP_KEY)||'{}')||{}}catch(e){return {}}
+}
+function saveFormGuideChoice(exerciseId,guideId){
+ const map=formGuideMap();map[exerciseId]=guideId;localStorage.setItem(FORM_GUIDE_MAP_KEY,JSON.stringify(map));
+ loadExerciseFormGuide(exerciseId);
+}
+function clearFormGuideChoice(exerciseId){
+ const map=formGuideMap();delete map[exerciseId];localStorage.setItem(FORM_GUIDE_MAP_KEY,JSON.stringify(map));
+ showFormGuidePicker(exerciseId);
+}
+function guideKey(s){
+ return String(s||'').toLowerCase()
+  .replace(/push[\\s-]?ups?/g,'push up').replace(/pull[\\s-]?ups?/g,'pull up').replace(/chin[\\s-]?ups?/g,'chin up')
+  .replace(/\\bflyes\\b/g,'fly').replace(/\\bflies\\b/g,'fly').replace(/\\brows\\b/g,'row').replace(/\\bcurls\\b/g,'curl')
+  .replace(/\\braises\\b/g,'raise').replace(/\\bextensions\\b/g,'extension').replace(/\\bpresses\\b/g,'press')
+  .replace(/\\bsquats\\b/g,'squat').replace(/\\blunges\\b/g,'lunge').replace(/\\bone arm\\b/g,'single arm').replace(/\\bone leg\\b/g,'single leg')
+  .replace(/[^a-z0-9]+/g,' ').trim();
+}
+function guideTokens(s){return guideKey(s).split(' ').filter(Boolean)}
+function guideScore(ex,g){
+ const a=new Set(guideTokens(ex.name)),b=new Set(guideTokens(g.name_en));
+ let inter=0;for(const x of a)if(b.has(x))inter++;
+ const union=new Set([...a,...b]).size||1;
+ let score=inter/union;
+ const appEq=guideKey(ex.equipment||'');
+ const srcEq=guideKey(String(g.equipment||'').replaceAll('_',' '));
+ if(appEq&&srcEq&&(srcEq.includes(appEq)||appEq.includes(srcEq)))score+=.12;
+ const appMuscle=guideKey(ex.muscle||'');
+ const body=guideKey(String(g.body_part||'').replaceAll('_',' '));
+ if(appMuscle&&body&&(body.includes(appMuscle)||appMuscle.includes(body)))score+=.08;
+ return score;
+}
+function prettyGuideTerm(s){
+ return String(s||'').replaceAll('_',' ').replace(/\\b\\w/g,x=>x.toUpperCase());
+}
+async function loadRepdbGuides(){
+ if(repdbGuideData)return repdbGuideData;
+ if(!repdbGuidePromise){
+  repdbGuidePromise=fetch(REPDB_DATA_URL,{cache:'force-cache'})
+   .then(r=>{if(!r.ok)throw new Error('Guide source unavailable');return r.json()})
+   .then(d=>{repdbGuideData=d.exercises||[];return repdbGuideData})
+   .catch(err=>{repdbGuidePromise=null;throw err});
+ }
+ return repdbGuidePromise;
+}
+function repdbImageUrl(path){
+ if(!path)return '';
+ if(/^https?:/i.test(path))return path;
+ return REPDB_ASSET_BASE+String(path).replace(/^\\/+/, '');
+}
+function exactRepdbGuide(ex,data){
+ const key=guideKey(ex?.name||'');
+ return data.find(g=>guideKey(g.name_en)===key)||null;
+}
+function renderRepdbGuide(exerciseId,g){
+ const flat=g.images?.flat||{};
+ const images=[['Start',flat.start],['Peak / Finish',flat.peak],['Position',flat.main]].filter(x=>x[1]);
+ const prim=(g.primary_muscles||[]).map(prettyGuideTerm);
+ const sec=(g.secondary_muscles||[]).map(prettyGuideTerm);
+ const steps=g.instructions_en||[];
+ const tips=g.tips_en||[];
+ return `<div class="form-guide-card">
+   <div class="form-guide-head">
+    <div><div class="source-badge">↗ Public source · RepDB</div><div class="form-guide-title" style="margin-top:8px">${esc(g.name_en||'Exercise guide')}</div><div class="mini" style="margin-top:4px">${esc(prettyGuideTerm(g.equipment||'Bodyweight'))} · ${esc(prettyGuideTerm(g.difficulty||''))}</div></div>
+   </div>
+   ${g.description_en?`<div class="lastline">${esc(g.description_en)}</div>`:''}
+   ${images.length?`<div class="form-guide-images">${images.map(([label,path])=>`<figure><img loading="lazy" src="${escAttr(repdbImageUrl(path))}" alt="${escAttr((g.name_en||'Exercise')+' '+label+' position')}"><figcaption>${esc(label)}</figcaption></figure>`).join('')}</div>`:''}
+   <div class="form-guide-section"><h3>Muscles</h3><div class="form-guide-muscles">
+     ${prim.map(x=>`<span class="tag">Primary · ${esc(x)}</span>`).join('')}
+     ${sec.slice(0,5).map(x=>`<span class="tag">Secondary · ${esc(x)}</span>`).join('')}
+   </div></div>
+   ${steps.length?`<div class="form-guide-section"><h3>Source instructions</h3><ol class="form-guide-steps">${steps.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div>`:''}
+   ${tips.length?`<div class="form-guide-section"><h3>Form cues from source</h3><div class="form-guide-tips">${tips.map(x=>`<div class="form-guide-tip">${esc(x)}</div>`).join('')}</div></div>`:''}
+   <div class="form-guide-credit">Technique text and illustrations are loaded directly from RepDB's public exercise dataset, not generated by Swole Cat. <a href="https://repdb.co" target="_blank" rel="noopener">Exercise data by RepDB</a>. Form references are general education, and equipment setup or individual anatomy can change how a movement should be performed.</div>
+   <div class="actions"><button class="btn small secondary" onclick="showFormGuidePicker('${exerciseId}')">Choose a different public reference</button></div>
+  </div>`;
+}
+async function loadExerciseFormGuide(exerciseId){
+ const host=document.getElementById('exerciseFormGuide');if(!host)return;
+ const ex=exById(exerciseId);if(!ex)return;
+ host.innerHTML='<div class="empty"><strong>Loading public form guide…</strong>Checking the source exercise library.</div>';
+ try{
+  const data=await loadRepdbGuides();
+  if(!document.getElementById('exerciseFormGuide'))return;
+  const saved=formGuideMap()[exerciseId];
+  const chosen=saved?data.find(g=>g.id===saved):null;
+  const exact=chosen||exactRepdbGuide(ex,data);
+  if(exact){host.innerHTML=renderRepdbGuide(exerciseId,exact);return}
+  showFormGuidePicker(exerciseId);
+ }catch(err){
+  host.innerHTML=`<div class="form-guide-card"><div class="source-badge">Public source</div><div class="form-guide-title" style="margin-top:8px">Form guide needs a connection</div><div class="lastline">Swole Cat does not invent exercise instructions when the public source is unavailable. Connect to the internet and try again.</div><div class="actions"><a class="btn small secondary" href="https://exercise-dataset.com/" target="_blank" rel="noopener">Open public exercise library</a></div></div>`;
+ }
+}
+async function showFormGuidePicker(exerciseId){
+ const host=document.getElementById('exerciseFormGuide');if(!host)return;
+ const ex=exById(exerciseId);if(!ex)return;
+ try{
+  const data=await loadRepdbGuides();
+  host.innerHTML=`<div class="form-guide-card">
+   <div class="source-badge">Public source matching</div>
+   <div class="form-guide-title" style="margin-top:8px">Choose the exact variation</div>
+   <div class="lastline">There isn't an automatic exact-name match, or you asked to change it. Swole Cat will not guess and attach a different movement. Search RepDB's public library and choose the reference that matches the exercise you mean.</div>
+   <div class="field" style="margin-top:12px"><label>Search public form guides</label><input id="guideSearchInput" value="${escAttr(ex.name)}" oninput="renderFormGuidePickerResults('${exerciseId}')"></div>
+   <div id="guidePickerResults" class="guide-picker"></div>
+   <div class="form-guide-credit"><a href="https://exercise-dataset.com/" target="_blank" rel="noopener">Browse RepDB's public exercise library</a> · <a href="https://repdb.co" target="_blank" rel="noopener">Exercise data by RepDB</a></div>
+  </div>`;
+  renderFormGuidePickerResults(exerciseId);
+ }catch(err){loadExerciseFormGuide(exerciseId)}
+}
+function renderFormGuidePickerResults(exerciseId){
+ const host=document.getElementById('guidePickerResults');if(!host||!repdbGuideData)return;
+ const ex=exById(exerciseId),q=(document.getElementById('guideSearchInput')?.value||'').trim();
+ const qKey=guideKey(q);
+ let rows=repdbGuideData.map(g=>({g,score:q?guideScore({...ex,name:q},g):guideScore(ex,g)}));
+ if(qKey)rows=rows.filter(x=>guideKey(x.g.name_en).includes(qKey)||x.score>.18);
+ rows.sort((a,b)=>b.score-a.score);
+ const top=rows.slice(0,8);
+ host.innerHTML=top.length?top.map(({g})=>`<button class="guide-choice" onclick="saveFormGuideChoice('${exerciseId}','${escAttr(g.id)}')"><div class="grow"><b>${esc(g.name_en)}</b><div class="mini">${esc(prettyGuideTerm(g.body_part||''))} · ${esc(prettyGuideTerm(g.equipment||'Bodyweight'))} · ${esc(prettyGuideTerm(g.difficulty||''))}</div></div><span class="tag">Use guide</span></button>`).join(''):'<div class="empty">No public-source matches found for that search. Try a simpler exercise name.</div>';
+}
+
 function openExerciseProgress(exerciseId){
  const ex=exById(exerciseId),m=exerciseMetrics(exerciseId),h=m.history;
  const recent=h.slice(-12);
  const e1s=recent.map(x=>Math.max(...x.sets.map(s=>estimated1RM(s.weight,s.reps))));
  const trend=m.trend==='up'?'<span class="trend-up">↑ Trending up</span>':m.trend==='down'?'<span class="trend-down">↓ Recent dip</span>':'<span class="trend-flat">→ Holding steady</span>';
- openModal(`${esc(ex?.name||'Exercise')} progress`,`
- ${!h.length?'<div class="empty">Log this exercise in a workout and its progress will appear here.</div>':`
- <div class="row"><div><div class="mini">${esc(ex?.muscle||'')} · ${esc(ex?.equipment||'')} · ${esc(patternLabel(ex?.pattern||''))}</div><div style="margin-top:6px;font-weight:850">${trend}</div></div><button class="favbtn ${isFavorite(exerciseId)?'on':''}" onclick="toggleFavorite('${exerciseId}')">${isFavorite(exerciseId)?'★':'☆'}</button></div>
- <div class="metric-row">
-   <div class="metric-mini"><b>${m.bestWeight} ${state.profile.unit}</b><span>Best load</span></div>
-   <div class="metric-mini"><b>${m.bestE1.toFixed(0)} ${state.profile.unit}</b><span>Est. 1RM</span></div>
-   <div class="metric-mini"><b>${h.length}</b><span>Sessions</span></div>
- </div>
- <div class="chart-card"><div class="row"><b>Estimated strength</b><span class="mini">Last ${recent.length}</span></div>${svgLine(e1s)}</div>
- <div class="picker-section">Recent sessions</div>
- <div class="card">${h.slice().reverse().slice(0,8).map(x=>`<div class="list-item"><div class="grow"><b>${new Date(x.date).toLocaleDateString()}</b><div class="mini">${x.sets.map(s=>`${s.weight}×${s.reps}`).join(' · ')}</div></div><span class="tag">${Math.max(...x.sets.map(s=>estimated1RM(s.weight,s.reps))).toFixed(0)} e1RM</span></div>`).join('')}</div>
- `}`);
+ const progressHtml=!h.length
+  ?'<div class="empty"><strong>No workout history yet</strong>Log this exercise in a workout and its progress will appear here.</div>'
+  :`<div style="margin-top:8px;font-weight:850">${trend}</div>
+   <div class="metric-row">
+     <div class="metric-mini"><b>${m.bestWeight} ${state.profile.unit}</b><span>Best load</span></div>
+     <div class="metric-mini"><b>${m.bestE1.toFixed(0)} ${state.profile.unit}</b><span>Est. 1RM</span></div>
+     <div class="metric-mini"><b>${h.length}</b><span>Sessions</span></div>
+   </div>
+   <div class="chart-card"><div class="row"><b>Estimated strength</b><span class="mini">Last ${recent.length}</span></div>${svgLine(e1s)}</div>
+   <div class="picker-section">Recent sessions</div>
+   <div class="card">${h.slice().reverse().slice(0,8).map(x=>`<div class="list-item"><div class="grow"><b>${new Date(x.date).toLocaleDateString()}</b><div class="mini">${x.sets.map(s=>`${s.weight}×${s.reps}`).join(' · ')}</div></div><span class="tag">${Math.max(...x.sets.map(s=>estimated1RM(s.weight,s.reps))).toFixed(0)} e1RM</span></div>`).join('')}</div>`;
+ openModal(`${esc(ex?.name||'Exercise')} details`,`
+ <div class="row"><div><div class="exercise-name">${esc(ex?.name||'Exercise')}</div><div class="mini" style="margin-top:4px">${esc(ex?.muscle||'')} · ${esc(ex?.equipment||'')} · ${esc(patternLabel(ex?.pattern||''))}</div></div><button class="favbtn ${isFavorite(exerciseId)?'on':''}" onclick="toggleFavorite('${exerciseId}')">${isFavorite(exerciseId)?'★':'☆'}</button></div>
+ <div class="picker-section">Your progress</div>
+ ${progressHtml}
+ <div class="picker-section">Form guide</div>
+ <div id="exerciseFormGuide"><div class="empty"><strong>Loading public form guide…</strong>Checking the source exercise library.</div></div>
+ `);
+ loadExerciseFormGuide(exerciseId);
 }
 function renderAnalytics(){
  const host=document.getElementById('analyticsArea');if(!host)return;
