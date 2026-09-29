@@ -358,6 +358,11 @@
   <section id="exercises" class="view">
     <div class="section-title"><h2>Exercise library</h2><button class="btn small" onclick="newExercise()">+ Custom</button></div>
     <input id="exerciseSearch" class="search" placeholder="Search bench, row, squat..." oninput="renderExercises()">
+    <div class="picker-chips" style="margin-bottom:10px">
+      <button id="exerciseFilterAll" class="chip active" data-history-filter="all" onclick="setExerciseHistoryFilter('all')">All</button>
+      <button id="exerciseFilterDone" class="chip" data-history-filter="done" onclick="setExerciseHistoryFilter('done')">✓ Done Before</button>
+      <button id="exerciseFilterNew" class="chip" data-history-filter="new" onclick="setExerciseHistoryFilter('new')">Not Yet Logged</button>
+    </div>
     <div class="form-grid" style="margin-bottom:12px">
       <select id="muscleFilter" onchange="renderExercises()"><option value="">All muscle groups</option></select>
       <select id="equipmentFilter" onchange="renderExercises()"><option value="">All equipment</option></select>
@@ -671,19 +676,51 @@ function populateMuscles(){
  if(msel){const old=msel.value;msel.innerHTML='<option value="">All muscle groups</option>'+muscles.map(m=>`<option>${esc(m)}</option>`).join('');msel.value=old;}
  if(esel){const old=esel.value;esel.innerHTML='<option value="">All equipment</option>'+equipment.map(e=>`<option>${esc(e)}</option>`).join('');esel.value=old;}
 }
+let exerciseHistoryFilter='all';
+
+function setExerciseHistoryFilter(filter){
+ exerciseHistoryFilter=filter;
+ renderExercises();
+}
+
 function renderExercises(){
  populateMuscles();
  const q=(document.getElementById('exerciseSearch')?.value||'').toLowerCase();
  const m=document.getElementById('muscleFilter')?.value||'';
  const eq=document.getElementById('equipmentFilter')?.value||'';
- const list=allExercises().filter(x=>(!q||x.name.toLowerCase().includes(q)||x.muscle.toLowerCase().includes(q)||(x.pattern||'').toLowerCase().includes(q))&&(!m||x.muscle===m)&&(!eq||x.equipment===eq));
+ const exercises=allExercises();
+ const loggedIds=new Set();
+ state.sessions.forEach(s=>(s.exercises||[]).forEach(e=>{
+   if((e.sets||[]).some(set=>set.done))loggedIds.add(e.exerciseId);
+ }));
+
+ document.querySelectorAll('[data-history-filter]').forEach(btn=>{
+   btn.classList.toggle('active',btn.dataset.historyFilter===exerciseHistoryFilter);
+ });
+ const allBtn=document.getElementById('exerciseFilterAll');
+ const doneBtn=document.getElementById('exerciseFilterDone');
+ const newBtn=document.getElementById('exerciseFilterNew');
+ if(allBtn)allBtn.textContent=`All (${exercises.length})`;
+ if(doneBtn)doneBtn.textContent=`✓ Done Before (${loggedIds.size})`;
+ if(newBtn)newBtn.textContent=`Not Yet Logged (${Math.max(0,exercises.length-loggedIds.size)})`;
+
+ const list=exercises.filter(x=>{
+   const matchesSearch=!q||x.name.toLowerCase().includes(q)||x.muscle.toLowerCase().includes(q)||(x.pattern||'').toLowerCase().includes(q);
+   const matchesHistory=exerciseHistoryFilter==='all'||(exerciseHistoryFilter==='done'&&loggedIds.has(x.id))||(exerciseHistoryFilter==='new'&&!loggedIds.has(x.id));
+   return matchesSearch&&matchesHistory&&(!m||x.muscle===m)&&(!eq||x.equipment===eq);
+ });
+ const emptyMessage=exerciseHistoryFilter==='done'
+   ?'No logged exercises match these filters yet.'
+   :exerciseHistoryFilter==='new'
+     ?'You have already logged every exercise matching these filters.'
+     :'Nothing matched that search.';
  document.getElementById('exerciseList').innerHTML=list.length?list.map(x=>`
    <div class="list-item">
      <div class="iconbox">${equipmentIcon(x.equipment)}</div>
      <div class="grow exercise-link" onclick="openExerciseProgress('${x.id}')"><div class="exercise-name">${esc(x.name)}</div><div class="mini" style="margin:4px 0">${muscleChip(x.muscle)}</div><div class="mini">${esc(x.equipment)} · ${esc(patternLabel(x.pattern))}</div></div>
      <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button>
      ${x.custom?`<button class="btn small secondary" onclick="editExercise('${x.id}')">Edit</button>`:''}
-   </div>`).join(''):`<div class="empty">Nothing matched that search.</div>`;
+   </div>`).join(''):`<div class="empty">${emptyMessage}</div>`;
 }
 function patternLabel(p){return String(p||'other').replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())}
 
