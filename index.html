@@ -233,6 +233,18 @@
   .resume-workout-pill{display:none;background:rgba(34,197,94,.13);border-color:rgba(34,197,94,.38);color:#bbf7d0}
   .resume-workout-pill.show{display:inline-block}
   .active-workout-home{margin-top:14px;background:linear-gradient(135deg,rgba(34,197,94,.12),rgba(139,92,246,.08)),var(--panel);border:1px solid rgba(34,197,94,.34);border-radius:20px;padding:15px;box-shadow:var(--shadow)}
+  .program-home{margin-top:14px;background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(56,189,248,.07)),var(--panel);border:1px solid rgba(139,92,246,.4);border-radius:20px;padding:15px;box-shadow:var(--shadow)}
+  .program-card.active-program{border-color:rgba(139,92,246,.5);box-shadow:0 0 0 1px rgba(139,92,246,.12),var(--shadow)}
+  .program-route{display:flex;gap:7px;align-items:center;overflow-x:auto;padding:9px 0 2px;scrollbar-width:none}
+  .program-route::-webkit-scrollbar{display:none}
+  .program-step{display:flex;align-items:center;gap:6px;border:1px solid #303b50;background:#151d2a;border-radius:11px;padding:7px 9px;white-space:nowrap;font-size:.72rem;color:#cbd5e1}
+  .program-step.next{border-color:rgba(139,92,246,.55);background:rgba(139,92,246,.11);color:#ede9fe}
+  .program-letter{display:grid;place-items:center;width:21px;height:21px;border-radius:7px;background:#252f42;font-weight:950;font-size:.67rem}
+  .program-editor-list{display:grid;gap:8px;margin-top:10px}
+  .program-editor-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;background:#121925;border:1px solid #293449;border-radius:13px;padding:10px}
+  .day-picker{display:flex;gap:6px;flex-wrap:wrap}
+  .day-chip{border:1px solid #303b50;background:#151d2a;color:#aeb8c8;border-radius:9px;padding:8px 9px;font-size:.72rem;font-weight:850}
+  .day-chip.on{border-color:rgba(139,92,246,.55);background:rgba(139,92,246,.12);color:#ede9fe}
   .active-pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:6px;box-shadow:0 0 0 4px rgba(34,197,94,.10)}
   .autosave-note{font-size:.72rem;color:#86efac;margin-top:5px}
   .onboard-hero{text-align:center;padding:8px 5px 2px}
@@ -413,6 +425,7 @@
     </div>
 
     <div id="activeWorkoutHome"></div>
+    <div id="activeProgramHome"></div>
 
     <div class="section-title"><h2>Your routines</h2><div><button class="btn small secondary" onclick="installStarterPlan()">3-Day starter</button> <button class="btn small secondary" onclick="newRoutine()">+ New</button></div></div>
     <div id="homeRoutines" class="grid"></div>
@@ -422,6 +435,8 @@
   </section>
 
   <section id="routines" class="view">
+    <div class="section-title"><h2>Programs</h2><button class="btn small" onclick="newProgram()">+ Program</button></div>
+    <div id="programList" class="grid"></div>
     <div class="section-title"><h2>Workout routines</h2><div><button class="btn small secondary" onclick="installStarterPlan()">3-Day starter</button> <button class="btn small" onclick="newRoutine()">+ Create</button></div></div>
     <div id="routineList" class="grid"></div>
   </section>
@@ -498,6 +513,8 @@ function freshState(){
    profile:{name:'',unit:'lb'},
    customExercises:[],
    routines:[],
+   programs:[],
+   activeProgramId:null,
    sessions:[],
    activeWorkout:null,
    favorites:[],
@@ -515,6 +532,15 @@ function load(){
    merged.profile=Object.assign(base.profile,saved.profile||{});
    merged.settings=Object.assign(base.settings,saved.settings||{});
    merged.ui=Object.assign(base.ui,saved.ui||{});
+   merged.programs=Array.isArray(saved.programs)?saved.programs:[];
+   merged.activeProgramId=saved.activeProgramId||null;
+   merged.programs.forEach(p=>{
+     p.routineIds=Array.isArray(p.routineIds)?p.routineIds.filter(id=>merged.routines.some(r=>r.id===id)):[];
+     p.frequency=Math.min(7,Math.max(1,Number(p.frequency)||3));
+     p.preferredDays=Array.isArray(p.preferredDays)?p.preferredDays.filter(d=>Number.isInteger(d)&&d>=0&&d<=6):[];
+     p.nextIndex=Math.max(0,Math.min(Math.max(0,p.routineIds.length-1),Number(p.nextIndex)||0));
+   });
+   if(merged.activeProgramId&&!merged.programs.some(p=>p.id===merged.activeProgramId))merged.activeProgramId=null;
    if((saved.routines?.length||0)||(saved.sessions?.length||0))merged.ui.onboardingDone=true;
    (merged.sessions||[]).forEach(session=>(session.exercises||[]).forEach(e=>(e.sets||[]).forEach(set=>{set.type=set.type||'working'})));
    if(merged.activeWorkout){
