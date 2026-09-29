@@ -1199,7 +1199,7 @@ function renderExercises(){
  const q=(document.getElementById('exerciseSearch')?.value||'').toLowerCase();
  const m=document.getElementById('muscleFilter')?.value||'';
  const eq=document.getElementById('equipmentFilter')?.value||'';
- const exercises=allExercises();
+ const all=allExercises(),visible=all.filter(x=>!isHiddenExercise(x.id)),hidden=all.filter(x=>isHiddenExercise(x.id));
  const loggedIds=new Set();
  state.sessions.forEach(s=>(s.exercises||[]).forEach(e=>{
    if((e.sets||[]).some(set=>set.done))loggedIds.add(e.exerciseId);
@@ -1208,28 +1208,51 @@ function renderExercises(){
  document.querySelectorAll('[data-history-filter]').forEach(btn=>{
    btn.classList.toggle('active',btn.dataset.historyFilter===exerciseHistoryFilter);
  });
- const allBtn=document.getElementById('exerciseFilterAll');
- const doneBtn=document.getElementById('exerciseFilterDone');
- const newBtn=document.getElementById('exerciseFilterNew');
- if(allBtn)allBtn.textContent=`All (${exercises.length})`;
- if(doneBtn)doneBtn.textContent=`✓ Done Before (${loggedIds.size})`;
- if(newBtn)newBtn.textContent=`Not Yet Logged (${Math.max(0,exercises.length-loggedIds.size)})`;
+ const counts={
+   all:visible.length,
+   done:visible.filter(x=>loggedIds.has(x.id)).length,
+   new:visible.filter(x=>!loggedIds.has(x.id)).length,
+   favorite:visible.filter(x=>isFavorite(x.id)).length,
+   prefer:visible.filter(x=>exercisePreference(x.id)==='prefer').length,
+   hidden:hidden.length
+ };
+ const labels={
+   exerciseFilterAll:`All (${counts.all})`,
+   exerciseFilterDone:`✓ Done Before (${counts.done})`,
+   exerciseFilterNew:`Not Yet Logged (${counts.new})`,
+   exerciseFilterFav:`★ Favorites (${counts.favorite})`,
+   exerciseFilterPrefer:`Prefer (${counts.prefer})`,
+   exerciseFilterHidden:`Hidden (${counts.hidden})`
+ };
+ Object.entries(labels).forEach(([id,label])=>{const el=document.getElementById(id);if(el)el.textContent=label});
 
- const list=exercises.filter(x=>{
+ const source=exerciseHistoryFilter==='hidden'?hidden:visible;
+ const list=sortExerciseChoices(source.filter(x=>{
    const matchesSearch=!q||x.name.toLowerCase().includes(q)||x.muscle.toLowerCase().includes(q)||(x.pattern||'').toLowerCase().includes(q);
-   const matchesHistory=exerciseHistoryFilter==='all'||(exerciseHistoryFilter==='done'&&loggedIds.has(x.id))||(exerciseHistoryFilter==='new'&&!loggedIds.has(x.id));
-   return matchesSearch&&matchesHistory&&(!m||x.muscle===m)&&(!eq||x.equipment===eq);
- });
+   const matchesFilter=exerciseHistoryFilter==='all'
+     ||exerciseHistoryFilter==='hidden'
+     ||(exerciseHistoryFilter==='done'&&loggedIds.has(x.id))
+     ||(exerciseHistoryFilter==='new'&&!loggedIds.has(x.id))
+     ||(exerciseHistoryFilter==='favorite'&&isFavorite(x.id))
+     ||(exerciseHistoryFilter==='prefer'&&exercisePreference(x.id)==='prefer');
+   return matchesSearch&&matchesFilter&&(!m||x.muscle===m)&&(!eq||x.equipment===eq);
+ }));
  const emptyMessage=exerciseHistoryFilter==='done'
    ?'No logged exercises match these filters yet.'
    :exerciseHistoryFilter==='new'
-     ?'You have already logged every exercise matching these filters.'
-     :'Nothing matched that search.';
+     ?'You have already logged every visible exercise matching these filters.'
+     :exerciseHistoryFilter==='favorite'
+       ?'No favorite exercises match these filters.'
+       :exerciseHistoryFilter==='prefer'
+         ?'No preferred exercises match these filters.'
+         :exerciseHistoryFilter==='hidden'
+           ?'No hidden exercises match these filters.'
+           :'Nothing matched that search.';
  document.getElementById('exerciseList').innerHTML=list.length?list.map(x=>`
    <div class="list-item">
      <div class="iconbox">${equipmentIcon(x.equipment)}</div>
-     <div class="grow exercise-link" onclick="openExerciseProgress('${x.id}')"><div class="exercise-name">${esc(x.name)}</div><div class="mini" style="margin:4px 0">${muscleChip(x.muscle)}</div><div class="mini">${esc(x.equipment)} · ${esc(patternLabel(x.pattern))}</div></div>
-     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')">${isFavorite(x.id)?'★':'☆'}</button>
+     <div class="grow exercise-link" onclick="openExerciseProgress('${x.id}')"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini" style="margin:4px 0">${muscleChip(x.muscle)}</div><div class="mini">${esc(x.equipment)} · ${esc(patternLabel(x.pattern))}</div></div>
+     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
      ${x.custom?`<button class="btn small secondary" onclick="editExercise('${x.id}')">Edit</button>`:''}
    </div>`).join(''):`<div class="empty">${emptyMessage}</div>`;
 }
@@ -1237,10 +1260,47 @@ function patternLabel(p){return String(p||'other').replaceAll('_',' ').replace(/
 
 function favoriteIds(){return new Set(state.favorites||[])}
 function isFavorite(id){return (state.favorites||[]).includes(id)}
+function exercisePreference(id){return state.exercisePreferences?.[id]||'neutral'}
+function isHiddenExercise(id){return exercisePreference(id)==='hide'}
+function visibleExercises(){return allExercises().filter(x=>!isHiddenExercise(x.id))}
+function preferenceRank(id){
+ const p=exercisePreference(id);
+ return (p==='prefer'?35:p==='avoid'?-65:p==='hide'?-999:0)+(isFavorite(id)?12:0);
+}
+function preferenceBadgeHtml(id){
+ const p=exercisePreference(id);
+ if(p==='prefer')return '<span class="preference-badge prefer">↑ Prefer</span>';
+ if(p==='avoid')return '<span class="preference-badge avoid">↓ Avoid</span>';
+ if(p==='hide')return '<span class="preference-badge hide">Hidden</span>';
+ return '';
+}
+function sortExerciseChoices(items){
+ return [...items].sort((a,b)=>preferenceRank(b.id)-preferenceRank(a.id)||a.name.localeCompare(b.name));
+}
+function setExercisePreference(id,pref,refreshDetail=false){
+ state.exercisePreferences=state.exercisePreferences||{};
+ if(!['prefer','avoid','hide'].includes(pref))delete state.exercisePreferences[id];
+ else state.exercisePreferences[id]=pref;
+ save();
+ if(document.getElementById('routinePicker'))renderRoutinePicker();
+ if(document.getElementById('addExList'))renderAddExercisePicker();
+ if(document.getElementById('exerciseList'))renderExercises();
+ if(document.getElementById('subList')){
+   const activeIndex=state.activeWorkout?.exercises?.findIndex(e=>e.exerciseId===id);
+   if(activeIndex>=0)refreshWorkoutSubs(activeIndex);
+ }
+ if(refreshDetail)openExerciseProgress(id);
+ showToast(pref==='prefer'?'Exercise preferred':pref==='avoid'?'Exercise marked avoid':pref==='hide'?'Exercise hidden':'Exercise preference cleared');
+}
 function toggleFavorite(id){
  state.favorites=state.favorites||[];
  state.favorites=isFavorite(id)?state.favorites.filter(x=>x!==id):[...state.favorites,id];
  save();
+ const detailFav=document.getElementById('exerciseDetailFavorite');
+ if(detailFav&&detailFav.dataset.exerciseId===id){
+   detailFav.classList.toggle('on',isFavorite(id));
+   detailFav.textContent=isFavorite(id)?'★':'☆';
+ }
  if(document.getElementById('routinePicker'))renderRoutinePicker();
  if(document.getElementById('addExList'))renderAddExercisePicker();
  if(document.getElementById('exerciseList'))renderExercises();
@@ -1257,7 +1317,7 @@ function categoryIcon(m){
  return ({Chest:'▰',Back:'↔',Shoulders:'△',Biceps:'◒',Triceps:'◓',Quads:'⬟',Hamstrings:'⌁',Glutes:'●',Calves:'⌃',Core:'◆',Traps:'⌂',Forearms:'✦','Lower Back':'◇',Tibialis:'⌄',Adductors:'◫','Full Body':'★'})[m]||'•';
 }
 function muscleCategories(){
- const counts={}; allExercises().forEach(x=>counts[x.muscle]=(counts[x.muscle]||0)+1);
+ const counts={}; visibleExercises().forEach(x=>counts[x.muscle]=(counts[x.muscle]||0)+1);
  const preferred=['Chest','Back','Shoulders','Biceps','Triceps','Quads','Hamstrings','Glutes','Calves','Core','Traps','Forearms','Lower Back','Tibialis','Adductors','Full Body'];
  return Object.keys(counts).sort((a,b)=>{
    const ai=preferred.indexOf(a),bi=preferred.indexOf(b);
