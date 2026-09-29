@@ -95,6 +95,16 @@
   .picker-section{font-size:.72rem;text-transform:uppercase;letter-spacing:.11em;color:#929db1;font-weight:900;margin:16px 2px 8px}
   .favbtn{border:0;background:transparent;color:#6f788b;font-size:1.25rem;padding:7px;line-height:1}
   .favbtn.on{color:#fbbf24}
+  .preference-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+  .preference-btn{border:1px solid #33405a;background:#151d2a;color:#b8c2d2;border-radius:10px;padding:8px 10px;font-size:.72rem;font-weight:900}
+  .preference-btn.on.prefer{border-color:rgba(34,197,94,.55);background:rgba(34,197,94,.11);color:#bbf7d0}
+  .preference-btn.on.avoid{border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.11);color:#fde68a}
+  .preference-btn.on.hide{border-color:rgba(148,163,184,.45);background:rgba(148,163,184,.1);color:#e2e8f0}
+  .preference-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 7px;font-size:.62rem;font-weight:950;letter-spacing:.04em;border:1px solid #33405a;background:#151d2a;color:#aeb8c8}
+  .preference-badge.prefer{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.08);color:#bbf7d0}
+  .preference-badge.avoid{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.08);color:#fde68a}
+  .preference-badge.hide{border-color:rgba(148,163,184,.35);background:rgba(148,163,184,.08);color:#cbd5e1}
+  .preference-help{font-size:.72rem;color:#93a0b5;line-height:1.4;margin-top:8px}
   .breadcrumb{display:flex;align-items:center;gap:7px;color:#b8c1d2;font-size:.82rem;margin:7px 0 10px}
   .breadcrumb button{border:0;background:none;color:#a78bfa;padding:0;font-weight:800}
   .pickcount{background:#262f42;color:#dce3ef;border-radius:999px;padding:5px 9px;font-size:.72rem;font-weight:900}
@@ -448,6 +458,9 @@
       <button id="exerciseFilterAll" class="chip active" data-history-filter="all" onclick="setExerciseHistoryFilter('all')">All</button>
       <button id="exerciseFilterDone" class="chip" data-history-filter="done" onclick="setExerciseHistoryFilter('done')">✓ Done Before</button>
       <button id="exerciseFilterNew" class="chip" data-history-filter="new" onclick="setExerciseHistoryFilter('new')">Not Yet Logged</button>
+      <button id="exerciseFilterFav" class="chip" data-history-filter="favorite" onclick="setExerciseHistoryFilter('favorite')">★ Favorites</button>
+      <button id="exerciseFilterPrefer" class="chip" data-history-filter="prefer" onclick="setExerciseHistoryFilter('prefer')">Prefer</button>
+      <button id="exerciseFilterHidden" class="chip" data-history-filter="hidden" onclick="setExerciseHistoryFilter('hidden')">Hidden</button>
     </div>
     <div class="form-grid" style="margin-bottom:12px">
       <select id="muscleFilter" onchange="renderExercises()"><option value="">All muscle groups</option></select>
@@ -518,6 +531,7 @@ function freshState(){
    sessions:[],
    activeWorkout:null,
    favorites:[],
+   exercisePreferences:{},
    bodyweight:[],
    ui:{onboardingDone:false,haptics:true,keepAwake:true},
    settings:{defaultMin:8,defaultMax:12,defaultSets:3,defaultIncrement:5}
@@ -532,6 +546,11 @@ function load(){
    merged.profile=Object.assign(base.profile,saved.profile||{});
    merged.settings=Object.assign(base.settings,saved.settings||{});
    merged.ui=Object.assign(base.ui,saved.ui||{});
+   merged.exercisePreferences=(saved.exercisePreferences&&typeof saved.exercisePreferences==='object')?saved.exercisePreferences:{};
+   Object.keys(merged.exercisePreferences).forEach(id=>{
+     const v=merged.exercisePreferences[id];
+     if(!['prefer','avoid','hide'].includes(v))delete merged.exercisePreferences[id];
+   });
    merged.programs=Array.isArray(saved.programs)?saved.programs:[];
    merged.activeProgramId=saved.activeProgramId||null;
    merged.programs.forEach(p=>{
