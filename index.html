@@ -120,7 +120,26 @@
   .live-body{padding:0 15px 15px}
   .set-card{background:#0f151f;border:1px solid #273147;border-radius:15px;padding:10px;margin-top:10px}
   .set-card.completed{border-color:rgba(34,197,94,.45);background:rgba(34,197,94,.055)}
-  .set-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .set-card.type-warmup{border-color:rgba(56,189,248,.26)}
+  .set-card.type-drop{border-color:rgba(245,158,11,.28)}
+  .set-card.type-failure{border-color:rgba(248,113,113,.3)}
+  .set-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .set-title-wrap{display:flex;align-items:flex-start;gap:8px;min-width:0}
+  .set-type-select{appearance:none;-webkit-appearance:none;border:1px solid #36435a;background:#171f2d;color:#dce5f2;border-radius:9px;padding:7px 24px 7px 8px;font-size:.7rem;font-weight:900;background-image:linear-gradient(45deg,transparent 50%,#9da8ba 50%),linear-gradient(135deg,#9da8ba 50%,transparent 50%);background-position:calc(100% - 12px) 50%,calc(100% - 8px) 50%;background-size:4px 4px,4px 4px;background-repeat:no-repeat}
+  .set-card.type-warmup .set-type-select{border-color:rgba(56,189,248,.4);color:#bae6fd}
+  .set-card.type-drop .set-type-select{border-color:rgba(245,158,11,.4);color:#fde68a}
+  .set-card.type-failure .set-type-select{border-color:rgba(248,113,113,.42);color:#fecaca}
+  .set-card-actions{display:flex;gap:4px;flex:0 0 auto}
+  .set-icon-btn{width:30px;height:30px;padding:0;border:1px solid #303b50;background:#182130;color:#c7d0df;border-radius:8px;font-weight:950;display:grid;place-items:center}
+  .set-icon-btn.danger{color:#fca5a5;border-color:rgba(248,113,113,.25)}
+  .set-nonprogress-note{font-size:.7rem;color:#8f9aae;margin:3px 0 8px;line-height:1.35}
+  .set-add-row{display:flex;gap:7px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+  .set-add-row::-webkit-scrollbar{display:none}
+  .set-add-btn{white-space:nowrap;border:1px solid #303b50;background:#151d2a;color:#d2dae7;border-radius:10px;padding:8px 10px;font-size:.72rem;font-weight:850}
+  .set-add-btn.working{border-color:rgba(139,92,246,.35);color:#ddd6fe}
+  .set-add-btn.warmup{border-color:rgba(56,189,248,.3);color:#bae6fd}
+  .set-add-btn.drop{border-color:rgba(245,158,11,.3);color:#fde68a}
+  .set-add-btn.failure{border-color:rgba(248,113,113,.3);color:#fecaca}
   .set-reference{font-size:.76rem;color:#9da8ba}
   .set-target{font-size:.76rem;font-weight:850;color:#c4b5fd;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.28);border-radius:999px;padding:5px 8px}
   .live-entry{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.9fr) 64px;gap:9px;align-items:end}
@@ -1396,7 +1415,7 @@ function applyCoachReset(ei){
  save();renderWorkout();
 }
 function openTargetOverride(ei){
- const e=state.activeWorkout.exercises[ei],prev=previousExercise(e.exerciseId),t=liveSetTarget(e,0,prev);
+ const e=state.activeWorkout.exercises[ei],prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
  openModal('Override session target',`
  <div class="notice">This changes the target for this workout only. It does not rewrite your routine or old history.</div>
  <div class="form-grid" style="margin-top:12px">
@@ -1583,11 +1602,86 @@ function warmupGuide(weight,ex){
  ].filter((x,i,a)=>x.weight>0 && (i===0||x.weight!==a[i-1].weight) && x.weight<w);
 }
 function openWarmupGuide(ei){
- const e=state.activeWorkout.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),t=liveSetTarget(e,0,prev),sets=warmupGuide(t.weight,ex);
+ const e=state.activeWorkout.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),sets=warmupGuide(t.weight,ex);
  openModal(`${esc(ex?.name||'Exercise')} warm-up`,sets.length?`
  <div class="notice">Optional ramp-up sets before your working sets. Adjust or skip them based on how you feel and how heavy the working weight is.</div>
  <div class="card" style="margin-top:12px">${sets.map((s,i)=>`<div class="list-item"><div class="setnum">${i+1}</div><div class="grow"><b>${s.weight} ${state.profile.unit} × ${s.reps}</b><div class="mini">${plateLoadText(s.weight,ex)}</div></div></div>`).join('')}</div>
- <div class="actions"><button class="btn" onclick="closeModal()">Got it</button></div>`:`<div class="empty">No warm-up ramp is needed from the current target.</div>`);
+ <div class="actions"><button class="btn" onclick="addSuggestedWarmups(${ei})">Add these warm-up sets</button><button class="btn secondary" onclick="closeModal()">Just view</button></div>`:`<div class="empty">No warm-up ramp is needed from the current target.</div>`);
+}
+
+function setTypeOptions(type){
+ return [['working','Working'],['warmup','Warm-up'],['drop','Drop'],['failure','Failure']].map(([v,label])=>`<option value="${v}" ${setType({type})===v?'selected':''}>${label}</option>`).join('');
+}
+function setDisplayLabel(e,si){
+ const type=setType(e.sets[si]);
+ const peers=e.sets.slice(0,si+1).filter(s=>setType(s)===type).length;
+ return type==='working'?`Set ${peers}`:`${setTypeLabel(type)} ${peers}`;
+}
+function setProgressionNote(type){
+ if(type==='warmup')return 'Warm-up set · saved to history and volume, ignored by progression and PRs.';
+ if(type==='drop')return 'Drop set · saved to history and volume, ignored by progression and PRs.';
+ if(type==='failure')return 'Failure set · saved to history and volume, ignored by progression and PRs.';
+ return '';
+}
+function setWorkoutSetType(ei,si,type){
+ const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];if(!set)return;
+ if(!['working','warmup','drop','failure'].includes(type))type='working';
+ set.type=type;
+ set.pr=type==='working'&&set.done?detectPR(e.exerciseId,set):'';
+ saveActiveWorkout();renderWorkout();
+}
+function addWorkoutSet(ei,type='working'){
+ const e=state.activeWorkout?.exercises?.[ei];if(!e)return;
+ type=['working','warmup','drop','failure'].includes(type)?type:'working';
+ const working=progressionSets({...e,sets:e.sets.map(s=>({...s,done:true}))});
+ const existingWorking=workingSetIndexes(e);
+ const prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId);
+ let weight=0,reps=e.config.minReps;
+ if(type==='working'){
+   const wi=existingWorking.length;
+   const lastWorking=existingWorking.length?e.sets[existingWorking.at(-1)]:null;
+   weight=Number(rec.weights?.[wi]??rec.weight??lastWorking?.weight??0);
+   reps=Number(rec.targetReps?.[wi]??lastWorking?.reps??e.config.minReps);
+ }else{
+   const source=existingWorking.length?e.sets[existingWorking.at(-1)]:e.sets.at(-1);
+   weight=Number(source?.weight)||0;
+   reps=Number(source?.reps)||e.config.minReps;
+ }
+ const item={weight:roundLoad(weight),reps:Math.max(1,Math.round(reps)),done:false,rir:'',type,pr:''};
+ let at=e.sets.length;
+ if(type==='warmup')at=existingWorking.length?existingWorking[0]:0;
+ else if(type==='working'&&existingWorking.length)at=existingWorking.at(-1)+1;
+ e.sets.splice(at,0,item);
+ e.expanded=true;
+ saveActiveWorkout();renderWorkout();haptic(10);
+ showToast(`${setTypeLabel(type)} added`);
+ setTimeout(()=>document.getElementById(`workoutExercise-${ei}`)?.scrollIntoView({behavior:'smooth',block:'start'}),60);
+}
+function removeWorkoutSet(ei,si){
+ const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];if(!set)return;
+ if(e.sets.length<=1){showToast('Keep at least one set in the exercise');return}
+ const remove=()=>{
+   e.sets.splice(si,1);
+   saveActiveWorkout();renderWorkout();showToast('Set removed');
+ };
+ if(set.done)confirmAction('Remove completed set?','This set is already marked complete. Removing it will delete it from this active workout.',remove);
+ else remove();
+}
+function moveWorkoutSet(ei,si,dir){
+ const e=state.activeWorkout?.exercises?.[ei];if(!e)return;
+ const ni=si+dir;if(ni<0||ni>=e.sets.length)return;
+ [e.sets[si],e.sets[ni]]=[e.sets[ni],e.sets[si]];
+ saveActiveWorkout();renderWorkout();haptic(8);
+}
+function addSuggestedWarmups(ei){
+ const e=state.activeWorkout?.exercises?.[ei],ex=e?exById(e.exerciseId):null;if(!e||!ex)return;
+ const existing=e.sets.filter(s=>setType(s)==='warmup');
+ if(existing.length){closeModal();showToast('Warm-up sets are already in this exercise');return}
+ const prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),suggested=warmupGuide(t.weight,ex);
+ if(!suggested.length){closeModal();showToast('No warm-up ramp available for this target');return}
+ const at=firstWorkingSetIndex(e);
+ e.sets.splice(at,0,...suggested.map(s=>({weight:s.weight,reps:s.reps,done:false,rir:'',type:'warmup',pr:''})));
+ saveActiveWorkout();closeModal();renderWorkout();showToast(`${suggested.length} warm-up sets added`);
 }
 
 function exerciseSetProgress(e){
@@ -1619,7 +1713,7 @@ function exerciseStatus(e,ei){
  return {label:'Up next',cls:''};
 }
 function compactTargetText(e,ex,prev){
- const t=liveSetTarget(e,0,prev);
+ const t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
  if(e.targetOverride)return `Target ${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`;
  if((Number(t.weight)||0)<=0)return ex?.equipment==='bodyweight'?`${t.reps} reps · bodyweight`:`Choose starting weight · ${t.reps} reps`;
  return `${t.weight} ${state.profile.unit} × ${t.reps} target`;
@@ -1681,7 +1775,7 @@ function renderWorkout(){
  </div>
  ${w.exercises.map((e,ei)=>{
    const ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId),coach=coachSignal(e.exerciseId,e.config);
-   const firstTarget=liveSetTarget(e,0,prev),plateText=plateLoadText(firstTarget.weight,ex),warmups=warmupGuide(firstTarget.weight,ex);
+   const firstWorking=firstWorkingSetIndex(e),firstTarget=liveSetTarget(e,firstWorking,prev),plateText=plateLoadText(firstTarget.weight,ex),warmups=warmupGuide(firstTarget.weight,ex);
    const prog=exerciseSetProgress(e),status=exerciseStatus(e,ei),compactTarget=compactTargetText(e,ex,prev);
    return `<div id="workoutExercise-${ei}" class="card live-card exercise-block tone-${ei%4} ${e.expanded?'':'collapsed'} ${prog.complete?'complete-block':''}">
     <div class="live-head exercise-head-click" onclick="toggleExercisePanel(${ei})">
@@ -1707,9 +1801,20 @@ function renderWorkout(){
       <div class="toolrow">${warmups.length?`<button class="toolchip" onclick="openWarmupGuide(${ei})">Warm-up guide</button>`:''}<button class="toolchip" onclick="openTargetOverride(${ei})">Override target</button><button class="toolchip" onclick="openWorkoutSubstitute(${ei})">Substitute</button><span class="toolchip">${e.config.restSeconds||120}s rest</span></div>
     <div class="live-body">
      ${e.sets.map((s,si)=>{
-       const target=liveSetTarget(e,si,prev),ref=setReference(prev,si),pt=plateLoadText(s.weight||target.weight,ex);
-       return `<div class="set-card ${s.done?'completed':''}">
-        <div class="set-top"><div><b>Set ${si+1}</b><div class="set-reference">Previous: ${esc(ref)}</div></div><span class="set-target">${esc(targetBadgeText(target,ex))}</span></div>
+       const type=setType(s),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev),ref=type==='working'?setReference(prev,wi):'Not used for progression',pt=plateLoadText(s.weight||target.weight,ex);
+       return `<div class="set-card type-${type} ${s.done?'completed':''}">
+        <div class="set-top">
+          <div class="set-title-wrap">
+            <select class="set-type-select" aria-label="Set type" onchange="setWorkoutSetType(${ei},${si},this.value)">${setTypeOptions(type)}</select>
+            <div><b>${esc(setDisplayLabel(e,si))}</b><div class="set-reference">${type==='working'?`Previous: ${esc(ref)}`:'Logged separately from progression'}</div></div>
+          </div>
+          <div class="set-card-actions">
+            <button class="set-icon-btn" aria-label="Move set up" onclick="moveWorkoutSet(${ei},${si},-1)" ${si===0?'disabled':''}>↑</button>
+            <button class="set-icon-btn" aria-label="Move set down" onclick="moveWorkoutSet(${ei},${si},1)" ${si===e.sets.length-1?'disabled':''}>↓</button>
+            <button class="set-icon-btn danger" aria-label="Remove set" onclick="removeWorkoutSet(${ei},${si})">×</button>
+          </div>
+        </div>
+        ${type==='working'?`<div style="display:flex;justify-content:flex-end;margin-top:-2px;margin-bottom:7px"><span class="set-target">${esc(targetBadgeText(target,ex))}</span></div>`:`<div class="set-nonprogress-note">${esc(setProgressionNote(type))}</div>`}
         <div class="live-entry">
           <div class="live-input-wrap">
             <div class="input-label-row">
@@ -1747,6 +1852,12 @@ function renderWorkout(){
         ${s.pr?`<div class="pr-banner">🏆 ${esc(s.pr)}</div>`:''}
        </div>`;
      }).join('')}
+     <div class="set-add-row">
+       <button class="set-add-btn working" onclick="addWorkoutSet(${ei},'working')">+ Working</button>
+       <button class="set-add-btn warmup" onclick="addWorkoutSet(${ei},'warmup')">+ Warm-up</button>
+       <button class="set-add-btn drop" onclick="addWorkoutSet(${ei},'drop')">+ Drop</button>
+       <button class="set-add-btn failure" onclick="addWorkoutSet(${ei},'failure')">+ Failure</button>
+     </div>
      <div class="field" style="margin-top:12px"><label>Exercise notes</label><textarea oninput="updateNotes(${ei},this.value)" placeholder="Seat setting, grip, tempo, machine used...">${esc(e.notes||'')}</textarea></div>
     </div>
     </div>
@@ -1767,7 +1878,7 @@ function toggleSet(ei,si){
  const e=state.activeWorkout.exercises[ei],set=e.sets[si];
  set.done=!set.done;
  if(set.done){
-   set.pr=detectPR(e.exerciseId,set);
+   set.pr=isProgressionSet(set)?detectPR(e.exerciseId,set):'';
    haptic(set.pr?[35,40,70]:25);
    startRestTimer(e.config.restSeconds||120);
    saveActiveWorkout();
@@ -1825,7 +1936,7 @@ function renderHistory(){
  el.innerHTML=sessions.map(s=>`<div class="card">
    <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleString()} · ${sessionSetCount(s)} sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div><button class="btn small danger" onclick="deleteSession('${s.id}')">Delete</button></div>
    <div class="editor-summary"><span class="tag">${Math.round(sessionVolume(s)).toLocaleString()} ${state.profile.unit}×reps</span>${sessionPRCount(s)?`<span class="tag">🏆 ${sessionPRCount(s)} PR</span>`:''}</div>
-   ${s.exercises.map(e=>{const ex=exById(e.exerciseId),sets=completedSets(e); return sets.length?`<table class="history-table"><tr><th colspan="3"><span class="exercise-link" onclick="openExerciseProgress('${e.exerciseId}')">${esc(ex?.name||'Exercise')}</span></th></tr>${sets.map((x,i)=>`<tr><td>Set ${i+1}</td><td>${x.weight} ${state.profile.unit}</td><td>${x.reps} reps${x.rir!==''&&x.rir!=null?` · ${x.rir} RIR`:''}</td></tr>`).join('')}</table>`:''}).join('')}
+   ${s.exercises.map(e=>{const ex=exById(e.exerciseId),sets=completedSets(e); return sets.length?`<table class="history-table"><tr><th colspan="3"><span class="exercise-link" onclick="openExerciseProgress('${e.exerciseId}')">${esc(ex?.name||'Exercise')}</span></th></tr>${sets.map((x,i)=>`<tr><td>${esc(setTypeLabel(setType(x)))} ${e.sets.slice(0,e.sets.indexOf(x)+1).filter(y=>setType(y)===setType(x)).length}</td><td>${x.weight} ${state.profile.unit}</td><td>${x.reps} reps${x.rir!==''&&x.rir!=null?` · ${x.rir} RIR`:''}</td></tr>`).join('')}</table>`:''}).join('')}
  </div>`).join('');
 }
 function deleteSession(id){confirmAction('Delete workout?','This removes the logged session from your local history. This cannot be undone.',()=>{state.sessions=state.sessions.filter(x=>x.id!==id);save();renderHistory();renderHome();showToast('Workout deleted');});}
