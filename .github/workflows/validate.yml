@@ -432,3 +432,92 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V27 exercise preferences
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const assert = require('assert');
+          const {JSDOM} = require('jsdom');
+
+          const html = fs.readFileSync('index.html','utf8');
+          const dom = new JSDOM(html,{
+            runScripts:'dangerously',
+            url:'https://swole-cat.test/',
+            pretendToBeVisual:true,
+            beforeParse(window){
+              window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+              window.alert=()=>{};
+              window.confirm=()=>true;
+              window.scrollTo=()=>{};
+              window.fetch=()=>Promise.reject(new Error('offline test'));
+            }
+          });
+
+          const wait = ms => new Promise(r=>setTimeout(r,ms));
+          const read = () => JSON.parse(dom.window.localStorage.getItem('overload_v3'));
+
+          const run = async () => {
+            await wait(30);
+            const w=dom.window;
+            if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
+
+            w.installStarterPlan();
+            let state=read();
+            const bench=w.exById('lib_0');
+            const dbBench=w.allExercises().find(x=>x.name==='Dumbbell Bench Press');
+            const machine=w.allExercises().find(x=>x.name==='Chest Press Machine');
+            const pushup=w.allExercises().find(x=>x.name==='Push-Up');
+            const squat=w.allExercises().find(x=>x.name==='Back Squat');
+            assert(bench&&dbBench&&machine&&pushup&&squat,'expected library exercises should exist');
+
+            // Preference state persists.
+            w.setExercisePreference(dbBench.id,'prefer');
+            w.setExercisePreference(machine.id,'avoid');
+            w.setExercisePreference(pushup.id,'hide');
+            w.toggleFavorite(dbBench.id);
+            state=read();
+            assert.equal(state.exercisePreferences[dbBench.id],'prefer','Prefer should persist');
+            assert.equal(state.exercisePreferences[machine.id],'avoid','Avoid should persist');
+            assert.equal(state.exercisePreferences[pushup.id],'hide','Hide should persist');
+            assert(state.favorites.includes(dbBench.id),'favorite should remain independent of preference');
+
+            // Hidden exercises leave normal browsing and substitution suggestions.
+            assert(!w.visibleExercises().some(x=>x.id===pushup.id),'hidden exercise should not be in visible exercise pool');
+            let subs=w.recommendedSubs(bench.id);
+            assert(!subs.some(row=>row.x.id===pushup.id),'hidden exercise should be excluded from substitutions');
+            const preferPos=subs.findIndex(row=>row.x.id===dbBench.id);
+            const avoidPos=subs.findIndex(row=>row.x.id===machine.id);
+            assert(preferPos>=0&&avoidPos>=0,'preferred and avoided compatible substitutions should remain available');
+            assert(preferPos<avoidPos,'preferred substitute should rank above avoided substitute');
+
+            // Hidden filter remains a recovery path.
+            w.go('exercises');
+            w.setExerciseHistoryFilter('all');
+            assert(!w.document.getElementById('exerciseList').innerHTML.includes("openExerciseProgress('"+pushup.id+"')"),'All should exclude hidden exercises');
+            w.setExerciseHistoryFilter('hidden');
+            assert(w.document.getElementById('exerciseList').innerHTML.includes("openExerciseProgress('"+pushup.id+"')"),'Hidden filter should expose hidden exercises for management');
+
+            // Hiding an exercise must not delete it from an existing routine or stop that routine from starting.
+            const routine=state.routines.find(r=>r.name==='Full Body A');
+            assert(routine.exercises.some(e=>e.exerciseId===squat.id),'starter routine should contain Back Squat');
+            w.setExercisePreference(squat.id,'hide');
+            state=read();
+            assert(state.routines.find(r=>r.name==='Full Body A').exercises.some(e=>e.exerciseId===squat.id),'Hide must not remove exercise from saved routine');
+            w.openRoutine(routine.id);
+            state=read();
+            assert(state.activeWorkout.exercises.some(e=>e.exerciseId===squat.id),'hidden routine exercise should still load in active workout');
+            w.cancelWorkout();w.runConfirmedAction();
+
+            // Neutral restores normal visibility.
+            w.setExercisePreference(pushup.id,'neutral');
+            state=read();
+            assert(!state.exercisePreferences[pushup.id],'Neutral should clear stored preference');
+            assert(w.visibleExercises().some(x=>x.id===pushup.id),'neutral exercise should return to normal browsing');
+
+            dom.window.close();
+            console.log('Swole Cat V27 exercise preference smoke test PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
