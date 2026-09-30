@@ -698,13 +698,27 @@ function readRecoverySnapshot(){
  }catch(e){return null}
 }
 function load(){
- const raw=localStorage.getItem(LSKEY);
+ let raw='';
+ try{raw=localStorage.getItem(LSKEY)||''}
+ catch(e){
+   storageWriteBlocked=true;
+   lastStorageError=e?.message||String(e);
+   startupStorageNotice='Swole Cat cannot access local device storage in this browser session. Your data has not been changed. Check browser storage/privacy settings before logging more workouts.';
+   return freshState();
+ }
  if(!raw)return freshState();
  try{
    const normalized=normalizeState(JSON.parse(raw));
    writeRecoverySnapshot(raw);
    return normalized;
  }catch(primaryError){
+   const message=primaryError?.message||String(primaryError);
+   if(message.includes('newer Swole Cat data format')){
+     storageWriteBlocked=true;
+     startupStorageNotice=message+' The existing local data has been left untouched.';
+     lastStorageError=message;
+     return freshState();
+   }
    const recovered=readRecoverySnapshot();
    if(recovered){
      recoveredFromSnapshot=true;
@@ -713,7 +727,7 @@ function load(){
    }
    storageWriteBlocked=true;
    startupStorageNotice='Swole Cat could not safely read the local workout data on this device. The unreadable data has not been overwritten. Import a backup or explicitly erase the unreadable data to start fresh.';
-   lastStorageError=primaryError?.message||String(primaryError);
+   lastStorageError=message;
    return freshState();
  }
 }
@@ -756,9 +770,9 @@ function createBackupEnvelope(exportedAt=new Date().toISOString()){
  return {format:BACKUP_FORMAT,formatVersion:BACKUP_FORMAT_VERSION,exportedAt,schemaVersion:DATA_SCHEMA_VERSION,state:cloneData(state)};
 }
 function createPreImportSnapshot(){
- const raw=localStorage.getItem(LSKEY);
- if(!raw)return true;
  try{
+   const raw=localStorage.getItem(LSKEY);
+   if(!raw)return true;
    localStorage.setItem(IMPORTSNAPSHOTKEY,JSON.stringify({savedAt:new Date().toISOString(),raw}));
    return true;
  }catch(e){
@@ -789,6 +803,35 @@ function storageHealthText(){
  if(storageWriteBlocked)return 'Write protection active · unreadable local data preserved';
  if(lastStorageError)return 'Last local save failed: '+lastStorageError;
  return 'Local storage writable';
+}
+function clearUnreadableLocalData(){
+ confirmAction('Erase unreadable local data?','Only use this if you do not have a backup you want to restore. The unreadable local Swole Cat record will be permanently replaced with a fresh empty state.',()=>{
+   try{
+     localStorage.removeItem(LSKEY);
+     localStorage.removeItem(RECOVERYKEY);
+     localStorage.removeItem(IMPORTSNAPSHOTKEY);
+   }catch(e){}
+   storageWriteBlocked=false;recoveredFromSnapshot=false;startupStorageNotice='';lastStorageError='';recoverySnapshotWritten=false;
+   state=freshState();save();renderHome();populateMuscles();updateActiveWorkoutChrome();showToast('Started with fresh local data');setTimeout(onboarding,180);
+ });
+}
+function openStartupStorageNotice(){
+ if(!startupStorageNotice)return;
+ if(storageWriteBlocked){
+   openModal('Local data needs attention',`
+     <div class="notice"><b>Swole Cat stopped before overwriting anything.</b><br><br>${esc(startupStorageNotice)}${lastStorageError?`<br><br><span class="mini">Details: ${esc(lastStorageError)}</span>`:''}</div>
+     <div class="actions">
+       <label class="btn" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0])" style="display:none"></label>
+       <button class="btn secondary" onclick="closeModal();openSettings()">Open data safety</button>
+       <button class="btn danger" onclick="clearUnreadableLocalData()">Erase & start fresh</button>
+     </div>
+   `);
+ }else if(recoveredFromSnapshot){
+   openModal('Workout data recovered',`
+     <div class="notice">${esc(startupStorageNotice)}</div>
+     <div class="actions"><button class="btn" onclick="exportBackup();closeModal()">Export a backup now</button><button class="btn secondary" onclick="closeModal()">Review first</button></div>
+   `);
+ }
 }
 
 let deferredInstallPrompt=null,wakeLock=null,confirmCallback=null,toastTimer=null;
@@ -3637,18 +3680,25 @@ function openSettings(){
  `);
 }
 function saveSettings(){
+ if(storageWriteBlocked){alert('Settings cannot be saved while local storage write protection is active. Restore a backup or resolve the storage issue first.');return}
+ const before=cloneData(state);
  const oldUnit=state.profile.unit;
  const newUnit=document.getElementById('pUnit').value;
  state.profile.name=document.getElementById('pName').value.trim();
- state.settings.defaultSets=+document.getElementById('dSets').value||3;
- state.settings.defaultMin=+document.getElementById('dMin').value||8;
- state.settings.defaultMax=+document.getElementById('dMax').value||12;
- state.settings.defaultIncrement=+document.getElementById('dInc').value||5;
+ state.settings.defaultSets=Math.max(1,+document.getElementById('dSets').value||3);
+ state.settings.defaultMin=Math.max(1,+document.getElementById('dMin').value||8);
+ state.settings.defaultMax=Math.max(state.settings.defaultMin,+document.getElementById('dMax').value||12);
+ state.settings.defaultIncrement=Math.max(0,+document.getElementById('dInc').value||5);
  state.ui.haptics=document.getElementById('hapticToggle').classList.contains('on');
  state.ui.keepAwake=document.getElementById('awakeToggle').classList.contains('on');
  if(newUnit!==oldUnit)convertStoredUnits(oldUnit,newUnit);
  state.profile.unit=newUnit;
- save();haptic(15);closeModal();renderHome();showToast(newUnit!==oldUnit?`Converted workout data to ${newUnit}`:'Settings saved');
+ if(!save()){
+   state=normalizeState(before);
+   alert('Settings were not saved because local storage failed: '+(lastStorageError||'unknown storage error'));
+   return;
+ }
+ haptic(15);closeModal();renderHome();showToast(newUnit!==oldUnit?`Converted workout data to ${newUnit}`:'Settings saved');
 }
 function exportBackup(){
  try{
@@ -3691,7 +3741,11 @@ function importBackup(file){
  };
  r.readAsText(file);
 }
-function resetAll(){closeModal();confirmAction('Erase all local data?','This permanently removes every workout, routine, custom exercise, favorite, bodyweight entry, and setting stored on this device.',()=>{localStorage.removeItem(LSKEY);state=freshState();renderHome();showToast('Local data erased');setTimeout(onboarding,250);});}
+function resetAll(){closeModal();confirmAction('Erase all local data?','This permanently removes every workout, routine, custom exercise, favorite, bodyweight entry, setting, recovery snapshot, and pre-import snapshot stored by Swole Cat on this device.',()=>{
+ try{localStorage.removeItem(LSKEY);localStorage.removeItem(RECOVERYKEY);localStorage.removeItem(IMPORTSNAPSHOTKEY)}catch(e){}
+ storageWriteBlocked=false;recoveredFromSnapshot=false;startupStorageNotice='';lastStorageError='';recoverySnapshotWritten=false;
+ state=freshState();save();renderHome();showToast('Local data erased');setTimeout(onboarding,250);
+});}
 
 function openModal(title,body){document.getElementById('modalTitle').innerHTML=title;document.getElementById('modalBody').innerHTML=body;document.getElementById('modal').classList.add('open')}
 function closeModal(){document.getElementById('modal').classList.remove('open')}
@@ -3723,7 +3777,9 @@ if('serviceWorker' in navigator){
  });
 }
 renderHome();populateMuscles();updateInstallButton();updateActiveWorkoutChrome();
-if(state.activeWorkout){
+if(startupStorageNotice){
+ setTimeout(openStartupStorageNotice,180);
+} else if(state.activeWorkout){
  saveActiveWorkout();
  showToast('Active workout restored');
 } else if(!state.ui?.onboardingDone){
