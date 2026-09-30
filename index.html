@@ -1128,7 +1128,7 @@
 
 <main>
   <section id="home" class="view active">
-    <div class="hero">
+    <div class="hero home-command-hero">
       <div class="eyebrow">Ready when you are</div>
       <h1 id="helloTitle">Build your training.</h1>
       <div class="muted" id="helloText">Create a routine, log your sets, and come back next week knowing exactly what to beat.</div>
@@ -1137,6 +1137,7 @@
         <button class="btn secondary" onclick="go('exercises')">Browse Exercises</button>
       </div>
     </div>
+    <div id="homeTelemetry" class="home-telemetry" aria-label="Training summary"></div>
 
     <div id="activeWorkoutHome"></div>
     <div id="activeProgramHome"></div>
@@ -1149,6 +1150,10 @@
   </section>
 
   <section id="routines" class="view">
+    <div class="screen-banner routines-banner">
+      <div><div class="screen-code">PROGRAM MATRIX // 02</div><h1>Build the rotation.</h1><div class="screen-copy">Organize routines into repeatable training systems, then launch the next session without losing your individual progression.</div></div>
+      <div class="screen-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+    </div>
     <div class="section-title"><h2>Programs</h2><button class="btn small" onclick="newProgram()">+ Program</button></div>
     <div id="programList" class="grid"></div>
     <div class="section-title"><h2>Workout routines</h2><div><button class="btn small secondary" onclick="installStarterPlan()">3-Day starter</button> <button class="btn small" onclick="newRoutine()">+ Create</button></div></div>
@@ -1156,6 +1161,10 @@
   </section>
 
   <section id="exercises" class="view">
+    <div class="screen-banner exercises-banner">
+      <div><div class="screen-code">MOVEMENT DATABASE // 03</div><h1>Find the movement.</h1><div class="screen-copy">Search, filter, favorite, and tune the exercise library around the equipment and movements you actually use.</div></div>
+      <div class="screen-mark database-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+    </div>
     <div class="section-title"><h2>Exercise library</h2><button class="btn small" onclick="newExercise()">+ Custom</button></div>
     <input id="exerciseSearch" class="search" placeholder="Search bench, row, squat..." oninput="renderExercises()">
     <div class="picker-chips" style="margin-bottom:10px">
@@ -1174,11 +1183,19 @@
   </section>
 
   <section id="history" class="view">
+    <div class="screen-banner history-banner">
+      <div><div class="screen-code">SESSION LOG // 05</div><h1>Everything you logged.</h1><div class="screen-copy">Your completed sessions stay independent from routine edits, so this is the permanent record of what you actually did.</div></div>
+      <div class="screen-mark history-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+    </div>
     <div class="section-title"><h2>History</h2><button class="btn small danger" onclick="clearWorkoutHistory()">Clear History</button></div>
     <div id="historyList" class="grid"></div>
   </section>
 
   <section id="analytics" class="view">
+    <div class="screen-banner analytics-banner">
+      <div><div class="screen-code">TRAINING TELEMETRY // 04</div><h1>Read the signal.</h1><div class="screen-copy">Records, consistency, workload, and strength trends generated from your completed training history.</div></div>
+      <div class="screen-mark telemetry-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+    </div>
     <div class="section-title"><h2>Progress</h2><span class="tag">LOCAL ANALYTICS</span></div>
     <div id="analyticsArea"></div>
   </section>
@@ -2057,8 +2074,8 @@ function renderAnalytics(){
  }).filter(x=>x.signal.stalled||x.signal.level==='good').slice(0,8);
 
  host.innerHTML=`
- <div class="progress-hero">
-   <div class="row"><div><div class="eyebrow">YOUR TRAINING DATA</div><div class="exercise-name" style="font-size:1.15rem;margin-top:4px">Progress at a glance</div><div class="mini" style="margin-top:4px">Calendar, records, workload, consistency, and exercise trends from your completed workouts.</div></div><span class="tag">${state.sessions.length} workout${state.sessions.length===1?'':'s'}</span></div>
+ <div class="progress-hero telemetry-hero">
+   <div class="row"><div><div class="eyebrow">LIVE LOCAL TELEMETRY</div><div class="exercise-name" style="font-size:1.15rem;margin-top:4px">Progress at a glance</div><div class="mini" style="margin-top:4px">Calendar, records, workload, consistency, and exercise trends from your completed workouts.</div></div><span class="tag">${state.sessions.length} workout${state.sessions.length===1?'':'s'}</span></div>
  </div>
 
  <div class="stat-grid">
@@ -2307,6 +2324,16 @@ function renderHome(){
    }else activeHost.innerHTML='';
  }
  updateActiveWorkoutChrome();
+ const homeTelemetry=document.getElementById('homeTelemetry');
+ if(homeTelemetry){
+   const weekStart=startOfWeek(),weekSessions=state.sessions.filter(x=>new Date(x.date)>=weekStart);
+   const last30=state.sessions.filter(x=>Date.now()-new Date(x.date).getTime()<=30*86400000);
+   const pr30=last30.reduce((sum,x)=>sum+sessionPRCount(x),0);
+   homeTelemetry.innerHTML=`
+     <div class="signal-stat"><span>Completed</span><b>${state.sessions.length}</b><small>workouts</small></div>
+     <div class="signal-stat"><span>This week</span><b>${weekSessions.length}</b><small>sessions</small></div>
+     <div class="signal-stat"><span>PR signal</span><b>${pr30}</b><small>last 30d</small></div>`;
+ }
  renderActiveProgramHome();
  const wrap=document.getElementById('homeRoutines'),homeRoutineList=activeRoutines();
  if(!homeRoutineList.length) wrap.innerHTML=`<div class="empty"><div class="empty-illustration">🏋</div><strong>No active routines</strong>Build a workout, restore an archived routine, or install the editable 3-day starter.</div>`;
@@ -2403,11 +2430,23 @@ function renderExercises(){
            :'Nothing matched that search.';
  document.getElementById('exerciseList').innerHTML=list.length?list.map(x=>`
    <div class="list-item">
-     <div class="iconbox">${catExerciseThumbnail(x)}</div>
+     <div class="iconbox exercise-sigil">${exercisePatternSvg(x.pattern)}</div>
      <div class="grow exercise-link" onclick="openExerciseProgress('${x.id}')"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini" style="margin:4px 0">${muscleChip(x.muscle)}</div><div class="mini">${esc(x.equipment)} · ${esc(patternLabel(x.pattern))}</div></div>
      <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
      ${x.custom?`<button class="btn small secondary" onclick="editExercise('${x.id}')">Edit</button>`:''}
    </div>`).join(''):`<div class="empty">${emptyMessage}</div>`;
+}
+function exercisePatternSvg(pattern){
+ const p=String(pattern||'other');
+ const cls=p.includes('press')||p.includes('fly')?'press':p.includes('pull')||p.includes('row')?'pull':p.includes('squat')||p.includes('lunge')?'legs':p.includes('hinge')||p.includes('extension')?'hinge':'other';
+ const paths={
+  press:'<path d="M4 12h16M6 8v8M18 8v8M9 6v12M15 6v12"/>',
+  pull:'<path d="M4 6h16M6 6v5c0 4 2.5 7 6 7s6-3 6-7V6"/><path d="M9 12h6"/>',
+  legs:'<path d="M7 4h10M9 4v6l-3 8M15 4v6l3 8M7 12h10"/>',
+  hinge:'<path d="M5 18h14M8 18l2-8 4-3 3 4M10 10l-3-3"/>',
+  other:'<path d="M12 3v18M3 12h18M6 6l12 12M18 6 6 18"/>'
+ };
+ return '<svg class="sigil-svg sigil-'+cls+'" viewBox="0 0 24 24" aria-hidden="true">'+paths[cls]+'</svg>';
 }
 function patternLabel(p){return String(p||'other').replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())}
 
@@ -3865,7 +3904,7 @@ function renderWorkout(){
  if(!w){document.getElementById('workoutArea').innerHTML='<div class="empty">No active workout.</div>';return;}
  ensureExerciseAccordion();
  const counts=workoutCounts(),pct=counts.total?Math.round(counts.done/counts.total*100):0,workoutCoach=workoutCoachSignal();
- const html=`<div class="workout-title"><div><div class="eyebrow"><span class="active-pulse"></span>Active workout · ${esc(trainingModeLabel(w.trainingMode))}</div><h1 style="font-size:1.7rem">${esc(w.routineName)}</h1><div class="mini">${counts.activeExercises} active exercise${counts.activeExercises===1?'':'s'}${counts.skipped?` · ${counts.skipped} skipped`:''} · ${counts.total} programmed sets</div><div class="autosave-note">✓ Changes save automatically on this device</div></div><button class="btn small danger" onclick="cancelWorkout()">Cancel</button></div>
+ const html=`<div class="workout-title workout-console-title"><div><div class="workout-console-code"><span class="active-pulse"></span>SESSION // ACTIVE</div><div class="eyebrow">${esc(trainingModeLabel(w.trainingMode))}</div><h1 style="font-size:1.7rem">${esc(w.routineName)}</h1><div class="mini">${counts.activeExercises} active exercise${counts.activeExercises===1?'':'s'}${counts.skipped?` · ${counts.skipped} skipped`:''} · ${counts.total} programmed sets</div><div class="autosave-note">✓ Changes save automatically on this device</div></div><button class="btn small danger" onclick="cancelWorkout()">Cancel</button></div>
  <div class="workout-overview">
    <div class="row"><div><b>${counts.done} of ${counts.total} sets complete</b><div class="mini">Tap an exercise to open the full sets and coaching. Use Manage Workout to reorder, skip, or remove movements.</div></div><span class="tag">${pct}%</span></div>
    <div class="actions" style="margin-top:9px"><button class="btn small secondary" onclick="openWorkoutStructureEditor()">☰ Manage Workout</button></div>
@@ -4062,13 +4101,16 @@ function renderHistory(){
  const el=document.getElementById('historyList');
  const sessions=state.sessions.slice().sort((a,b)=>b.date.localeCompare(a.date));
  if(!sessions.length){el.innerHTML='<div class="empty"><div class="empty-illustration">▤</div><strong>No workout history yet</strong>Finish your first session and it will be saved here.</div>';return;}
- el.innerHTML=sessions.map(s=>`<div class="card">
+ el.innerHTML=sessions.map((s,sessionIndex)=>`<div class="card history-entry">
+   <div class="history-sequence"><span>${String(sessions.length-sessionIndex).padStart(2,'0')}</span><small>SESSION</small></div>
+   <div class="history-entry-body">
    <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleString()} · ${sessionSetCount(s)} working sets${sessionAllSetCount(s)!==sessionSetCount(s)?` · ${sessionAllSetCount(s)} total`:''}${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div></div>
    <div class="editor-summary"><span class="tag">${Math.round(sessionVolume(s)).toLocaleString()} ${state.profile.unit}×reps</span>${sessionPRCount(s)?`<span class="tag">🏆 ${sessionPRCount(s)} PR</span>`:''}</div>
    ${s.exercises.map(e=>{const ex=exById(e.exerciseId),sets=completedSets(e); return sets.length?`<table class="history-table"><tr><th colspan="3"><span class="exercise-link" onclick="openExerciseProgress('${e.exerciseId}')">${esc(ex?.name||'Exercise')}</span></th></tr>${sets.map((x,i)=>`<tr><td>${esc(setTypeLabel(setType(x)))} ${e.sets.slice(0,e.sets.indexOf(x)+1).filter(y=>setType(y)===setType(x)).length}</td><td>${x.weight} ${state.profile.unit}</td><td>${x.reps} reps${x.rir!==''&&x.rir!=null?` · ${x.rir} RIR`:''}</td></tr>`).join('')}</table>`:''}).join('')}
    <div class="history-card-actions">
      <button class="btn small secondary" onclick="editCompletedWorkout('${s.id}')">✎ Edit Workout</button>
      <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete Workout</button>
+   </div>
    </div>
  </div>`).join('');
 }
