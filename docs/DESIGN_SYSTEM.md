@@ -150,15 +150,19 @@ Completed in v0.35.0:
 The screen pass changes composition and hierarchy without changing the underlying workout workflows.
 
 ### Pass 3 — Final cohesion and restraint
-Later:
-- spacing consistency
-- icon consistency
-- animation timing
-- micro-interactions
-- density cleanup
-- Android performance review
-- accessibility/contrast review
-- final removal of visual noise
+Completed in v0.36.0:
+- unified motion timing and touch feedback
+- reduced redundant glow and shadow effects
+- UI-native empty states and personal-record markers
+- stronger muted-text contrast and keyboard focus treatment
+- color-independent patterns/shapes for charts and trend states
+- Android touch-device rendering restraint
+- off-screen paint containment for long Exercise and History lists
+- accessible toast live-region and modal dialog semantics
+- dark system color-scheme integration
+- final reduction of decorative visual noise
+
+The broad visual system is now considered established. Further visual work should be specific user-directed sizing, spacing, density, or component adjustments rather than another global redesign pass.
 
 ## Non-negotiable usability rules
 
