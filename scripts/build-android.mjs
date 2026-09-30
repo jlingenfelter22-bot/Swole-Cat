@@ -2,8 +2,8 @@ import { chmod } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 
 const variant = (process.argv[2] || 'debug').toLowerCase();
-if (variant !== 'debug') {
-  throw new Error('Only the debug build is enabled here. Signed release builds will use the release workflow.');
+if (!['debug', 'release'].includes(variant)) {
+  throw new Error('Build variant must be debug or release.');
 }
 
 function run(command, args, options = {}) {
@@ -27,6 +27,10 @@ if (process.platform === 'win32') {
   wrapper = './gradlew';
 }
 
-run(wrapper, ['assembleDebug', '--stacktrace'], { cwd: androidDir });
-
-console.log('Debug APK created at android/app/build/outputs/apk/debug/app-debug.apk');
+if (variant === 'debug') {
+  run(wrapper, ['assembleDebug', '--stacktrace'], { cwd: androidDir });
+  console.log('Debug APK created at android/app/build/outputs/apk/debug/app-debug.apk');
+} else {
+  run(wrapper, ['assembleRelease', 'bundleRelease', '--stacktrace'], { cwd: androidDir });
+  console.log('Release APK/AAB build complete.');
+}

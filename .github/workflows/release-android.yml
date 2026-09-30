@@ -1,0 +1,99 @@
+name: Build Signed Swole Cat Android Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  signed-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      SWOLE_CAT_ENABLE_SIGNING: "1"
+      SWOLE_CAT_SIGNING_STORE_FILE: "swole-cat-release.jks"
+      SWOLE_CAT_SIGNING_STORE_PASSWORD: ${{ secrets.SWOLE_CAT_ANDROID_STORE_PASSWORD }}
+      SWOLE_CAT_SIGNING_KEY_ALIAS: ${{ secrets.SWOLE_CAT_ANDROID_KEY_ALIAS }}
+      SWOLE_CAT_SIGNING_KEY_PASSWORD: ${{ secrets.SWOLE_CAT_ANDROID_KEY_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Read app version
+        id: meta
+        run: |
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          echo "version_code=$(node -p "require('./package.json').swoleCat.androidVersionCode")" >> "$GITHUB_OUTPUT"
+
+      - name: Check signing secrets
+        env:
+          KEYSTORE_B64: ${{ secrets.SWOLE_CAT_ANDROID_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64" || { echo "::error::Missing SWOLE_CAT_ANDROID_KEYSTORE_B64"; exit 1; }
+          test -n "$SWOLE_CAT_SIGNING_STORE_PASSWORD" || { echo "::error::Missing SWOLE_CAT_ANDROID_STORE_PASSWORD"; exit 1; }
+          test -n "$SWOLE_CAT_SIGNING_KEY_ALIAS" || { echo "::error::Missing SWOLE_CAT_ANDROID_KEY_ALIAS"; exit 1; }
+          test -n "$SWOLE_CAT_SIGNING_KEY_PASSWORD" || { echo "::error::Missing SWOLE_CAT_ANDROID_KEY_PASSWORD"; exit 1; }
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Android API 36
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort | tail -n 1)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Prepare Android project
+        env:
+          KEYSTORE_B64: ${{ secrets.SWOLE_CAT_ANDROID_KEYSTORE_B64 }}
+        run: |
+          npm run android:prepare
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > android/app/swole-cat-release.jks
+          test -s android/app/swole-cat-release.jks
+
+      - name: Reconfigure Android with release signing
+        run: node scripts/configure-android.mjs
+
+      - name: Build signed APK and AAB
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease bundleRelease --stacktrace
+
+      - name: Verify APK signature
+        run: |
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Verify AAB signature
+        run: jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab >/dev/null
+
+      - name: Name release files
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk "swole-cat-v${{ steps.meta.outputs.version }}-release.apk"
+          cp android/app/build/outputs/bundle/release/app-release.aab "swole-cat-v${{ steps.meta.outputs.version }}-release.aab"
+          sha256sum "swole-cat-v${{ steps.meta.outputs.version }}-release.apk" "swole-cat-v${{ steps.meta.outputs.version }}-release.aab" > SHA256SUMS.txt
+
+      - name: Upload signed release
+        uses: actions/upload-artifact@v4
+        with:
+          name: Swole-Cat-Android-v${{ steps.meta.outputs.version }}-release
+          path: |
+            swole-cat-v${{ steps.meta.outputs.version }}-release.apk
+            swole-cat-v${{ steps.meta.outputs.version }}-release.aab
+            SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 90

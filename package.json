@@ -8,7 +8,8 @@
     "android:prepare": "node scripts/prepare-android.mjs",
     "android:sync": "npm run android:prepare",
     "android:open": "npm run android:prepare && npx cap open android",
-    "android:debug": "node scripts/build-android.mjs debug"
+    "android:debug": "node scripts/build-android.mjs debug",
+    "android:release": "node scripts/build-android.mjs release"
   },
   "swoleCat": {
     "androidVersionCode": 29

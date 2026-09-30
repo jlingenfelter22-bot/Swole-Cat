@@ -21,12 +21,12 @@ Goal: turn the hardened PWA into a reliable Android app while keeping one mainta
 
 - [x] Capacitor Android packaging
 - [x] Automated debug APK build through GitHub Actions
-- [ ] Test packaged Android app on real devices
+- [x] Test packaged Android app on real devices
 - [ ] Fix Android-specific navigation, keyboard, back-button, safe-area, status-bar, file import/export, and storage issues
 - [ ] Finalize launcher icon and splash/launch experience
 - [x] Add explicit app versioning
-- [ ] Create signed release APK/AAB workflow
-- [ ] Document release/update process
+- [x] Create signed release APK/AAB workflow (pipeline code complete; first signed build requires one-time private keystore secrets)
+- [x] Document release/update process
 
 **Exit criteria:** Swole Cat can be installed as a polished Android app and updated without creating a second codebase.
 

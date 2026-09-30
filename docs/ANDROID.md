@@ -77,13 +77,14 @@ Use [ANDROID_TEST_CHECKLIST.md](ANDROID_TEST_CHECKLIST.md) for the Phase 0 devic
 
 ## Release path
 
-The current workflow creates a debug install for testing. Before a production/Play Store release, the remaining release work is:
+The repository now contains a manual signed release workflow that produces both APK and AAB files after the private signing secrets are configured.
 
-- release keystore generation and secure GitHub Actions secret handling
-- signed AAB generation
-- Play Store metadata
+See [RELEASING.md](RELEASING.md) for the one-time keystore setup and release procedure.
+
+Remaining Android product polish includes:
+
 - launcher/adaptive icon and splash polish
-- native Android back-button integration if the smoke test shows the current web navigation is insufficient
+- native Android back-button integration only if deeper testing shows the current navigation is insufficient
 - native share/export improvements
 - native rest-timer notifications
 - optional Health Connect support
