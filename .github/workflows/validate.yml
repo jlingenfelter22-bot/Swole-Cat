@@ -1325,7 +1325,8 @@ jobs:
             w.installStarterPlan();
             w.go('home');
             w.go('exercises');
-            assert.equal(exerciseRenders,2,'state changes should invalidate cached navigation views');
+            await wait(25);
+            assert.equal(exerciseRenders,2,'state changes should refresh cached navigation views on the next frame');
 
             // Continuous typing should remain in memory briefly, then autosave.
             const state=JSON.parse(w.localStorage.getItem('overload_v3'));
