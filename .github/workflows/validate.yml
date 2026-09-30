@@ -1435,7 +1435,7 @@ jobs:
             backHandler();
             assert.equal(exitCount,1,'Second Back at Home should exit');
 
-            w.state.activeWorkout={id:'x',routineName:'Test',status:'active',lastSavedAt:new Date().toISOString(),pausedAt:null,pausedDurationMs:0,exercises:[]};
+            w.state.activeWorkout={id:'x',routineName:'Test',status:'active',lastSavedAt:new Date().toISOString(),pausedAt:null,pausedDurationMs:0,exercises:[{notes:'',sets:[],config:{}}]};
             w.updateNotes(0,'pending native lifecycle save');
             const beforeBackground=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout?.exercises?.[0]?.notes||'';
             appStateHandler({isActive:false});
