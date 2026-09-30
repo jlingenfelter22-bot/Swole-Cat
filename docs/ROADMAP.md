@@ -225,6 +225,8 @@ The summary should use the refreshed Swole Cat visual system and feel like a pre
 
 **v0.45.0:** Structured muscle metadata + front/back heat-map foundation completes the Phase 4 recap. Heat intensity is based on transparent primary/secondary set-equivalent weighting and explicitly does not claim muscle damage or recovery state.
 
+**v0.46.0:** Heat Map Visual Redesign replaces the prototype body polygons with cleaner front/back anatomy, readable separated muscle regions, a gray → yellow → orange → red involvement scale, and restrained cyberpunk Swolecat framing while preserving the same transparent scoring engine.
+
 ---
 
 ## Phase 5 — Muscle Mapping, Heat Maps, and Rich History
@@ -244,8 +246,8 @@ Each exercise should support structured metadata such as:
 - optional weighting/intensity contribution for visualization
 
 ### Locked: Muscle heat map
-- [x] Swole Cat front-body schematic illustration
-- [x] Swole Cat back-body schematic illustration
+- [x] Polished Swolecat front-body muscle illustration
+- [x] Polished Swolecat back-body muscle illustration
 - [x] Highlight muscles trained in the completed workout
 - [x] Differentiate primary versus secondary involvement
 - [x] Use intensity levels to communicate relative involvement without pretending to measure physiological muscle damage
