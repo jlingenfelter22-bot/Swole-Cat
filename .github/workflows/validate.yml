@@ -642,7 +642,7 @@ jobs:
           JS
 
 
-      - name: Smoke test Swole Cat movement sigils
+      - name: Smoke test Swole Cat schematic exercise artwork
         run: |
           node <<'JS'
           const fs = require('fs');
@@ -670,29 +670,28 @@ jobs:
             const exercises=w.allExercises();
             assert(exercises.length>=300,'exercise library should still contain the full library');
 
-            for(const ex of exercises){
-              const sigil=w.exercisePatternSvg(ex.pattern);
-              assert(sigil.includes('class="sigil-svg sigil-'),ex.name+' should render a movement-family vector sigil');
-              assert(sigil.includes('<svg'),ex.name+' sigil should be SVG UI, not an image thumbnail');
-              assert(!/undefined|NaN/.test(sigil),ex.name+' sigil markup should not contain broken values');
-            }
-
             const byName=name=>exercises.find(x=>x.name===name);
-            assert(w.exercisePatternSvg(byName('Barbell Bench Press').pattern).includes('sigil-press'),'pressing should use press sigil');
-            assert(w.exercisePatternSvg(byName('Seated Cable Row').pattern).includes('sigil-pull'),'rows should use pull sigil');
-            assert(w.exercisePatternSvg(byName('Back Squat').pattern).includes('sigil-legs'),'squats should use legs sigil');
-            assert(w.exercisePatternSvg(byName('Romanian Deadlift').pattern).includes('sigil-hinge'),'hinges should use hinge sigil');
+            for(const name of ['Barbell Bench Press','Seated Cable Row','Back Squat','Romanian Deadlift']){
+              const ex=byName(name);
+              assert(ex,name+' should exist');
+              const thumb=w.catExerciseThumbnail(ex);
+              assert(thumb.includes('schematic-thumb'),name+' should use the tuned schematic shell');
+              assert(thumb.includes('exercise-thumb-art'),name+' should render recognizable exercise artwork');
+              assert(thumb.includes('raw.githubusercontent.com/bryllim/workout-guide'),name+' should use Workout Guide movement artwork');
+              assert(thumb.includes('schematic-grid'),name+' should include the branded schematic grid');
+              assert(!thumb.includes('thumb-cat-mark'),name+' should not render a mascot/cat badge');
+              assert(!/undefined|NaN/.test(thumb),name+' thumbnail markup should not contain broken values');
+            }
 
             w.go('exercises');
             const list=w.document.getElementById('exerciseList');
-            assert(list.querySelector('.exercise-sigil .sigil-svg'),'exercise list should render vector movement sigils');
-            assert(!list.querySelector('.exercise-thumb-art'),'exercise list should not render artwork thumbnails');
-            assert(!list.querySelector('.thumb-cat-mark'),'exercise list should not render mascot/brand art badges');
-            const css=html.match(/\.exercise-sigil\{[^}]+\}/)?.[0]||'';
-            assert(css.includes('width:48px')&&css.includes('height:48px'),'movement sigil container should keep the Pass 2 48px UI size');
+            assert(list.querySelector('.schematic-exercise-thumb .exercise-thumb-art'),'exercise list should render recognizable movement artwork');
+            assert(list.querySelector('.schematic-exercise-thumb .schematic-grid'),'exercise artwork should carry the retro-futurist schematic treatment');
+            assert(!list.querySelector('.exercise-sigil'),'exercise list should no longer use abstract movement sigils as the primary visual');
+            assert(!list.querySelector('.thumb-cat-mark'),'exercise library should contain no cat/mascot thumbnail art');
 
             dom.window.close();
-            console.log('Swole Cat movement sigil smoke test PASS');
+            console.log('Swole Cat schematic exercise artwork smoke test PASS');
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
@@ -1101,4 +1100,29 @@ jobs:
             console.log('Swole Cat V36 visual cohesion smoke test PASS');
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
+
+
+      - name: Smoke test V37 recorded UI feedback
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const assert = require('assert');
+
+          const html = fs.readFileSync('index.html','utf8');
+          const cap = JSON.parse(fs.readFileSync('capacitor.config.json','utf8'));
+
+          assert.equal(cap.plugins?.SystemBars?.insetsHandling,'css','Capacitor should inject Android safe-area CSS variables');
+          assert(html.includes('--safe-area-inset-top'),'header should consume Capacitor safe-area top inset');
+          assert(html.includes('--safe-area-inset-bottom'),'bottom dock should consume Capacitor safe-area bottom inset');
+          assert(html.includes('.native-app header'),'native header should include a status-bar fallback clearance');
+          assert(html.includes('.native-app nav'),'native bottom dock should extend through the system navigation zone');
+          assert(html.includes('document.body.classList.toggle(\'native-app\',isNativeApp())'),'native runtime should identify itself for safe-area tuning');
+
+          assert(html.includes('schematic-exercise-thumb'),'exercise library should use schematic artwork containers');
+          assert(html.includes('schematic-grid'),'exercise artwork should include Swole Cat technical grid treatment');
+          assert(html.includes('drop-shadow(1px 0 0 rgba(255,46,136,.42))'),'exercise figures should include restrained magenta chromatic detail');
+          assert(!html.includes('Swole Cat displays the artwork as small in-app thumbnails with a separate Swole Cat badge.'),'old cat-badge thumbnail presentation should be removed');
+
+          console.log('Swole Cat V37 recorded UI feedback PASS');
           JS
