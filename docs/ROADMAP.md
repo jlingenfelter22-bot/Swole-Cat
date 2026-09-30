@@ -113,7 +113,7 @@ Areas to evaluate:
 
 ## Phase 3 — Visual Identity Refresh
 
-**Status: Visual identity passes complete through v0.36.0. UI Tuning Pass 1 completed in v0.37.0 from a real-device screen-recording review, including Android system-bar integration, bottom-dock integration, and schematic exercise artwork. UI Tuning Pass 2 completed in v0.38.0 with app-owned selectors and responsive Settings toggles. Additional user-directed sizing and micro-UI adjustments remain iterative.**
+**Status: Visual identity passes complete through v0.36.0. UI Tuning Pass 1 completed in v0.37.0 from a real-device screen-recording review, including Android system-bar integration, bottom-dock integration, and schematic exercise artwork. UI Tuning Pass 2 completed in v0.38.0 with app-owned selectors and responsive Settings toggles. UI Tuning Pass 3 completed in v0.39.0 with a fixed-width Resume shortcut and removal of the persistent install control from the header. Additional user-directed sizing and micro-UI adjustments remain iterative.**
 
 **Priority: High**
 
