@@ -1450,3 +1450,76 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V43 Android behavior phase 2
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          let keyboardShow=null,keyboardHide=null,shareCalls=0,writeCalls=0,statusCalls=0;
+          const dom=new JSDOM(html,{
+            runScripts:'dangerously',
+            url:'https://localhost/',
+            pretendToBeVisual:true,
+            beforeParse(window){
+              window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+              window.alert=()=>{};
+              window.scrollTo=()=>{};
+              window.Capacitor={
+                isNativePlatform:()=>true,
+                getPlatform:()=> 'android',
+                Plugins:{
+                  App:{addListener:async()=>({remove:async()=>{}}),exitApp:()=>{}},
+                  Keyboard:{
+                    setResizeMode:async()=>{},
+                    addListener:async(name,fn)=>{
+                      if(name==='keyboardWillShow')keyboardShow=fn;
+                      if(name==='keyboardWillHide')keyboardHide=fn;
+                      return {remove:async()=>{}};
+                    }
+                  },
+                  StatusBar:{
+                    setStyle:async()=>{statusCalls++},
+                    setBackgroundColor:async()=>{statusCalls++},
+                    setOverlaysWebView:async()=>{statusCalls++}
+                  },
+                  Filesystem:{
+                    writeFile:async()=>{writeCalls++;return {uri:'file:///cache/swole-cat-backup.json'}}
+                  },
+                  Share:{
+                    canShare:async()=>({value:true}),
+                    share:async opts=>{shareCalls++;assert(Array.isArray(opts.files)&&opts.files.length===1)}
+                  }
+                }
+              };
+            }
+          });
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(70);
+            const w=dom.window;
+            assert(html.includes('100dvh'),'dynamic viewport units should be present');
+            assert(html.includes('keyboard-open'),'keyboard-specific layout class should be present');
+            assert(keyboardShow&&keyboardHide,'native keyboard listeners should register');
+            assert(statusCalls>=1,'status bar should be configured');
+
+            keyboardShow({keyboardHeight:320});
+            assert(w.document.body.classList.contains('keyboard-open'),'keyboard open should change native layout');
+            keyboardHide();
+            assert(!w.document.body.classList.contains('keyboard-open'),'keyboard hide should restore native layout');
+
+            w.installStarterPlan();
+            await w.exportBackup();
+            assert.equal(writeCalls,1,'native export should write a JSON backup to cache');
+            assert.equal(shareCalls,1,'native export should open Android share flow');
+
+            assert.equal(w.localStorage.getItem('__swole_cat_storage_probe__'),null,'startup storage probe must clean itself up');
+
+            dom.window.close();
+            console.log('Swole Cat V43 Android behavior phase 2 PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
