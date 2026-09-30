@@ -220,6 +220,26 @@
   .metric-mini b{display:block;font-size:1.05rem}.metric-mini span{font-size:.65rem;color:var(--muted);text-transform:uppercase}
   .summary-win{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.26);border-radius:14px;padding:12px;margin-top:10px}
   .summary-pr{background:rgba(251,191,36,.09);border:1px solid rgba(251,191,36,.3);border-radius:14px;padding:12px;margin-top:10px}
+  .workout-recap-hero{position:relative;overflow:hidden;background:linear-gradient(145deg,rgba(139,92,246,.18),rgba(34,211,238,.055) 58%,rgba(34,197,94,.045)),#0e1521;border:1px solid rgba(124,105,239,.34);border-radius:18px;padding:18px;margin-bottom:12px}
+  .workout-recap-hero:after{content:"";position:absolute;width:120px;height:120px;border:1px solid rgba(34,211,238,.11);transform:rotate(45deg);right:-68px;top:-70px}
+  .workout-recap-title{font-size:1.65rem;font-weight:950;line-height:1.05;margin-top:6px}
+  .workout-recap-time{font-size:.8rem;color:#aab6c9;margin-top:7px}
+  .recap-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+  .recap-metric{background:#0e1520;border:1px solid #263248;border-radius:13px;padding:11px}
+  .recap-metric b{display:block;font-size:1.15rem;line-height:1.1}
+  .recap-metric span{display:block;margin-top:4px;font-size:.64rem;color:#8f9bb0;text-transform:uppercase;letter-spacing:.08em;font-weight:850}
+  .recap-section{margin-top:14px}
+  .recap-section-title{font-size:.7rem;color:#9ba8bc;text-transform:uppercase;letter-spacing:.1em;font-weight:950;margin:0 2px 7px}
+  .recap-exercise-list{display:grid;gap:7px}
+  .recap-exercise{background:#101722;border:1px solid #253148;border-radius:12px;padding:10px 11px}
+  .recap-exercise-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .recap-exercise-name{font-weight:900;font-size:.9rem}
+  .recap-exercise-meta{font-size:.74rem;color:#97a4b9;margin-top:4px;line-height:1.35}
+  .recap-muscles{display:flex;flex-wrap:wrap;gap:6px}
+  .recap-muscle{border:1px solid rgba(34,211,238,.24);background:rgba(34,211,238,.055);border-radius:999px;padding:6px 9px;font-size:.72rem;font-weight:850;color:#c9f6fb}
+  .recap-progression{background:rgba(34,197,94,.065);border:1px solid rgba(34,197,94,.22);border-radius:12px;padding:10px 11px;margin-top:7px}
+  .recap-progression b{font-size:.82rem}.recap-progression .mini{margin-top:3px}
+  @media(min-width:560px){.recap-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}}
   .history-card-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid #263044}
   .history-edit-exercise{background:#121925;border:1px solid #293449;border-radius:15px;padding:12px;margin-top:10px}
   .history-edit-set{display:grid;grid-template-columns:94px minmax(0,1fr) minmax(0,.8fr) 64px auto;gap:7px;align-items:end;margin-top:9px;padding-top:9px;border-top:1px solid #242e40}
@@ -3403,6 +3423,107 @@ function sessionVolume(s){
 function sessionSetCount(s){return s.exercises.reduce((n,e)=>n+progressionSets(e).length,0)}
 function sessionAllSetCount(s){return s.exercises.reduce((n,e)=>n+completedSets(e).length,0)}
 function sessionPRCount(s){return s.exercises.reduce((n,e)=>n+(progressionSets(e).some(x=>x.pr)?1:0),0)}
+function sessionTotalReps(s){return (s.exercises||[]).reduce((n,e)=>n+completedSets(e).reduce((a,set)=>a+(Number(set.reps)||0),0),0)}
+function sessionCompletedExerciseCount(s){return (s.exercises||[]).filter(e=>!e.skipped&&completedSets(e).length>0).length}
+function sessionMuscleGroups(s){
+ return [...new Set((s.exercises||[]).filter(e=>!e.skipped&&completedSets(e).length>0).map(e=>exById(e.exerciseId)?.muscle).filter(Boolean))];
+}
+function sessionPRDetails(s){
+ const rows=[];
+ (s.exercises||[]).forEach(e=>{
+   const ex=exById(e.exerciseId);
+   const labels=[...new Set(progressionSets(e).map(set=>set.pr).filter(Boolean))];
+   if(labels.length)rows.push({exerciseId:e.exerciseId,name:ex?.name||'Exercise',labels});
+ });
+ return rows;
+}
+function previousSessionExercise(exerciseId,sessions=state.sessions){
+ for(let i=sessions.length-1;i>=0;i--){
+   const row=(sessions[i].exercises||[]).find(e=>e.exerciseId===exerciseId&&progressionSets(e).length);
+   if(row)return row;
+ }
+ return null;
+}
+function sessionProgressHighlights(s,priorSessions=state.sessions){
+ const highlights=[];
+ (s.exercises||[]).forEach(e=>{
+   const current=progressionSets(e);
+   if(!current.length)return;
+   const prior=previousSessionExercise(e.exerciseId,priorSessions);
+   if(!prior)return;
+   const previous=progressionSets(prior);
+   if(!previous.length)return;
+   const ex=exById(e.exerciseId),name=ex?.name||'Exercise';
+   const currentMax=Math.max(...current.map(set=>Number(set.weight)||0));
+   const previousMax=Math.max(...previous.map(set=>Number(set.weight)||0));
+   const currentReps=current.reduce((n,set)=>n+(Number(set.reps)||0),0);
+   const previousReps=previous.reduce((n,set)=>n+(Number(set.reps)||0),0);
+   const currentVolume=current.reduce((n,set)=>n+(Number(set.weight)||0)*(Number(set.reps)||0),0);
+   const previousVolume=previous.reduce((n,set)=>n+(Number(set.weight)||0)*(Number(set.reps)||0),0);
+   if(currentMax>previousMax){
+     highlights.push({name,text:`Top working weight increased from ${previousMax} to ${currentMax} ${state.profile.unit}.`});
+   }else if(currentMax===previousMax&&currentReps>previousReps){
+     highlights.push({name,text:`Logged ${currentReps-previousReps} more working-set rep${currentReps-previousReps===1?'':'s'} at the same top load.`});
+   }else if(currentVolume>0&&previousVolume>0&&currentVolume>previousVolume*1.02){
+     const pct=Math.round((currentVolume/previousVolume-1)*100);
+     highlights.push({name,text:`Working-set volume increased about ${pct}% versus the previous exposure.`});
+   }
+ });
+ return highlights.slice(0,4);
+}
+function formatSessionCompletionTime(s){
+ const d=new Date(s.date);
+ return Number.isNaN(d.getTime())?'Completed workout':d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+}
+function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[]}={}){
+ const workingSets=sessionSetCount(session),allSets=sessionAllSetCount(session),reps=sessionTotalReps(session);
+ const volume=Math.round(sessionVolume(session)),prs=sessionPRDetails(session),muscles=sessionMuscleGroups(session);
+ const completedExercises=sessionCompletedExerciseCount(session),skipped=(session.exercises||[]).filter(e=>e.skipped).length;
+ const exerciseRows=(session.exercises||[]).map(e=>{
+   const ex=exById(e.exerciseId),done=completedSets(e),working=progressionSets(e);
+   if(e.skipped)return `<div class="recap-exercise"><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">Skipped for this session</div></div>`;
+   if(!done.length)return `<div class="recap-exercise"><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">No completed sets</div></div>`;
+   const totalReps=done.reduce((n,set)=>n+(Number(set.reps)||0),0);
+   const topWeight=Math.max(...done.map(set=>Number(set.weight)||0));
+   const prCount=working.filter(set=>set.pr).length;
+   return `<div class="recap-exercise"><div class="recap-exercise-top"><div><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">${working.length} working set${working.length===1?'':'s'} · ${totalReps} total reps${topWeight>0?` · top ${topWeight} ${state.profile.unit}`:''}</div></div>${prCount?`<span class="preference-badge prefer">PR ×${prCount}</span>`:''}</div></div>`;
+ }).join('');
+ const progressionHtml=progressHighlights.length
+   ?progressHighlights.map(row=>`<div class="recap-progression"><b>${esc(row.name)}</b><div class="mini">${esc(row.text)}</div></div>`).join('')
+   :'<div class="notice">No standout progression callout this session. The recap only highlights clear changes versus your previous exposure.</div>';
+ const prHtml=prs.length
+   ?prs.map(row=>`<div class="summary-pr"><b><span class="inline-pr-mark">PR</span> ${esc(row.name)}</b><div class="mini">${row.labels.map(x=>esc(x)).join(' · ')}</div></div>`).join('')
+   :'<div class="notice">No PR badge this time. PRs are only called when the logged performance clears the existing record logic.</div>';
+ return `
+   <div class="workout-recap-hero">
+     <div class="eyebrow">SESSION COMPLETE · SAVED LOCALLY</div>
+     <div class="workout-recap-title">${esc(session.routineName)}</div>
+     <div class="workout-recap-time">${esc(formatSessionCompletionTime(session))} · ${session.durationMinutes||0} min</div>
+   </div>
+   <div class="recap-metrics">
+     <div class="recap-metric"><b>${completedExercises}</b><span>Exercises</span></div>
+     <div class="recap-metric"><b>${workingSets}</b><span>Working sets</span></div>
+     <div class="recap-metric"><b>${reps}</b><span>Total reps</span></div>
+     <div class="recap-metric"><b>${prs.length}</b><span>Exercises with PR</span></div>
+   </div>
+   <div class="recap-section">
+     <div class="recap-section-title">Training snapshot</div>
+     ${volume>0?`<div class="summary-win"><b>${volume.toLocaleString()} ${state.profile.unit} × reps</b><div class="mini">External-load volume from completed sets. Useful as context, not a score to maximize.</div></div>`:'<div class="notice">External-load volume is not meaningful for this session based on the logged weights.</div>'}
+     ${allSets!==workingSets?`<div class="mini" style="margin:8px 2px 0">${allSets} total completed sets including warm-up/drop/failure sets.</div>`:''}
+     ${skipped?`<div class="mini" style="margin:5px 2px 0">${skipped} exercise${skipped===1?' was':'s were'} skipped today.</div>`:''}
+     ${updateRoutine?'<div class="summary-win"><b>Routine updated</b><div class="mini">Today’s structural changes are now saved to the routine.</div></div>':''}
+   </div>
+   <div class="recap-section">
+     <div class="recap-section-title">Muscles trained</div>
+     ${muscles.length?`<div class="recap-muscles">${muscles.map(m=>`<span class="recap-muscle">${esc(m)}</span>`).join('')}</div>`:'<div class="notice">Muscle-group metadata is not available for the completed exercises.</div>'}
+   </div>
+   <div class="recap-section"><div class="recap-section-title">Exercises</div><div class="recap-exercise-list">${exerciseRows}</div></div>
+   <div class="recap-section"><div class="recap-section-title">Progression versus last exposure</div>${progressionHtml}</div>
+   <div class="recap-section"><div class="recap-section-title">Personal records</div>${prHtml}</div>
+   ${session.programId&&programById(session.programId)?`<div class="summary-win"><b>Next in ${esc(programById(session.programId).name)}</b><div class="mini">${esc(programNextRoutine(programById(session.programId))?.name||'Program complete')}</div></div>`:''}
+   <div class="actions"><button class="btn" onclick="closeModal();go('analytics')">View progress</button><button class="btn secondary" onclick="closeModal()">Done</button></div>
+ `;
+}
 function exerciseHistory(exerciseId){return derivedSessionData().historyByExercise.get(exerciseId)||[];}
 function exerciseMetrics(exerciseId){
  const h=exerciseHistory(exerciseId),sets=h.flatMap(x=>x.sets);
@@ -5804,28 +5925,11 @@ function finalizeWorkout(updateRoutine=false){
  closeModal();
  const end=new Date(),duration=Math.max(0,Math.round(workoutElapsedMs(w,end.getTime())/60000));
  const session={id:w.id,routineId:w.routineId,routineName:w.routineName,trainingMode:normalizeTrainingMode(w.trainingMode),programId:w.programId||null,status:'finished',date:end.toISOString(),startDate:w.startDate,durationMinutes:duration,exercises:w.exercises};
+ const progressHighlights=sessionProgressHighlights(session,state.sessions);
  state.sessions.push(session);
  advanceProgramAfterWorkout(session);
  state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();haptic([40,45,100]);renderHome();go('home',{resetHistory:true});
- const sets=sessionSetCount(session),volume=Math.round(sessionVolume(session)),prs=sessionPRCount(session);
- const skipped=session.exercises.filter(e=>e.skipped).length;
- const wins=session.exercises.map(e=>{
-   const ex=exById(e.exerciseId),done=completedSets(e),p=done.filter(s=>s.pr);
-   const unique=[...new Set(p.map(x=>x.pr))];return unique.length?`<div class="summary-pr"><b><span class="inline-pr-mark">PR</span> ${esc(ex?.name||'Exercise')}</b><div class="mini">${unique.map(x=>esc(x)).join(' · ')}</div></div>`:'';
- }).join('');
- openModal('Workout complete',`
-   <div class="hero" style="box-shadow:none"><div class="eyebrow">SESSION SAVED</div><h1 style="font-size:1.8rem">${esc(session.routineName)}</h1><div class="muted">Nice work. Everything is stored locally on this device.</div></div>
-   <div class="metric-row">
-     <div class="metric-mini"><b>${sets}</b><span>Working sets</span></div>
-     <div class="metric-mini"><b>${duration}m</b><span>Duration</span></div>
-     <div class="metric-mini"><b>${prs}</b><span>PRs</span></div>
-   </div>
-   ${skipped?`<div class="notice" style="margin-top:10px">${skipped} exercise${skipped===1?' was':'s were'} skipped for this session. Skipped exercises were not removed from the saved routine.</div>`:''}
-   ${updateRoutine?`<div class="summary-win"><b>Routine updated</b><div class="mini">Today's structural changes are now the saved routine layout.</div></div>`:''}
-   <div class="summary-win"><b>${volume.toLocaleString()} ${state.profile.unit} × reps</b><div class="mini">Total external-load volume for this session. Use it as context, not a score you must maximize.</div></div>
-   ${wins||'<div class="notice" style="margin-top:10px">No PR badge this time, which is completely normal. Consistent quality work still counts.</div>'}
-   ${session.programId&&programById(session.programId)?`<div class="summary-win"><b>Next in ${esc(programById(session.programId).name)}</b><div class="mini">${esc(programNextRoutine(programById(session.programId))?.name||'Program complete')}</div></div>`:''}
-   <div class="actions"><button class="btn" onclick="closeModal();go('analytics')">View progress</button><button class="btn secondary" onclick="closeModal()">Done</button></div>`);
+ openModal('Workout complete',workoutRecapHtml(session,{updateRoutine,progressHighlights}));
 }
 
 let sessionEditDraft=null;
