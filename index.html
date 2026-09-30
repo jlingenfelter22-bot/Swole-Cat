@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#0b0d12" />
+<meta name="theme-color" content="#05070d" />
+<meta name="color-scheme" content="dark" />
 <link rel="manifest" href="manifest.webmanifest">
 <title>Swole Cat</title>
 <style>
@@ -1694,6 +1695,235 @@
     .history-sequence{min-height:43px}
   }
 
+
+  /* V36 PASS 3: COHESION + RESTRAINT */
+  :root{
+    --motion-fast:120ms;
+    --motion-base:180ms;
+    --motion-slow:240ms;
+    --ease-ui:cubic-bezier(.2,.7,.2,1);
+    --muted:#9aabc0;
+    --shadow-rest:0 12px 30px rgba(0,0,0,.30);
+    --shadow-raised:0 16px 38px rgba(0,0,0,.34);
+  }
+
+  html{
+    color-scheme:dark;
+    -webkit-text-size-adjust:100%;
+  }
+  body{
+    overscroll-behavior-y:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  button,.clickable,.chip,.toolchip,.day-chip,.favbtn,.orderbtn,.set-icon-btn,.exercise-toggle-btn{
+    touch-action:manipulation;
+  }
+
+  /* Keep the retro grid atmospheric instead of constantly repainting a full-screen fixed layer. */
+  body:before{
+    position:absolute;
+    height:min(780px,100vh);
+    opacity:.10;
+    background-size:42px 42px;
+    mask-image:linear-gradient(to bottom,rgba(0,0,0,.58),transparent 72%);
+    -webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,.58),transparent 72%);
+  }
+  header{
+    box-shadow:0 8px 24px rgba(0,0,0,.24);
+  }
+  header:after{opacity:.52}
+  .screen-mark{opacity:.58}
+  .screen-banner:before{box-shadow:0 0 8px rgba(168,85,247,.18)}
+  .screen-banner:after{opacity:.62}
+
+  /* One motion language. */
+  .btn,.card.clickable,.navbtn,.chip,.day-chip,.toolchip,.favbtn,.orderbtn,.set-icon-btn,.exercise-toggle-btn,input,select,textarea,.toggle,.exercise-block{
+    transition-duration:var(--motion-base)!important;
+    transition-timing-function:var(--ease-ui)!important;
+  }
+  .btn:active,.chip:active,.day-chip:active,.toolchip:active,.favbtn:active,.orderbtn:active,.set-icon-btn:active{
+    transform:translateY(1px) scale(.985);
+  }
+  .card.clickable:active{transform:translateY(1px)}
+  .navbtn:active{transform:translateY(1px) scale(.985)}
+
+  /* Reduce duplicate glow. Geometry and contrast should carry the identity first. */
+  .hero,.card,.stat-card,.chart-card,.calendar-card{
+    box-shadow:var(--shadow-rest);
+  }
+  .screen-banner,.workout-overview,.program-home,.active-workout-home,.progress-hero{
+    box-shadow:var(--shadow-raised);
+  }
+  .hero:after,
+  .navbtn.active:before,
+  .signal-stat:after,
+  #analytics .stat-card:after{
+    box-shadow:none;
+  }
+  .card:not(.exercise-block):before,.chart-card:before,.calendar-card:before{opacity:.30}
+  .card:not(.exercise-block):after,.chart-card:after,.calendar-card:after{opacity:.30}
+  .exercise-title{text-shadow:none}
+  .exercise-number{box-shadow:none}
+  .superset-badge{box-shadow:none}
+  .navbtn.active{
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 0 12px rgba(168,85,247,.07);
+  }
+  .navbtn.active .nav-glyph{
+    filter:drop-shadow(0 0 4px rgba(34,211,238,.26));
+  }
+
+  /* Better contrast for secondary information without making it compete with primary text. */
+  .muted,.mini,.screen-copy,.native-note,.preference-help{color:#9aabc0}
+  .navbtn{color:#8398b2}
+  .navbtn.active{color:#f8fbff}
+  .workout-stat span,.stat-card .caption,.metric-mini span,.eyebrow,.picker-section{color:#a6b8cb}
+  .screen-code,.workout-console-code{color:#55dff2}
+
+  /* Minimum interaction affordances, without changing the approved overall sizing system. */
+  .btn.small,.day-chip,.toolchip,.preference-btn,.set-add-btn{min-height:38px}
+  .favbtn,.orderbtn,.set-icon-btn,.exercise-toggle-btn,.x{min-width:38px;min-height:38px}
+  button:disabled{
+    opacity:.46;
+    cursor:not-allowed;
+    filter:saturate(.55);
+  }
+
+  /* Empty states are now pure UI, not emoji art. */
+  .empty-illustration{
+    min-height:38px;
+    display:grid;
+    place-items:center;
+    margin-bottom:8px;
+    font-size:0;
+  }
+  .empty-glyph{
+    position:relative;
+    display:block;
+    width:36px;
+    height:36px;
+    border:1px solid rgba(34,211,238,.34);
+    border-radius:3px 11px 3px 11px;
+    background:linear-gradient(135deg,rgba(34,211,238,.045),rgba(168,85,247,.06));
+  }
+  .empty-glyph:before,.empty-glyph:after{
+    content:"";
+    position:absolute;
+    background:#8da3bd;
+    opacity:.82;
+  }
+  .empty-glyph-program:before{left:8px;right:8px;top:10px;height:2px;box-shadow:0 7px 0 #8da3bd,0 14px 0 #8da3bd}
+  .empty-glyph-program:after{left:12px;top:7px;width:2px;height:22px}
+  .empty-glyph-routine:before{left:6px;right:6px;top:17px;height:2px}
+  .empty-glyph-routine:after{left:9px;top:10px;width:3px;height:16px;box-shadow:15px 0 0 #8da3bd}
+  .empty-glyph-progress:before{left:8px;bottom:8px;width:3px;height:8px;box-shadow:7px -5px 0 #8da3bd,14px -13px 0 #8da3bd}
+  .empty-glyph-progress:after{right:6px;top:7px;width:10px;height:2px;transform:rotate(45deg)}
+  .empty-glyph-history:before{left:9px;right:9px;top:9px;height:2px;box-shadow:0 7px 0 #8da3bd,0 14px 0 #8da3bd}
+  .empty-glyph-history:after{left:6px;top:6px;width:24px;height:24px;background:transparent;border:1px solid rgba(141,163,189,.58);border-radius:2px 8px 2px 8px}
+
+  /* Personal-record treatment is typographic and consistent with the rest of the UI. */
+  .pr-icon{
+    border-radius:3px 10px 3px 10px;
+    background:linear-gradient(135deg,rgba(255,46,136,.08),rgba(168,85,247,.08));
+    border-color:rgba(244,114,182,.30);
+  }
+  .pr-glyph,.inline-pr-mark{
+    font-family:var(--display);
+    font-weight:950;
+    letter-spacing:.08em;
+    color:#ff9ccc;
+  }
+  .pr-glyph{font-size:.68rem}
+  .inline-pr-mark{
+    display:inline-grid;
+    place-items:center;
+    min-width:24px;
+    height:18px;
+    padding:0 4px;
+    margin-right:2px;
+    border:1px solid rgba(244,114,182,.28);
+    border-radius:2px 6px 2px 6px;
+    font-size:.52rem;
+    vertical-align:1px;
+  }
+  .pr-tag{
+    border-color:rgba(244,114,182,.30)!important;
+    color:#ffd0e7!important;
+  }
+
+  /* Long non-interactive lists can skip off-screen paint work on modern Android WebView. */
+  #exerciseList .list-item,
+  #historyList .history-entry{
+    content-visibility:auto;
+    contain-intrinsic-size:auto 76px;
+  }
+
+  /* Color-independent chart/state cues. */
+  .workload-current{
+    background:
+      repeating-linear-gradient(135deg,rgba(255,255,255,.16) 0 2px,transparent 2px 5px),
+      linear-gradient(90deg,var(--cyan),var(--violet))!important;
+  }
+  .workload-average{
+    background:
+      repeating-linear-gradient(90deg,rgba(255,255,255,.10) 0 1px,transparent 1px 4px),
+      #52647a!important;
+  }
+  .trend-up:before{content:"▲ ";font-size:.68em}
+  .trend-down:before{content:"▼ ";font-size:.68em}
+  .trend-flat:before{content:"■ ";font-size:.58em}
+  .calendar-day.trained{
+    background:
+      repeating-linear-gradient(135deg,rgba(53,233,138,.025) 0 4px,transparent 4px 8px),
+      linear-gradient(160deg,rgba(53,233,138,.07),rgba(168,85,247,.035)),
+      #0d1522;
+  }
+
+  /* Cleaner focus for keyboard/accessibility users. */
+  :where(button,input,select,textarea,[tabindex]):focus-visible{
+    outline:2px solid #67e8f9!important;
+    outline-offset:2px;
+    box-shadow:0 0 0 4px rgba(34,211,238,.09)!important;
+  }
+
+  /* Toast reads as a system event, not another glowing card. */
+  .toast{
+    border-radius:4px 12px 4px 12px;
+    border-color:rgba(34,211,238,.32);
+    box-shadow:0 12px 30px rgba(0,0,0,.38);
+    transition:opacity var(--motion-base) var(--ease-ui),transform var(--motion-base) var(--ease-ui)!important;
+  }
+
+  /* Touch devices get the same identity with less GPU-expensive decoration. */
+  @media (hover:none),(pointer:coarse){
+    header{
+      backdrop-filter:none;
+      -webkit-backdrop-filter:none;
+      background:rgba(5,7,13,.985);
+    }
+    .btn:hover{filter:none}
+    .card.clickable:hover{border-color:rgba(71,93,130,.48);box-shadow:var(--shadow-rest)}
+    .btn,.navbtn,.card,.chart-card,.screen-banner,.exercise-block{
+      -webkit-backface-visibility:hidden;
+      backface-visibility:hidden;
+    }
+    .screen-banner,.workout-overview,.program-home,.active-workout-home,.progress-hero{
+      box-shadow:0 12px 30px rgba(0,0,0,.30);
+    }
+  }
+
+  @media (max-width:430px){
+    .screen-mark{opacity:.48}
+    .screen-banner:after{opacity:.44}
+    .card:not(.exercise-block):before,.chart-card:before,.calendar-card:before{opacity:.24}
+    .card:not(.exercise-block):after,.chart-card:after,.calendar-card:after{opacity:.22}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .btn,.card.clickable,.navbtn,.chip,.day-chip,.toolchip,.favbtn,.orderbtn,.set-icon-btn,.exercise-toggle-btn,input,select,textarea,.toggle,.exercise-block,.toast{
+      transition:none!important;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -1812,7 +2042,7 @@
 </nav>
 </div>
 
-<div id="toast" class="toast">Saved</div>
+<div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true">Saved</div>
 
 <div id="restTimer" class="resttimer">
   <div class="rest-main"><small>Rest</small><span id="restTimerText">2:00</span></div>
@@ -1823,7 +2053,7 @@
   </div>
 </div>
 
-<div id="modal" class="modal" onclick="if(event.target===this) closeModal()">
+<div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" onclick="if(event.target===this) closeModal()">
   <div class="sheet">
     <div class="sheet-head">
       <h2 id="modalTitle">Edit</h2>
@@ -2367,7 +2597,7 @@ function openProgressDay(key){
  openModal(d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}),`
    <div class="mini" style="margin-bottom:10px">${sessions.length} workout${sessions.length===1?'':'s'} logged</div>
    ${sessions.map(s=>`<div class="card" style="margin-bottom:9px">
-     <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})} · ${sessionSetCount(s)} working sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div>${sessionPRCount(s)?`<span class="tag">🏆 ${sessionPRCount(s)}</span>`:''}</div>
+     <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})} · ${sessionSetCount(s)} working sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div>${sessionPRCount(s)?`<span class="tag pr-tag">PR · ${sessionPRCount(s)}</span>`:''}</div>
      <div class="mini" style="margin-top:8px">${s.exercises.filter(e=>progressionSets(e).length).map(e=>esc(exById(e.exerciseId)?.name||'Exercise')).join(' · ')}</div>
      <div class="actions"><button class="btn small secondary" onclick="closeModal();go('history')">Open History</button></div>
    </div>`).join('')}
@@ -2684,7 +2914,7 @@ function renderAnalytics(){
  <div class="section-title"><h2>Recent PRs</h2><span class="mini">Newest first</span></div>
  <div class="chart-card">
    ${prEvents.length?`<div class="pr-feed">${prEvents.map(p=>`<div class="pr-feed-row clickable" onclick="openExerciseProgress('${p.exerciseId}')">
-     <div class="pr-icon">🏆</div>
+     <div class="pr-icon" aria-label="Personal record"><span class="pr-glyph">PR</span></div>
      <div><div class="exercise-name">${esc(p.exercise?.name||'Exercise')}</div><div class="mini">${esc(p.label)} · ${p.weight} ${state.profile.unit} × ${p.reps}</div></div>
      <div class="mini">${new Date(p.date).toLocaleDateString()}</div>
    </div>`).join('')}</div>`:'<div class="empty">PRs will show here after an exercise has an established baseline to beat.</div>'}
@@ -2775,7 +3005,7 @@ function programCard(p){
 }
 function renderPrograms(){
  const host=document.getElementById('programList');if(!host)return;
- host.innerHTML=state.programs.length?state.programs.map(programCard).join(''):`<div class="empty"><div class="empty-illustration">▦</div><strong>No programs yet</strong>Group routines like Workout A, B, and C into one training rotation.</div>`;
+ host.innerHTML=state.programs.length?state.programs.map(programCard).join(''):`<div class="empty"><div class="empty-illustration"><span class="empty-glyph empty-glyph-program" aria-hidden="true"></span></div><strong>No programs yet</strong>Group routines like Workout A, B, and C into one training rotation.</div>`;
 }
 function renderActiveProgramHome(){
  const host=document.getElementById('activeProgramHome');if(!host)return;
@@ -2922,11 +3152,11 @@ function renderHome(){
  }
  renderActiveProgramHome();
  const wrap=document.getElementById('homeRoutines'),homeRoutineList=activeRoutines();
- if(!homeRoutineList.length) wrap.innerHTML=`<div class="empty"><div class="empty-illustration">🏋</div><strong>No active routines</strong>Build a workout, restore an archived routine, or install the editable 3-day starter.</div>`;
+ if(!homeRoutineList.length) wrap.innerHTML=`<div class="empty"><div class="empty-illustration"><span class="empty-glyph empty-glyph-routine" aria-hidden="true"></span></div><strong>No active routines</strong>Build a workout, restore an archived routine, or install the editable 3-day starter.</div>`;
  else wrap.innerHTML=homeRoutineList.slice(0,4).map(r=>routineCard(r)).join('');
  const recent=document.getElementById('recentProgress');
  const s=state.sessions.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4);
- if(!s.length) recent.innerHTML=`<div class="empty"><div class="empty-illustration">↗</div><strong>Your progress starts with workout one</strong>PRs, strength trends, and recent sessions will show here.</div>`;
+ if(!s.length) recent.innerHTML=`<div class="empty"><div class="empty-illustration"><span class="empty-glyph empty-glyph-progress" aria-hidden="true"></span></div><strong>Your progress starts with workout one</strong>PRs, strength trends, and recent sessions will show here.</div>`;
  else recent.innerHTML=s.map(sessionCard).join('');
 }
 
@@ -2943,7 +3173,7 @@ function routineCard(r){
 }
 function sessionCard(s){
  let sets=sessionSetCount(s),prs=sessionPRCount(s);
- return `<div class="card clickable" onclick="go('history')"><div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleDateString()} · ${sets} working sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div><span class="tag">${prs?`🏆 ${prs} PR`:`${s.exercises.length} moves`}</span></div></div>`;
+ return `<div class="card clickable" onclick="go('history')"><div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleDateString()} · ${sets} working sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div><span class="tag">${prs?`PR · ${prs}`:`${s.exercises.length} moves`}</span></div></div>`;
 }
 
 function populateMuscles(){
@@ -4577,7 +4807,7 @@ function renderWorkout(){
         </div>
         ${pt?`<div class="plates">${esc(pt)}</div>`:''}
         <button class="complete-set ${s.done?'done':''}" onclick="toggleSet(${ei},${si})">${s.done?'✓ Completed':'Complete set'}</button>
-        ${s.pr?`<div class="pr-banner">🏆 ${esc(s.pr)}</div>`:''}
+        ${s.pr?`<div class="pr-banner"><span class="inline-pr-mark">PR</span> ${esc(s.pr)}</div>`:''}
        </div>`;
      }).join('')}
      <div class="set-add-row">
@@ -4664,7 +4894,7 @@ function finalizeWorkout(updateRoutine=false){
  const skipped=session.exercises.filter(e=>e.skipped).length;
  const wins=session.exercises.map(e=>{
    const ex=exById(e.exerciseId),done=completedSets(e),p=done.filter(s=>s.pr);
-   const unique=[...new Set(p.map(x=>x.pr))];return unique.length?`<div class="summary-pr"><b>🏆 ${esc(ex?.name||'Exercise')}</b><div class="mini">${unique.map(x=>esc(x)).join(' · ')}</div></div>`:'';
+   const unique=[...new Set(p.map(x=>x.pr))];return unique.length?`<div class="summary-pr"><b><span class="inline-pr-mark">PR</span> ${esc(ex?.name||'Exercise')}</b><div class="mini">${unique.map(x=>esc(x)).join(' · ')}</div></div>`:'';
  }).join('');
  openModal('Workout complete',`
    <div class="hero" style="box-shadow:none"><div class="eyebrow">SESSION SAVED</div><h1 style="font-size:1.8rem">${esc(session.routineName)}</h1><div class="muted">Nice work. Everything is stored locally on this device.</div></div>
@@ -4686,7 +4916,7 @@ let sessionEditDraft=null;
 function renderHistory(){
  const el=document.getElementById('historyList');
  const sessions=state.sessions.slice().sort((a,b)=>b.date.localeCompare(a.date));
- if(!sessions.length){el.innerHTML='<div class="empty"><div class="empty-illustration">▤</div><strong>No workout history yet</strong>Finish your first session and it will be saved here.</div>';return;}
+ if(!sessions.length){el.innerHTML='<div class="empty"><div class="empty-illustration"><span class="empty-glyph empty-glyph-history" aria-hidden="true"></span></div><strong>No workout history yet</strong>Finish your first session and it will be saved here.</div>';return;}
  el.innerHTML=sessions.map((s,sessionIndex)=>`<div class="card history-entry">
    <div class="history-sequence"><span>${String(sessions.length-sessionIndex).padStart(2,'0')}</span><small>SESSION</small></div>
    <div class="history-entry-body">
@@ -4694,7 +4924,7 @@ function renderHistory(){
    <div class="editor-summary"><span class="tag">${Math.round(sessionVolume(s)).toLocaleString()} ${state.profile.unit}×reps</span>${sessionPRCount(s)?`<span class="tag">🏆 ${sessionPRCount(s)} PR</span>`:''}</div>
    ${s.exercises.map(e=>{const ex=exById(e.exerciseId),sets=completedSets(e); return sets.length?`<table class="history-table"><tr><th colspan="3"><span class="exercise-link" onclick="openExerciseProgress('${e.exerciseId}')">${esc(ex?.name||'Exercise')}</span></th></tr>${sets.map((x,i)=>`<tr><td>${esc(setTypeLabel(setType(x)))} ${e.sets.slice(0,e.sets.indexOf(x)+1).filter(y=>setType(y)===setType(x)).length}</td><td>${x.weight} ${state.profile.unit}</td><td>${x.reps} reps${x.rir!==''&&x.rir!=null?` · ${x.rir} RIR`:''}</td></tr>`).join('')}</table>`:''}).join('')}
    <div class="history-card-actions">
-     <button class="btn small secondary" onclick="editCompletedWorkout('${s.id}')">✎ Edit Workout</button>
+     <button class="btn small secondary" onclick="editCompletedWorkout('${s.id}')">Edit Workout</button>
      <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete Workout</button>
    </div>
    </div>
