@@ -2044,7 +2044,7 @@ function installStarterPlan(){
    const ids=routines.map(r=>r.id);
    let p=state.programs.find(x=>x.name==='3-Day Full Body');
    if(!p){
-     p={id:uid(),name:'3-Day Full Body',routineIds:ids,frequency:3,preferredDays:[1,3,5],nextIndex:0};
+     p={id:uid(),name:'3-Day Full Body',routineIds:ids,frequency:3,preferredDays:[1,3,5],trainingMode:'inherit',nextIndex:0};
      state.programs.push(p);
    }else{
      p.routineIds=ids;p.frequency=p.frequency||3;p.preferredDays=p.preferredDays?.length?p.preferredDays:[1,3,5];
@@ -2061,7 +2061,7 @@ function installStarterPlan(){
  }
  if(existing.some(Boolean)){alert('Some starter routines already exist. Rename or remove the duplicates before installing the full starter program.');return}
  const find=name=>allExercises().find(x=>x.name===name)?.id;
- const make=(name,items)=>({id:uid(),name,exercises:items.map(([exercise,sets,min,max,inc,rest])=>({
+ const make=(name,items)=>({id:uid(),name,description:'',trainingMode:'guided',exercises:items.map(([exercise,sets,min,max,inc,rest])=>({
    exerciseId:find(exercise),sets,minReps:min,maxReps:max,increment:inc,mode:'double',restSeconds:rest
  })).filter(x=>x.exerciseId)});
  const created=[
