@@ -2317,9 +2317,13 @@ function setTypeLabel(type){
  return type==='warmup'?'Warm-up':type==='drop'?'Drop set':type==='failure'?'Failure':'Working';
 }
 function setTypeShort(type){return type==='warmup'?'W':type==='drop'?'D':type==='failure'?'F':'S'}
+function finiteNumber(value,fallback=0){
+ const n=Number(value);
+ return Number.isFinite(n)?n:fallback;
+}
 function distributeTarget(previousReps,minReps,maxReps,setCount){
  // "Beat total reps" mode: add one rep somewhere across the exercise.
- const reps=Array.from({length:setCount},(_,i)=>Math.max(minReps,Math.min(maxReps,Number(previousReps[i]??minReps))));
+ const reps=Array.from({length:setCount},(_,i)=>Math.max(minReps,Math.min(maxReps,finiteNumber(previousReps[i],minReps))));
  for(let i=0;i<reps.length;i++){ if(reps[i]<maxReps){ reps[i]++; break; } }
  return reps;
 }
@@ -2327,7 +2331,7 @@ function progressEverySetTarget(previousReps,minReps,maxReps,setCount){
  // Default double progression: every programmed set gets +1 rep next exposure,
  // capped at the top of the rep range.
  return Array.from({length:setCount},(_,i)=>{
-   const previous=Math.max(minReps-1,Number(previousReps[i]??(minReps-1)));
+   const previous=Math.max(minReps-1,finiteNumber(previousReps[i],minReps-1));
    return Math.min(maxReps,Math.max(minReps,previous+1));
  });
 }
@@ -2438,10 +2442,10 @@ function buildRecommendation(config,prev,exerciseId=null){
    return {status:'baseline',weight:0,weights:Array(config.sets).fill(0),targetReps:Array(config.sets).fill(config.minReps),
      headline:'Set your starting weight',detail:`Choose a clean starting load for about ${config.minReps}-${config.maxReps} reps. ${goalRIRText(goal)}`};
  }
- const weights=done.map(s=>Number(s.weight)||0);
- const reps=done.map(s=>Number(s.reps)||0);
+ const weights=done.map(s=>Math.max(0,finiteNumber(s.weight,0)));
+ const reps=done.map(s=>Math.max(0,finiteNumber(s.reps,0)));
  const sameWeight=weights.every(w=>w===weights[0]);
- const baseWeight=weights[0];
+ const baseWeight=weights[0]||0;
  const total=reps.reduce((a,b)=>a+b,0);
  if(config.mode==='manual'){
    return {status:'manual',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),
@@ -2454,20 +2458,20 @@ function buildRecommendation(config,prev,exerciseId=null){
  }
  // Double progression: add one rep to every programmed set on the next exposure, capped at the top of the rep range. Add load only after every set reaches the top of the range at one stable weight.
  const enoughSets=done.length>=config.sets;
- const allTop=enoughSets && done.slice(0,config.sets).every(s=>Number(s.reps)>=config.maxReps);
+ const allTop=enoughSets && done.slice(0,config.sets).every(s=>finiteNumber(s.reps,0)>=config.maxReps);
  if(sameWeight && allTop){
-   if(goal==='strength' && avgRIR!=null && avgRIR<1){
-     return {status:'reps',weight:baseWeight,weights:Array(config.sets).fill(baseWeight),targetReps:Array(config.sets).fill(config.maxReps),
-       headline:`Own ${baseWeight} ${state.profile.unit} once more`,detail:`You reached the top of the rep range, but the logged effort was very high. For a strength goal, repeating clean quality reps before adding load is reasonable.`};
-   }
-   const next=roundLoad(baseWeight+Number(config.increment||0));
+   const next=roundLoad(baseWeight+finiteNumber(config.increment,0));
    return {status:'load',weight:next,weights:Array(config.sets).fill(next),targetReps:Array(config.sets).fill(config.minReps),
      headline:`Increase to ${next} ${state.profile.unit}`,detail:`You earned one configured load step after reaching the top of the rep range across all working sets. ${goalRIRText(goal)}`};
  }
  const target=progressEverySetTarget(reps,config.minReps,config.maxReps,config.sets);
- return {status:'reps',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:target,
-   headline:`Stay at ${baseWeight} ${state.profile.unit} and add 1 rep to each set`,
-   detail:`Last session: ${done.map(s=>`${s.weight}×${s.reps}`).join(' · ')}. Next target: ${target.map(r=>`${baseWeight}×${r}`).join(' · ')}. Each set progresses by one rep until all ${config.sets} sets reach ${config.maxReps}, then the load increases by your configured increment. ${goalRIRText(goal)}`};
+ const nextWeights=Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight);
+ const headline=sameWeight
+   ?`Stay at ${baseWeight} ${state.profile.unit} and add 1 rep to each set`
+   :'Add 1 rep to each working set';
+ return {status:'reps',weight:baseWeight,weights:nextWeights,targetReps:target,
+   headline,
+   detail:`Last session: ${done.map(s=>`${s.weight}×${s.reps}`).join(' · ')}. Next target: ${target.map((r,i)=>`${nextWeights[i]??baseWeight}×${r}`).join(' · ')}. Each set progresses by one rep until all ${config.sets} sets reach ${config.maxReps}, then the load increases by your configured increment. RIR remains optional context and never blocks a rep-range progression step. ${goalRIRText(goal)}`};
 }
 function roundLoad(n){return Math.round(Number(n)*4)/4}
 function previousSummary(prev){
@@ -3623,9 +3627,10 @@ function openSettings(){
  <div class="actions"><button class="btn" onclick="saveSettings()">Save settings</button></div>
  <div class="section-title"><h2>Coach behavior</h2></div>
  <div class="notice">The coach uses repeated logged performance, your optional RIR entries, and each exercise's selected goal. Stall and reset flags are intentionally conservative. They are suggestions, and manual session targets always remain available.</div>
- <div class="section-title"><h2>Backup</h2></div>
- <div class="notice"><b>Progression rule:</b> Double progression keeps the same weight while you add reps. Only after every programmed set reaches the top of its rep range will the app suggest exactly one configured weight increment.<br><br>Everything lives on this device. Export a backup occasionally so a lost phone or cleared browser storage doesn't wipe your history.</div>
- <div class="actions"><button class="btn secondary" onclick="exportBackup()">Export backup</button><label class="btn secondary" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json" onchange="importBackup(this.files[0])" style="display:none"></label></div>
+ <div class="section-title"><h2>Data safety</h2></div>
+ <div class="notice"><b>Progression rule:</b> Double progression is rep-driven. Add reps first, then one configured load step after every programmed working set reaches the top of its rep range. Optional RIR never blocks that earned load increase.<br><br><b>Storage:</b> ${esc(storageHealthText())}<br><b>Data schema:</b> v${DATA_SCHEMA_VERSION}<br><b>Last exported backup:</b> ${state.meta?.lastBackupAt?new Date(state.meta.lastBackupAt).toLocaleString():'Never on this device'}</div>
+ <div class="actions"><button class="btn secondary" onclick="exportBackup()">Export backup</button><label class="btn secondary" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0])" style="display:none"></label>${preImportSnapshotInfo()?'<button class="btn secondary" onclick="restorePreImportSnapshot()">Restore pre-import snapshot</button>':''}</div>
+ <div class="native-note" style="margin-top:8px">Imports are validated before replacing your current state. A safety snapshot is created before every successful import so you can roll back if you picked the wrong file.</div>
  <div class="section-title"><h2>Exercise illustrations</h2></div>
  <div class="notice">Exercise thumbnail illustrations are provided by <a href="https://github.com/bryllim/workout-guide" target="_blank" rel="noopener">Workout Guide by Bryl Lim</a>, based in part on Everkinetic artwork, and are licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>. Swole Cat displays the artwork as small in-app thumbnails with a separate Swole Cat badge.</div>
  <div class="actions"><button class="btn danger" onclick="resetAll()">Erase all local data</button></div>
@@ -3646,11 +3651,45 @@ function saveSettings(){
  save();haptic(15);closeModal();renderHome();showToast(newUnit!==oldUnit?`Converted workout data to ${newUnit}`:'Settings saved');
 }
 function exportBackup(){
- const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
- const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='swole-cat-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);
+ try{
+   const exportedAt=new Date().toISOString();
+   const envelope=createBackupEnvelope(exportedAt);
+   const blob=new Blob([JSON.stringify(envelope,null,2)],{type:'application/json'});
+   const a=document.createElement('a');
+   a.href=URL.createObjectURL(blob);
+   a.download='swole-cat-backup-'+exportedAt.slice(0,10)+'.json';
+   a.click();
+   URL.revokeObjectURL(a.href);
+   showToast('Backup exported');
+ }catch(e){alert('Could not export backup: '+(e?.message||e))}
 }
 function importBackup(file){
- if(!file)return; const r=new FileReader(); r.onload=()=>{try{state=Object.assign(freshState(),JSON.parse(r.result));save();closeModal();renderHome();alert('Backup imported.');}catch(e){alert('That backup file could not be read.')}}; r.readAsText(file);
+ if(!file)return;
+ const r=new FileReader();
+ r.onerror=()=>alert('That backup file could not be read.');
+ r.onload=()=>{
+   let candidate;
+   try{candidate=parseBackupText(String(r.result||''))}
+   catch(e){alert('Backup not imported: '+(e?.message||e));return}
+   if(!createPreImportSnapshot()){
+     alert('Import canceled because Swole Cat could not create the required safety snapshot. Free some device storage, then try again.');
+     return;
+   }
+   const oldState=state,oldBlocked=storageWriteBlocked;
+   try{
+     state=candidate;
+     storageWriteBlocked=false;
+     recoverySnapshotWritten=false;
+     if(!save())throw new Error(lastStorageError||'Local storage write failed.');
+     closeModal();
+     renderHome();populateMuscles();updateActiveWorkoutChrome();
+     alert('Backup imported successfully. Your pre-import snapshot is available in Settings if you need to roll back.');
+   }catch(e){
+     state=oldState;storageWriteBlocked=oldBlocked;
+     alert('Backup not imported: '+(e?.message||e));
+   }
+ };
+ r.readAsText(file);
 }
 function resetAll(){closeModal();confirmAction('Erase all local data?','This permanently removes every workout, routine, custom exercise, favorite, bodyweight entry, and setting stored on this device.',()=>{localStorage.removeItem(LSKEY);state=freshState();renderHome();showToast('Local data erased');setTimeout(onboarding,250);});}
 
