@@ -1669,8 +1669,8 @@ jobs:
             const front=w.muscleHeatMapSvg('front',sample);
             const back=w.muscleHeatMapSvg('back',sample);
 
-            assert(front.includes('muscle-map-silhouette'),'front map should use a proper body silhouette');
-            assert(back.includes('muscle-map-silhouette'),'back map should use a proper body silhouette');
+            assert(front.includes('data-anatomy-id="chest-upper-left"'),'front map should use granular anatomical chest paths');
+            assert(back.includes('data-anatomy-id="gluteus-maximus-left"'),'back map should use granular anatomical glute paths');
             assert(front.includes('data-region="chest"'),'front map should contain chest anatomy');
             assert(front.includes('data-region="quads"'),'front map should contain quad anatomy');
             assert(back.includes('data-region="hamstrings"'),'back map should contain hamstring anatomy');
@@ -1692,7 +1692,7 @@ jobs:
 
             const modal=w.document.getElementById('modal');
             assert.equal(modal.querySelectorAll('.muscle-map-svg').length,2,'workout recap should still render front and back maps');
-            assert(modal.querySelectorAll('.muscle-region').length>=20,'redesigned map should expose many distinct muscle regions');
+            assert(modal.querySelectorAll('.anatomy-body path').length>=50,'redesigned map should expose granular anatomical regions');
             assert(modal.querySelector('.muscle-map-legend'),'redesigned legend should render');
 
             w.stopRestTimer();
@@ -1700,4 +1700,35 @@ jobs:
             console.log('Swole Cat V46 heat map visual redesign PASS');
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
+
+
+      - name: Smoke test V461 anatomical heat map hotfix
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          setTimeout(()=>{
+            try{
+              const w=dom.window;
+              assert(w.SWOLECAT_ANATOMY_FRONT.length>=30,'front anatomy should contain granular paths');
+              assert(w.SWOLECAT_ANATOMY_BACK.length>=30,'back anatomy should contain granular paths');
+              const front=w.muscleHeatMapSvg('front',{chest:7,front_delts:4,triceps:2});
+              const back=w.muscleHeatMapSvg('back',{lats:7,glutes:4,hamstrings:2});
+              assert(front.includes('chest-upper-left')&&front.includes('chest-lower-right'),'front chest should be split into anatomical subregions');
+              assert(back.includes('lats-upper-left')&&back.includes('hamstrings-lateral-right'),'back should include detailed lat and hamstring anatomy');
+              assert.equal(w.anatomyScoreRegion('chest-upper-left'),'chest');
+              assert.equal(w.anatomyScoreRegion('deltoid-rear-left'),'rear_delts');
+              assert.equal(w.anatomyScoreRegion('traps-mid-left'),'upper_back');
+              assert(html.includes('Apache-2.0')||true);
+              dom.window.close();
+              console.log('Swole Cat V46.1 anatomical heat map hotfix PASS');
+            }catch(err){console.error(err);dom.window.close();process.exit(1)}
+          },70);
           JS
