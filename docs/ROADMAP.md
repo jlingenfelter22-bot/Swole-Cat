@@ -10,6 +10,7 @@ This document is the canonical product roadmap for Swole Cat. Features listed as
 4. **History should become more useful over time.** Completing a workout should create a durable, visual record that can be revisited from the calendar/history.
 5. **Social features should enhance training, not turn Swole Cat into a generic social network.**
 6. **Visual identity should evolve without sacrificing usability.** Swole Cat should preserve the clean information architecture, sizing, readability, and fast workout flow while developing a distinctive dark retro-futurist/cyberpunk visual identity.
+7. **Fitness should not be gatekept by friction.** Core fitness functionality should not be gatekept behind ads, intrusive monetization, or a maze of in-app purchases. Swole Cat should prioritize helping someone open the app, build or start a workout, train, and leave with useful history and guidance.
 
 ---
 
@@ -263,6 +264,20 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 ---
 
 ## Phase 6 — Coach Swole Cat / Quick Build
+
+### Product intent: useful, not bloated
+Coach Swole Cat should reinforce the core product philosophy rather than turn the app into a noisy AI product.
+
+The experience should remain:
+- ad-free
+- free of manipulative upgrade prompts during training
+- fast to open and use
+- useful offline wherever practical
+- focused on helping the user train, not maximizing time spent in the app
+- understandable without requiring a subscription just to access basic workout generation or logging
+
+The goal is not to create an endlessly conversational fitness assistant. The goal is to make evidence-backed workout creation dramatically faster while keeping the user in control.
+
 
 **Priority: Medium-high**
 
@@ -528,7 +543,7 @@ The current intended sequence is:
 14. Group progress dashboard + privacy
 15. Live group workout synchronization
 
-This order is deliberate. Routine editing and the training-mode data model should be settled before deeper analytics. The visual system should be established before major new screens and visualizations are built. Muscle metadata should exist before heat maps and before Coach Swole Cat begins generating routines from structured exercise data. The local quick-build engine should be proven before adding optional AI intelligence. Simple routine sharing should be proven before building accounts. Accounts and sync should exist before group or live features.
+This order is deliberate. Routine editing and the training-mode data model should be settled before deeper analytics. The visual system should be established before major new screens and visualizations are built. Muscle metadata should exist before heat maps and before Coach Swole Cat begins generating routines from structured exercise data. Coach Swole Cat should begin only after the exercise muscle-metadata and rich-history foundations are stable enough to support evidence-backed selection and personalization. The local quick-build engine should be proven before adding optional AI intelligence. Simple routine sharing should be proven before building accounts. Accounts and sync should exist before group or live features.
 
 ---
 
@@ -553,6 +568,7 @@ The following product ideas are explicitly retained on the roadmap:
 - [ ] Generate → preview → edit → start/save workflow
 - [ ] Local deterministic workout-generation engine using muscle/equipment/history/preferences
 - [ ] Optional later AI-backed conversational Coach layer
+- [ ] Preserve an ad-free, no-paywall core workout experience
 - [ ] Routine sharing/import
 - [ ] Optional Swole Cat accounts
 - [ ] Cloud backup and multi-device sync
