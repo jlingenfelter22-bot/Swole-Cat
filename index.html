@@ -2882,7 +2882,7 @@ let exerciseCatalogCacheRevision=-1,exerciseCatalogCache=null;
 let navigationRefreshFrame=null;
 function derivedSessionData(){
  if(derivedSessionCache&&derivedSessionCacheRevision===stateRevision)return derivedSessionCache;
- const sessionsByDate=new Map(),historyByExercise=new Map(),loggedExerciseIds=new Set();
+ const sessionsByDate=new Map(),historyByExercise=new Map(),previousByExercise=new Map(),loggedExerciseIds=new Set();
  state.sessions.forEach(session=>{
    const dateKey=localDateKey(session.date);
    if(dateKey){
@@ -2892,13 +2892,15 @@ function derivedSessionData(){
    (session.exercises||[]).forEach(e=>{
      const working=progressionSets(e),all=completedSets(e);
      if(all.length)loggedExerciseIds.add(e.exerciseId);
+     const previous=previousByExercise.get(e.exerciseId);
+     if(!previous||String(session.date).localeCompare(String(previous.date))>0)previousByExercise.set(e.exerciseId,{date:session.date,...e});
      if(!working.length)return;
      if(!historyByExercise.has(e.exerciseId))historyByExercise.set(e.exerciseId,[]);
      historyByExercise.get(e.exerciseId).push({date:session.date,routineName:session.routineName,sets:working,allSets:all,notes:e.notes||''});
    });
  });
  historyByExercise.forEach(rows=>rows.sort((a,b)=>a.date.localeCompare(b.date)));
- derivedSessionCache={sessionsByDate,historyByExercise,loggedExerciseIds};
+ derivedSessionCache={sessionsByDate,historyByExercise,previousByExercise,loggedExerciseIds};
  derivedSessionCacheRevision=stateRevision;
  return derivedSessionCache;
 }
@@ -4709,11 +4711,7 @@ function openRoutine(id,programId=null){
  }
  startRoutineFresh(id,programId);
 }
-function previousExercise(exerciseId){
- const arr=[];
- state.sessions.forEach(s=>s.exercises.forEach(e=>{if(e.exerciseId===exerciseId)arr.push({date:s.date,...e})}));
- return arr.sort((a,b)=>b.date.localeCompare(a.date))[0];
-}
+function previousExercise(exerciseId){return derivedSessionData().previousByExercise.get(exerciseId);}
 function setType(set){return ['working','warmup','drop','failure'].includes(set?.type)?set.type:'working'}
 function isProgressionSet(set){return setType(set)==='working'}
 function completedSets(prev){return (prev?.sets||[]).filter(s=>s.done && Number(s.weight)>=0 && Number(s.reps)>0)}
@@ -4962,11 +4960,15 @@ function targetBadgeText(target,ex){
 }
 
 function changeSetValue(ei,si,key,delta){
- const s=state.activeWorkout.exercises[ei].sets[si];
- let v=Number(s[key])||0;
+ const set=state.activeWorkout?.exercises?.[ei]?.sets?.[si];if(!set)return;
+ let v=Number(set[key])||0;
  v=Math.max(0,roundLoad(v+delta));
- s[key]=key==='reps'?Math.round(v):v;
- haptic(8);saveActiveWorkout();renderWorkout();
+ set[key]=key==='reps'?Math.round(v):v;
+ if(key!=='rir')set.pr='';
+ const card=document.querySelector(`#workoutExercise-${ei} .set-card[data-set-index="${si}"]`);
+ const input=card?.querySelector(`input[aria-label="${key}"]`);
+ if(input)input.value=key==='weight'?displaySetWeightValue(set[key]):set[key];
+ haptic(8);saveActiveWorkout(true);
 }
 function workoutCounts(){return activeWorkoutCounts()}
 function workoutElapsedMs(w=state.activeWorkout,nowMs=Date.now()){
@@ -5437,22 +5439,32 @@ function compactTargetText(e,ex,prev){
  if((Number(t.weight)||0)<=0)return ex?.equipment==='bodyweight'?`${t.reps} reps · bodyweight`:`Choose starting weight · ${t.reps} reps`;
  return `${t.weight} ${state.profile.unit} × ${t.reps} target`;
 }
+function paintWorkoutAccordion(){
+ const w=state.activeWorkout;if(!w)return;
+ w.exercises.forEach((e,i)=>{
+   const card=document.getElementById(`workoutExercise-${i}`);if(!card)return;
+   card.classList.toggle('collapsed',!e.expanded);
+   const toggle=card.querySelector('.exercise-toggle-btn');
+   if(toggle){
+     toggle.textContent=e.expanded?'⌃':'⌄';
+     toggle.setAttribute('aria-label',e.expanded?'Collapse exercise':'Expand exercise');
+     toggle.setAttribute('aria-expanded',e.expanded?'true':'false');
+   }
+ });
+}
 function toggleExercisePanel(ei){
  const w=state.activeWorkout;if(!w||!w.exercises[ei])return;
  if(w.exercises[ei].skipped){showToast('This exercise is skipped for today. Use Manage Workout to restore it.');return}
  const opening=!w.exercises[ei].expanded;
- if(opening){
-   w.exercises.forEach((e,i)=>e.expanded=i===ei);
- }else{
-   w.exercises[ei].expanded=false;
- }
- haptic(10);save();renderWorkout();
+ if(opening)w.exercises.forEach((e,i)=>e.expanded=i===ei);
+ else w.exercises[ei].expanded=false;
+ haptic(10);saveActiveWorkout(true);paintWorkoutAccordion();
  if(opening)scrollToWorkoutExercise(ei);
 }
 function openExercisePanel(ei){
  const w=state.activeWorkout;if(!w||!w.exercises[ei])return;
  w.exercises.forEach((e,i)=>e.expanded=i===ei);
- save();renderWorkout();scrollToWorkoutExercise(ei);
+ saveActiveWorkout(true);paintWorkoutAccordion();scrollToWorkoutExercise(ei);
 }
 function advanceFromCompletedExercise(ei){
  const w=state.activeWorkout;if(!w)return;
@@ -5526,7 +5538,7 @@ function renderWorkout(){
     <div class="live-body">
      ${e.sets.map((s,si)=>{
        const type=setType(s),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev),ref=type==='working'?setReference(prev,wi):'Not used for progression',pt=plateLoadText(s.weight||target.weight,ex);
-       return `<div class="set-card type-${type} ${s.done?'completed':''}">
+       return `<div class="set-card type-${type} ${s.done?'completed':''}" data-set-index="${si}">
         <div class="set-top">
           <div class="set-title-wrap">
             <select class="set-type-select" aria-label="Set type" onchange="setWorkoutSetType(${ei},${si},this.value)">${setTypeOptions(type)}</select>
@@ -5604,7 +5616,6 @@ function toggleSet(ei,si){
  if(set.done){
    set.pr=isProgressionSet(set)?detectPR(e.exerciseId,set):'';
    haptic(set.pr?[35,40,70]:25);
-   saveActiveWorkout();
    if(isProgressionSet(set)&&advanceSupersetAfterSet(ei,si))return;
    startRestTimer(e.config.restSeconds||120);
    if(advanceFromCompletedExercise(ei))return;
