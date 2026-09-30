@@ -2909,8 +2909,10 @@ function save(){
  if(pendingStateSaveTimer){clearTimeout(pendingStateSaveTimer);pendingStateSaveTimer=null}
  pendingStateSave=false;
  try{
-   const previous=localStorage.getItem(LSKEY);
-   if(previous)writeRecoverySnapshot(previous);
+   if(!recoverySnapshotWritten){
+     const previous=localStorage.getItem(LSKEY);
+     if(previous)writeRecoverySnapshot(previous);
+   }
    state.schemaVersion=DATA_SCHEMA_VERSION;
    state.meta=isPlainObject(state.meta)?state.meta:{};
    state.meta.lastSavedAt=new Date().toISOString();
