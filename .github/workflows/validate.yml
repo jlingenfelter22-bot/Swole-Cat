@@ -761,6 +761,24 @@ jobs:
             assert.throws(()=>w.parseBackupText(JSON.stringify({schemaVersion:999,profile:{},routines:[],sessions:[],settings:{},ui:{}})),/newer Swole Cat data format/i,'future schema should be rejected');
             assert.throws(()=>w.parseBackupText('not json'),/valid JSON/i,'invalid JSON should be rejected');
 
+            const backupEnvelope=w.createBackupEnvelope('2026-09-30T12:00:00.000Z');
+            assert.equal(backupEnvelope.format,'swole-cat-backup','export should use the named Swole Cat backup envelope');
+            assert.equal(backupEnvelope.formatVersion,1,'backup envelope should carry its format version');
+            assert.equal(backupEnvelope.state.schemaVersion,1,'backup should carry the current data schema');
+            assert.equal(backupEnvelope.state.meta.lastBackupAt,'2026-09-30T12:00:00.000Z','backup timestamp should be written into exported state');
+
+            // Browser storage failures are surfaced instead of silently pretending a save worked.
+            const storageProto=Object.getPrototypeOf(w.localStorage);
+            const originalSetItem=storageProto.setItem;
+            storageProto.setItem=function(key,value){
+              if(key==='overload_v3')throw new Error('simulated quota exceeded');
+              return originalSetItem.call(this,key,value);
+            };
+            assert.equal(w.save(),false,'storage write exception should make save return false');
+            assert.match(w.eval('lastStorageError'),/simulated quota exceeded/i,'storage failure should be retained for user-facing diagnostics');
+            storageProto.setItem=originalSetItem;
+            assert.equal(w.save(),true,'saving should recover after storage becomes writable again');
+
             // A pre-import safety snapshot is created before replacement.
             assert.equal(w.createPreImportSnapshot(),true,'pre-import snapshot should be created');
             const snapshot=JSON.parse(w.localStorage.getItem('overload_v3_pre_import_v1'));
