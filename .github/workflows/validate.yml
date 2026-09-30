@@ -941,6 +941,25 @@ jobs:
             w.saveRoutineMeta(rid);
             state=read();
             assert.equal(state.routines[0].trainingMode,'strength','routine mode should persist');
+            w.closeModal();
+
+            // Program override should supersede the routine mode only for program-launched workouts.
+            const pid=state.programs[0].id;
+            w.newProgram(pid);
+            const programMode=w.document.getElementById('programTrainingMode');
+            assert(programMode,'program editor should expose a training mode override');
+            programMode.value='track';
+            w.saveProgram();
+            w.startProgramWorkout(pid);
+            state=read();
+            assert.equal(state.activeWorkout.trainingMode,'track','program launch should use the program override');
+            assert.equal(state.activeWorkout.exercises[0].config.routineMode,'track','program override should reach exercise config');
+            w.cancelWorkout();w.runConfirmedAction();
+
+            // A manual launch of the same routine still uses the routine's own mode.
+            w.openRoutine(rid);
+            state=read();
+            assert.equal(state.activeWorkout.trainingMode,'strength','manual routine launch should ignore the program override');
 
             dom.window.close();
             console.log('Swole Cat V31 training modes smoke test PASS');
