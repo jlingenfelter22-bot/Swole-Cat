@@ -1,0 +1,13 @@
+Swole Cat third-party notices
+
+Body Muscles
+Copyright 2024 Ivan Vulović
+https://github.com/vulovix/body-muscles
+
+Swole Cat incorporates and adapts anatomical SVG path data from Body Muscles.
+Body Muscles is licensed under the Apache License, Version 2.0.
+https://www.apache.org/licenses/LICENSE-2.0
+
+Modifications:
+- Muscle identifiers are mapped to Swole Cat's primary/secondary muscle model.
+- Rendering, intensity scoring, colors, UI, and presentation are Swole Cat-specific.
