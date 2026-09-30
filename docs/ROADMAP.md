@@ -34,6 +34,8 @@ Goal: turn the hardened PWA into a reliable Android app while keeping one mainta
 
 ## Phase 1 — Routine and Program Editing Fundamentals
 
+**Status: Complete through v0.32.0**
+
 **Priority: Very high**
 
 Goal: remove basic friction from managing routines before adding more advanced training logic.
@@ -45,7 +47,7 @@ Goal: remove basic friction from managing routines before adding more advanced t
 - [x] Add/remove exercises after creation
 - [x] Edit exercise targets without rebuilding the routine
 - [x] Duplicate a routine
-- [ ] Archive/delete routine with clear safeguards
+- [x] Archive/delete routine with clear safeguards
 - [x] Preserve existing workout history when a routine is edited
 
 ### Locked: Training mode selector
@@ -78,6 +80,8 @@ Every routine/program should have a configurable training mode. The first versio
 ---
 
 ## Phase 2 — Training Engine and Smarter Progression
+
+**Status: Core mode-aware engine complete in v0.31.0. Advanced progression research remains an expansion area.**
 
 **Priority: High**
 
