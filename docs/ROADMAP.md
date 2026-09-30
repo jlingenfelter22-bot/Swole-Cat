@@ -262,7 +262,87 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 
 ---
 
-## Phase 6 — Routine Sharing Without Accounts
+## Phase 6 — Coach Swole Cat / Quick Build
+
+**Priority: Medium-high**
+
+Goal: let a user create a useful workout or full routine in seconds without manually searching through the exercise library.
+
+### Locked: Quick workout builder
+The home screen should eventually include a fast **Build a Workout** entry point powered by Coach Swole Cat.
+
+A user should be able to type something naturally such as:
+- "Give me a chest and back workout today."
+- "Build me a 45-minute leg workout."
+- "I only have dumbbells and cables."
+- "Give me something quick for shoulders and arms."
+- "Make me a strength-focused push workout."
+
+Coach Swole Cat should then ask only for missing information that materially changes the workout, such as:
+- target muscles or workout goal
+- available time
+- available equipment
+- training mode / goal
+- optional exercise dislikes, favorites, or limitations already stored in Swole Cat
+
+### Locked: Deterministic local builder first
+The first version should **not require a cloud AI model**.
+
+Swole Cat can build strong routines locally from structured data already in the app:
+- primary/secondary muscle metadata
+- movement family
+- equipment requirements
+- user Favorite / Prefer / Avoid / Hidden exercise settings
+- recent training history
+- routine training mode
+- target duration
+- reasonable exercise/set/rest-time estimates
+- movement balance and duplicate-pattern avoidance
+
+The builder should rank and assemble exercises using transparent rules so the workout remains fast, offline-capable, inexpensive, and predictable.
+
+### Locked: Conversational Coach layer
+The UX should still feel conversational even when the first engine is deterministic.
+
+Coach Swole Cat can:
+1. Parse the user's short request.
+2. Ask one or two concise follow-up questions only when necessary.
+3. Generate a preview workout.
+4. Explain the broad structure in plain language.
+5. Let the user swap/remove exercises before saving.
+6. Offer:
+   - **Start Workout Now**
+   - **Save as Routine**
+   - **Add to Program**
+
+The user must always remain in control of the final workout.
+
+### Later optional intelligence
+Once the local builder is proven, an optional AI-backed Coach layer can add more flexible natural-language understanding and programming discussion without replacing the deterministic training engine.
+
+Potential later capabilities:
+- multi-day program generation
+- "build me a 3-day plan" conversations
+- modify an existing routine from natural language
+- adapt a workout to time/equipment changes
+- explain why exercises were selected
+- use recent workout history to avoid unintentionally repeating heavily trained muscles
+- suggest substitutions using the existing preference/history system
+- progressively refine a generated plan through conversation
+
+### Product/safety guardrails
+- Recommendations should be framed as training suggestions, not medical advice.
+- The builder should not claim to diagnose injury, recovery state, or physiological readiness from workout logs alone.
+- User-selected limitations and exclusions must override recommendation ranking.
+- Generated workouts should be editable before they are saved or started.
+- Workout generation should reuse the same routine/workout data structures as manually created routines rather than creating a second incompatible system.
+
+### Why this phase comes here
+Coach Swole Cat becomes substantially better after exercise muscle metadata and richer history exist, because it can make choices from structured information instead of guessing. It does not require accounts or social infrastructure, so it should come before sharing, cloud sync, and group features.
+
+---
+
+## Phase 7 — Routine Sharing Without Accounts
 
 **Priority: Medium-high**
 
@@ -281,7 +361,7 @@ Sharing a routine must never copy another person's private workout history unles
 
 ---
 
-## Phase 7 — Accounts, Cloud Backup, and Multi-Device Sync
+## Phase 8 — Accounts, Cloud Backup, and Multi-Device Sync
 
 **Priority: Medium**
 
@@ -300,7 +380,7 @@ A hosted backend such as Supabase or an equivalent service can provide authentic
 
 ---
 
-## Phase 8 — Shared Programs and Workout Groups
+## Phase 9 — Shared Programs and Workout Groups
 
 **Priority: Medium / major feature**
 
@@ -338,7 +418,7 @@ No user's weights or progression should overwrite another user's data.
 
 ---
 
-## Phase 9 — Group Progress Dashboard
+## Phase 10 — Group Progress Dashboard
 
 **Priority: Later**
 
@@ -363,7 +443,7 @@ Users should control what other group members can see, including options such as
 
 ---
 
-## Phase 10 — Live Group Workouts
+## Phase 11 — Live Group Workouts
 
 **Priority: Long-term**
 
@@ -381,12 +461,12 @@ The feature should remain training-focused. Full social-media feeds, public foll
 
 ---
 
-## Phase 11 — Future Intelligence and Expansion
+## Phase 12 — Future Intelligence and Expansion
 
 These are intentionally later because they depend on the data model and core experience being stable.
 
 Possible directions:
-- personalized programming suggestions
+- advanced Coach Swole Cat intelligence beyond the Phase 6 local builder
 - program templates
 - coach/trainer sharing
 - intelligently suggested substitutions
@@ -414,13 +494,14 @@ The current intended sequence is:
 7. Exercise muscle metadata
 8. Front/back muscle heat map
 9. Rich calendar/history workout recaps
-10. Routine sharing without accounts
-11. Accounts + cloud backup/sync
-12. Shared group routines
-13. Group progress dashboard + privacy
-14. Live group workout synchronization
+10. **Coach Swole Cat / Quick Build**
+11. Routine sharing without accounts
+12. Accounts + cloud backup/sync
+13. Shared group routines
+14. Group progress dashboard + privacy
+15. Live group workout synchronization
 
-This order is deliberate. Routine editing and the training-mode data model should be settled before deeper analytics. The visual system should be established before major new screens and visualizations are built. Muscle metadata should exist before heat maps. Simple routine sharing should be proven before building accounts. Accounts and sync should exist before group or live features.
+This order is deliberate. Routine editing and the training-mode data model should be settled before deeper analytics. The visual system should be established before major new screens and visualizations are built. Muscle metadata should exist before heat maps and before Coach Swole Cat begins generating routines from structured exercise data. The local quick-build engine should be proven before adding optional AI intelligence. Simple routine sharing should be proven before building accounts. Accounts and sync should exist before group or live features.
 
 ---
 
@@ -440,6 +521,11 @@ The following product ideas are explicitly retained on the roadmap:
 - [ ] Muscle groups targeted summary
 - [ ] Front/back muscle heat map
 - [ ] Detailed historical workout recap from calendar/history
+- [ ] Coach Swole Cat / Quick Build workout generator
+- [ ] Natural-language workout requests with concise follow-up questions
+- [ ] Generate → preview → edit → start/save workflow
+- [ ] Local deterministic workout-generation engine using muscle/equipment/history/preferences
+- [ ] Optional later AI-backed conversational Coach layer
 - [ ] Routine sharing/import
 - [ ] Optional Swole Cat accounts
 - [ ] Cloud backup and multi-device sync
