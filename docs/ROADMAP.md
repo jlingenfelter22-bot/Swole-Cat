@@ -49,6 +49,9 @@ Goal: remove basic friction from managing routines before adding more advanced t
 - [x] Preserve existing workout history when a routine is edited
 
 ### Locked: Training mode selector
+
+**Status: Initial implementation complete in v0.31.0.** Routines have their own mode, and programs can either respect each routine or override the mode for program-launched workouts.
+
 Every routine/program should have a configurable training mode. The first version should support:
 
 1. **Guided Progressive Overload**
@@ -81,13 +84,13 @@ Every routine/program should have a configurable training mode. The first versio
 Goal: expand Swole Cat from a single progressive-overload workflow into a flexible training tracker while keeping recommendations understandable.
 
 ### Locked: Mode-aware progression engine
-- [ ] Separate progression logic from UI so different algorithms can coexist
-- [ ] Guided Progressive Overload rules
-- [ ] Strength-focused progression rules
-- [ ] Track-only mode that never pressures the user to increase load
-- [ ] Clear explanation of why a recommendation was made
-- [ ] Allow user to accept, ignore, or manually override recommendations
-- [ ] Preserve manual changes as part of workout history
+- [x] Separate progression logic from UI so different mode algorithms can coexist
+- [x] Guided Progressive Overload rules
+- [x] Strength-focused load-priority progression rules (initial implementation)
+- [x] Track-only mode that never pressures the user to increase load
+- [x] Clear explanation of why a recommendation was made
+- [x] Allow user to accept, ignore, or manually override recommendations
+- [x] Preserve manual changes as part of workout history
 
 ### Research/spec work before implementation
 The strength and progression systems should be based on established training concepts rather than treating “strength” and “progressive overload” as scientifically unrelated ideas. Product modes are different **workflows and recommendation strategies**, while progressive overload remains a broad training principle.
@@ -380,10 +383,10 @@ This order is deliberate. Routine editing and the training-mode data model shoul
 The following product ideas are explicitly retained on the roadmap:
 
 - [x] Rename/edit existing routines and programs
-- [ ] Choose training mode per routine/program
-- [ ] Guided progressive-overload mode
-- [ ] Strength-focused progression mode
-- [ ] Track-only / standard workout mode
+- [x] Choose training mode per routine/program
+- [x] Guided progressive-overload mode
+- [x] Strength-focused progression mode
+- [x] Track-only / standard workout mode
 - [ ] Dark retro-futurist / cyberpunk visual identity refresh
 - [ ] Preserve current layout, sizing, readability, and workout flow during the visual refresh
 - [ ] Standardized Swole Cat design system
