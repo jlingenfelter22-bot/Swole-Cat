@@ -702,3 +702,140 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V29 data hardening
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const assert = require('assert');
+          const {JSDOM} = require('jsdom');
+          const html = fs.readFileSync('index.html','utf8');
+
+          const makeDom = (seed, recovery=null) => new JSDOM(html,{
+            runScripts:'dangerously',
+            url:'https://swole-cat.test/',
+            pretendToBeVisual:true,
+            beforeParse(window){
+              if(seed!==undefined)window.localStorage.setItem('overload_v3',typeof seed==='string'?seed:JSON.stringify(seed));
+              if(recovery)window.localStorage.setItem('overload_v3_recovery_v1',JSON.stringify(recovery));
+              window.alert=()=>{};
+              window.confirm=()=>true;
+              window.scrollTo=()=>{};
+              window.fetch=()=>Promise.reject(new Error('offline test'));
+            }
+          });
+
+          const wait = ms => new Promise(r=>setTimeout(r,ms));
+
+          const run = async () => {
+            // Legacy state migrates forward without changing the storage key.
+            const legacy={
+              profile:{name:'Legacy',unit:'lb'},
+              routines:[],
+              sessions:[{id:'s1',date:new Date().toISOString(),routineName:'Legacy workout',exercises:[{exerciseId:'lib_8',sets:[{weight:100,reps:8,done:true}]}]}],
+              ui:{onboardingDone:true,haptics:false,keepAwake:false},
+              settings:{defaultMin:8,defaultMax:12,defaultSets:3,defaultIncrement:5}
+            };
+            const dom=makeDom(legacy);
+            await wait(35);
+            const w=dom.window;
+            assert.equal(w.state.schemaVersion,w.DATA_SCHEMA_VERSION,'legacy data should migrate to current schema');
+            assert.equal(w.state.sessions[0].exercises[0].sets[0].type,'working','legacy sets should migrate to working set type');
+            assert.equal(w.storageWriteBlocked,false,'valid legacy data should remain writable');
+
+            // Backup parser accepts both legacy raw state and the new envelope.
+            const rawImported=w.parseBackupText(JSON.stringify(legacy));
+            assert.equal(rawImported.schemaVersion,w.DATA_SCHEMA_VERSION,'legacy backup should normalize to current schema');
+            const envelope={
+              format:w.BACKUP_FORMAT,
+              formatVersion:w.BACKUP_FORMAT_VERSION,
+              exportedAt:new Date().toISOString(),
+              schemaVersion:w.DATA_SCHEMA_VERSION,
+              state:legacy
+            };
+            const envelopeImported=w.parseBackupText(JSON.stringify(envelope));
+            assert.equal(envelopeImported.profile.name,'Legacy','new envelope should import its state');
+            assert.throws(()=>w.parseBackupText('{"sessions":{}}'),/sessions/i,'invalid array shape should be rejected');
+            assert.throws(()=>w.parseBackupText(JSON.stringify({schemaVersion:999,profile:{},routines:[],sessions:[],settings:{},ui:{}})),/newer Swole Cat data format/i,'future schema should be rejected');
+            assert.throws(()=>w.parseBackupText('not json'),/valid JSON/i,'invalid JSON should be rejected');
+
+            // A pre-import safety snapshot is created before replacement.
+            assert.equal(w.createPreImportSnapshot(),true,'pre-import snapshot should be created');
+            const snapshot=JSON.parse(w.localStorage.getItem('overload_v3_pre_import_v1'));
+            assert(snapshot&&typeof snapshot.raw==='string','pre-import snapshot should retain raw current state');
+
+            // Malformed historic reps cannot poison progression targets with NaN.
+            assert.deepEqual(w.progressEverySetTarget(['oops',9,null],8,12,3),[8,10,8],'malformed previous reps should fall back safely');
+            assert.deepEqual(w.distributeTarget(['oops',11],8,12,3),[9,11,8],'beat-total mode should sanitize malformed reps');
+
+            // RIR is context only: maxed rep range still earns the configured load increase.
+            const strengthConfig={trainingGoal:'strength',mode:'double',sets:3,minReps:8,maxReps:12,increment:5};
+            const hardTop={
+              sets:[
+                {weight:100,reps:12,done:true,rir:0,type:'working'},
+                {weight:100,reps:12,done:true,rir:0,type:'working'},
+                {weight:100,reps:12,done:true,rir:0,type:'working'}
+              ]
+            };
+            const rec=w.buildRecommendation(strengthConfig,hardTop,'lib_8');
+            assert.equal(rec.status,'load','high effort should not block a completed double-progression load increase');
+            assert.equal(rec.weight,105,'earned load increase should use exactly one configured increment');
+
+            // Mixed previous loads preserve each set's prior load while progressing reps.
+            const mixed={
+              sets:[
+                {weight:100,reps:8,done:true,type:'working'},
+                {weight:95,reps:8,done:true,type:'working'},
+                {weight:90,reps:8,done:true,type:'working'}
+              ]
+            };
+            const mixedRec=w.buildRecommendation(strengthConfig,mixed,'lib_8');
+            assert.deepEqual(mixedRec.weights,[100,95,90],'mixed-load history should preserve per-set loads');
+            assert.deepEqual(mixedRec.targetReps,[9,9,9],'mixed-load history should still progress each set by one rep');
+            dom.window.close();
+
+            // Corrupt primary data recovers from a valid last-known-good snapshot without overwriting it first.
+            const recoveryRaw=JSON.stringify({
+              profile:{name:'Recovered',unit:'lb'},
+              routines:[],
+              sessions:[],
+              ui:{onboardingDone:true,haptics:false,keepAwake:false},
+              settings:{defaultMin:8,defaultMax:12,defaultSets:3,defaultIncrement:5}
+            });
+            const recoveredDom=makeDom('{broken json',{savedAt:'2026-09-29T12:00:00.000Z',raw:recoveryRaw});
+            await wait(35);
+            const rw=recoveredDom.window;
+            assert.equal(rw.recoveredFromSnapshot,true,'corrupt primary should recover from last-known-good snapshot');
+            assert.equal(rw.storageWriteBlocked,false,'valid recovery snapshot should restore writable mode');
+            assert.equal(rw.state.profile.name,'Recovered','recovery snapshot should become active state');
+            const beforeRecoveryBox=rw.localStorage.getItem('overload_v3_recovery_v1');
+            assert.equal(rw.save(),true,'recovered state should be able to repair the primary record');
+            assert.equal(rw.localStorage.getItem('overload_v3_recovery_v1'),beforeRecoveryBox,'first repaired save must not replace good recovery snapshot with corrupt primary');
+            assert.equal(JSON.parse(rw.localStorage.getItem('overload_v3')).profile.name,'Recovered','repaired primary should contain recovered state');
+            recoveredDom.window.close();
+
+            // With no recovery snapshot, corrupt local data enters write protection instead of being silently erased.
+            const blockedDom=makeDom('{still broken');
+            await wait(35);
+            const bw=blockedDom.window;
+            assert.equal(bw.storageWriteBlocked,true,'unrecoverable corrupt data should activate write protection');
+            assert.equal(bw.save(),false,'write protection should prevent accidental overwrite');
+            assert.equal(bw.localStorage.getItem('overload_v3'),'{still broken','corrupt primary should remain untouched until explicit user action');
+            blockedDom.window.close();
+
+            // Future-schema local data is preserved instead of rolling back into an older recovery snapshot.
+            const future={schemaVersion:999,profile:{name:'Future',unit:'lb'},routines:[],sessions:[],settings:{},ui:{onboardingDone:true}};
+            const futureDom=makeDom(future,{savedAt:'2026-09-29T12:00:00.000Z',raw:recoveryRaw});
+            await wait(35);
+            const fw=futureDom.window;
+            assert.equal(fw.storageWriteBlocked,true,'future schema should activate write protection');
+            assert.equal(fw.recoveredFromSnapshot,false,'future schema must not silently roll back to an older snapshot');
+            assert.equal(JSON.parse(fw.localStorage.getItem('overload_v3')).profile.name,'Future','future primary data should remain untouched');
+            futureDom.window.close();
+
+            console.log('Swole Cat V29 data hardening smoke test PASS');
+          };
+
+          run().catch(err=>{console.error(err);process.exit(1)});
+          JS
