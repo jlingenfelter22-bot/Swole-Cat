@@ -113,7 +113,7 @@ Areas to evaluate:
 
 ## Phase 3 — Visual Identity Refresh
 
-**Status: Visual Pass 1 complete in v0.34.0. Core identity system, signature navigation, angular panel language, icon style, and typography hierarchy are implemented. Pass 2 screen-by-screen polish is next.**
+**Status: Visual Pass 2 complete in v0.35.0. The core identity now has screen-specific composition across Home, Routines/Programs, Exercise Library, Active Workout, Progress, and History. Pass 3 final cohesion, sizing, restraint, performance, and accessibility polish remains.**
 
 **Priority: High**
 
