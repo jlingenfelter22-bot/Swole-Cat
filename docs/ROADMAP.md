@@ -113,6 +113,8 @@ Areas to evaluate:
 
 ## Phase 3 — Visual Identity Refresh
 
+**Status: Initial design-system pass implemented in v0.33.0; device visual approval and final polish remain.**
+
 **Priority: High**
 
 Goal: give Swole Cat a distinctive, premium visual identity without changing the underlying layout, information hierarchy, touch-target sizing, or fast workout flow that already works well.
@@ -142,12 +144,12 @@ Preserve unless testing shows a real UX problem:
 - responsive/mobile-first behavior
 
 ### Design-system work
-- [ ] Define color tokens, surfaces, borders, glow levels, text hierarchy, and state colors
-- [ ] Standardize cards, buttons, inputs, pills, tabs, modals, dialogs, and progress indicators
+- [x] Define color tokens, surfaces, borders, glow levels, text hierarchy, and state colors
+- [x] Standardize cards, buttons, inputs, pills, tabs, modals, dialogs, and progress indicators
 - [ ] Define icon style
 - [ ] Define typography scale
-- [ ] Define motion/transition rules
-- [ ] Define data-visualization styling for charts, progress, PRs, and future heat maps
+- [x] Define motion/transition rules
+- [x] Define data-visualization styling for charts, progress, PRs, and future heat maps
 - [ ] Make visual states accessible and distinguishable without relying only on color
 - [ ] Keep effects performant on Android devices
 
@@ -392,7 +394,7 @@ The following product ideas are explicitly retained on the roadmap:
 - [x] Strength-focused progression mode
 - [x] Track-only / standard workout mode
 - [ ] Dark retro-futurist / cyberpunk visual identity refresh
-- [ ] Preserve current layout, sizing, readability, and workout flow during the visual refresh
+- [x] Preserve current layout, sizing, readability, and workout flow during the visual refresh
 - [ ] Standardized Swole Cat design system
 - [ ] Post-workout stats/completion screen
 - [ ] Muscle groups targeted summary
