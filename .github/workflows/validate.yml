@@ -642,7 +642,7 @@ jobs:
           JS
 
 
-      - name: Smoke test Swole Cat exercise thumbnails
+      - name: Smoke test Swole Cat movement sigils
         run: |
           node <<'JS'
           const fs = require('fs');
@@ -670,47 +670,32 @@ jobs:
             const exercises=w.allExercises();
             assert(exercises.length>=300,'exercise library should still contain the full library');
 
-            // Every exercise renders professional source artwork plus the small Swole Cat brand badge.
             for(const ex of exercises){
-              const icon=w.catExerciseThumbnail(ex);
-              assert(icon.includes('class="exercise-thumb-art"'),ex.name+' should render exercise artwork');
-              assert(icon.includes('raw.githubusercontent.com/bryllim/workout-guide'),ex.name+' should use Workout Guide artwork');
-              assert(icon.includes('class="thumb-cat-mark"'),ex.name+' should retain a subtle Swole Cat brand mark');
-              assert(icon.includes('data-fallback='),ex.name+' should have a movement-family fallback');
-              assert(!/undefined|NaN/.test(icon),ex.name+' thumbnail markup should not contain broken values');
-              assert(w.workoutArtFallbackSlug(ex),'every exercise should resolve a fallback art slug');
+              const sigil=w.exercisePatternSvg(ex.pattern);
+              assert(sigil.includes('class="sigil-svg sigil-'),ex.name+' should render a movement-family vector sigil');
+              assert(sigil.includes('<svg'),ex.name+' sigil should be SVG UI, not an image thumbnail');
+              assert(!/undefined|NaN/.test(sigil),ex.name+' sigil markup should not contain broken values');
             }
 
-            // High-visibility examples from the exercise list should map to sensible source art.
             const byName=name=>exercises.find(x=>x.name===name);
-            assert.equal(w.workoutArtExactSlug(byName('45-Degree Back Extension')),'back-extension');
-            assert.equal(w.workoutArtExactSlug(byName('Ab Crunch Machine')),'crunch');
-            assert.equal(w.workoutArtExactSlug(byName('Alternating Dumbbell Curl')),'bicep-curl');
-            assert.equal(w.workoutArtExactSlug(byName('Anderson Squat')),'squat');
+            assert(w.exercisePatternSvg(byName('Barbell Bench Press').pattern).includes('sigil-press'),'pressing should use press sigil');
+            assert(w.exercisePatternSvg(byName('Seated Cable Row').pattern).includes('sigil-pull'),'rows should use pull sigil');
+            assert(w.exercisePatternSvg(byName('Back Squat').pattern).includes('sigil-legs'),'squats should use legs sigil');
+            assert(w.exercisePatternSvg(byName('Romanian Deadlift').pattern).includes('sigil-hinge'),'hinges should use hinge sigil');
 
-            // Similar variations still get distinct artwork when the source library supports it.
-            const back=byName('Back Squat');
-            const front=byName('Front Squat');
-            const bb=byName('Barbell Bench Press');
-            const db=byName('Dumbbell Bench Press');
-            assert(back&&front&&bb&&db,'known exercise variants should exist');
-            assert.notEqual(w.workoutArtExactSlug(back),w.workoutArtExactSlug(front),'front and back squat artwork should differ');
-            assert.notEqual(w.workoutArtExactSlug(bb),w.workoutArtExactSlug(db),'barbell and dumbbell bench artwork should differ');
-
-            // Exercise list uses the artwork while preserving the original 42px thumbnail shell.
             w.go('exercises');
             const list=w.document.getElementById('exerciseList');
-            assert(list.querySelector('.iconbox .exercise-thumb-art'),'exercise list should render professional artwork inside iconbox');
-            assert(list.querySelector('.iconbox .thumb-cat-mark'),'exercise list should show the small brand badge');
-            const css=html.match(/\.iconbox\{[^}]+\}/)?.[0]||'';
-            assert(css.includes('width:42px')&&css.includes('height:42px'),'thumbnail container size should remain 42x42');
+            assert(list.querySelector('.exercise-sigil .sigil-svg'),'exercise list should render vector movement sigils');
+            assert(!list.querySelector('.exercise-thumb-art'),'exercise list should not render artwork thumbnails');
+            assert(!list.querySelector('.thumb-cat-mark'),'exercise list should not render mascot/brand art badges');
+            const css=html.match(/\.exercise-sigil\{[^}]+\}/)?.[0]||'';
+            assert(css.includes('width:48px')&&css.includes('height:48px'),'movement sigil container should keep the Pass 2 48px UI size');
 
             dom.window.close();
-            console.log('Swole Cat professional exercise thumbnail smoke test PASS');
+            console.log('Swole Cat movement sigil smoke test PASS');
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
-
 
       - name: Smoke test V29 data hardening
         run: |
