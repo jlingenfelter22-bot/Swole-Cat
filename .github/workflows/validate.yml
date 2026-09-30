@@ -1580,3 +1580,64 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V45 muscle metadata and heat map
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{
+            runScripts:'dangerously',
+            url:'https://swole-cat.test/',
+            pretendToBeVisual:true,
+            beforeParse(window){
+              window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+              window.alert=()=>{};
+              window.confirm=()=>true;
+              window.scrollTo=()=>{};
+            }
+          });
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(60);
+            const w=dom.window;
+            assert.equal(typeof w.exerciseMuscleMetadata,'function','structured muscle metadata resolver should exist');
+            assert.equal(typeof w.sessionMuscleScores,'function','session muscle scoring should exist');
+            assert.equal(typeof w.muscleHeatMapHtml,'function','heat map renderer should exist');
+
+            const chest=w.exerciseMuscleMetadata(w.exById('lib_0'));
+            assert(chest.primary.includes('chest'),'bench press should resolve chest as primary');
+            assert(chest.secondary.includes('triceps'),'bench press should resolve triceps as secondary');
+
+            const row=w.exerciseMuscleMetadata(w.exById('lib_26'));
+            assert(row.primary.includes('upper_back')||row.primary.includes('lats'),'row should resolve back regions');
+            assert(row.secondary.includes('biceps'),'row should resolve biceps as secondary');
+
+            w.installStarterPlan();
+            const persisted=JSON.parse(w.localStorage.getItem('overload_v3'));
+            w.startRoutineFresh(persisted.routines[0].id);
+            await wait(10);
+            w.updateSet(0,0,'weight','100');
+            w.updateSet(0,0,'reps','10');
+            w.toggleSet(0,0);
+            w.finalizeWorkout(false);
+            await wait(10);
+
+            const session=JSON.parse(w.localStorage.getItem('overload_v3')).sessions.at(-1);
+            const scores=w.sessionMuscleScores(session);
+            assert(Object.keys(scores).length>0,'completed workout should produce muscle scores');
+            const modal=w.document.getElementById('modal');
+            assert(modal.textContent.includes('Muscle involvement map'),'recap should contain heat map section');
+            assert(modal.querySelectorAll('.muscle-map-svg').length===2,'recap should render front and back body maps');
+            assert(modal.querySelectorAll('.muscle-region').length>10,'heat map should contain anatomical regions');
+            assert(html.includes('does not measure muscle damage'),'heat map must state its interpretation limit');
+
+            w.stopRestTimer();
+            dom.window.close();
+            console.log('Swole Cat V45 muscle metadata and heat map PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
