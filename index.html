@@ -2165,6 +2165,244 @@
     .header-control{width:38px;padding:0}
   }
 
+
+  /* V38 UI TUNING PASS 2 */
+
+  /* Native selects remain the state/data source, but never invoke Android's
+     platform picker. Every user-facing select uses this app-owned control. */
+  .app-select-wrap{
+    position:relative;
+    width:100%;
+    min-width:0;
+  }
+  .app-select-source{
+    position:absolute!important;
+    width:1px!important;
+    height:1px!important;
+    opacity:0!important;
+    pointer-events:none!important;
+    overflow:hidden!important;
+    clip:rect(0 0 0 0)!important;
+    clip-path:inset(50%)!important;
+    white-space:nowrap!important;
+  }
+  .app-select-trigger{
+    width:100%;
+    min-height:47px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:11px 13px;
+    color:var(--text);
+    text-align:left;
+    border:1px solid rgba(71,93,130,.62);
+    border-radius:4px 11px 4px 11px;
+    background:
+      linear-gradient(180deg,rgba(8,13,24,.99),rgba(6,10,19,.99));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.018);
+    font:inherit;
+  }
+  .app-select-trigger:active{transform:translateY(1px)}
+  .app-select-trigger:disabled{opacity:.46}
+  .app-select-value{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .app-select-chevron{
+    width:9px;
+    height:9px;
+    flex:0 0 9px;
+    border-right:1.5px solid #9eb3ca;
+    border-bottom:1.5px solid #9eb3ca;
+    transform:rotate(45deg) translateY(-2px);
+  }
+  .app-select-trigger:focus-visible{
+    outline:2px solid #67e8f9!important;
+    outline-offset:2px;
+    border-color:rgba(34,211,238,.72);
+    box-shadow:0 0 0 4px rgba(34,211,238,.09)!important;
+  }
+  .app-select-wrap[data-value="guided"] .app-select-trigger,
+  .app-select-wrap[data-value="strength"] .app-select-trigger,
+  .app-select-wrap[data-value="track"] .app-select-trigger,
+  .app-select-wrap[data-value="inherit"] .app-select-trigger{
+    border-color:rgba(168,85,247,.40);
+    background:
+      linear-gradient(100deg,rgba(168,85,247,.065),transparent 44%),
+      linear-gradient(180deg,rgba(8,13,24,.99),rgba(6,10,19,.99));
+  }
+
+  .app-select-overlay{
+    position:fixed;
+    inset:0;
+    z-index:190;
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+    padding:18px 10px calc(10px + var(--sc-safe-bottom));
+    background:rgba(0,0,0,.70);
+  }
+  .app-select-overlay.open{display:flex}
+  .app-select-sheet{
+    width:min(100%,720px);
+    max-height:min(68vh,620px);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    border:1px solid rgba(34,211,238,.25);
+    border-radius:6px 20px 6px 20px;
+    background:
+      radial-gradient(circle at 92% 0%,rgba(34,211,238,.07),transparent 27%),
+      linear-gradient(120deg,rgba(168,85,247,.08),transparent 42%),
+      #080e19;
+    box-shadow:0 28px 72px rgba(0,0,0,.58);
+  }
+  .app-select-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:15px 15px 12px;
+    border-bottom:1px solid rgba(81,108,147,.32);
+  }
+  .app-select-head h2{
+    margin:3px 0 0;
+    font-size:1.02rem;
+  }
+  .app-select-options{
+    overflow:auto;
+    overscroll-behavior:contain;
+    padding:7px;
+  }
+  .app-select-option{
+    width:100%;
+    min-height:54px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    padding:11px 12px;
+    margin:2px 0;
+    color:#dbe7f5;
+    text-align:left;
+    border:1px solid transparent;
+    border-radius:4px 12px 4px 12px;
+    background:transparent;
+  }
+  .app-select-option+.app-select-option{
+    border-top-color:rgba(81,108,147,.16);
+  }
+  .app-select-option.selected{
+    color:#fff;
+    border-color:rgba(34,211,238,.38);
+    background:
+      linear-gradient(105deg,rgba(34,211,238,.075),rgba(168,85,247,.11) 62%,rgba(255,46,136,.035)),
+      rgba(12,20,35,.94);
+  }
+  .app-select-option:disabled{opacity:.38}
+  .app-select-option-text{
+    font-size:.96rem;
+    line-height:1.3;
+  }
+  .app-select-option-mark{
+    width:27px;
+    height:27px;
+    flex:0 0 27px;
+    display:grid;
+    place-items:center;
+    border:1px solid rgba(91,121,166,.54);
+    border-radius:3px 9px 3px 9px;
+    color:transparent;
+    background:#070d17;
+  }
+  .app-select-option-mark svg{
+    width:17px;
+    height:17px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:2;
+    stroke-linecap:square;
+    stroke-linejoin:miter;
+  }
+  .app-select-option.selected .app-select-option-mark{
+    color:#6ee7f9;
+    border-color:rgba(34,211,238,.62);
+    background:linear-gradient(135deg,rgba(34,211,238,.11),rgba(168,85,247,.14));
+  }
+  body.app-select-open{overflow:hidden}
+
+  /* Compact selector variant for set type inside the live workout console. */
+  .app-select-wrap.app-select-compact{
+    width:auto;
+    flex:0 0 auto;
+  }
+  .app-select-compact .app-select-trigger{
+    width:auto;
+    min-width:92px;
+    min-height:34px;
+    padding:7px 9px;
+    gap:8px;
+    border-radius:3px 9px 3px 9px;
+    font-size:.7rem;
+    font-weight:900;
+  }
+  .app-select-compact .app-select-chevron{
+    width:7px;height:7px;flex-basis:7px;
+  }
+  .set-card.type-warmup .app-select-compact .app-select-trigger{border-color:rgba(56,189,248,.4);color:#bae6fd}
+  .set-card.type-drop .app-select-compact .app-select-trigger{border-color:rgba(245,158,11,.4);color:#fde68a}
+  .set-card.type-failure .app-select-compact .app-select-trigger{border-color:rgba(248,113,113,.42);color:#fecaca}
+
+  /* Settings toggles own a fixed control column so long copy can never squeeze
+     the switch outside its card. */
+  .setting-toggle{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 52px;
+    align-items:center;
+    gap:14px;
+    width:100%;
+    min-width:0;
+  }
+  .setting-toggle>div{
+    min-width:0;
+    overflow-wrap:anywhere;
+  }
+  .setting-toggle .toggle{
+    width:50px;
+    height:29px;
+    min-width:50px;
+    min-height:29px;
+    justify-self:end;
+    flex:none;
+    overflow:hidden;
+  }
+  .setting-toggle .toggle:after{
+    top:3px;
+    left:3px;
+    width:21px;
+    height:21px;
+  }
+  .setting-toggle .toggle.on:after{left:24px}
+
+  @media(max-width:430px){
+    .app-select-overlay{
+      padding-left:6px;
+      padding-right:6px;
+    }
+    .app-select-sheet{
+      border-radius:5px 17px 5px 17px;
+      max-height:72vh;
+    }
+    .app-select-option{min-height:52px}
+    .setting-toggle{
+      grid-template-columns:minmax(0,1fr) 50px;
+      gap:10px;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -2301,6 +2539,19 @@
       <button class="x" onclick="closeModal()">✕</button>
     </div>
     <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="appSelectOverlay" class="app-select-overlay" role="dialog" aria-modal="true" aria-labelledby="appSelectTitle" onclick="if(event.target===this) closeAppSelect()">
+  <div class="app-select-sheet">
+    <div class="app-select-head">
+      <div>
+        <div class="screen-code">SELECT // INPUT</div>
+        <h2 id="appSelectTitle">Choose an option</h2>
+      </div>
+      <button class="x" onclick="closeAppSelect()" aria-label="Close selector">✕</button>
+    </div>
+    <div id="appSelectOptions" class="app-select-options" role="listbox"></div>
   </div>
 </div>
 
@@ -5641,8 +5892,118 @@ function resetAll(){closeModal();confirmAction('Erase all local data?','This per
  state=freshState();save();renderHome();showToast('Local data erased');setTimeout(onboarding,250);
 });}
 
-function openModal(title,body){document.getElementById('modalTitle').innerHTML=title;document.getElementById('modalBody').innerHTML=body;document.getElementById('modal').classList.add('open')}
-function closeModal(){document.getElementById('modal').classList.remove('open')}
+
+let activeAppSelect=null,activeAppSelectTrigger=null;
+
+function appSelectFieldLabel(select){
+ const aria=select?.getAttribute('aria-label');
+ if(aria)return aria;
+ const field=select?.closest('.field,.live-input-wrap,.set-type-field');
+ const label=field?.querySelector('label');
+ if(label?.textContent?.trim())return label.textContent.trim();
+ const parentLabel=select?.parentElement?.querySelector(':scope > label');
+ return parentLabel?.textContent?.trim()||'Choose an option';
+}
+function selectedOptionLabel(select){
+ const option=select?.options?.[select.selectedIndex];
+ return option?.textContent?.trim()||'Choose';
+}
+function syncAppSelect(select){
+ if(!select?.dataset?.appSelectReady)return;
+ const wrap=select.closest('.app-select-wrap');
+ const trigger=wrap?.querySelector('.app-select-trigger');
+ if(!trigger)return;
+ trigger.querySelector('.app-select-value').textContent=selectedOptionLabel(select);
+ trigger.disabled=!!select.disabled;
+ trigger.setAttribute('aria-label',appSelectFieldLabel(select)+': '+selectedOptionLabel(select));
+ const type=String(select.value||'').toLowerCase();
+ wrap.dataset.value=type;
+ trigger.dataset.value=type;
+}
+function enhanceAppSelect(select){
+ if(!select||select.dataset.appSelectReady==='1')return;
+ select.dataset.appSelectReady='1';
+ const wrap=document.createElement('div');
+ wrap.className='app-select-wrap'+(select.classList.contains('set-type-select')?' app-select-compact':'');
+ const trigger=document.createElement('button');
+ trigger.type='button';
+ trigger.className='app-select-trigger';
+ trigger.setAttribute('aria-haspopup','listbox');
+ trigger.innerHTML='<span class="app-select-value"></span><span class="app-select-chevron" aria-hidden="true"></span>';
+ select.parentNode.insertBefore(wrap,select);
+ wrap.appendChild(select);
+ wrap.appendChild(trigger);
+ select.classList.add('app-select-source');
+ trigger.addEventListener('click',()=>openAppSelect(select,trigger));
+ select.addEventListener('change',()=>syncAppSelect(select));
+ const observer=new MutationObserver(()=>syncAppSelect(select));
+ observer.observe(select,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','selected']});
+ syncAppSelect(select);
+}
+function enhanceAppSelects(root=document){
+ if(root?.matches?.('select'))enhanceAppSelect(root);
+ root?.querySelectorAll?.('select').forEach(enhanceAppSelect);
+}
+function openAppSelect(select,trigger){
+ if(!select||select.disabled)return;
+ activeAppSelect=select;activeAppSelectTrigger=trigger;
+ const overlay=document.getElementById('appSelectOverlay');
+ const title=document.getElementById('appSelectTitle');
+ const list=document.getElementById('appSelectOptions');
+ title.textContent=appSelectFieldLabel(select);
+ list.innerHTML='';
+ Array.from(select.options).forEach((option,index)=>{
+   const btn=document.createElement('button');
+   btn.type='button';
+   btn.className='app-select-option'+(index===select.selectedIndex?' selected':'');
+   btn.disabled=option.disabled;
+   btn.setAttribute('role','option');
+   btn.setAttribute('aria-selected',index===select.selectedIndex?'true':'false');
+   const text=document.createElement('span');
+   text.className='app-select-option-text';
+   text.textContent=option.textContent;
+   const mark=document.createElement('span');
+   mark.className='app-select-option-mark';
+   mark.setAttribute('aria-hidden','true');
+   mark.innerHTML='<svg viewBox="0 0 20 20"><path d="m4 10 4 4 8-9"/></svg>';
+   btn.append(text,mark);
+   btn.addEventListener('click',()=>chooseAppSelect(index));
+   list.appendChild(btn);
+ });
+ overlay.classList.add('open');
+ document.body.classList.add('app-select-open');
+ requestAnimationFrame(()=>list.querySelector('.selected')?.scrollIntoView({block:'nearest'}));
+}
+function chooseAppSelect(index){
+ const select=activeAppSelect;if(!select)return;
+ const option=select.options[index];if(!option||option.disabled)return;
+ select.selectedIndex=index;
+ syncAppSelect(select);
+ select.dispatchEvent(new Event('change',{bubbles:true}));
+ closeAppSelect();
+}
+function closeAppSelect(){
+ const overlay=document.getElementById('appSelectOverlay');
+ overlay?.classList.remove('open');
+ document.body.classList.remove('app-select-open');
+ const trigger=activeAppSelectTrigger;
+ activeAppSelect=null;activeAppSelectTrigger=null;
+ if(trigger&&document.contains(trigger))setTimeout(()=>trigger.focus(),0);
+}
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'&&document.getElementById('appSelectOverlay')?.classList.contains('open')){
+   e.preventDefault();closeAppSelect();
+ }
+});
+const appSelectObserver=new MutationObserver(records=>{
+ records.forEach(record=>record.addedNodes.forEach(node=>{
+   if(node.nodeType===1)enhanceAppSelects(node);
+ }));
+});
+appSelectObserver.observe(document.body,{childList:true,subtree:true});
+
+function openModal(title,body){document.getElementById('modalTitle').innerHTML=title;document.getElementById('modalBody').innerHTML=body;document.getElementById('modal').classList.add('open');enhanceAppSelects(document.getElementById('modalBody'))}
+function closeModal(){closeAppSelect();document.getElementById('modal').classList.remove('open')}
 function uid(){return 'id_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function escAttr(s){return esc(s)}
@@ -5672,6 +6033,7 @@ if('serviceWorker' in navigator&&!isNativeApp()){
 }
 document.body.classList.toggle('native-app',isNativeApp());
 document.documentElement.classList.toggle('native-app',isNativeApp());
+enhanceAppSelects(document);
 renderHome();populateMuscles();updateInstallButton();updateActiveWorkoutChrome();
 if(startupStorageNotice){
  setTimeout(openStartupStorageNotice,180);
