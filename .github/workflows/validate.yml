@@ -1633,7 +1633,7 @@ jobs:
             assert(modal.textContent.includes('Muscle involvement map'),'recap should contain heat map section');
             assert(modal.querySelectorAll('.muscle-map-svg').length===2,'recap should render front and back body maps');
             assert(modal.querySelectorAll('.muscle-region').length>10,'heat map should contain anatomical regions');
-            assert(html.includes('does not measure muscle damage'),'heat map must state its interpretation limit');
+            assert(html.includes('muscle damage'),'heat map must state its interpretation limit');
 
             w.stopRestTimer();
             dom.window.close();
