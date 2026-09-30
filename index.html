@@ -861,8 +861,14 @@ function confirmAction(title,message,callback){
 function runConfirmedAction(){
  const fn=confirmCallback;confirmCallback=null;closeModal();if(fn)fn();
 }
+function isNativeApp(){
+ try{return !!window.Capacitor?.isNativePlatform?.()}catch(e){return false}
+}
+function nativePlatform(){
+ try{return window.Capacitor?.getPlatform?.()||'web'}catch(e){return 'web'}
+}
 function updateInstallButton(){
- const b=document.getElementById('installBtn');if(b)b.classList.toggle('show',!!deferredInstallPrompt);
+ const b=document.getElementById('installBtn');if(b)b.classList.toggle('show',!isNativeApp()&&!!deferredInstallPrompt);
 }
 async function installApp(){
  if(!deferredInstallPrompt){showToast('Install option is not available in this browser yet.');return;}
@@ -872,13 +878,18 @@ async function installApp(){
 }
 function onboarding(){
  openModal('Welcome to Swole Cat',`
- <div class="onboard-hero"><div class="onboard-logo">🐱</div><div class="eyebrow">LOCAL. FAST. YOURS.</div><h1 style="font-size:1.8rem;margin:7px 0">Train, log, progress.</h1><div class="muted">No account, no subscription, no cloud workout profile. Your training data stays on this device.</div></div>
+ <div class="onboard-hero"><div class="onboard-logo">🐱</div><div class="eyebrow">${isNativeApp()?'ANDROID · LOCAL. FAST. YOURS.':'LOCAL. FAST. YOURS.'}</div><h1 style="font-size:1.8rem;margin:7px 0">Train, log, progress.</h1><div class="muted">No account, no subscription, no cloud workout profile. Your training data stays on this device.</div></div>
+ ${isNativeApp()?'<div class="notice"><b>Already use the Swole Cat PWA?</b><br>Android app storage is separate from the browser version. Export a backup from the PWA first, then import it here to bring over your routines, workouts, programs, PRs, preferences, and bodyweight history.</div>':''}
  <div class="onboard-step"><div class="num">1</div><div><b>Build your routines</b><div class="mini">Start from the editable 3-day plan or create your own from the full exercise library.</div></div></div>
  <div class="onboard-step"><div class="num">2</div><div><b>Log what actually happened</b><div class="mini">Weight, reps, optional RIR, substitutions, rest timing, and notes.</div></div></div>
  <div class="onboard-step"><div class="num">3</div><div><b>Beat the right thing next time</b><div class="mini">The coach uses your own history to suggest conservative progression.</div></div></div>
  <div class="field"><label>Your name (optional)</label><input id="onName" value="${escAttr(state.profile.name||'')}" placeholder="Jake"></div>
  <div class="field"><label>Units</label><select id="onUnit"><option value="lb" ${state.profile.unit==='lb'?'selected':''}>Pounds (lb)</option><option value="kg" ${state.profile.unit==='kg'?'selected':''}>Kilograms (kg)</option></select></div>
- <div class="actions"><button class="btn" onclick="finishOnboarding(false)">Start empty</button><button class="btn secondary" onclick="finishOnboarding(true)">Use 3-day starter</button></div>
+ <div class="actions">
+   ${isNativeApp()?'<label class="btn" style="display:inline-block;margin:0">Import existing Swole Cat backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0])" style="display:none"></label>':''}
+   <button class="btn ${isNativeApp()?'secondary':''}" onclick="finishOnboarding(false)">Start empty</button>
+   <button class="btn secondary" onclick="finishOnboarding(true)">Use 3-day starter</button>
+ </div>
  `);
 }
 function finishOnboarding(starter){
@@ -3672,7 +3683,7 @@ function openSettings(){
  <div class="section-title"><h2>Coach behavior</h2></div>
  <div class="notice">The coach uses repeated logged performance, your optional RIR entries, and each exercise's selected goal. Stall and reset flags are intentionally conservative. They are suggestions, and manual session targets always remain available.</div>
  <div class="section-title"><h2>Data safety</h2></div>
- <div class="notice"><b>Progression rule:</b> Double progression is rep-driven. Add reps first, then one configured load step after every programmed working set reaches the top of its rep range. Optional RIR never blocks that earned load increase.<br><br><b>Storage:</b> ${esc(storageHealthText())}<br><b>Data schema:</b> v${DATA_SCHEMA_VERSION}<br><b>Last exported backup:</b> ${state.meta?.lastBackupAt?new Date(state.meta.lastBackupAt).toLocaleString():'Never on this device'}</div>
+ <div class="notice"><b>Progression rule:</b> Double progression is rep-driven. Add reps first, then one configured load step after every programmed working set reaches the top of its rep range. Optional RIR never blocks that earned load increase.<br><br><b>App:</b> ${isNativeApp()?'Android package':'Web / PWA'}<br><b>Storage:</b> ${esc(storageHealthText())}<br><b>Data schema:</b> v${DATA_SCHEMA_VERSION}<br><b>Last exported backup:</b> ${state.meta?.lastBackupAt?new Date(state.meta.lastBackupAt).toLocaleString():'Never on this device'}</div>
  <div class="actions"><button class="btn secondary" onclick="exportBackup()">Export backup</button><label class="btn secondary" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0])" style="display:none"></label>${preImportSnapshotInfo()?'<button class="btn secondary" onclick="restorePreImportSnapshot()">Restore pre-import snapshot</button>':''}</div>
  <div class="native-note" style="margin-top:8px">Imports are validated before replacing your current state. A safety snapshot is created before every successful import so you can roll back if you picked the wrong file.</div>
  <div class="section-title"><h2>Exercise illustrations</h2></div>
@@ -3766,7 +3777,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 window.addEventListener('pagehide',()=>{if(state.activeWorkout)saveActiveWorkout()});
 window.addEventListener('beforeunload',()=>{if(state.activeWorkout)saveActiveWorkout()});
-if('serviceWorker' in navigator){
+if('serviceWorker' in navigator&&!isNativeApp()){
  let swRefreshing=false;
  navigator.serviceWorker.addEventListener('controllerchange',()=>{
    if(swRefreshing)return;
