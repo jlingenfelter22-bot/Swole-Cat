@@ -113,7 +113,7 @@ Areas to evaluate:
 
 ## Phase 3 — Visual Identity Refresh
 
-**Status: Visual identity passes complete through v0.36.0. UI Tuning Pass 1 completed in v0.37.0 from a real-device screen-recording review, including Android system-bar integration, bottom-dock integration, and schematic exercise artwork. UI Tuning Pass 2 completed in v0.38.0 with app-owned selectors and responsive Settings toggles. UI Tuning Pass 3 completed in v0.39.0 with removal of the persistent install control from the header. UI Tuning Pass 4 completed in v0.40.0 with a single contextual pause/resume icon control, true paused-time tracking, and a recognizable gear settings icon. Additional user-directed sizing and micro-UI adjustments remain iterative.**
+**Status: Visual identity passes complete through v0.36.0. UI Tuning Pass 1 completed in v0.37.0 from a real-device screen-recording review, including Android system-bar integration, bottom-dock integration, and schematic exercise artwork. UI Tuning Pass 2 completed in v0.38.0 with app-owned selectors and responsive Settings toggles. UI Tuning Pass 3 completed in v0.39.0 with removal of the persistent install control from the header. UI Tuning Pass 4 completed in v0.40.0 with a single contextual pause/resume icon control, true paused-time tracking, and a recognizable gear settings icon. Additional user-directed sizing and micro-UI adjustments remain iterative. Performance Pass 1 completed in v0.41.0, removing redundant navigation saves, batching continuous-input autosaves, caching unchanged heavy views, reducing Android paint cost, and adding performance regression coverage.**
 
 **Priority: High**
 
@@ -157,6 +157,20 @@ Preserve unless testing shows a real UX problem:
 The visual system should be established before building the workout-completion recap, muscle heat maps, richer history screens, sharing surfaces, and social/group UI. That avoids styling each major new feature twice.
 
 ---
+
+### Performance guardrails
+
+Performance is an ongoing product requirement, not a one-time cleanup.
+
+- [x] Remove redundant synchronous persistence from ordinary navigation
+- [x] Batch rapid weight/reps/notes autosaves while preserving flush-on-navigation/background safety
+- [x] Reuse already-rendered heavy views until persisted state changes
+- [x] Use instant top-level navigation rather than animated page scrolling
+- [x] Add offscreen rendering containment for long exercise/history lists
+- [x] Reduce expensive Android navigation-bar paint effects
+- [x] Add automated performance-behavior regression coverage
+- [ ] Repeat device profiling before major feature milestones and store releases
+
 
 ## Phase 4 — Workout Completion Experience
 
