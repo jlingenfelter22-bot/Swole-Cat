@@ -1051,3 +1051,54 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V36 visual cohesion
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const assert = require('assert');
+          const {JSDOM} = require('jsdom');
+
+          const html = fs.readFileSync('index.html','utf8');
+          const dom = new JSDOM(html,{
+            runScripts:'dangerously',
+            url:'https://swole-cat.test/',
+            pretendToBeVisual:true,
+            beforeParse(window){
+              window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+              window.alert=()=>{};
+              window.confirm=()=>true;
+              window.scrollTo=()=>{};
+            }
+          });
+
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(30);
+            const d=dom.window.document;
+
+            const toast=d.getElementById('toast');
+            assert.equal(toast.getAttribute('role'),'status','toast should expose status semantics');
+            assert.equal(toast.getAttribute('aria-live'),'polite','toast should announce non-urgent UI events');
+
+            const modal=d.getElementById('modal');
+            assert.equal(modal.getAttribute('role'),'dialog','modal should expose dialog semantics');
+            assert.equal(modal.getAttribute('aria-modal'),'true','modal should identify itself as modal');
+            assert.equal(modal.getAttribute('aria-labelledby'),'modalTitle','modal should connect to its visible title');
+
+            assert(html.includes('<meta name="color-scheme" content="dark"'),'app should advertise dark system surfaces');
+            assert(html.includes('content-visibility:auto'),'long lists should use off-screen paint containment');
+            assert(html.includes('@media (hover:none),(pointer:coarse)'),'touch devices should get reduced visual overhead');
+            assert(html.includes('--motion-base:180ms'),'visual system should use a named motion timing');
+
+            dom.window.renderHome();
+            assert(!d.getElementById('homeRoutines').textContent.includes('🏋'),'home empty states should not rely on emoji artwork');
+            dom.window.renderPrograms();
+            assert(!d.getElementById('programList').textContent.includes('▦'),'program empty state should use UI-native glyph');
+
+            dom.window.close();
+            console.log('Swole Cat V36 visual cohesion smoke test PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
