@@ -1523,3 +1523,60 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V44 workout completion recap
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{
+            runScripts:'dangerously',
+            url:'https://swole-cat.test/',
+            pretendToBeVisual:true,
+            beforeParse(window){
+              window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+              window.alert=()=>{};
+              window.confirm=()=>true;
+              window.scrollTo=()=>{};
+            }
+          });
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(60);
+            const w=dom.window;
+            assert.equal(typeof w.workoutRecapHtml,'function','reusable workout recap renderer should exist');
+            assert.equal(typeof w.sessionTotalReps,'function','total-rep helper should exist');
+            assert.equal(typeof w.sessionProgressHighlights,'function','progression comparison helper should exist');
+
+            w.installStarterPlan();
+            const persisted=JSON.parse(w.localStorage.getItem('overload_v3'));
+            const routineId=persisted.routines[0].id;
+            w.startRoutineFresh(routineId);
+            await wait(10);
+            w.updateSet(0,0,'weight','100');
+            w.updateSet(0,0,'reps','10');
+            w.toggleSet(0,0);
+            w.finalizeWorkout(false);
+            await wait(10);
+
+            const modal=w.document.getElementById('modal');
+            const text=modal.textContent;
+            assert(modal.classList.contains('open'),'completion recap should open after finalizing');
+            assert(text.includes('SESSION COMPLETE'),'completion hero should render');
+            assert(text.includes('Exercises'),'exercise count metric should render');
+            assert(text.includes('Working sets'),'working-set metric should render');
+            assert(text.includes('Total reps'),'total-rep metric should render');
+            assert(text.includes('Muscles trained'),'muscle summary should render');
+            assert(text.includes('Progression versus last exposure'),'progression section should render');
+            assert(text.includes('Personal records'),'PR section should render');
+            assert(html.includes('workout-recap-hero'),'premium recap styling should exist');
+
+            w.stopRestTimer();
+            dom.window.close();
+            console.log('Swole Cat V44 workout completion recap PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
