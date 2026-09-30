@@ -24,7 +24,7 @@ Goal: turn the hardened PWA into a reliable Android app while keeping one mainta
 - [ ] Test packaged Android app on real devices
 - [ ] Fix Android-specific navigation, keyboard, back-button, safe-area, status-bar, file import/export, and storage issues
 - [ ] Finalize launcher icon and splash/launch experience
-- [ ] Add explicit app versioning
+- [x] Add explicit app versioning
 - [ ] Create signed release APK/AAB workflow
 - [ ] Document release/update process
 

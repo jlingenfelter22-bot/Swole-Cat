@@ -1,13 +1,17 @@
 {
   "name": "swole-cat",
-  "version": "1.0.0",
+  "version": "0.29.0",
   "private": true,
   "description": "Swole Cat workout tracker PWA and Android app",
   "scripts": {
     "build:web": "node scripts/build-web.mjs",
-    "android:sync": "npm run build:web && npx cap sync android",
-    "android:open": "npm run android:sync && npx cap open android",
-    "android:debug": "npm run build:web && (test -d android || npx cap add android) && npx cap sync android && cd android && ./gradlew assembleDebug"
+    "android:prepare": "node scripts/prepare-android.mjs",
+    "android:sync": "npm run android:prepare",
+    "android:open": "npm run android:prepare && npx cap open android",
+    "android:debug": "node scripts/build-android.mjs debug"
+  },
+  "swoleCat": {
+    "androidVersionCode": 29
   },
   "dependencies": {
     "@capacitor/android": "8.5.2",

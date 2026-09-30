@@ -10,6 +10,7 @@ on:
       - "icon-192.svg"
       - "icon-512.svg"
       - "sw.js"
+      - "assets/**"
       - "package.json"
       - "capacitor.config.json"
       - "scripts/**"
@@ -32,11 +33,14 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install Capacitor
+      - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Build bundled web app
-        run: npm run build:web
+      - name: Read app version
+        id: meta
+        run: |
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          echo "version_code=$(node -p "require('./package.json').swoleCat.androidVersionCode")" >> "$GITHUB_OUTPUT"
 
       - name: Set up Java 21
         uses: actions/setup-java@v5
@@ -53,11 +57,14 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Generate Android project
-        run: npx cap add android
+      - name: Prepare Android project
+        run: npm run android:prepare
 
-      - name: Sync Swole Cat into Android
-        run: npx cap sync android
+      - name: Verify Android version metadata
+        run: |
+          grep -Eq "versionCode[[:space:]]+${{ steps.meta.outputs.version_code }}" android/app/build.gradle
+          grep -Eq "versionName[[:space:]]+\"${{ steps.meta.outputs.version }}\"" android/app/build.gradle
+          grep -F "const APP_VERSION='${{ steps.meta.outputs.version }}';" www/index.html
 
       - name: Build debug APK
         working-directory: android
@@ -66,12 +73,12 @@ jobs:
           ./gradlew assembleDebug --stacktrace
 
       - name: Name APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk swole-cat-debug.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk "swole-cat-v${{ steps.meta.outputs.version }}-debug.apk"
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: Swole-Cat-Android-debug
-          path: swole-cat-debug.apk
+          name: Swole-Cat-Android-v${{ steps.meta.outputs.version }}-debug
+          path: swole-cat-v${{ steps.meta.outputs.version }}-debug.apk
           if-no-files-found: error
           retention-days: 30
