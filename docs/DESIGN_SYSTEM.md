@@ -139,15 +139,15 @@ Completed in v0.34.0:
 - focus/accessibility states
 
 ### Pass 2 — Screen composition polish
-Next:
-- Home
-- Routines / Programs
-- Exercise Library
-- Active Workout
-- Progress
-- History
+Completed in v0.35.0:
+- Home becomes a command dashboard with live local training telemetry
+- Routines / Programs becomes a program matrix with stronger rotation hierarchy
+- Exercise Library becomes a movement database with pure UI vector movement sigils
+- Active Workout becomes a training console with clearer session/target/set hierarchy
+- Progress becomes a telemetry surface for records, workload, consistency, and trends
+- History becomes a chronological session log with a stronger timeline structure
 
-Goal: apply the system intentionally to each screen, improve hierarchy, and remove remaining generic layouts without changing core workflow.
+The screen pass changes composition and hierarchy without changing the underlying workout workflows.
 
 ### Pass 3 — Final cohesion and restraint
 Later:
