@@ -650,7 +650,7 @@ function normalizeState(saved){
  });
  merged.programs=Array.isArray(saved.programs)?saved.programs:[];
  merged.activeProgramId=saved.activeProgramId||null;
- merged.routines.forEach(r=>{if(!Array.isArray(r.exercises))r.exercises=[]});
+ merged.routines.forEach(r=>{if(!Array.isArray(r.exercises))r.exercises=[];r.trainingMode=normalizeTrainingMode(r.trainingMode);r.description=typeof r.description==='string'?r.description:''});
  merged.programs.forEach(p=>{
    p.routineIds=Array.isArray(p.routineIds)?p.routineIds.filter(id=>merged.routines.some(r=>r.id===id)):[];
    p.frequency=Math.min(7,Math.max(1,Number(p.frequency)||3));
@@ -672,9 +672,12 @@ function normalizeState(saved){
      merged.activeWorkout.status='active';
      merged.activeWorkout.lastSavedAt=merged.activeWorkout.lastSavedAt||merged.activeWorkout.startDate||new Date().toISOString();
      merged.activeWorkout.structureDirty=!!merged.activeWorkout.structureDirty;
+     merged.activeWorkout.trainingMode=normalizeTrainingMode(merged.activeWorkout.trainingMode);
      if(!Array.isArray(merged.activeWorkout.exercises))merged.activeWorkout.exercises=[];
      merged.activeWorkout.exercises.forEach(e=>{
        e.supersetId=e.supersetId||null;
+       e.config=isPlainObject(e.config)?e.config:{};
+       e.config.routineMode=normalizeTrainingMode(e.config.routineMode||merged.activeWorkout.trainingMode);
        e.skipped=!!e.skipped;
        if(!Array.isArray(e.sets))e.sets=[];
        e.sets.forEach(set=>{set.type=set.type||'working'});
@@ -951,11 +954,12 @@ function startRoutineFresh(id,programId=null){
  const r=state.routines.find(x=>x.id===id); if(!r)return;
  const now=new Date().toISOString();
  const active={
-   id:uid(),routineId:id,routineName:r.name,programId:programId||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,
+   id:uid(),routineId:id,routineName:r.name,trainingMode:normalizeTrainingMode(r.trainingMode),programId:programId||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,
    exercises:r.exercises.map((re,routineIndex)=>{
      const prev=previousExercise(re.exerciseId);
-     const rec=buildRecommendation({...re,mode:re.mode==='range'?'double':re.mode},prev,re.exerciseId);
-     return {exerciseId:re.exerciseId,routineIndex,config:{trainingGoal:'general',resetPercent:7.5,...re,mode:re.mode==='range'?'double':re.mode},targetOverride:null,supersetId:re.supersetGroup||null,skipped:false,expanded:routineIndex===0,sets:Array.from({length:re.sets},(_,i)=>({
+     const mode=normalizeTrainingMode(r.trainingMode),config={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode};
+     const rec=buildRecommendation(config,prev,re.exerciseId);
+     return {exerciseId:re.exerciseId,routineIndex,config,targetOverride:null,supersetId:re.supersetGroup||null,skipped:false,expanded:routineIndex===0,sets:Array.from({length:re.sets},(_,i)=>({
        weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??re.minReps,done:false,rir:'',type:'working'
      })),notes:''};
    })
@@ -1646,7 +1650,7 @@ function routineCard(r){
  const active=state.activeWorkout?.routineId===r.id;
  const counts=active?activeWorkoutCounts():null;
  return `<div class="card clickable" onclick="${active?'resumeActiveWorkout()':`openRoutine('${r.id}')`}">
-   <div class="row"><div><div class="exercise-name">${esc(r.name)}</div><div class="mini">${active?`${counts.done} of ${counts.total} sets complete · autosaved`:`${r.exercises.length} exercise${r.exercises.length===1?'':'s'}`}</div></div><span class="tag">${active?'● ACTIVE · RESUME ›':'START ›'}</span></div>
+   <div class="row"><div><div class="exercise-name">${esc(r.name)}</div><div class="mini">${esc(trainingModeLabel(r.trainingMode))} · ${active?`${counts.done} of ${counts.total} sets complete · autosaved`:`${r.exercises.length} exercise${r.exercises.length===1?'':'s'}`}</div></div><span class="tag">${active?'● ACTIVE · RESUME ›':'START ›'}</span></div>
    <div class="actions" onclick="event.stopPropagation()">
      <button class="btn small secondary" onclick="editRoutineDetails('${r.id}')">Edit</button>
      <button class="btn small danger" onclick="deleteRoutine('${r.id}')">Delete</button>
@@ -2018,7 +2022,7 @@ function renderRoutines(){
    return `
  <div class="card" style="${active?'border-color:rgba(34,197,94,.42)':''}">
    <div class="row">
-     <div class="grow"><div class="exercise-name">${esc(r.name)}</div><div class="mini">${active?`${counts.done} of ${counts.total} sets complete · active workout is autosaved`:(r.exercises.map(x=>esc(exById(x.exerciseId)?.name||'Unknown')).join(' · ')||'No exercises yet')}</div></div>
+     <div class="grow"><div class="exercise-name">${esc(r.name)}</div><div class="mini">${esc(trainingModeLabel(r.trainingMode))} · ${active?`${counts.done} of ${counts.total} sets complete · active workout is autosaved`:(r.exercises.map(x=>esc(exById(x.exerciseId)?.name||'Unknown')).join(' · ')||'No exercises yet')}</div></div>
      <button class="btn small ${active?'green':''}" onclick="${active?'resumeActiveWorkout()':`openRoutine('${r.id}')`}">${active?'Resume':'Start'}</button>
    </div>
    <div class="actions">${active?'<span class="tag">● ACTIVE</span>':''}<button class="btn small secondary" onclick="editRoutine('${r.id}')">Edit routine</button><button class="btn small danger" onclick="deleteRoutine('${r.id}')">Delete</button></div>
@@ -2073,7 +2077,7 @@ function installStarterPlan(){
 let routinePickerSelection=new Set(),routinePickerCategory='home',routinePickerMovement='';
 
 function newRoutine(id=null){
- const r=id?state.routines.find(x=>x.id===id):{id:uid(),name:'',exercises:[]};
+ const r=id?state.routines.find(x=>x.id===id):{id:uid(),name:'',description:'',trainingMode:'guided',exercises:[]};
  routinePickerSelection=new Set(r.exercises.map(x=>x.exerciseId));
  routinePickerCategory='home'; routinePickerMovement='';
  const body=`<div class="field"><label>Routine name</label><input id="rName" value="${escAttr(r.name)}" placeholder="Push Day"></div>
@@ -2138,7 +2142,7 @@ function saveRoutine(id,editing){
    exerciseId,sets:state.settings.defaultSets,minReps:state.settings.defaultMin,maxReps:state.settings.defaultMax,
    increment:state.settings.defaultIncrement,mode:'double',restSeconds:120
  });
- const obj={...(old||{}),id,name,exercises};
+ const obj={...(old||{}),id,name,trainingMode:normalizeTrainingMode(old?.trainingMode),description:old?.description||'',exercises};
  if(editing) state.routines=state.routines.map(x=>x.id===id?obj:x); else state.routines.push(obj);
  save();closeModal();renderRoutines();renderHome();
  if(exercises.length) editRoutineDetails(id);
@@ -2167,6 +2171,7 @@ function editRoutineDetails(id){
  openModal(`${esc(r.name)} editor`,`
  <div class="field"><label>Routine name</label><input id="routineEditorName" value="${escAttr(r.name||"")}" placeholder="Push Day" data-routine-id="${r.id}" onchange="saveRoutineMeta(this.dataset.routineId)"></div>
  <div class="field"><label>Routine notes <span class="mini">(optional)</span></label><textarea id="routineEditorDescription" placeholder="Goal, split notes, equipment setup..." data-routine-id="${r.id}" onchange="saveRoutineMeta(this.dataset.routineId)">${esc(r.description||"")}</textarea></div>
+ <div class="field"><label>Training mode</label><select id="routineEditorTrainingMode" data-routine-id="${r.id}" onchange="saveRoutineMeta(this.dataset.routineId);updateRoutineModeHelp(this.value)"><option value="guided" ${normalizeTrainingMode(r.trainingMode)==="guided"?"selected":""}>Guided Progressive Overload</option><option value="strength" ${normalizeTrainingMode(r.trainingMode)==="strength"?"selected":""}>Strength Focus</option><option value="track" ${normalizeTrainingMode(r.trainingMode)==="track"?"selected":""}>Track Only / Standard Workout</option></select><div id="routineModeHelp" class="native-note" style="margin-top:6px">${esc(trainingModeDescription(r.trainingMode))}</div></div>
  <div class="notice">Reorder exercises, edit progression, duplicate movements, remove them, or swap to a recommended substitute without rebuilding the routine.</div>
  <div id="routineEditorList" class="routine-edit-list" style="margin-top:12px">${routineEditorHtml(r)}</div>
  <div class="actions"><button class="btn secondary" onclick="openRoutineExerciseAdder('${id}')">+ Add exercise</button><button class="btn secondary" onclick="duplicateRoutine('${id}')">Duplicate routine</button><button class="btn" onclick="saveRoutineEditor('${id}')">Done</button><button class="btn danger" onclick="deleteRoutine('${id}')">Delete routine</button></div>`);
@@ -2342,8 +2347,10 @@ function saveRoutineMeta(id){
  const r=state.routines.find(x=>x.id===id);if(!r)return;
  const name=document.getElementById('routineEditorName');
  const description=document.getElementById('routineEditorDescription');
+ const trainingMode=document.getElementById('routineEditorTrainingMode');
  if(name)r.name=name.value.trim()||'Untitled Workout';
  if(description)r.description=description.value.trim();
+ if(trainingMode)r.trainingMode=normalizeTrainingMode(trainingMode.value);
  save();
 }
 function uniqueRoutineName(sourceName){
@@ -2362,6 +2369,7 @@ function duplicateRoutine(id){
  save();closeModal();renderRoutines();renderHome();
  showToast('Created '+copy.name);
 }
+function updateRoutineModeHelp(mode){const el=document.getElementById('routineModeHelp');if(el)el.textContent=trainingModeDescription(mode)}
 function saveRoutineEditor(id){saveRoutineMeta(id);closeModal();renderRoutines();renderHome();}
 
 function openRoutine(id,programId=null){
@@ -2418,6 +2426,17 @@ function progressEverySetTarget(previousReps,minReps,maxReps,setCount){
  });
 }
 
+function normalizeTrainingMode(mode){return ['guided','strength','track'].includes(mode)?mode:'guided'}
+function trainingModeLabel(mode){
+ mode=normalizeTrainingMode(mode);
+ return mode==='strength'?'Strength Focus':mode==='track'?'Track Only':'Guided Overload';
+}
+function trainingModeDescription(mode){
+ mode=normalizeTrainingMode(mode);
+ if(mode==='strength')return 'Load-priority progression. After you complete the programmed minimum reps across all working sets, Swole Cat can move the configured weight step next time.';
+ if(mode==='track')return 'Log what you do without automatic progression targets or coach pressure. Previous numbers are carried forward only as a reference.';
+ return 'Rep-first double progression. Build reps through the programmed range, then add the configured weight step after all working sets reach the top.';
+}
 function goalLabel(goal){
  return goal==='strength'?'Strength':goal==='hypertrophy'?'Muscle growth':'General';
 }
@@ -2434,6 +2453,7 @@ function recentExerciseSessions(exerciseId,n=4){
  return exerciseHistory(exerciseId).slice(-n);
 }
 function coachSignal(exerciseId,config){
+ if(normalizeTrainingMode(config.routineMode)==='track')return null;
  const hist=recentExerciseSessions(exerciseId,4);
  if(hist.length<2)return {level:'info',title:'Building baseline',text:`Keep logging this movement. The coach waits for repeated sessions before calling anything a stall.`,stalled:false,canReset:false};
  const scores=hist.map(h=>({
@@ -2470,7 +2490,7 @@ function coachSignal(exerciseId,config){
 }
 function workoutCoachSignal(){
  const w=state.activeWorkout;if(!w)return null;
- const signals=w.exercises.filter(e=>!e.skipped).map(e=>coachSignal(e.exerciseId,e.config));
+ const signals=w.exercises.filter(e=>!e.skipped).map(e=>coachSignal(e.exerciseId,e.config)).filter(Boolean);
  const reset=signals.filter(x=>x.canReset).length,stalls=signals.filter(x=>x.stalled).length;
  if(reset>=2)return {level:'reset',text:`${reset} exercises are showing repeated high-effort stalls. A lighter session may be worth considering, but it is optional.`};
  if(stalls>=3)return {level:'watch',text:`Several movements are flat right now. That can happen normally. Watch the next session before making large changes.`};
@@ -2519,16 +2539,33 @@ function applyLightSession(){
 function buildRecommendation(config,prev,exerciseId=null){
  const done=progressionSets(prev);
  const goal=config.trainingGoal||'general';
+ const routineMode=normalizeTrainingMode(config.routineMode);
  const avgRIR=averageLoggedRIR(done);
  if(!done.length){
-   return {status:'baseline',weight:0,weights:Array(config.sets).fill(0),targetReps:Array(config.sets).fill(config.minReps),
-     headline:'Set your starting weight',detail:`Choose a clean starting load for about ${config.minReps}-${config.maxReps} reps. ${goalRIRText(goal)}`};
+   const mode=normalizeTrainingMode(config.routineMode);
+   const headline=mode==='track'?'Log your starting sets':mode==='strength'?'Choose a strength starting load':'Set your starting weight';
+   const detail=mode==='track'?`No automatic progression target is active. Log the weight and reps you actually perform.`:mode==='strength'?`Choose a controlled load you can perform for at least ${config.minReps} clean reps across the programmed sets. Once the minimum is established, Strength Focus can prioritize small load increases.`:`Choose a clean starting load for about ${config.minReps}-${config.maxReps} reps. ${goalRIRText(goal)}`;
+   return {status:'baseline',weight:0,weights:Array(config.sets).fill(0),targetReps:Array(config.sets).fill(config.minReps),headline,detail};
  }
  const weights=done.map(s=>Math.max(0,finiteNumber(s.weight,0)));
  const reps=done.map(s=>Math.max(0,finiteNumber(s.reps,0)));
  const sameWeight=weights.every(w=>w===weights[0]);
  const baseWeight=weights[0]||0;
  const total=reps.reduce((a,b)=>a+b,0);
+ if(routineMode==='track'){
+   return {status:'track',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),headline:'Track your working sets',detail:`Previous session: ${done.map(s=>`${s.weight}×${s.reps}`).join(' · ')}. No automatic progression target is active for this routine.`};
+ }
+ if(routineMode==='strength'){
+   const enoughSets=done.length>=config.sets;
+   const completedMinimum=enoughSets&&done.slice(0,config.sets).every(s=>finiteNumber(s.reps,0)>=config.minReps);
+   const inc=Math.max(0,finiteNumber(config.increment,0));
+   if(completedMinimum&&inc>0){
+     const nextWeights=Array.from({length:config.sets},(_,i)=>roundLoad((weights[i]??baseWeight)+inc));
+     return {status:'load',weight:nextWeights[0]||0,weights:nextWeights,targetReps:Array(config.sets).fill(config.minReps),headline:`Add ${inc} ${state.profile.unit} next time`,detail:`You completed at least ${config.minReps} reps across all programmed working sets. Strength Focus prioritizes a small load increase, then asks you to re-establish the bottom of the rep range.`};
+   }
+   const holdWeights=Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight);
+   return {status:'hold',weight:baseWeight,weights:holdWeights,targetReps:Array(config.sets).fill(config.minReps),headline:`Hold the load and own ${config.minReps}+ reps`,detail:`Strength Focus is load-priority. Keep the current working weights until every programmed set reaches at least ${config.minReps} clean reps, then the configured load step becomes available.`};
+ }
  if(config.mode==='manual'){
    return {status:'manual',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),
      headline:'Repeat or adjust manually',detail:`Last session: ${done.map(s=>`${s.weight}×${s.reps}`).join(' · ')}`};
@@ -3115,7 +3152,7 @@ function renderWorkout(){
  if(!w){document.getElementById('workoutArea').innerHTML='<div class="empty">No active workout.</div>';return;}
  ensureExerciseAccordion();
  const counts=workoutCounts(),pct=counts.total?Math.round(counts.done/counts.total*100):0,workoutCoach=workoutCoachSignal();
- const html=`<div class="workout-title"><div><div class="eyebrow"><span class="active-pulse"></span>Active workout</div><h1 style="font-size:1.7rem">${esc(w.routineName)}</h1><div class="mini">${counts.activeExercises} active exercise${counts.activeExercises===1?'':'s'}${counts.skipped?` · ${counts.skipped} skipped`:''} · ${counts.total} programmed sets</div><div class="autosave-note">✓ Changes save automatically on this device</div></div><button class="btn small danger" onclick="cancelWorkout()">Cancel</button></div>
+ const html=`<div class="workout-title"><div><div class="eyebrow"><span class="active-pulse"></span>Active workout · ${esc(trainingModeLabel(w.trainingMode))}</div><h1 style="font-size:1.7rem">${esc(w.routineName)}</h1><div class="mini">${counts.activeExercises} active exercise${counts.activeExercises===1?'':'s'}${counts.skipped?` · ${counts.skipped} skipped`:''} · ${counts.total} programmed sets</div><div class="autosave-note">✓ Changes save automatically on this device</div></div><button class="btn small danger" onclick="cancelWorkout()">Cancel</button></div>
  <div class="workout-overview">
    <div class="row"><div><b>${counts.done} of ${counts.total} sets complete</b><div class="mini">Tap an exercise to open the full sets and coaching. Use Manage Workout to reorder, skip, or remove movements.</div></div><span class="tag">${pct}%</span></div>
    <div class="actions" style="margin-top:9px"><button class="btn small secondary" onclick="openWorkoutStructureEditor()">☰ Manage Workout</button></div>
@@ -3149,7 +3186,7 @@ function renderWorkout(){
     </div>
     <div class="exercise-expanded-content">
       <div class="targetbox"><div class="eyebrow">SESSION GOAL</div><div class="exercise-name" style="margin-top:5px">${esc(e.targetOverride?`${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`:rec.headline)}</div><div class="mini" style="margin-top:5px">${esc(e.targetOverride?`Session-only ${e.targetOverride.reason||'override'}. Routine progression is unchanged.`:rec.detail)}</div>${plateText?`<div class="plates">🏋 ${esc(plateText)}</div>`:''}${e.targetOverride?`<div class="override-note">Manual/session target active</div>`:''}</div>
-      <div class="coachbox ${coach.level==='info'?'':coach.level}"><div class="coach-title">${esc(coach.title)}</div><div class="coach-text">${esc(coach.text)}</div>${coach.canReset&&!e.targetOverride?`<div class="actions" style="margin-top:8px"><button class="btn small secondary" onclick="applyCoachReset(${ei})">Apply ${coach.resetPercent}% reset for today</button></div>`:''}</div>
+      ${coach?`<div class="coachbox ${coach.level==='info'?'':coach.level}"><div class="coach-title">${esc(coach.title)}</div><div class="coach-text">${esc(coach.text)}</div>${coach.canReset&&!e.targetOverride?`<div class="actions" style="margin-top:8px"><button class="btn small secondary" onclick="applyCoachReset(${ei})">Apply ${coach.resetPercent}% reset for today</button></div>`:''}</div>`:''}
       <div class="toolrow">${warmups.length?`<button class="toolchip" onclick="openWarmupGuide(${ei})">Warm-up guide</button>`:''}<button class="toolchip" onclick="openTargetOverride(${ei})">Override target</button><button class="toolchip" onclick="openWorkoutSubstitute(${ei})">Substitute</button><button class="toolchip" onclick="openSupersetPicker(${ei})">⚡ ${superset?`Superset ${superset.label}`:'Superset'}</button><span class="toolchip">${e.config.restSeconds||120}s rest</span></div>
       ${superset?`<div class="superset-note"><b>Superset ${superset.label}</b> · ${esc(supersetNames(superset.id))}<br>Rotate through working sets, then rest after the round.</div>`:''}
     <div class="live-body">
@@ -3281,7 +3318,7 @@ function finalizeWorkout(updateRoutine=false){
  if(updateRoutine)syncActiveWorkoutStructureToRoutine();
  closeModal();
  const end=new Date(),duration=Math.max(0,Math.round((end-new Date(w.startDate))/60000));
- const session={id:w.id,routineId:w.routineId,routineName:w.routineName,programId:w.programId||null,status:'finished',date:end.toISOString(),startDate:w.startDate,durationMinutes:duration,exercises:w.exercises};
+ const session={id:w.id,routineId:w.routineId,routineName:w.routineName,trainingMode:normalizeTrainingMode(w.trainingMode),programId:w.programId||null,status:'finished',date:end.toISOString(),startDate:w.startDate,durationMinutes:duration,exercises:w.exercises};
  state.sessions.push(session);
  advanceProgramAfterWorkout(session);
  state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();haptic([40,45,100]);renderHome();go('home');
