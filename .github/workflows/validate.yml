@@ -1335,15 +1335,38 @@ jobs:
             w.updateSet(0,0,'weight','123');
             const immediateWeight=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout.exercises[0].sets[0].weight;
             assert.equal(immediateWeight,beforeWeight,'continuous input should not synchronously rewrite local storage');
-            await wait(190);
+            await wait(270);
             const persistedWeight=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout.exercises[0].sets[0].weight;
             assert.equal(Number(persistedWeight),123,'batched autosave should persist shortly after input settles');
 
-            // If the user navigates before the debounce ends, pending data must flush safely.
+            // Navigation should paint first instead of forcing a synchronous storage flush.
             w.updateSet(0,0,'reps','11');
+            const repsBeforeNav=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout.exercises[0].sets[0].reps;
             w.go('home');
-            const flushedReps=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout.exercises[0].sets[0].reps;
-            assert.equal(Number(flushedReps),11,'navigation should flush genuinely pending workout edits');
+            const repsImmediatelyAfterNav=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout.exercises[0].sets[0].reps;
+            assert.equal(Number(repsImmediatelyAfterNav),Number(repsBeforeNav),'navigation should not block on pending storage writes');
+            await wait(270);
+            const repsAfterDebounce=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout.exercises[0].sets[0].reps;
+            assert.equal(Number(repsAfterDebounce),11,'pending workout edits should still persist after navigation');
+
+            // Exercise accordion changes should update existing DOM without rebuilding the workout.
+            w.resumeActiveWorkout();
+            await wait(10);
+            let workoutRenders=0;
+            const originalRenderWorkout=w.renderWorkout;
+            w.renderWorkout=function(){workoutRenders++;return originalRenderWorkout()};
+            w.toggleExercisePanel(0);
+            assert.equal(workoutRenders,0,'accordion toggle should not rerender the entire workout');
+            const firstCard=w.document.getElementById('workoutExercise-0');
+            assert(firstCard.classList.contains('collapsed'),'accordion DOM should update directly');
+
+            // Micro-step buttons should update the input directly without a whole-workout render.
+            w.toggleExercisePanel(0);
+            const weightInput=w.document.querySelector('#workoutExercise-0 .set-card[data-set-index="0"] input[aria-label="weight"]');
+            const beforeStep=Number(weightInput.value||0);
+            w.changeSetValue(0,0,'weight',5);
+            assert.equal(workoutRenders,0,'weight micro-step should not rerender the entire workout');
+            assert.equal(Number(weightInput.value),beforeStep+5,'weight micro-step should repaint the affected input immediately');
 
             assert(html.includes('content-visibility:auto'),'long lists should use offscreen rendering containment');
             assert(html.includes('.native-app nav'),'native navigation should have Android-specific paint tuning');
