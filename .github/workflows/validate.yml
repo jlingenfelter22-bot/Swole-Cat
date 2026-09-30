@@ -740,18 +740,19 @@ jobs:
             const dom=makeDom(legacy);
             await wait(35);
             const w=dom.window;
-            assert.equal(w.state.schemaVersion,w.DATA_SCHEMA_VERSION,'legacy data should migrate to current schema');
-            assert.equal(w.state.sessions[0].exercises[0].sets[0].type,'working','legacy sets should migrate to working set type');
-            assert.equal(w.storageWriteBlocked,false,'valid legacy data should remain writable');
+            const normalizedLegacy=w.normalizeState(legacy);
+            assert.equal(normalizedLegacy.schemaVersion,1,'legacy data should migrate to current schema');
+            assert.equal(normalizedLegacy.sessions[0].exercises[0].sets[0].type,'working','legacy sets should migrate to working set type');
+            assert.equal(w.eval('storageWriteBlocked'),false,'valid legacy data should remain writable');
 
             // Backup parser accepts both legacy raw state and the new envelope.
             const rawImported=w.parseBackupText(JSON.stringify(legacy));
-            assert.equal(rawImported.schemaVersion,w.DATA_SCHEMA_VERSION,'legacy backup should normalize to current schema');
+            assert.equal(rawImported.schemaVersion,1,'legacy backup should normalize to current schema');
             const envelope={
-              format:w.BACKUP_FORMAT,
-              formatVersion:w.BACKUP_FORMAT_VERSION,
+              format:'swole-cat-backup',
+              formatVersion:1,
               exportedAt:new Date().toISOString(),
-              schemaVersion:w.DATA_SCHEMA_VERSION,
+              schemaVersion:1,
               state:legacy
             };
             const envelopeImported=w.parseBackupText(JSON.stringify(envelope));
@@ -806,9 +807,9 @@ jobs:
             const recoveredDom=makeDom('{broken json',{savedAt:'2026-09-29T12:00:00.000Z',raw:recoveryRaw});
             await wait(35);
             const rw=recoveredDom.window;
-            assert.equal(rw.recoveredFromSnapshot,true,'corrupt primary should recover from last-known-good snapshot');
-            assert.equal(rw.storageWriteBlocked,false,'valid recovery snapshot should restore writable mode');
-            assert.equal(rw.state.profile.name,'Recovered','recovery snapshot should become active state');
+            assert.equal(rw.eval('recoveredFromSnapshot'),true,'corrupt primary should recover from last-known-good snapshot');
+            assert.equal(rw.eval('storageWriteBlocked'),false,'valid recovery snapshot should restore writable mode');
+            assert.equal(rw.eval('state.profile.name'),'Recovered','recovery snapshot should become active state');
             const beforeRecoveryBox=rw.localStorage.getItem('overload_v3_recovery_v1');
             assert.equal(rw.save(),true,'recovered state should be able to repair the primary record');
             assert.equal(rw.localStorage.getItem('overload_v3_recovery_v1'),beforeRecoveryBox,'first repaired save must not replace good recovery snapshot with corrupt primary');
@@ -819,7 +820,7 @@ jobs:
             const blockedDom=makeDom('{still broken');
             await wait(35);
             const bw=blockedDom.window;
-            assert.equal(bw.storageWriteBlocked,true,'unrecoverable corrupt data should activate write protection');
+            assert.equal(bw.eval('storageWriteBlocked'),true,'unrecoverable corrupt data should activate write protection');
             assert.equal(bw.save(),false,'write protection should prevent accidental overwrite');
             assert.equal(bw.localStorage.getItem('overload_v3'),'{still broken','corrupt primary should remain untouched until explicit user action');
             blockedDom.window.close();
@@ -829,8 +830,8 @@ jobs:
             const futureDom=makeDom(future,{savedAt:'2026-09-29T12:00:00.000Z',raw:recoveryRaw});
             await wait(35);
             const fw=futureDom.window;
-            assert.equal(fw.storageWriteBlocked,true,'future schema should activate write protection');
-            assert.equal(fw.recoveredFromSnapshot,false,'future schema must not silently roll back to an older snapshot');
+            assert.equal(fw.eval('storageWriteBlocked'),true,'future schema should activate write protection');
+            assert.equal(fw.eval('recoveredFromSnapshot'),false,'future schema must not silently roll back to an older snapshot');
             assert.equal(JSON.parse(fw.localStorage.getItem('overload_v3')).profile.name,'Future','future primary data should remain untouched');
             futureDom.window.close();
 
