@@ -189,3 +189,16 @@ Completed in v0.37.0 from the September 30 device screen-recording review:
 - existing HUD details, screen compositions, workout flow, and visual identity remain intact
 
 Further tuning should be based on the next real-device review and should target specific sizing, spacing, density, or component placement issues rather than changing the established visual direction.
+
+
+### Tuning Pass 2 — Custom selectors and settings controls
+Completed in v0.38.0 from direct device screenshots:
+
+- all native HTML select controls are enhanced into a reusable Swole Cat selector component
+- Android no longer shows the default gray platform option popup for app-owned dropdown fields
+- custom selector uses a branded in-app option sheet with current selection state, large touch targets, and keyboard/escape behavior
+- original select elements remain as hidden state sources so existing save logic and workout behavior remain unchanged
+- dynamic modal fields such as Program Training Mode and Routine Training Mode are enhanced automatically
+- active-workout Set Type uses a compact variant so workout cards do not become oversized
+- Settings Haptic Feedback and Keep Screen Awake rows use a fixed switch column so switches cannot be squeezed beyond the card edge
+- toggle knobs are clipped safely inside their switch track at narrow Android widths
