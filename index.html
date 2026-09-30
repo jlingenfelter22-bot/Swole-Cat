@@ -650,7 +650,7 @@ function normalizeState(saved){
  });
  merged.programs=Array.isArray(saved.programs)?saved.programs:[];
  merged.activeProgramId=saved.activeProgramId||null;
- merged.routines.forEach(r=>{if(!Array.isArray(r.exercises))r.exercises=[];r.trainingMode=normalizeTrainingMode(r.trainingMode);r.description=typeof r.description==='string'?r.description:''});
+ merged.routines.forEach(r=>{if(!Array.isArray(r.exercises))r.exercises=[];r.trainingMode=normalizeTrainingMode(r.trainingMode);r.description=typeof r.description==='string'?r.description:'';r.archivedAt=typeof r.archivedAt==='string'&&r.archivedAt?r.archivedAt:null});
  merged.programs.forEach(p=>{
    p.trainingMode=normalizeProgramTrainingMode(p.trainingMode);
    p.routineIds=Array.isArray(p.routineIds)?p.routineIds.filter(id=>merged.routines.some(r=>r.id===id)):[];
@@ -1555,7 +1555,7 @@ function syncProgramDraftInputs(){
 }
 function newProgram(id=null){
  const existing=id?programById(id):null;
- if(!existing&&!state.routines.length){showToast('Create a routine first');return}
+ if(!existing&&!activeRoutines().length){showToast('Create or restore a routine first');return}
  const nextId=existing?.routineIds?.[existing.nextIndex]||null;
  programDraft=existing?JSON.parse(JSON.stringify(existing)):{id:uid(),name:'',routineIds:[],frequency:3,preferredDays:[],trainingMode:'inherit',nextIndex:0};
  programDraft.trainingMode=normalizeProgramTrainingMode(programDraft.trainingMode);
@@ -1565,7 +1565,7 @@ function newProgram(id=null){
 function renderProgramEditor(){
  if(!programDraft)return;
  const selected=programDraft.routineIds.map((id,i)=>({r:state.routines.find(x=>x.id===id),i})).filter(x=>x.r);
- const available=state.routines.filter(r=>!programDraft.routineIds.includes(r.id));
+ const available=activeRoutines().filter(r=>!programDraft.routineIds.includes(r.id));
  openModal(programById(programDraft.id)?'Edit program':'New program',`
    <div class="field"><label>Program name</label><input id="programName" value="${escAttr(programDraft.name||'')}" placeholder="Full Body Program"></div>
    <div class="field"><label>Program training mode</label><select id="programTrainingMode"><option value="inherit" ${normalizeProgramTrainingMode(programDraft.trainingMode)==='inherit'?'selected':''}>Use each routine’s mode</option><option value="guided" ${programDraft.trainingMode==='guided'?'selected':''}>Guided Progressive Overload</option><option value="strength" ${programDraft.trainingMode==='strength'?'selected':''}>Strength Focus</option><option value="track" ${programDraft.trainingMode==='track'?'selected':''}>Track Only / Standard Workout</option></select><div class="native-note" style="margin-top:6px">A program override applies only when a workout is started through this program. Manual routine starts keep the routine’s own mode.</div></div>
@@ -1644,9 +1644,9 @@ function renderHome(){
  }
  updateActiveWorkoutChrome();
  renderActiveProgramHome();
- const wrap=document.getElementById('homeRoutines');
- if(!state.routines.length) wrap.innerHTML=`<div class="empty"><div class="empty-illustration">🏋</div><strong>No routines yet</strong>Build your own workout or install the editable 3-day starter above.</div>`;
- else wrap.innerHTML=state.routines.slice(0,4).map(r=>routineCard(r)).join('');
+ const wrap=document.getElementById('homeRoutines'),homeRoutineList=activeRoutines();
+ if(!homeRoutineList.length) wrap.innerHTML=`<div class="empty"><div class="empty-illustration">🏋</div><strong>No active routines</strong>Build a workout, restore an archived routine, or install the editable 3-day starter.</div>`;
+ else wrap.innerHTML=homeRoutineList.slice(0,4).map(r=>routineCard(r)).join('');
  const recent=document.getElementById('recentProgress');
  const s=state.sessions.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4);
  if(!s.length) recent.innerHTML=`<div class="empty"><div class="empty-illustration">↗</div><strong>Your progress starts with workout one</strong>PRs, strength trends, and recent sessions will show here.</div>`;
@@ -1660,7 +1660,7 @@ function routineCard(r){
    <div class="row"><div><div class="exercise-name">${esc(r.name)}</div><div class="mini">${esc(trainingModeLabel(r.trainingMode))} · ${active?`${counts.done} of ${counts.total} sets complete · autosaved`:`${r.exercises.length} exercise${r.exercises.length===1?'':'s'}`}</div></div><span class="tag">${active?'● ACTIVE · RESUME ›':'START ›'}</span></div>
    <div class="actions" onclick="event.stopPropagation()">
      <button class="btn small secondary" onclick="editRoutineDetails('${r.id}')">Edit</button>
-     <button class="btn small danger" onclick="deleteRoutine('${r.id}')">Delete</button>
+     <button class="btn small secondary" onclick="archiveRoutine('${r.id}')">Archive</button>
    </div>
  </div>`;
 }
@@ -2020,6 +2020,9 @@ function catExerciseThumbnail(ex){
 }
 function equipmentIcon(e){return {'barbell':'🏋','dumbbell':'◐','machine':'⚙','cable':'⌁','bodyweight':'◆','smith machine':'▥','kettlebell':'●','landmine':'◒','trap bar':'⬡','sled':'▰','plate':'◉'}[e]||'●'}
 
+function routineIsArchived(r){return !!r?.archivedAt}
+function activeRoutines(){return state.routines.filter(r=>!routineIsArchived(r))}
+function archivedRoutines(){return state.routines.filter(r=>routineIsArchived(r))}
 function renderRoutines(){
  renderPrograms();
  const el=document.getElementById('routineList');
@@ -2039,7 +2042,7 @@ function renderRoutines(){
 }
 function installStarterPlan(){
  const names=['Full Body A','Full Body B','Full Body C'];
- const existing=names.map(n=>state.routines.find(r=>r.name===n));
+ const existing=names.map(n=>activeRoutines().find(r=>r.name===n));
  const ensureProgram=(routines)=>{
    const ids=routines.map(r=>r.id);
    let p=state.programs.find(x=>x.name==='3-Day Full Body');
@@ -2381,6 +2384,7 @@ function saveRoutineEditor(id){saveRoutineMeta(id);closeModal();renderRoutines()
 
 function openRoutine(id,programId=null){
  const r=state.routines.find(x=>x.id===id);if(!r)return;
+ if(routineIsArchived(r)){showToast('Restore this routine before starting it');return}
  if(state.activeWorkout){
    if(state.activeWorkout.routineId===id){resumeActiveWorkout();return}
    const ac=activeWorkoutCounts();
