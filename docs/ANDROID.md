@@ -5,8 +5,8 @@ Swole Cat uses Capacitor so the PWA and Android app share the same HTML, CSS, Ja
 ## Package
 
 - App name: Swole Cat
-- Current app version: `0.37.0`
-- Android version code: `37`
+- Current app version: `0.38.0`
+- Android version code: `38`
 - Android application ID: `com.jlingenfelter.swolecat`
 - Capacitor: 8.5.2
 - Minimum supported Android version is determined by Capacitor 8.
@@ -39,10 +39,10 @@ The debug APK is written to:
 
 `.github/workflows/android.yml` builds a versioned debug APK from `main` whenever Android/web packaging files change, and can also be run manually.
 
-For v0.37.0 the artifact/file naming is:
+For v0.38.0 the artifact/file naming is:
 
-- Artifact: `Swole-Cat-Android-v0.37.0-debug`
-- APK: `swole-cat-v0.37.0-debug.apk`
+- Artifact: `Swole-Cat-Android-v0.38.0-debug`
+- APK: `swole-cat-v0.38.0-debug.apk`
 
 The workflow verifies that the generated Android `versionName`, Android `versionCode`, and bundled app UI version all match the repository metadata before compiling.
 
