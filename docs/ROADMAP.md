@@ -225,7 +225,9 @@ The summary should use the refreshed Swole Cat visual system and feel like a pre
 
 **v0.45.0:** Structured muscle metadata + front/back heat-map foundation completes the Phase 4 recap. Heat intensity is based on transparent primary/secondary set-equivalent weighting and explicitly does not claim muscle damage or recovery state.
 
-**v0.46.0:** Heat Map Visual Redesign replaces the prototype body polygons with cleaner front/back anatomy, readable separated muscle regions, a gray → yellow → orange → red involvement scale, and restrained cyberpunk Swolecat framing while preserving the same transparent scoring engine.
+**v0.46.0:** Heat Map Visual Redesign introduced a clearer involvement scale and Swolecat framing, but real-device review showed the hand-built body still read too much like a segmented mannequin.
+
+**v0.46.1:** Anatomical heat-map hotfix replaces the hand-built body with granular front/back anatomical SVG path data adapted from the Apache-2.0 `body-muscles` project. Swolecat keeps its own scoring, colors, legend, and cyberpunk presentation while using a substantially more recognizable anatomical base.
 
 ---
 
