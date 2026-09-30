@@ -1276,3 +1276,81 @@ jobs:
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
 
+
+
+      - name: Smoke test V41 performance behavior
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const assert = require('assert');
+          const {JSDOM} = require('jsdom');
+
+          const html = fs.readFileSync('index.html','utf8');
+          let lastScroll=null;
+          const dom = new JSDOM(html,{
+            runScripts:'dangerously',
+            url:'https://swole-cat.test/',
+            pretendToBeVisual:true,
+            beforeParse(window){
+              window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+              window.alert=()=>{};
+              window.confirm=()=>true;
+              window.scrollTo=(opts)=>{lastScroll=opts};
+            }
+          });
+
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(45);
+            const w=dom.window;
+
+            // Warm navigation must not persist unchanged state.
+            const savedBefore=JSON.parse(w.localStorage.getItem('overload_v3')).meta?.lastSavedAt||null;
+            w.go('routines');
+            w.go('home');
+            const savedAfter=JSON.parse(w.localStorage.getItem('overload_v3')).meta?.lastSavedAt||null;
+            assert.equal(savedAfter,savedBefore,'plain tab navigation should not write app state');
+            assert.equal(lastScroll?.behavior,'auto','top-level navigation should scroll instantly');
+
+            // Expensive views should render once while state is unchanged.
+            let exerciseRenders=0;
+            const originalRenderExercises=w.renderExercises;
+            w.renderExercises=function(){exerciseRenders++;return originalRenderExercises()};
+            w.go('exercises');
+            w.go('history');
+            w.go('exercises');
+            assert.equal(exerciseRenders,1,'unchanged exercise view should reuse its rendered DOM');
+
+            // A real state save invalidates the cached view.
+            w.installStarterPlan();
+            w.go('home');
+            w.go('exercises');
+            assert.equal(exerciseRenders,2,'state changes should invalidate cached navigation views');
+
+            // Continuous typing should remain in memory briefly, then autosave.
+            const state=JSON.parse(w.localStorage.getItem('overload_v3'));
+            w.openRoutine(state.routines[0].id);
+            await wait(10);
+            const beforeWeight=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout.exercises[0].sets[0].weight;
+            w.updateSet(0,0,'weight','123');
+            const immediateWeight=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout.exercises[0].sets[0].weight;
+            assert.equal(immediateWeight,beforeWeight,'continuous input should not synchronously rewrite local storage');
+            await wait(190);
+            const persistedWeight=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout.exercises[0].sets[0].weight;
+            assert.equal(Number(persistedWeight),123,'batched autosave should persist shortly after input settles');
+
+            // If the user navigates before the debounce ends, pending data must flush safely.
+            w.updateSet(0,0,'reps','11');
+            w.go('home');
+            const flushedReps=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout.exercises[0].sets[0].reps;
+            assert.equal(Number(flushedReps),11,'navigation should flush genuinely pending workout edits');
+
+            assert(html.includes('content-visibility:auto'),'long lists should use offscreen rendering containment');
+            assert(html.includes('.native-app nav'),'native navigation should have Android-specific paint tuning');
+            assert(html.includes('backdrop-filter:none!important'),'native dock blur should be disabled for cheaper paint');
+
+            dom.window.close();
+            console.log('Swole Cat V41 performance behavior PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
