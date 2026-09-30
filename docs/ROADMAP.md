@@ -285,6 +285,33 @@ Coach Swole Cat should then ask only for missing information that materially cha
 - training mode / goal
 - optional exercise dislikes, favorites, or limitations already stored in Swole Cat
 
+### Locked: Evidence hierarchy
+Coach Swole Cat should not invent programming rules or treat a single exercise as universally "best."
+
+The recommendation engine should use a documented evidence hierarchy:
+1. Current major position stands and consensus guidance from organizations such as ACSM and NSCA.
+2. High-quality systematic reviews and meta-analyses of resistance-training variables.
+3. Well-supported exercise-science principles encoded as explicit local rules.
+4. Exercise-specific metadata and biomechanics used for contextual ranking, not as unsupported certainty.
+5. User-specific history, equipment, preferences, and available time used to personalize within those evidence-backed boundaries.
+
+The app should store the source/rationale behind major programming rules so they can be audited and updated as evidence changes.
+
+For hypertrophy-oriented generation, the engine should reason about variables such as:
+- weekly set volume per muscle group
+- load/rep ranges that can produce hypertrophy
+- proximity to failure / effort targets where supported
+- rest intervals
+- frequency across a multi-day plan
+- exercise order and movement balance
+- available range of motion
+- exercise redundancy
+- session-duration constraints
+
+For strength-oriented generation, the engine should separately weight variables such as heavier loading, lower rep targets, exercise specificity, longer rest, and exercise order.
+
+User-entered working weight remains user-controlled. When sufficient workout history exists, Swole Cat may prefill or suggest starting loads from the user's own prior performance and progression data rather than estimating a person's strength from population averages.
+
 ### Locked: Deterministic local builder first
 The first version should **not require a cloud AI model**.
 
