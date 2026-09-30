@@ -113,7 +113,7 @@ Areas to evaluate:
 
 ## Phase 3 — Visual Identity Refresh
 
-**Status: Initial design-system pass implemented in v0.33.0; device visual approval and final polish remain.**
+**Status: Visual Pass 1 complete in v0.34.0. Core identity system, signature navigation, angular panel language, icon style, and typography hierarchy are implemented. Pass 2 screen-by-screen polish is next.**
 
 **Priority: High**
 
@@ -146,11 +146,11 @@ Preserve unless testing shows a real UX problem:
 ### Design-system work
 - [x] Define color tokens, surfaces, borders, glow levels, text hierarchy, and state colors
 - [x] Standardize cards, buttons, inputs, pills, tabs, modals, dialogs, and progress indicators
-- [ ] Define icon style
-- [ ] Define typography scale
+- [x] Define icon style
+- [x] Define typography scale
 - [x] Define motion/transition rules
 - [x] Define data-visualization styling for charts, progress, PRs, and future heat maps
-- [ ] Make visual states accessible and distinguishable without relying only on color
+- [x] Make visual states accessible and distinguishable without relying only on color
 - [ ] Keep effects performant on Android devices
 
 ### Why this phase comes here
