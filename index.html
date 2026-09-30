@@ -2608,6 +2608,7 @@ function liveSetTarget(e,si,prev){
  const wi=workingSetOrdinal(e,si);
  if(e.targetOverride)return {weight:roundLoad(e.targetOverride.weight),reps:Math.max(1,Number(e.targetOverride.reps)||e.config.minReps)};
  const base=buildRecommendation(e.config,prev,e.exerciseId);
+ if(normalizeTrainingMode(e.config.routineMode)==='track')return {weight:roundLoad(Number(current?.weight??base.weights?.[wi]??base.weight??0)),reps:Math.max(1,Number(current?.reps??base.targetReps?.[wi]??e.config.minReps))};
  let weight=Number(base.weights?.[wi]??base.weight??current?.weight??0);
  let reps=Number(base.targetReps?.[wi]??e.config.minReps);
  const earlier=e.sets.slice(0,si).filter(s=>s.done&&isProgressionSet(s));
