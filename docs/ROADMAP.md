@@ -207,19 +207,21 @@ Goal: finishing a workout should feel rewarding and produce a useful summary, no
 
 ### Locked: Post-workout completion summary
 When the user taps **Finish Workout**, show a polished recap including:
-- [ ] Routine/workout name
-- [ ] Completion date and time
-- [ ] Workout duration
-- [ ] Exercises completed
-- [ ] Working sets completed
-- [ ] Total reps
-- [ ] Total training volume where meaningful
-- [ ] Personal records hit
-- [ ] Muscle groups trained
-- [ ] Notable progression versus prior sessions
+- [x] Routine/workout name
+- [x] Completion date and time
+- [x] Workout duration
+- [x] Exercises completed
+- [x] Working sets completed
+- [x] Total reps
+- [x] Total training volume where meaningful
+- [x] Personal records hit
+- [x] Muscle groups trained (current exercise-category metadata; richer primary/secondary mapping follows in Phase 5)
+- [x] Notable progression versus prior sessions
 - [ ] Front/back muscle heat map
 
 The summary should use the refreshed Swole Cat visual system and feel like a premium completion moment.
+
+**v0.44.0:** Workout Recap Foundation implements the non-heat-map recap experience using existing session/exercise metadata and actual prior workout history. The front/back muscle heat map remains intentionally deferred until the structured Phase 5 muscle model exists.
 
 ---
 
