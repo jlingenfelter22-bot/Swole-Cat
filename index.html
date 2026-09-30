@@ -2877,7 +2877,48 @@ function load(){
 let state=load();
 let stateRevision=0,pendingStateSave=false,pendingStateSaveTimer=null;
 const navigationRenderRevision={home:-1,routines:-1,exercises:-1,history:-1,analytics:-1};
-function scheduleStateSave(delay=140){
+let derivedSessionCacheRevision=-1,derivedSessionCache=null;
+let exerciseCatalogCacheRevision=-1,exerciseCatalogCache=null;
+let navigationRefreshFrame=null;
+function derivedSessionData(){
+ if(derivedSessionCache&&derivedSessionCacheRevision===stateRevision)return derivedSessionCache;
+ const sessionsByDate=new Map(),historyByExercise=new Map(),loggedExerciseIds=new Set();
+ state.sessions.forEach(session=>{
+   const dateKey=localDateKey(session.date);
+   if(dateKey){
+     if(!sessionsByDate.has(dateKey))sessionsByDate.set(dateKey,[]);
+     sessionsByDate.get(dateKey).push(session);
+   }
+   (session.exercises||[]).forEach(e=>{
+     const working=progressionSets(e),all=completedSets(e);
+     if(all.length)loggedExerciseIds.add(e.exerciseId);
+     if(!working.length)return;
+     if(!historyByExercise.has(e.exerciseId))historyByExercise.set(e.exerciseId,[]);
+     historyByExercise.get(e.exerciseId).push({date:session.date,routineName:session.routineName,sets:working,allSets:all,notes:e.notes||''});
+   });
+ });
+ historyByExercise.forEach(rows=>rows.sort((a,b)=>a.date.localeCompare(b.date)));
+ derivedSessionCache={sessionsByDate,historyByExercise,loggedExerciseIds};
+ derivedSessionCacheRevision=stateRevision;
+ return derivedSessionCache;
+}
+function exerciseCatalog(){
+ if(exerciseCatalogCache&&exerciseCatalogCacheRevision===stateRevision)return exerciseCatalogCache;
+ const list=[...LIBRARY,...state.customExercises],byId=new Map(list.map(ex=>[ex.id,ex]));
+ exerciseCatalogCache={list,byId};
+ exerciseCatalogCacheRevision=stateRevision;
+ return exerciseCatalogCache;
+}
+function queueNavigationRefresh(id){
+ if(!Object.prototype.hasOwnProperty.call(navigationRenderRevision,id))return;
+ if(navigationRenderRevision[id]===stateRevision)return;
+ if(navigationRefreshFrame)cancelAnimationFrame(navigationRefreshFrame);
+ navigationRefreshFrame=requestAnimationFrame(()=>{
+   navigationRefreshFrame=null;
+   if(activeViewId()===id)renderNavigationView(id);
+ });
+}
+function scheduleStateSave(delay=220){
  if(storageWriteBlocked)return false;
  pendingStateSave=true;
  if(pendingStateSaveTimer)clearTimeout(pendingStateSaveTimer);
@@ -3076,8 +3117,8 @@ function finishOnboarding(starter){
  renderHome();showToast('You’re ready to train.');
 }
 
-function allExercises(){return [...LIBRARY,...state.customExercises];}
-function exById(id){return allExercises().find(x=>x.id===id);}
+function allExercises(){return exerciseCatalog().list;}
+function exById(id){return exerciseCatalog().byId.get(id);}
 function fmtWeight(w){return `${Number(w||0)} ${state.profile.unit}`;}
 
 function activeWorkoutCounts(w=state.activeWorkout){
@@ -3198,11 +3239,14 @@ function discardActiveAndStart(id,programId=null){
 
 function go(id){
  haptic(8);
- if(pendingStateSave)flushPendingStateSave();
  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
- document.getElementById(id).classList.add('active');
+ const target=document.getElementById(id);if(!target)return;
+ target.classList.add('active');
  document.querySelectorAll('.navbtn').forEach(b=>{const on=b.dataset.go===id;b.classList.toggle('active',on);if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
- renderNavigationView(id);
+ // First visit needs content immediately. Revisits paint cached DOM first, then refresh
+ // stale data on the next frame so taps are never blocked by rendering or storage.
+ if(navigationRenderRevision[id]<0)renderNavigationView(id);
+ else queueNavigationRefresh(id);
  updateActiveWorkoutChrome();
  window.scrollTo({top:0,behavior:'auto'});
 }
@@ -3217,15 +3261,7 @@ function sessionVolume(s){
 function sessionSetCount(s){return s.exercises.reduce((n,e)=>n+progressionSets(e).length,0)}
 function sessionAllSetCount(s){return s.exercises.reduce((n,e)=>n+completedSets(e).length,0)}
 function sessionPRCount(s){return s.exercises.reduce((n,e)=>n+(progressionSets(e).some(x=>x.pr)?1:0),0)}
-function exerciseHistory(exerciseId){
- const arr=[];
- state.sessions.forEach(s=>s.exercises.forEach(e=>{
-   if(e.exerciseId!==exerciseId)return;
-   const working=progressionSets(e),all=completedSets(e);
-   if(working.length)arr.push({date:s.date,routineName:s.routineName,sets:working,allSets:all,notes:e.notes||''});
- }));
- return arr.sort((a,b)=>a.date.localeCompare(b.date));
-}
+function exerciseHistory(exerciseId){return derivedSessionData().historyByExercise.get(exerciseId)||[];}
 function exerciseMetrics(exerciseId){
  const h=exerciseHistory(exerciseId),sets=h.flatMap(x=>x.sets);
  const bestWeight=sets.length?Math.max(...sets.map(x=>Number(x.weight)||0)):0;
@@ -3274,7 +3310,7 @@ function changeAnalyticsMonth(delta){
 function resetAnalyticsMonth(){
  analyticsMonthOffset=0;renderAnalytics();
 }
-function sessionsForDateKey(key){return state.sessions.filter(s=>localDateKey(s.date)===key)}
+function sessionsForDateKey(key){return derivedSessionData().sessionsByDate.get(key)||[]}
 function calendarMonthData(offset=analyticsMonthOffset){
  const base=monthAnchor(offset),year=base.getFullYear(),month=base.getMonth();
  const days=new Date(year,month+1,0).getDate();
@@ -3917,10 +3953,7 @@ function renderExercises(){
  const m=document.getElementById('muscleFilter')?.value||'';
  const eq=document.getElementById('equipmentFilter')?.value||'';
  const all=allExercises(),visible=all.filter(x=>!isHiddenExercise(x.id)),hidden=all.filter(x=>isHiddenExercise(x.id));
- const loggedIds=new Set();
- state.sessions.forEach(s=>(s.exercises||[]).forEach(e=>{
-   if((e.sets||[]).some(set=>set.done))loggedIds.add(e.exerciseId);
- }));
+ const loggedIds=derivedSessionData().loggedExerciseIds;
 
  document.querySelectorAll('[data-history-filter]').forEach(btn=>{
    btn.classList.toggle('active',btn.dataset.historyFilter===exerciseHistoryFilter);
@@ -6250,11 +6283,13 @@ function escAttr(s){return esc(s)}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;updateInstallButton();});
 window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;updateInstallButton();showToast('Swole Cat installed');});
 document.addEventListener('visibilitychange',()=>{
- if(state.activeWorkout)saveActiveWorkout();
- if(document.visibilityState==='visible'&&state.activeWorkout)requestWakeLock();
+ if(document.visibilityState==='hidden'){
+   if(pendingStateSave)flushPendingStateSave();
+   else if(state.activeWorkout)saveActiveWorkout();
+ }else if(state.activeWorkout)requestWakeLock();
 });
-window.addEventListener('pagehide',()=>{if(state.activeWorkout)saveActiveWorkout()});
-window.addEventListener('beforeunload',()=>{if(state.activeWorkout)saveActiveWorkout()});
+window.addEventListener('pagehide',()=>{if(pendingStateSave)flushPendingStateSave();else if(state.activeWorkout)saveActiveWorkout()});
+window.addEventListener('beforeunload',()=>{if(pendingStateSave)flushPendingStateSave();else if(state.activeWorkout)saveActiveWorkout()});
 if('serviceWorker' in navigator&&!isNativeApp()){
  let swRefreshing=false;
  navigator.serviceWorker.addEventListener('controllerchange',()=>{
