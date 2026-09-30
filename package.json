@@ -1,0 +1,24 @@
+{
+  "name": "swole-cat",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "prepare:web": "node scripts/prepare-capacitor.mjs",
+    "android:add": "npm run prepare:web && npx cap add android",
+    "android:sync": "npm run prepare:web && npx cap sync android",
+    "android:assets": "npx capacitor-assets generate --android --assetPath assets --iconBackgroundColor '#0b0d12' --iconBackgroundColorDark '#0b0d12' --splashBackgroundColor '#0b0d12' --splashBackgroundColorDark '#0b0d12'",
+    "android:build:debug": "npm run android:sync && npm run android:assets && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.0.2",
+    "@capacitor/core": "8.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.14",
+    "@capacitor/cli": "8.0.2"
+  }
+}
