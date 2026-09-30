@@ -202,3 +202,14 @@ Completed in v0.38.0 from direct device screenshots:
 - active-workout Set Type uses a compact variant so workout cards do not become oversized
 - Settings Haptic Feedback and Keep Screen Awake rows use a fixed switch column so switches cannot be squeezed beyond the card edge
 - toggle knobs are clipped safely inside their switch track at narrow Android widths
+
+
+### Tuning Pass 3 — Header cleanup
+Completed in v0.39.0 from direct device review:
+
+- active workout shortcut now uses a fixed Resume label instead of rendering a changing done/total set count inside the header pill
+- workout progress remains available in the Resume control title and accessibility label
+- persistent PWA install/download button was removed from the app header
+- install support remains in code for a future web-only placement rather than competing with Android header space
+- Settings remains the only secondary header control beside Resume
+- narrow-screen header rules keep Resume readable while Settings collapses to icon-only
