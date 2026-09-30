@@ -652,6 +652,7 @@ function normalizeState(saved){
  merged.activeProgramId=saved.activeProgramId||null;
  merged.routines.forEach(r=>{if(!Array.isArray(r.exercises))r.exercises=[];r.trainingMode=normalizeTrainingMode(r.trainingMode);r.description=typeof r.description==='string'?r.description:''});
  merged.programs.forEach(p=>{
+   p.trainingMode=normalizeProgramTrainingMode(p.trainingMode);
    p.routineIds=Array.isArray(p.routineIds)?p.routineIds.filter(id=>merged.routines.some(r=>r.id===id)):[];
    p.frequency=Math.min(7,Math.max(1,Number(p.frequency)||3));
    p.preferredDays=Array.isArray(p.preferredDays)?p.preferredDays.filter(d=>Number.isInteger(d)&&d>=0&&d<=6):[];
@@ -952,12 +953,15 @@ function resumeActiveWorkout(){
 }
 function startRoutineFresh(id,programId=null){
  const r=state.routines.find(x=>x.id===id); if(!r)return;
+ const program=programId?programById(programId):null;
+ const programMode=normalizeProgramTrainingMode(program?.trainingMode);
+ const effectiveMode=programMode!=='inherit'?normalizeTrainingMode(programMode):normalizeTrainingMode(r.trainingMode);
  const now=new Date().toISOString();
  const active={
-   id:uid(),routineId:id,routineName:r.name,trainingMode:normalizeTrainingMode(r.trainingMode),programId:programId||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,
+   id:uid(),routineId:id,routineName:r.name,trainingMode:effectiveMode,programId:programId||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,
    exercises:r.exercises.map((re,routineIndex)=>{
      const prev=previousExercise(re.exerciseId);
-     const mode=normalizeTrainingMode(r.trainingMode),config={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode};
+     const mode=effectiveMode,config={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode};
      const rec=buildRecommendation(config,prev,re.exerciseId);
      return {exerciseId:re.exerciseId,routineIndex,config,targetOverride:null,supersetId:re.supersetGroup||null,skipped:false,expanded:routineIndex===0,sets:Array.from({length:re.sets},(_,i)=>({
        weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??re.minReps,done:false,rir:'',type:'working'
@@ -1489,7 +1493,7 @@ function programCard(p){
  const isActive=state.activeProgramId===p.id,next=programNextRoutine(p),logs=programSessions(p),last=logs[0];
  return `<div class="card program-card ${isActive?'active-program':''}">
    <div class="row">
-     <div class="grow"><div class="exercise-name">${esc(p.name)}</div><div class="mini">${p.routineIds.length} workout${p.routineIds.length===1?'':'s'} · ${p.frequency}×/week · ${esc(programDaysText(p))}</div></div>
+     <div class="grow"><div class="exercise-name">${esc(p.name)}</div><div class="mini">${p.routineIds.length} workout${p.routineIds.length===1?'':'s'} · ${p.frequency}×/week · ${esc(programDaysText(p))} · ${esc(programTrainingModeLabel(p.trainingMode))}</div></div>
      ${isActive?'<span class="tag">● ACTIVE</span>':''}
    </div>
    ${programRouteHtml(p)}
@@ -1513,7 +1517,7 @@ function renderActiveProgramHome(){
  const next=programNextRoutine(p),logs=programSessions(p),last=logs[0];
  host.innerHTML=`<div class="program-home">
    <div class="row">
-    <div><div class="eyebrow">ACTIVE PROGRAM</div><div class="exercise-name" style="margin-top:5px">${esc(p.name)}</div><div class="mini" style="margin-top:4px">${p.frequency}×/week · ${esc(programDaysText(p))} · ${logs.length} program sessions</div></div>
+    <div><div class="eyebrow">ACTIVE PROGRAM</div><div class="exercise-name" style="margin-top:5px">${esc(p.name)}</div><div class="mini" style="margin-top:4px">${p.frequency}×/week · ${esc(programDaysText(p))} · ${esc(programTrainingModeLabel(p.trainingMode))} · ${logs.length} program sessions</div></div>
     <span class="tag">PROGRAM</span>
    </div>
    ${programRouteHtml(p)}
@@ -1544,15 +1548,17 @@ function advanceProgramAfterWorkout(session){
 }
 function syncProgramDraftInputs(){
  if(!programDraft)return;
- const name=document.getElementById('programName'),freq=document.getElementById('programFrequency');
+ const name=document.getElementById('programName'),freq=document.getElementById('programFrequency'),mode=document.getElementById('programTrainingMode');
  if(name)programDraft.name=name.value;
  if(freq)programDraft.frequency=Math.min(7,Math.max(1,Number(freq.value)||3));
+ if(mode)programDraft.trainingMode=normalizeProgramTrainingMode(mode.value);
 }
 function newProgram(id=null){
  const existing=id?programById(id):null;
  if(!existing&&!state.routines.length){showToast('Create a routine first');return}
  const nextId=existing?.routineIds?.[existing.nextIndex]||null;
- programDraft=existing?JSON.parse(JSON.stringify(existing)):{id:uid(),name:'',routineIds:[],frequency:3,preferredDays:[],nextIndex:0};
+ programDraft=existing?JSON.parse(JSON.stringify(existing)):{id:uid(),name:'',routineIds:[],frequency:3,preferredDays:[],trainingMode:'inherit',nextIndex:0};
+ programDraft.trainingMode=normalizeProgramTrainingMode(programDraft.trainingMode);
  programDraft._nextRoutineId=nextId;
  renderProgramEditor();
 }
@@ -1562,6 +1568,7 @@ function renderProgramEditor(){
  const available=state.routines.filter(r=>!programDraft.routineIds.includes(r.id));
  openModal(programById(programDraft.id)?'Edit program':'New program',`
    <div class="field"><label>Program name</label><input id="programName" value="${escAttr(programDraft.name||'')}" placeholder="Full Body Program"></div>
+   <div class="field"><label>Program training mode</label><select id="programTrainingMode"><option value="inherit" ${normalizeProgramTrainingMode(programDraft.trainingMode)==='inherit'?'selected':''}>Use each routine’s mode</option><option value="guided" ${programDraft.trainingMode==='guided'?'selected':''}>Guided Progressive Overload</option><option value="strength" ${programDraft.trainingMode==='strength'?'selected':''}>Strength Focus</option><option value="track" ${programDraft.trainingMode==='track'?'selected':''}>Track Only / Standard Workout</option></select><div class="native-note" style="margin-top:6px">A program override applies only when a workout is started through this program. Manual routine starts keep the routine’s own mode.</div></div>
    <div class="form-grid">
      <div><label>Target days per week</label><input id="programFrequency" type="number" min="1" max="7" value="${programDraft.frequency||3}"></div>
      <div><label>Preferred days <span class="mini">(optional)</span></label><div class="day-picker">${PROGRAM_DAYS.map((d,i)=>`<button class="day-chip ${programDraft.preferredDays.includes(i)?'on':''}" onclick="toggleProgramDay(${i})">${d}</button>`).join('')}</div></div>
@@ -1605,7 +1612,7 @@ function saveProgram(){
  const keepNext=programDraft._nextRoutineId;
  if(keepNext&&programDraft.routineIds.includes(keepNext))nextIndex=programDraft.routineIds.indexOf(keepNext);
  else if(existing)nextIndex=Math.min(Number(existing.nextIndex)||0,programDraft.routineIds.length-1);
- const saved={id:programDraft.id,name,routineIds:[...programDraft.routineIds],frequency:programDraft.frequency||3,preferredDays:[...programDraft.preferredDays],nextIndex};
+ const saved={id:programDraft.id,name,routineIds:[...programDraft.routineIds],frequency:programDraft.frequency||3,preferredDays:[...programDraft.preferredDays],trainingMode:normalizeProgramTrainingMode(programDraft.trainingMode),nextIndex};
  if(existing)state.programs=state.programs.map(p=>p.id===saved.id?saved:p);else state.programs.push(saved);
  if(!state.activeProgramId)state.activeProgramId=saved.id;
  programDraft=null;save();closeModal();renderPrograms();renderHome();showToast(existing?'Program updated':'Program created');
@@ -2431,6 +2438,8 @@ function trainingModeLabel(mode){
  mode=normalizeTrainingMode(mode);
  return mode==='strength'?'Strength Focus':mode==='track'?'Track Only':'Guided Overload';
 }
+function normalizeProgramTrainingMode(mode){return ['inherit','guided','strength','track'].includes(mode)?mode:'inherit'}
+function programTrainingModeLabel(mode){mode=normalizeProgramTrainingMode(mode);return mode==='inherit'?'Use routine modes':trainingModeLabel(mode)}
 function trainingModeDescription(mode){
  mode=normalizeTrainingMode(mode);
  if(mode==='strength')return 'Load-priority progression. After you complete the programmed minimum reps across all working sets, Swole Cat can move the configured weight step next time.';
