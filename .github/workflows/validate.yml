@@ -214,10 +214,15 @@ jobs:
             state=read();
             assert.equal(state.sessions.length,0,'completed workout should be deletable');
 
+            w.archiveRoutine(rid);
+            if(w.eval('pendingConfirmAction'))w.runConfirmedAction();
+            state=read();
+            assert(state.routines.find(r=>r.id===rid)?.archivedAt,'routine should archive before permanent deletion');
+
             w.deleteRoutine(rid);
             w.runConfirmedAction();
             state=read();
-            assert.equal(state.routines.length,2,'routine should be deletable without deleting other routines');
+            assert.equal(state.routines.length,2,'archived routine should be permanently deletable without deleting other routines');
 
             dom.window.close();
             console.log('Swole Cat management smoke test PASS');
