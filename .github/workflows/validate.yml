@@ -1126,3 +1126,80 @@ jobs:
 
           console.log('Swole Cat V37 recorded UI feedback PASS');
           JS
+
+
+      - name: Smoke test V38 custom selectors and settings layout
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const assert = require('assert');
+          const {JSDOM} = require('jsdom');
+
+          const html = fs.readFileSync('index.html','utf8');
+          const dom = new JSDOM(html,{
+            runScripts:'dangerously',
+            url:'https://swole-cat.test/',
+            pretendToBeVisual:true,
+            beforeParse(window){
+              window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+              window.alert=()=>{};
+              window.confirm=()=>true;
+              window.scrollTo=()=>{};
+            }
+          });
+
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(40);
+            const w=dom.window,d=w.document;
+
+            // Static filters should be enhanced without invoking platform selects.
+            const muscle=d.getElementById('muscleFilter');
+            assert.equal(muscle.dataset.appSelectReady,'1','static selects should be enhanced');
+            assert(muscle.classList.contains('app-select-source'),'native select should become hidden state source');
+            assert(muscle.closest('.app-select-wrap')?.querySelector('.app-select-trigger'),'static select should get custom trigger');
+
+            // Settings units should open the app-owned selector and write back normally.
+            w.openSettings();
+            await wait(15);
+            const unit=d.getElementById('pUnit');
+            const trigger=unit.closest('.app-select-wrap').querySelector('.app-select-trigger');
+            trigger.click();
+            assert(d.getElementById('appSelectOverlay').classList.contains('open'),'custom selector overlay should open');
+            assert.equal(d.getElementById('appSelectTitle').textContent.trim(),'Units','selector should use field label');
+            const options=[...d.querySelectorAll('#appSelectOptions .app-select-option')];
+            assert.equal(options.length,2,'unit selector should have two options');
+            options[1].click();
+            assert.equal(unit.value,'kg','custom option should update original select value');
+            assert(!d.getElementById('appSelectOverlay').classList.contains('open'),'selector should close after selection');
+            assert(trigger.textContent.includes('Kilograms'),'custom trigger should reflect selected option');
+
+            // Dynamic program editor select should enhance automatically.
+            w.closeModal();
+            w.installStarterPlan();
+            const pid=JSON.parse(w.localStorage.getItem('overload_v3')).programs[0].id;
+            w.newProgram(pid);
+            await wait(15);
+            const mode=d.getElementById('programTrainingMode');
+            assert.equal(mode.dataset.appSelectReady,'1','dynamic program select should be enhanced');
+            assert(mode.closest('.app-select-wrap').querySelector('.app-select-trigger'),'dynamic program select should get custom trigger');
+
+            // Workout set-type selector should use compact version.
+            w.closeModal();
+            const rid=JSON.parse(w.localStorage.getItem('overload_v3')).routines[0].id;
+            w.openRoutine(rid);
+            await wait(10);
+            const setType=d.querySelector('.set-type-select');
+            assert(setType,'active workout should render set-type selector');
+            assert(setType.closest('.app-select-wrap')?.classList.contains('app-select-compact'),'set type should use compact custom selector');
+
+            // Settings toggles should use fixed non-overflow grid column.
+            assert(html.includes('grid-template-columns:minmax(0,1fr) 52px'),'settings toggles should reserve a fixed switch column');
+            assert(html.includes('.setting-toggle .toggle{'),'settings toggle should have dedicated containment rules');
+            assert(html.includes('overflow:hidden;'),'tuning CSS should prevent toggle knob overflow');
+
+            dom.window.close();
+            console.log('Swole Cat V38 custom selectors and settings layout PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
