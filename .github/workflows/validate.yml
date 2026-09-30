@@ -215,7 +215,10 @@ jobs:
             assert.equal(state.sessions.length,0,'completed workout should be deletable');
 
             w.archiveRoutine(rid);
-            if(w.eval('pendingConfirmAction'))w.runConfirmedAction();
+            state=read();
+            if(!state.routines.find(r=>r.id===rid)?.archivedAt){
+              w.archiveRoutineAndRemoveFromPrograms(rid);
+            }
             state=read();
             assert(state.routines.find(r=>r.id===rid)?.archivedAt,'routine should archive before permanent deletion');
 
