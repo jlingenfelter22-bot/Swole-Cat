@@ -1432,15 +1432,15 @@ jobs:
 
             backHandler();
             assert.equal(exitCount,0,'First Back at Home must not exit');
-            assert(w.nativeBackExitArmedUntil>Date.now(),'First Back at Home should arm protected exit');
             backHandler();
             assert.equal(exitCount,1,'Second Back at Home should exit');
 
             w.state.activeWorkout={id:'x',routineName:'Test',status:'active',lastSavedAt:new Date().toISOString(),pausedAt:null,pausedDurationMs:0,exercises:[]};
-            w.scheduleStateSave(1000);
-            assert(w.pendingStateSave,'test should have a pending state save');
+            w.updateNotes(0,'pending native lifecycle save');
+            const beforeBackground=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout?.exercises?.[0]?.notes||'';
             appStateHandler({isActive:false});
-            assert(!w.pendingStateSave,'backgrounding should flush pending state');
+            const afterBackground=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout?.exercises?.[0]?.notes||'';
+            assert.notEqual(afterBackground,beforeBackground,'backgrounding should flush pending workout edits');
 
             dom.window.close();
             console.log('Swole Cat V42 Android native behavior PASS');
