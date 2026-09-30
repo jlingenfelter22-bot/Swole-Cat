@@ -113,7 +113,7 @@ Areas to evaluate:
 
 ## Phase 3 — Visual Identity Refresh
 
-**Status: Visual identity passes complete through v0.36.0. Pass 3 finalized cohesion, restraint, motion, Android rendering cost, accessibility semantics, and color-independent state cues. User-directed sizing and micro-UI adjustments remain as a focused tuning pass.**
+**Status: Visual identity passes complete through v0.36.0. UI Tuning Pass 1 completed in v0.37.0 from a real-device screen-recording review, including Android system-bar integration, bottom-dock integration, and schematic exercise artwork. Additional user-directed sizing and micro-UI adjustments remain iterative.**
 
 **Priority: High**
 
