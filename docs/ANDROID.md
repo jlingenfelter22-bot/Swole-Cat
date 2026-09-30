@@ -5,7 +5,7 @@ Swole Cat uses Capacitor so the PWA and Android app share the same HTML, CSS, Ja
 ## Package
 
 - App name: Swole Cat
-- Current app version: `0.41.0`
+- Current app version: `0.42.0`
 - Android version code: `41`
 - Android application ID: `com.jlingenfelter.swolecat`
 - Capacitor: 8.5.2
@@ -39,10 +39,10 @@ The debug APK is written to:
 
 `.github/workflows/android.yml` builds a versioned debug APK from `main` whenever Android/web packaging files change, and can also be run manually.
 
-For v0.41.0 the artifact/file naming is:
+For v0.42.0 the artifact/file naming is:
 
-- Artifact: `Swole-Cat-Android-v0.41.0-debug`
-- APK: `swole-cat-v0.41.0-debug.apk`
+- Artifact: `Swole-Cat-Android-v0.42.0-debug`
+- APK: `swole-cat-v0.42.0-debug.apk`
 
 The workflow verifies that the generated Android `versionName`, Android `versionCode`, and bundled app UI version all match the repository metadata before compiling.
 
@@ -99,3 +99,19 @@ Remaining Android product polish includes:
 - native share/export improvements
 - native rest-timer notifications
 - optional Health Connect support
+
+
+## Android Back behavior
+
+v0.42.0 installs the Capacitor App plugin and handles Android Back inside Swole Cat.
+
+Back behavior is intentionally layered:
+
+1. Close an open app selector.
+2. Close an open modal or confirmation surface.
+3. Dismiss a focused form field.
+4. Navigate to the previous in-app screen.
+5. Fall back to Home when no prior screen is available.
+6. At Home, require a second Back press within two seconds before exiting the app.
+
+The App lifecycle listener also flushes pending workout edits before backgrounding, releases the wake lock while inactive, and restores workout chrome/wake-lock behavior when the app becomes active again.
