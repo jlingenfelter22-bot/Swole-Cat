@@ -17,7 +17,7 @@
   body{margin:0;background:linear-gradient(180deg,#0b0d12 0%,#0e1118 100%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
   button,input,select,textarea{font:inherit}
   button{cursor:pointer}
-  .app{max-width:760px;margin:auto;min-height:100vh;padding-bottom:92px}
+  .app{max-width:760px;margin:auto;min-height:100vh;min-height:100dvh;padding-bottom:92px}
   header{position:sticky;top:0;z-index:20;padding:18px 18px 12px;background:rgba(11,13,18,.92);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.04)}
   .topline{display:flex;justify-content:space-between;align-items:center;gap:12px}
   .brand{font-weight:900;font-size:1.35rem;letter-spacing:.3px}
@@ -84,7 +84,7 @@
   .history-table th{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:100;display:none;align-items:flex-end}
   .modal.open{display:flex}
-  .sheet{width:100%;max-width:760px;margin:auto;background:#111722;border-radius:24px 24px 0 0;border:1px solid var(--border);padding:18px;max-height:88vh;overflow:auto}
+  .sheet{width:100%;max-width:760px;margin:auto;background:#111722;border-radius:24px 24px 0 0;border:1px solid var(--border);padding:18px;max-height:88vh;max-height:min(88dvh,calc(var(--sc-viewport-height,100dvh) - var(--sc-safe-top,0px) - 12px));overflow:auto}
   .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
   .x{background:#1d2533;color:white;border:1px solid #303a4d;border-radius:10px;width:38px;height:38px}
   .notice{background:#161f2e;border:1px solid #273550;border-radius:14px;padding:12px;color:#c9d3e7;font-size:.86rem}
@@ -1933,7 +1933,18 @@
   :root{
     --sc-safe-top:var(--safe-area-inset-top,env(safe-area-inset-top,0px));
     --sc-safe-bottom:var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px));
+    --sc-viewport-height:100dvh;
+    --sc-keyboard-height:0px;
   }
+  .native-app .sheet{
+    padding-bottom:calc(18px + var(--sc-safe-bottom));
+    scroll-padding-bottom:calc(24px + var(--sc-keyboard-height));
+  }
+  .native-app.keyboard-open nav{display:none}
+  .native-app.keyboard-open .app{padding-bottom:24px}
+  .native-app.keyboard-open input:focus,
+  .native-app.keyboard-open textarea:focus,
+  .native-app.keyboard-open select:focus{scroll-margin-bottom:24px}
   header{
     padding-top:calc(14px + var(--sc-safe-top));
   }
@@ -3040,7 +3051,7 @@ function openStartupStorageNotice(){
    openModal('Local data needs attention',`
      <div class="notice"><b>Swole Cat stopped before overwriting anything.</b><br><br>${esc(startupStorageNotice)}${lastStorageError?`<br><br><span class="mini">Details: ${esc(lastStorageError)}</span>`:''}</div>
      <div class="actions">
-       <label class="btn" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0])" style="display:none"></label>
+       <label class="btn" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0],this)" style="display:none"></label>
        <button class="btn secondary" onclick="closeModal();openSettings()">Open data safety</button>
        <button class="btn danger" onclick="clearUnreadableLocalData()">Erase & start fresh</button>
      </div>
@@ -3088,6 +3099,53 @@ function nativePlatform(){
 let appNavigationStack=['home'],nativeBackExitArmedUntil=0,nativeBehaviorReady=false;
 function capacitorPlugin(name){
  try{return window.Capacitor?.Plugins?.[name]||null}catch(e){return null}
+}
+function syncViewportMetrics(){
+ const h=Math.max(0,Math.round(window.visualViewport?.height||window.innerHeight||0));
+ if(h)document.documentElement.style.setProperty('--sc-viewport-height',h+'px');
+}
+function scrollFocusedFieldIntoView(){
+ const active=document.activeElement;
+ if(active&&/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)){
+   setTimeout(()=>{try{active.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}},60);
+ }
+}
+async function configureNativeUi(){
+ syncViewportMetrics();
+ if(!isNativeApp()||nativePlatform()!=='android')return;
+ const statusBar=capacitorPlugin('StatusBar');
+ const keyboard=capacitorPlugin('Keyboard');
+ try{await statusBar?.setStyle?.({style:'LIGHT'})}catch(e){}
+ try{await statusBar?.setBackgroundColor?.({color:'#0b0e14'})}catch(e){}
+ try{await statusBar?.setOverlaysWebView?.({overlay:true})}catch(e){}
+ try{await keyboard?.setResizeMode?.({mode:'native'})}catch(e){}
+ try{
+   await keyboard?.addListener?.('keyboardWillShow',info=>{
+     const height=Math.max(0,Number(info?.keyboardHeight)||0);
+     document.documentElement.style.setProperty('--sc-keyboard-height',height+'px');
+     document.body.classList.add('keyboard-open');
+     scrollFocusedFieldIntoView();
+   });
+   await keyboard?.addListener?.('keyboardWillHide',()=>{
+     document.documentElement.style.setProperty('--sc-keyboard-height','0px');
+     document.body.classList.remove('keyboard-open');
+   });
+ }catch(e){}
+}
+function verifyDeviceStorageWritable(){
+ if(storageWriteBlocked)return false;
+ try{
+   const key='__swole_cat_storage_probe__';
+   localStorage.setItem(key,'ok');
+   if(localStorage.getItem(key)!=='ok')throw new Error('Local storage probe could not be verified.');
+   localStorage.removeItem(key);
+   return true;
+ }catch(e){
+   storageWriteBlocked=true;
+   lastStorageError=e?.message||String(e);
+   startupStorageNotice='Swole Cat cannot safely write to its local device storage. Existing data has not been intentionally replaced. Free device storage or check app storage settings before logging more workouts.';
+   return false;
+ }
 }
 function recordAppNavigation(id,{history=true,replaceHistory=false,resetHistory=false}={}){
  if(resetHistory){appNavigationStack=[id];return}
@@ -3185,7 +3243,7 @@ function onboarding(){
  <div class="field"><label>Your name (optional)</label><input id="onName" value="${escAttr(state.profile.name||'')}" placeholder="Jake"></div>
  <div class="field"><label>Units</label><select id="onUnit"><option value="lb" ${state.profile.unit==='lb'?'selected':''}>Pounds (lb)</option><option value="kg" ${state.profile.unit==='kg'?'selected':''}>Kilograms (kg)</option></select></div>
  <div class="actions">
-   ${isNativeApp()?'<label class="btn" style="display:inline-block;margin:0">Import existing Swole Cat backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0])" style="display:none"></label>':''}
+   ${isNativeApp()?'<label class="btn" style="display:inline-block;margin:0">Import existing Swole Cat backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0],this)" style="display:none"></label>':''}
    <button class="btn ${isNativeApp()?'secondary':''}" onclick="finishOnboarding(false)">Start empty</button>
    <button class="btn secondary" onclick="finishOnboarding(true)">Use 3-day starter</button>
  </div>
@@ -6178,7 +6236,7 @@ function openSettings(){
  <div class="notice">The coach uses repeated logged performance, your optional RIR entries, and each exercise's selected goal. Stall and reset flags are intentionally conservative. They are suggestions, and manual session targets always remain available.</div>
  <div class="section-title"><h2>Data safety</h2></div>
  <div class="notice"><b>Progression rule:</b> Double progression is rep-driven. Add reps first, then one configured load step after every programmed working set reaches the top of its rep range. Optional RIR never blocks that earned load increase.<br><br><b>App:</b> ${isNativeApp()?'Android package':'Web / PWA'}<br><b>Version:</b> ${esc(APP_VERSION)}<br><b>Storage:</b> ${esc(storageHealthText())}<br><b>Data schema:</b> v${DATA_SCHEMA_VERSION}<br><b>Last exported backup:</b> ${state.meta?.lastBackupAt?new Date(state.meta.lastBackupAt).toLocaleString():'Never on this device'}</div>
- <div class="actions"><button class="btn secondary" onclick="exportBackup()">Export backup</button><label class="btn secondary" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0])" style="display:none"></label>${preImportSnapshotInfo()?'<button class="btn secondary" onclick="restorePreImportSnapshot()">Restore pre-import snapshot</button>':''}</div>
+ <div class="actions"><button class="btn secondary" onclick="exportBackup()">Export backup</button><label class="btn secondary" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0],this)" style="display:none"></label>${preImportSnapshotInfo()?'<button class="btn secondary" onclick="restorePreImportSnapshot()">Restore pre-import snapshot</button>':''}</div>
  <div class="native-note" style="margin-top:8px">Imports are validated before replacing your current state. A safety snapshot is created before every successful import so you can roll back if you picked the wrong file.</div>
  <div class="section-title"><h2>Exercise illustrations</h2></div>
  <div class="notice">Exercise thumbnail illustrations are provided by <a href="https://github.com/bryllim/workout-guide" target="_blank" rel="noopener">Workout Guide by Bryl Lim</a>, based in part on Everkinetic artwork, and are licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>. Swole Cat presents the licensed movement artwork as compact retro-futurist training-schematic thumbnails.</div>
@@ -6206,7 +6264,7 @@ function saveSettings(){
  }
  haptic(15);closeModal();renderHome();showToast(newUnit!==oldUnit?`Converted workout data to ${newUnit}`:'Settings saved');
 }
-function exportBackup(){
+async function exportBackup(){
  if(storageWriteBlocked){
    alert('Backup export is paused because Swole Cat could not safely read the primary local data. Import a known-good backup or resolve the storage issue first so an empty/recovered-looking file is not mistaken for your real history.');
    return;
@@ -6214,24 +6272,44 @@ function exportBackup(){
  try{
    const exportedAt=new Date().toISOString();
    const envelope=createBackupEnvelope(exportedAt);
-   const blob=new Blob([JSON.stringify(envelope,null,2)],{type:'application/json'});
+   const json=JSON.stringify(envelope,null,2);
+   const filename='swole-cat-backup-'+exportedAt.slice(0,10)+'.json';
+   if(isNativeApp()&&nativePlatform()==='android'){
+     const filesystem=capacitorPlugin('Filesystem');
+     const share=capacitorPlugin('Share');
+     if(filesystem?.writeFile&&share?.share){
+       const saved=await filesystem.writeFile({path:filename,data:json,directory:'CACHE',encoding:'utf8'});
+       const uri=saved?.uri;
+       if(uri){
+         let canShare=true;
+         try{canShare=(await share.canShare?.())?.value!==false}catch(e){}
+         if(canShare){
+           await share.share({title:'Swole Cat backup',dialogTitle:'Save or share Swole Cat backup',files:[uri]});
+           showToast('Backup ready to save or share');
+           return;
+         }
+       }
+     }
+   }
+   const blob=new Blob([json],{type:'application/json'});
    const a=document.createElement('a');
    a.href=URL.createObjectURL(blob);
-   a.download='swole-cat-backup-'+exportedAt.slice(0,10)+'.json';
+   a.download=filename;
    a.click();
-   URL.revokeObjectURL(a.href);
+   setTimeout(()=>URL.revokeObjectURL(a.href),500);
    showToast('Backup exported');
  }catch(e){alert('Could not export backup: '+(e?.message||e))}
 }
-function importBackup(file){
+function importBackup(file,input=null){
  if(!file)return;
  const r=new FileReader();
- r.onerror=()=>alert('That backup file could not be read.');
+ r.onerror=()=>{if(input)input.value='';alert('That backup file could not be read.');};
  r.onload=()=>{
    let candidate;
    try{candidate=parseBackupText(String(r.result||''))}
-   catch(e){alert('Backup not imported: '+(e?.message||e));return}
+   catch(e){if(input)input.value='';alert('Backup not imported: '+(e?.message||e));return}
    if(!createPreImportSnapshot()){
+     if(input)input.value='';
      alert('Import canceled because Swole Cat could not create the required safety snapshot. Free some device storage, then try again.');
      return;
    }
@@ -6243,9 +6321,11 @@ function importBackup(file){
      if(!save())throw new Error(lastStorageError||'Local storage write failed.');
      closeModal();
      renderHome();populateMuscles();updateActiveWorkoutChrome();
+     if(input)input.value='';
      alert('Backup imported successfully. Your pre-import snapshot is available in Settings if you need to roll back.');
    }catch(e){
      state=oldState;storageWriteBlocked=oldBlocked;
+     if(input)input.value='';
      alert('Backup not imported: '+(e?.message||e));
    }
  };
@@ -6400,9 +6480,14 @@ if('serviceWorker' in navigator&&!isNativeApp()){
 }
 document.body.classList.toggle('native-app',isNativeApp());
 document.documentElement.classList.toggle('native-app',isNativeApp());
+syncViewportMetrics();
+window.visualViewport?.addEventListener?.('resize',syncViewportMetrics,{passive:true});
+window.addEventListener('orientationchange',()=>setTimeout(syncViewportMetrics,120),{passive:true});
 enhanceAppSelects(document);
+verifyDeviceStorageWritable();
 renderNavigationView('home');populateMuscles();updateInstallButton();updateActiveWorkoutChrome();
 installNativeBehaviorHandlers();
+configureNativeUi();
 if(startupStorageNotice){
  setTimeout(openStartupStorageNotice,180);
 } else if(state.activeWorkout){
