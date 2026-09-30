@@ -2527,6 +2527,29 @@
     }
   }
 
+
+  /* V41 PERFORMANCE PASS */
+  :root{
+    --motion-fast:85ms;
+    --motion-base:125ms;
+    --motion-slow:175ms;
+  }
+  .native-app nav{
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+  #exerciseList .list-item,
+  #historyList .history-entry{
+    content-visibility:auto;
+    contain-intrinsic-size:auto 82px;
+  }
+  #historyList .history-entry{
+    contain-intrinsic-size:auto 320px;
+  }
+  .exercise-block{
+    contain:layout paint;
+  }
+
 </style>
 </head>
 <body>
@@ -2584,7 +2607,7 @@
       <div class="screen-mark database-mark" aria-hidden="true"><span></span><span></span><span></span></div>
     </div>
     <div class="section-title"><h2>Exercise library</h2><button class="btn small" onclick="newExercise()">+ Custom</button></div>
-    <input id="exerciseSearch" class="search" placeholder="Search bench, row, squat..." oninput="renderExercises()">
+    <input id="exerciseSearch" class="search" placeholder="Search bench, row, squat..." oninput="scheduleExerciseRender()">
     <div class="picker-chips" style="margin-bottom:10px">
       <button id="exerciseFilterAll" class="chip active" data-history-filter="all" onclick="setExerciseHistoryFilter('all')">All</button>
       <button id="exerciseFilterDone" class="chip" data-history-filter="done" onclick="setExerciseHistoryFilter('done')">✓ Done Before</button>
@@ -2852,9 +2875,39 @@ function load(){
  }
 }
 let state=load();
+let stateRevision=0,pendingStateSave=false,pendingStateSaveTimer=null;
+const navigationRenderRevision={home:-1,routines:-1,exercises:-1,history:-1,analytics:-1};
+function scheduleStateSave(delay=140){
+ if(storageWriteBlocked)return false;
+ pendingStateSave=true;
+ if(pendingStateSaveTimer)clearTimeout(pendingStateSaveTimer);
+ pendingStateSaveTimer=setTimeout(()=>flushPendingStateSave(),delay);
+ return true;
+}
+function flushPendingStateSave(){
+ if(pendingStateSaveTimer){clearTimeout(pendingStateSaveTimer);pendingStateSaveTimer=null}
+ if(!pendingStateSave)return true;
+ pendingStateSave=false;
+ return save();
+}
+function renderNavigationView(id){
+ if(!Object.prototype.hasOwnProperty.call(navigationRenderRevision,id))return;
+ if(navigationRenderRevision[id]===stateRevision)return;
+ if(id==='home')renderHome();
+ if(id==='routines')renderRoutines();
+ if(id==='exercises')renderExercises();
+ if(id==='history')renderHistory();
+ if(id==='analytics')renderAnalytics();
+ navigationRenderRevision[id]=stateRevision;
+}
+function invalidateNavigationView(id){
+ if(Object.prototype.hasOwnProperty.call(navigationRenderRevision,id))navigationRenderRevision[id]=-1;
+}
 
 function save(){
  if(storageWriteBlocked)return false;
+ if(pendingStateSaveTimer){clearTimeout(pendingStateSaveTimer);pendingStateSaveTimer=null}
+ pendingStateSave=false;
  try{
    const previous=localStorage.getItem(LSKEY);
    if(previous)writeRecoverySnapshot(previous);
@@ -2863,6 +2916,7 @@ function save(){
    state.meta.lastSavedAt=new Date().toISOString();
    const serialized=JSON.stringify(state);
    localStorage.setItem(LSKEY,serialized);
+   stateRevision++;
    lastStorageError='';
    return true;
  }catch(e){
@@ -3042,12 +3096,12 @@ function clearWorkoutStructureDirty(){
  state.activeWorkout.structureDirty=false;
  saveActiveWorkout();
 }
-function saveActiveWorkout(){
+function saveActiveWorkout(defer=false){
  if(state.activeWorkout){
    state.activeWorkout.status='active';
    state.activeWorkout.lastSavedAt=new Date().toISOString();
  }
- save();
+ return defer?scheduleStateSave():save();
 }
 function workoutHeaderIcon(stateName){
  if(stateName==='pause'){
@@ -3142,18 +3196,13 @@ function discardActiveAndStart(id,programId=null){
 
 function go(id){
  haptic(8);
- if(state.activeWorkout)saveActiveWorkout();
- updateActiveWorkoutChrome();
+ if(pendingStateSave)flushPendingStateSave();
  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
  document.getElementById(id).classList.add('active');
  document.querySelectorAll('.navbtn').forEach(b=>{const on=b.dataset.go===id;b.classList.toggle('active',on);if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
- if(id==='home') renderHome();
- if(id==='routines') renderRoutines();
- if(id==='exercises') renderExercises();
- if(id==='history') renderHistory();
- if(id==='analytics') renderAnalytics();
+ renderNavigationView(id);
  updateActiveWorkoutChrome();
- window.scrollTo({top:0,behavior:'smooth'});
+ window.scrollTo({top:0,behavior:'auto'});
 }
 
 
@@ -3838,14 +3887,22 @@ function sessionCard(s){
  return `<div class="card clickable" onclick="go('history')"><div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleDateString()} · ${sets} working sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div><span class="tag">${prs?`PR · ${prs}`:`${s.exercises.length} moves`}</span></div></div>`;
 }
 
-function populateMuscles(){
+let exerciseFilterOptionsKey='';
+function populateMuscles(force=false){
  const msel=document.getElementById('muscleFilter'), esel=document.getElementById('equipmentFilter');
+ const key=`${LIBRARY.length}|${state.customExercises.map(x=>`${x.id}:${x.muscle}:${x.equipment}`).join('|')}`;
+ if(!force&&key===exerciseFilterOptionsKey)return;
  const muscles=[...new Set(allExercises().map(x=>x.muscle))].sort();
  const equipment=[...new Set(allExercises().map(x=>x.equipment))].sort();
  if(msel){const old=msel.value;msel.innerHTML='<option value="">All muscle groups</option>'+muscles.map(m=>`<option>${esc(m)}</option>`).join('');msel.value=old;}
  if(esel){const old=esel.value;esel.innerHTML='<option value="">All equipment</option>'+equipment.map(e=>`<option>${esc(e)}</option>`).join('');esel.value=old;}
+ exerciseFilterOptionsKey=key;
 }
-let exerciseHistoryFilter='all';
+let exerciseHistoryFilter='all',exerciseRenderFrame=null;
+function scheduleExerciseRender(){
+ if(exerciseRenderFrame)cancelAnimationFrame(exerciseRenderFrame);
+ exerciseRenderFrame=requestAnimationFrame(()=>{exerciseRenderFrame=null;renderExercises()});
+}
 
 function setExerciseHistoryFilter(filter){
  exerciseHistoryFilter=filter;
@@ -5504,7 +5561,7 @@ function updateSet(ei,si,k,v){
  if(k==='rir')s[k]=(v===''?'':+v);
  else s[k]=(v===''?0:Math.max(0,+v||0));
  if(k!=='rir')s.pr='';
- saveActiveWorkout();
+ saveActiveWorkout(true);
 }
 function toggleSet(ei,si){
  const e=state.activeWorkout.exercises[ei],set=e.sets[si];
@@ -5523,7 +5580,7 @@ function toggleSet(ei,si){
  }
  saveActiveWorkout();renderWorkout();
 }
-function updateNotes(ei,v){state.activeWorkout.exercises[ei].notes=v;saveActiveWorkout();}
+function updateNotes(ei,v){state.activeWorkout.exercises[ei].notes=v;saveActiveWorkout(true);}
 let restInterval=null,restLeft=0;
 function paintRestTimer(){
  const box=document.getElementById('restTimer'),txt=document.getElementById('restTimerText');if(!box||!txt)return;
@@ -6214,7 +6271,7 @@ if('serviceWorker' in navigator&&!isNativeApp()){
 document.body.classList.toggle('native-app',isNativeApp());
 document.documentElement.classList.toggle('native-app',isNativeApp());
 enhanceAppSelects(document);
-renderHome();populateMuscles();updateInstallButton();updateActiveWorkoutChrome();
+renderNavigationView('home');populateMuscles();updateInstallButton();updateActiveWorkoutChrome();
 if(startupStorageNotice){
  setTimeout(openStartupStorageNotice,180);
 } else if(state.activeWorkout){
