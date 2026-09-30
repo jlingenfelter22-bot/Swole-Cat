@@ -172,6 +172,31 @@ Performance is an ongoing product requirement, not a one-time cleanup.
 - [ ] Repeat device profiling before major feature milestones and store releases
 
 
+## Performance Hardening — Iterative
+
+**Status: Performance Pass 1 complete in v0.41.0.**
+
+Performance is treated as an ongoing product requirement, not a one-time cleanup.
+
+- [x] Nonblocking top-level navigation
+- [x] Reuse already-rendered navigation views and refresh stale views after the tap paints
+- [x] Batch continuous workout input persistence instead of writing local storage on every keystroke
+- [x] Flush pending edits safely when the app backgrounds or unloads
+- [x] Cache derived session/history lookups used across Exercise, Progress, and coaching screens
+- [x] Cache exercise catalog lookups
+- [x] Use offscreen rendering containment for long Exercise and History lists
+- [x] Remove native bottom-dock blur cost
+- [x] Shorten interaction motion timing for a sharper response
+- [x] Expand/collapse workout exercises without rebuilding the full workout DOM
+- [x] Update weight/rep micro-step controls without rebuilding the full workout DOM
+- [x] Remove duplicate persistence work when completing a set
+- [ ] Repeat performance profiling after muscle heat maps and richer history are implemented
+- [ ] Repeat performance profiling before signed/public release
+
+**Performance principle:** visual response should happen before expensive persistence or derived-data work whenever safety allows. Workout data durability must remain protected during app backgrounding and shutdown.
+
+---
+
 ## Phase 4 — Workout Completion Experience
 
 **Priority: High**
