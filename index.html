@@ -3085,6 +3085,86 @@ function isNativeApp(){
 function nativePlatform(){
  try{return window.Capacitor?.getPlatform?.()||'web'}catch(e){return 'web'}
 }
+let appNavigationStack=['home'],nativeBackExitArmedUntil=0,nativeBehaviorReady=false;
+function capacitorPlugin(name){
+ try{return window.Capacitor?.Plugins?.[name]||null}catch(e){return null}
+}
+function recordAppNavigation(id,{history=true,replaceHistory=false,resetHistory=false}={}){
+ if(resetHistory){appNavigationStack=[id];return}
+ if(replaceHistory){
+   if(appNavigationStack.length)appNavigationStack[appNavigationStack.length-1]=id;
+   else appNavigationStack=[id];
+   return;
+ }
+ if(!history)return;
+ if(appNavigationStack[appNavigationStack.length-1]!==id)appNavigationStack.push(id);
+ if(appNavigationStack.length>30)appNavigationStack=appNavigationStack.slice(-30);
+}
+function closeTransientUiForBack(){
+ const selectOverlay=document.getElementById('appSelectOverlay');
+ if(selectOverlay?.classList.contains('open')){closeAppSelect();return true}
+ const modal=document.getElementById('modal');
+ if(modal?.classList.contains('open')){
+   confirmCallback=null;
+   closeModal();
+   return true;
+ }
+ const active=document.activeElement;
+ if(active&&active!==document.body&&/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)){
+   try{active.blur()}catch(e){}
+   return true;
+ }
+ return false;
+}
+function navigateBackInApp(){
+ const current=activeViewId();
+ while(appNavigationStack.length>1&&appNavigationStack[appNavigationStack.length-1]===current)appNavigationStack.pop();
+ const previous=appNavigationStack[appNavigationStack.length-1];
+ if(previous&&previous!==current){
+   go(previous,{history:false});
+   return true;
+ }
+ if(current!=='home'){
+   appNavigationStack=['home'];
+   go('home',{history:false});
+   return true;
+ }
+ return false;
+}
+function handleNativeBackButton(){
+ if(closeTransientUiForBack())return;
+ if(navigateBackInApp()){nativeBackExitArmedUntil=0;return}
+ const appPlugin=capacitorPlugin('App');
+ const now=Date.now();
+ if(now<nativeBackExitArmedUntil){
+   nativeBackExitArmedUntil=0;
+   try{appPlugin?.exitApp?.()}catch(e){}
+   return;
+ }
+ nativeBackExitArmedUntil=now+2000;
+ showToast('Press back again to exit Swole Cat');
+}
+async function installNativeBehaviorHandlers(){
+ if(nativeBehaviorReady||!isNativeApp()||nativePlatform()!=='android')return;
+ const appPlugin=capacitorPlugin('App');
+ if(!appPlugin?.addListener)return;
+ nativeBehaviorReady=true;
+ try{
+   await appPlugin.addListener('backButton',()=>handleNativeBackButton());
+   await appPlugin.addListener('appStateChange',({isActive})=>{
+     if(!isActive){
+       if(pendingStateSave)flushPendingStateSave();
+       else if(state.activeWorkout)saveActiveWorkout();
+       releaseWakeLock();
+       nativeBackExitArmedUntil=0;
+     }else{
+       nativeBackExitArmedUntil=0;
+       if(state.activeWorkout&&!state.activeWorkout.pausedAt)requestWakeLock();
+       updateActiveWorkoutChrome();
+     }
+   });
+ }catch(e){nativeBehaviorReady=false}
+}
 function updateInstallButton(){
  const b=document.getElementById('installBtn');
  if(b)b.classList.toggle('show',!isNativeApp()&&!!deferredInstallPrompt);
@@ -3183,7 +3263,7 @@ function pauseActiveWorkout(){
  saveActiveWorkout();
  stopRestTimer();
  releaseWakeLock();
- go('home');
+ go('home',{replaceHistory:true});
  updateActiveWorkoutChrome();
  showToast('Workout paused');
 }
@@ -3239,11 +3319,13 @@ function discardActiveAndStart(id,programId=null){
  });
 }
 
-function go(id){
+function go(id,options={}){
  haptic(8);
- document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
  const target=document.getElementById(id);if(!target)return;
+ const previous=activeViewId();
+ document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
  target.classList.add('active');
+ if(previous!==id)recordAppNavigation(id,options);
  document.querySelectorAll('.navbtn').forEach(b=>{const on=b.dataset.go===id;b.classList.toggle('active',on);if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
  // First visit needs content immediately. Revisits paint cached DOM first, then refresh
  // stale data on the next frame so taps are never blocked by rendering or storage.
@@ -5639,7 +5721,7 @@ function startRestTimer(seconds){
 }
 function adjustRestTimer(delta){restLeft=Math.max(0,restLeft+delta);paintRestTimer();if(restLeft===0)stopRestTimer();}
 function stopRestTimer(){if(restInterval)clearInterval(restInterval);restInterval=null;restLeft=0;document.getElementById('restTimer')?.classList.remove('show');}
-function cancelWorkout(){confirmAction('Cancel active workout?','This deletes the autosaved active workout draft. Completed workout history is not affected.',()=>{state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();go('home');showToast('Active workout cancelled');});}
+function cancelWorkout(){confirmAction('Cancel active workout?','This deletes the autosaved active workout draft. Completed workout history is not affected.',()=>{state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();go('home',{resetHistory:true});showToast('Active workout cancelled');});}
 function finishWorkout(){
  const w=state.activeWorkout;if(!w)return;
  const completed=w.exercises.some(e=>e.sets.some(s=>s.done));
@@ -5666,7 +5748,7 @@ function finalizeWorkout(updateRoutine=false){
  const session={id:w.id,routineId:w.routineId,routineName:w.routineName,trainingMode:normalizeTrainingMode(w.trainingMode),programId:w.programId||null,status:'finished',date:end.toISOString(),startDate:w.startDate,durationMinutes:duration,exercises:w.exercises};
  state.sessions.push(session);
  advanceProgramAfterWorkout(session);
- state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();haptic([40,45,100]);renderHome();go('home');
+ state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();haptic([40,45,100]);renderHome();go('home',{resetHistory:true});
  const sets=sessionSetCount(session),volume=Math.round(sessionVolume(session)),prs=sessionPRCount(session);
  const skipped=session.exercises.filter(e=>e.skipped).length;
  const wins=session.exercises.map(e=>{
@@ -6320,6 +6402,7 @@ document.body.classList.toggle('native-app',isNativeApp());
 document.documentElement.classList.toggle('native-app',isNativeApp());
 enhanceAppSelects(document);
 renderNavigationView('home');populateMuscles();updateInstallButton();updateActiveWorkoutChrome();
+installNativeBehaviorHandlers();
 if(startupStorageNotice){
  setTimeout(openStartupStorageNotice,180);
 } else if(state.activeWorkout){
