@@ -15,7 +15,7 @@ This document is the canonical product roadmap for Swole Cat. Features listed as
 
 ## Phase 0 — Android Packaging and Release Foundation
 
-**Status: In progress through v0.42.0**
+**Status: In progress through v0.43.0**
 
 Goal: turn the hardened PWA into a reliable Android app while keeping one maintainable web codebase.
 
@@ -23,7 +23,7 @@ Goal: turn the hardened PWA into a reliable Android app while keeping one mainta
 - [x] Automated debug APK build through GitHub Actions
 - [x] Test packaged Android app on real devices
 - [x] Fix Android back-button navigation and native app lifecycle persistence in v0.42.0
-- [ ] Finish Android keyboard, safe-area/status-bar, native file import/export, and device-storage edge-case verification
+- [x] Finish Android keyboard, safe-area/status-bar, native backup export/share, file-import reuse, and device-storage write verification in v0.43.0
 - [x] Finalize launcher icon and splash/launch experience (baseline Swole Cat branding; visual identity can evolve in Phase 3)
 - [x] Add explicit app versioning
 - [x] Create signed release APK/AAB workflow (pipeline code complete; first signed build requires one-time private keystore secrets)
@@ -114,7 +114,7 @@ Areas to evaluate:
 
 ## Phase 3 — Visual Identity Refresh
 
-**Status: Visual identity passes complete through v0.36.0. UI Tuning Pass 1 completed in v0.37.0 from a real-device screen-recording review, including Android system-bar integration, bottom-dock integration, and schematic exercise artwork. UI Tuning Pass 2 completed in v0.38.0 with app-owned selectors and responsive Settings toggles. UI Tuning Pass 3 completed in v0.39.0 with removal of the persistent install control from the header. UI Tuning Pass 4 completed in v0.40.0 with a single contextual pause/resume icon control, true paused-time tracking, and a recognizable gear settings icon. Additional user-directed sizing and micro-UI adjustments remain iterative. Performance Pass 1 completed in v0.41.0, removing redundant navigation saves, batching continuous-input autosaves, caching unchanged heavy views, reducing Android paint cost, and adding performance regression coverage. Android Behavior Pass 1 completed in v0.42.0 with native Back navigation, layered transient-UI dismissal, protected double-back root exit, and explicit native app-state persistence/wake-lock handling.**
+**Status: Visual identity passes complete through v0.36.0. UI Tuning Pass 1 completed in v0.37.0 from a real-device screen-recording review, including Android system-bar integration, bottom-dock integration, and schematic exercise artwork. UI Tuning Pass 2 completed in v0.38.0 with app-owned selectors and responsive Settings toggles. UI Tuning Pass 3 completed in v0.39.0 with removal of the persistent install control from the header. UI Tuning Pass 4 completed in v0.40.0 with a single contextual pause/resume icon control, true paused-time tracking, and a recognizable gear settings icon. Additional user-directed sizing and micro-UI adjustments remain iterative. Performance Pass 1 completed in v0.41.0, removing redundant navigation saves, batching continuous-input autosaves, caching unchanged heavy views, reducing Android paint cost, and adding performance regression coverage. Android Behavior Pass 1 completed in v0.42.0 with native Back navigation, layered transient-UI dismissal, protected double-back root exit, and explicit native app-state persistence/wake-lock handling. Android Behavior Pass 2 completed in v0.43.0 with native keyboard resizing, dynamic viewport/safe-area handling, explicit status-bar styling, Android share-sheet backup export, reusable file imports, and startup storage-write verification.**
 
 **Priority: High**
 
