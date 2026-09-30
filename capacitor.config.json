@@ -1,0 +1,11 @@
+{
+  "appId": "app.swolecat.tracker",
+  "appName": "Swole Cat",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#0b0d12"
+  }
+}
