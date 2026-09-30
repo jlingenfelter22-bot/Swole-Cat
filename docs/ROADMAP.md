@@ -9,6 +9,7 @@ This document is the canonical product roadmap for Swole Cat. Features listed as
 3. **Training logic is configurable per routine/program.** Swole Cat began as a progressive-overload tracker, but it should support multiple ways of training without forcing every routine through the same progression algorithm.
 4. **History should become more useful over time.** Completing a workout should create a durable, visual record that can be revisited from the calendar/history.
 5. **Social features should enhance training, not turn Swole Cat into a generic social network.**
+6. **Visual identity should evolve without sacrificing usability.** Swole Cat should preserve the clean information architecture, sizing, readability, and fast workout flow while developing a distinctive dark retro-futurist/cyberpunk visual identity.
 
 ---
 
@@ -103,7 +104,52 @@ Areas to evaluate:
 
 ---
 
-## Phase 3 — Workout Completion Experience
+## Phase 3 — Visual Identity Refresh
+
+**Priority: High**
+
+Goal: give Swole Cat a distinctive, premium visual identity without changing the underlying layout, information hierarchy, touch-target sizing, or fast workout flow that already works well.
+
+### Locked: Dark retro-futurist / cyberpunk visual direction
+The intended style is a restrained, polished blend of:
+- dark-mode foundation
+- sleek futuristic surfaces
+- subtle 1980s retro-future influence
+- cyberpunk-inspired accents
+- selective neon/glow treatment
+- high-contrast typography and data visualization
+- premium motion and interaction feedback
+- a recognizable Swole Cat visual language
+
+The visual direction should feel **futuristic and energetic, not noisy or gimmicky**. Readability and fast gym use always win over decoration.
+
+### Locked: Preserve the existing UX structure
+This phase is a **fresh layer of paint**, not a ground-up interface redesign.
+
+Preserve unless testing shows a real UX problem:
+- current screen hierarchy
+- major navigation patterns
+- card sizing and information density
+- large touch targets
+- quick scanning during a workout
+- responsive/mobile-first behavior
+
+### Design-system work
+- [ ] Define color tokens, surfaces, borders, glow levels, text hierarchy, and state colors
+- [ ] Standardize cards, buttons, inputs, pills, tabs, modals, dialogs, and progress indicators
+- [ ] Define icon style
+- [ ] Define typography scale
+- [ ] Define motion/transition rules
+- [ ] Define data-visualization styling for charts, progress, PRs, and future heat maps
+- [ ] Make visual states accessible and distinguishable without relying only on color
+- [ ] Keep effects performant on Android devices
+
+### Why this phase comes here
+The visual system should be established before building the workout-completion recap, muscle heat maps, richer history screens, sharing surfaces, and social/group UI. That avoids styling each major new feature twice.
+
+---
+
+## Phase 4 — Workout Completion Experience
 
 **Priority: High**
 
@@ -123,11 +169,11 @@ When the user taps **Finish Workout**, show a polished recap including:
 - [ ] Notable progression versus prior sessions
 - [ ] Front/back muscle heat map
 
-The summary should visually match Swole Cat's dark, modern design and feel like a premium completion moment.
+The summary should use the refreshed Swole Cat visual system and feel like a premium completion moment.
 
 ---
 
-## Phase 4 — Muscle Mapping, Heat Maps, and Rich History
+## Phase 5 — Muscle Mapping, Heat Maps, and Rich History
 
 **Priority: High**
 
@@ -167,7 +213,7 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 
 ---
 
-## Phase 5 — Routine Sharing Without Accounts
+## Phase 6 — Routine Sharing Without Accounts
 
 **Priority: Medium-high**
 
@@ -186,7 +232,7 @@ Sharing a routine must never copy another person's private workout history unles
 
 ---
 
-## Phase 6 — Accounts, Cloud Backup, and Multi-Device Sync
+## Phase 7 — Accounts, Cloud Backup, and Multi-Device Sync
 
 **Priority: Medium**
 
@@ -205,7 +251,7 @@ A hosted backend such as Supabase or an equivalent service can provide authentic
 
 ---
 
-## Phase 7 — Shared Programs and Workout Groups
+## Phase 8 — Shared Programs and Workout Groups
 
 **Priority: Medium / major feature**
 
@@ -243,7 +289,7 @@ No user's weights or progression should overwrite another user's data.
 
 ---
 
-## Phase 8 — Group Progress Dashboard
+## Phase 9 — Group Progress Dashboard
 
 **Priority: Later**
 
@@ -268,7 +314,7 @@ Users should control what other group members can see, including options such as
 
 ---
 
-## Phase 9 — Live Group Workouts
+## Phase 10 — Live Group Workouts
 
 **Priority: Long-term**
 
@@ -286,7 +332,7 @@ The feature should remain training-focused. Full social-media feeds, public foll
 
 ---
 
-## Phase 10 — Future Intelligence and Expansion
+## Phase 11 — Future Intelligence and Expansion
 
 These are intentionally later because they depend on the data model and core experience being stable.
 
@@ -314,17 +360,18 @@ The current intended sequence is:
 2. Routine editing, including **rename**
 3. Per-routine **training mode selector**
 4. Refactor/expand the progression engine
-5. Post-workout completion summary
-6. Exercise muscle metadata
-7. Front/back muscle heat map
-8. Rich calendar/history workout recaps
-9. Routine sharing without accounts
-10. Accounts + cloud backup/sync
-11. Shared group routines
-12. Group progress dashboard + privacy
-13. Live group workout synchronization
+5. **Visual identity refresh / Swole Cat design system**
+6. Post-workout completion summary
+7. Exercise muscle metadata
+8. Front/back muscle heat map
+9. Rich calendar/history workout recaps
+10. Routine sharing without accounts
+11. Accounts + cloud backup/sync
+12. Shared group routines
+13. Group progress dashboard + privacy
+14. Live group workout synchronization
 
-This order is deliberate. Routine editing and the training-mode data model should be settled before deeper analytics. Muscle metadata should exist before heat maps. Simple routine sharing should be proven before building accounts. Accounts and sync should exist before group or live features.
+This order is deliberate. Routine editing and the training-mode data model should be settled before deeper analytics. The visual system should be established before major new screens and visualizations are built. Muscle metadata should exist before heat maps. Simple routine sharing should be proven before building accounts. Accounts and sync should exist before group or live features.
 
 ---
 
@@ -337,6 +384,9 @@ The following product ideas are explicitly retained on the roadmap:
 - [ ] Guided progressive-overload mode
 - [ ] Strength-focused progression mode
 - [ ] Track-only / standard workout mode
+- [ ] Dark retro-futurist / cyberpunk visual identity refresh
+- [ ] Preserve current layout, sizing, readability, and workout flow during the visual refresh
+- [ ] Standardized Swole Cat design system
 - [ ] Post-workout stats/completion screen
 - [ ] Muscle groups targeted summary
 - [ ] Front/back muscle heat map
