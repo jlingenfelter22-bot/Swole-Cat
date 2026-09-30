@@ -217,11 +217,13 @@ When the user taps **Finish Workout**, show a polished recap including:
 - [x] Personal records hit
 - [x] Muscle groups trained (current exercise-category metadata; richer primary/secondary mapping follows in Phase 5)
 - [x] Notable progression versus prior sessions
-- [ ] Front/back muscle heat map
+- [x] Front/back muscle heat map
 
 The summary should use the refreshed Swole Cat visual system and feel like a premium completion moment.
 
-**v0.44.0:** Workout Recap Foundation implements the non-heat-map recap experience using existing session/exercise metadata and actual prior workout history. The front/back muscle heat map remains intentionally deferred until the structured Phase 5 muscle model exists.
+**v0.44.0:** Workout Recap Foundation implements the non-heat-map recap experience using existing session/exercise metadata and actual prior workout history.
+
+**v0.45.0:** Structured muscle metadata + front/back heat-map foundation completes the Phase 4 recap. Heat intensity is based on transparent primary/secondary set-equivalent weighting and explicitly does not claim muscle damage or recovery state.
 
 ---
 
@@ -232,6 +234,9 @@ The summary should use the refreshed Swole Cat visual system and feel like a pre
 Goal: make workout history visual and genuinely useful.
 
 ### Locked: Exercise muscle metadata
+
+**Status: Initial structured resolver complete in v0.45.0.** Built-in exercises resolve primary/secondary muscle regions and movement family from the existing muscle + movement-pattern taxonomy; custom exercises persist resolved metadata for portability.
+
 Each exercise should support structured metadata such as:
 - primary muscle groups
 - secondary muscle groups
@@ -239,12 +244,12 @@ Each exercise should support structured metadata such as:
 - optional weighting/intensity contribution for visualization
 
 ### Locked: Muscle heat map
-- [ ] Professional front-body illustration
-- [ ] Professional back-body illustration
-- [ ] Highlight muscles trained in the completed workout
-- [ ] Differentiate primary versus secondary involvement
-- [ ] Use intensity levels to communicate relative involvement without pretending to measure physiological muscle damage
-- [ ] Match the Swole Cat visual system
+- [x] Swole Cat front-body schematic illustration
+- [x] Swole Cat back-body schematic illustration
+- [x] Highlight muscles trained in the completed workout
+- [x] Differentiate primary versus secondary involvement
+- [x] Use intensity levels to communicate relative involvement without pretending to measure physiological muscle damage
+- [x] Match the Swole Cat visual system
 
 ### Locked: Historical workout recap
 From the calendar/history, tapping a completed workout should reopen a durable recap containing:
