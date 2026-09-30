@@ -13,6 +13,15 @@
   "plugins": {
     "SystemBars": {
       "insetsHandling": "css"
+    },
+    "Keyboard": {
+      "resize": "native",
+      "resizeOnFullScreen": true
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#0b0e14",
+      "overlaysWebView": true
     }
   }
 }
