@@ -113,7 +113,7 @@ Areas to evaluate:
 
 ## Phase 3 — Visual Identity Refresh
 
-**Status: Visual Pass 2 complete in v0.35.0. The core identity now has screen-specific composition across Home, Routines/Programs, Exercise Library, Active Workout, Progress, and History. Pass 3 final cohesion, sizing, restraint, performance, and accessibility polish remains.**
+**Status: Visual identity passes complete through v0.36.0. Pass 3 finalized cohesion, restraint, motion, Android rendering cost, accessibility semantics, and color-independent state cues. User-directed sizing and micro-UI adjustments remain as a focused tuning pass.**
 
 **Priority: High**
 
@@ -151,7 +151,7 @@ Preserve unless testing shows a real UX problem:
 - [x] Define motion/transition rules
 - [x] Define data-visualization styling for charts, progress, PRs, and future heat maps
 - [x] Make visual states accessible and distinguishable without relying only on color
-- [ ] Keep effects performant on Android devices
+- [x] Keep effects performant on Android devices
 
 ### Why this phase comes here
 The visual system should be established before building the workout-completion recap, muscle heat maps, richer history screens, sharing surfaces, and social/group UI. That avoids styling each major new feature twice.
@@ -393,9 +393,9 @@ The following product ideas are explicitly retained on the roadmap:
 - [x] Guided progressive-overload mode
 - [x] Strength-focused progression mode
 - [x] Track-only / standard workout mode
-- [ ] Dark retro-futurist / cyberpunk visual identity refresh
+- [x] Dark retro-futurist / cyberpunk visual identity refresh
 - [x] Preserve current layout, sizing, readability, and workout flow during the visual refresh
-- [ ] Standardized Swole Cat design system
+- [x] Standardized Swole Cat design system
 - [ ] Post-workout stats/completion screen
 - [ ] Muscle groups targeted summary
 - [ ] Front/back muscle heat map
