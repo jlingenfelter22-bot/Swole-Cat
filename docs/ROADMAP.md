@@ -39,14 +39,14 @@ Goal: turn the hardened PWA into a reliable Android app while keeping one mainta
 Goal: remove basic friction from managing routines before adding more advanced training logic.
 
 ### Locked: Full routine editing
-- [ ] Rename an existing routine/program
-- [ ] Edit routine description/notes
-- [ ] Reorder exercises
-- [ ] Add/remove exercises after creation
-- [ ] Edit exercise targets without rebuilding the routine
-- [ ] Duplicate a routine
+- [x] Rename an existing routine/program
+- [x] Edit routine description/notes
+- [x] Reorder exercises
+- [x] Add/remove exercises after creation
+- [x] Edit exercise targets without rebuilding the routine
+- [x] Duplicate a routine
 - [ ] Archive/delete routine with clear safeguards
-- [ ] Preserve existing workout history when a routine is edited
+- [x] Preserve existing workout history when a routine is edited
 
 ### Locked: Training mode selector
 Every routine/program should have a configurable training mode. The first version should support:
@@ -379,7 +379,7 @@ This order is deliberate. Routine editing and the training-mode data model shoul
 
 The following product ideas are explicitly retained on the roadmap:
 
-- [ ] Rename/edit existing routines and programs
+- [x] Rename/edit existing routines and programs
 - [ ] Choose training mode per routine/program
 - [ ] Guided progressive-overload mode
 - [ ] Strength-focused progression mode
