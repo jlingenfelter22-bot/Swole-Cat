@@ -5,8 +5,8 @@ Swole Cat uses Capacitor so the PWA and Android app share the same HTML, CSS, Ja
 ## Package
 
 - App name: Swole Cat
-- Current app version: `0.42.0`
-- Android version code: `41`
+- Current app version: `0.43.0`
+- Android version code: `43`
 - Android application ID: `com.jlingenfelter.swolecat`
 - Capacitor: 8.5.2
 - Minimum supported Android version is determined by Capacitor 8.
@@ -39,10 +39,10 @@ The debug APK is written to:
 
 `.github/workflows/android.yml` builds a versioned debug APK from `main` whenever Android/web packaging files change, and can also be run manually.
 
-For v0.42.0 the artifact/file naming is:
+For v0.43.0 the artifact/file naming is:
 
-- Artifact: `Swole-Cat-Android-v0.42.0-debug`
-- APK: `swole-cat-v0.42.0-debug.apk`
+- Artifact: `Swole-Cat-Android-v0.43.0-debug`
+- APK: `swole-cat-v0.43.0-debug.apk`
 
 The workflow verifies that the generated Android `versionName`, Android `versionCode`, and bundled app UI version all match the repository metadata before compiling.
 
@@ -103,7 +103,7 @@ Remaining Android product polish includes:
 
 ## Android Back behavior
 
-v0.42.0 installs the Capacitor App plugin and handles Android Back inside Swole Cat.
+v0.43.0 installs the Capacitor App plugin and handles Android Back inside Swole Cat.
 
 Back behavior is intentionally layered:
 
@@ -115,3 +115,18 @@ Back behavior is intentionally layered:
 6. At Home, require a second Back press within two seconds before exiting the app.
 
 The App lifecycle listener also flushes pending workout edits before backgrounding, releases the wake lock while inactive, and restores workout chrome/wake-lock behavior when the app becomes active again.
+
+
+## Android Behavior Pass 2
+
+- v0.43.0 uses Capacitor Keyboard native resize behavior so focused controls stay usable when the software keyboard opens.
+- visualViewport updates drive a dynamic app viewport height, and modal sheets respect safe-area and keyboard space.
+- The bottom navigation temporarily hides while the keyboard is open to preserve working space.
+- Capacitor StatusBar explicitly uses light icons on the Swole Cat dark background and coordinates edge-to-edge rendering with CSS safe-area insets.
+- Android backup export writes the validated backup envelope to app cache and opens the native Android share sheet, allowing normal system save/share behavior.
+- Browser/PWA export remains as a fallback.
+- File inputs reset after import attempts so the same backup can be selected again without reopening Settings.
+- Startup verifies that the app can write and read its local storage sandbox before additional training data is logged.
+- Native app backgrounding continues to flush pending workout changes through the v0.42 lifecycle handler.
+
+Core workout data remains local-first and continues to use the existing validated storage schema. v0.43.0 does not introduce a storage-engine migration.
