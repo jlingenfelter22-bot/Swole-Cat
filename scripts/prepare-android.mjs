@@ -32,6 +32,21 @@ if (!androidExists) {
 }
 
 run('npx', ['cap', 'sync', 'android']);
+run('npx', [
+  'capacitor-assets',
+  'generate',
+  '--android',
+  '--assetPath',
+  'resources',
+  '--iconBackgroundColor',
+  '#0b0d12',
+  '--iconBackgroundColorDark',
+  '#0b0d12',
+  '--splashBackgroundColor',
+  '#0b0d12',
+  '--splashBackgroundColorDark',
+  '#0b0d12'
+]);
 run(process.execPath, ['scripts/configure-android.mjs']);
 
 console.log('Android project prepared and synchronized.');

@@ -23,7 +23,7 @@ Goal: turn the hardened PWA into a reliable Android app while keeping one mainta
 - [x] Automated debug APK build through GitHub Actions
 - [x] Test packaged Android app on real devices
 - [ ] Fix Android-specific navigation, keyboard, back-button, safe-area, status-bar, file import/export, and storage issues
-- [ ] Finalize launcher icon and splash/launch experience
+- [x] Finalize launcher icon and splash/launch experience (baseline Swole Cat branding; visual identity can evolve in Phase 3)
 - [x] Add explicit app versioning
 - [x] Create signed release APK/AAB workflow (pipeline code complete; first signed build requires one-time private keystore secrets)
 - [x] Document release/update process

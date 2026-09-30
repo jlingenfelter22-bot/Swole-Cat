@@ -71,6 +71,17 @@ Migration path:
 
 V29 backup validation and the pre-import rollback snapshot protect the migration.
 
+## Launcher icon and splash
+
+Android launcher and splash resources are generated from `resources/logo.svg` using `@capacitor/assets`.
+
+The current baseline branding uses:
+- Swole Cat cat/barbell mark
+- dark `#0b0d12` icon background
+- dark launch/splash background
+
+These assets are intentionally production-clean but not treated as the final Phase 3 retro-futurist visual identity. Future visual refresh work can replace the source logo while keeping the same generation pipeline.
+
 ## Real-device smoke test
 
 Use [ANDROID_TEST_CHECKLIST.md](ANDROID_TEST_CHECKLIST.md) for the Phase 0 device test. Record the exact app version shown in Settings with any failure report.
