@@ -722,6 +722,7 @@ function load(){
    const recovered=readRecoverySnapshot();
    if(recovered){
      recoveredFromSnapshot=true;
+     recoverySnapshotWritten=true;
      startupStorageNotice=`Swole Cat recovered your workout data from a last-known-good device snapshot${recovered.savedAt?` from ${new Date(recovered.savedAt).toLocaleString()}`:''}. Review your recent history, then export a backup.`;
      return recovered.state;
    }
@@ -3701,6 +3702,10 @@ function saveSettings(){
  haptic(15);closeModal();renderHome();showToast(newUnit!==oldUnit?`Converted workout data to ${newUnit}`:'Settings saved');
 }
 function exportBackup(){
+ if(storageWriteBlocked){
+   alert('Backup export is paused because Swole Cat could not safely read the primary local data. Import a known-good backup or resolve the storage issue first so an empty/recovered-looking file is not mistaken for your real history.');
+   return;
+ }
  try{
    const exportedAt=new Date().toISOString();
    const envelope=createBackupEnvelope(exportedAt);
