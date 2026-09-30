@@ -1203,3 +1203,59 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V39 header cleanup
+        run: |
+          node <<'JS'
+          const fs = require('fs');
+          const assert = require('assert');
+          const {JSDOM} = require('jsdom');
+
+          const html = fs.readFileSync('index.html','utf8');
+          const dom = new JSDOM(html,{
+            runScripts:'dangerously',
+            url:'https://swole-cat.test/',
+            pretendToBeVisual:true,
+            beforeParse(window){
+              window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+              window.alert=()=>{};
+              window.confirm=()=>true;
+              window.scrollTo=()=>{};
+            }
+          });
+
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(35);
+            const w=dom.window,d=w.document;
+
+            assert(!d.getElementById('installBtn'),'persistent header install button should be removed');
+            const resume=d.getElementById('resumeWorkoutBtn');
+            assert(resume,'resume control should remain in header');
+            assert(resume.textContent.includes('Resume'),'resume control should use a fixed label');
+
+            w.installStarterPlan();
+            const state=JSON.parse(w.localStorage.getItem('overload_v3'));
+            w.openRoutine(state.routines[0].id);
+            await wait(10);
+
+            const before=resume.textContent.trim();
+            assert(before.includes('Resume'),'active workout should still show fixed Resume label');
+            assert(resume.getAttribute('aria-label')?.includes('sets complete'),'progress should move to accessible metadata');
+            assert(!/\d+\/\d+/.test(before),'visible resume text should not contain dynamic set count');
+
+            const input=d.querySelector('#workoutArea input[aria-label="reps"]');
+            if(input){
+              const card=input.closest('.set-card');
+              const complete=card?.querySelector('.complete-set');
+              if(complete)complete.click();
+            }
+            w.updateActiveWorkoutChrome();
+            assert.equal(resume.textContent.trim(),before,'resume label should not change width with workout progress');
+
+            dom.window.close();
+            console.log('Swole Cat V39 header cleanup PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
