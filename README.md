@@ -1,6 +1,6 @@
 # Swole Cat
 
-Swole Cat is a local-first progressive-overload workout tracker. It runs as an installable PWA and is now packaged for Android with Capacitor.
+Swole Cat is a local-first workout tracker built around progressive training, flexible routine tracking, and a growing Android experience. It runs as an installable PWA and is packaged for Android with Capacitor.
 
 ## Live PWA
 
@@ -17,6 +17,10 @@ The Android app shares the same HTML, CSS, JavaScript, workout logic, and `overl
 - Existing PWA users migrate by exporting a Swole Cat backup and importing it on first Android launch
 
 See [docs/ANDROID.md](docs/ANDROID.md) for build and migration details.
+
+## Product Roadmap
+
+The canonical feature roadmap, implementation order, and locked long-term product direction live in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Data
 
