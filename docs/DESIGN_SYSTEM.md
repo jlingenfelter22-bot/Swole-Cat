@@ -173,3 +173,19 @@ The broad visual system is now considered established. Further visual work shoul
 - destructive actions stay clearly different from normal actions
 - charts remain interpretable without needing color vision
 - local-first behavior and workout flow must not depend on visual assets loading
+
+
+## UI tuning passes
+
+### Tuning Pass 1 — Recorded device review
+Completed in v0.37.0 from the September 30 device screen-recording review:
+
+- Android header now consumes Capacitor System Bars safe-area insets so Swole Cat chrome does not collide with status icons
+- native fallback clearance protects first paint on WebViews that briefly report a zero top inset
+- bottom navigation now sits inside a full-width dock that paints through the Android navigation safe area instead of floating above it
+- recognizable exercise movement artwork returned to the Exercise Library
+- movement artwork is presented as a restrained Swole Cat training schematic with cyan figure treatment, magenta chromatic detail, grid/crosshair framing, and no mascot/cat thumbnail badge
+- top header controls use the same vector/technical icon language as the bottom navigation
+- existing HUD details, screen compositions, workout flow, and visual identity remain intact
+
+Further tuning should be based on the next real-device review and should target specific sizing, spacing, density, or component placement issues rather than changing the established visual direction.
