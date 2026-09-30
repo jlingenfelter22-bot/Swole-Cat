@@ -239,6 +239,23 @@
   .recap-muscle{border:1px solid rgba(34,211,238,.24);background:rgba(34,211,238,.055);border-radius:999px;padding:6px 9px;font-size:.72rem;font-weight:850;color:#c9f6fb}
   .recap-progression{background:rgba(34,197,94,.065);border:1px solid rgba(34,197,94,.22);border-radius:12px;padding:10px 11px;margin-top:7px}
   .recap-progression b{font-size:.82rem}.recap-progression .mini{margin-top:3px}
+  .muscle-heatmap-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:8px}
+  .muscle-map-card{background:linear-gradient(180deg,rgba(14,22,34,.98),rgba(9,14,23,.98));border:1px solid #26344a;border-radius:14px;padding:10px;overflow:hidden}
+  .muscle-map-title{text-align:center;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:#93a3ba;font-weight:950;margin-bottom:5px}
+  .muscle-map-svg{display:block;width:100%;height:auto;max-height:300px;margin:auto}
+  .muscle-map-outline{fill:#111a28;stroke:#4a5c76;stroke-width:2;stroke-linejoin:round}
+  .muscle-region{stroke:#62748c;stroke-width:.9;transition:opacity .15s ease,fill .15s ease}
+  .muscle-region.heat-0{fill:#1b2637;opacity:.46}
+  .muscle-region.heat-1{fill:#275f78;opacity:.8}
+  .muscle-region.heat-2{fill:#7d4fc7;opacity:.9}
+  .muscle-region.heat-3{fill:#e24791;opacity:.97;filter:drop-shadow(0 0 5px rgba(226,71,145,.22))}
+  .muscle-map-legend{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:8px;color:#8795aa;font-size:.62rem}
+  .muscle-map-dot{width:9px;height:9px;border-radius:2px;display:inline-block;border:1px solid rgba(255,255,255,.12)}
+  .muscle-map-dot.heat-1{background:#275f78}.muscle-map-dot.heat-2{background:#7d4fc7}.muscle-map-dot.heat-3{background:#e24791}
+  .muscle-score-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .muscle-score-chip{border:1px solid #2d3b52;background:#111927;border-radius:999px;padding:6px 9px;font-size:.68rem;color:#c5d0df}
+  .muscle-score-chip b{color:white}
+  @media(max-width:390px){.muscle-heatmap-grid{grid-template-columns:1fr}.muscle-map-svg{max-height:250px}}
   @media(min-width:560px){.recap-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}}
   .history-card-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid #263044}
   .history-edit-exercise{background:#121925;border:1px solid #293449;border-radius:15px;padding:12px;margin-top:10px}
@@ -3417,6 +3434,137 @@ function go(id,options={}){
 function startOfWeek(d=new Date()){
  const x=new Date(d);x.setHours(0,0,0,0);const day=(x.getDay()+6)%7;x.setDate(x.getDate()-day);return x;
 }
+const MUSCLE_REGION_LABELS={
+ chest:'Chest',front_delts:'Front delts',side_delts:'Side delts',rear_delts:'Rear delts',
+ biceps:'Biceps',triceps:'Triceps',forearms:'Forearms',upper_back:'Upper back',lats:'Lats',
+ traps:'Traps',lower_back:'Lower back',core:'Abs / core',obliques:'Obliques',glutes:'Glutes',
+ quads:'Quads',hamstrings:'Hamstrings',adductors:'Adductors',calves:'Calves',tibialis:'Tibialis'
+};
+function uniqueMuscles(list){return [...new Set((list||[]).filter(Boolean))]}
+function exerciseMuscleMetadata(ex){
+ if(!ex)return {primary:[],secondary:[],movementFamily:'other'};
+ if(Array.isArray(ex.primaryMuscles)&&ex.primaryMuscles.length){
+   return {primary:uniqueMuscles(ex.primaryMuscles),secondary:uniqueMuscles(ex.secondaryMuscles||[]),movementFamily:ex.movementFamily||ex.pattern||'other'};
+ }
+ const muscle=ex.muscle||'Other',pattern=ex.pattern||'other';
+ let primary=[],secondary=[];
+ if(muscle==='Chest'){
+   primary=['chest'];
+   secondary=['front_delts',...(pattern==='chest_fly'?[]:['triceps'])];
+ }else if(muscle==='Back'){
+   if(pattern==='hinge') {primary=['glutes','hamstrings','lower_back'];secondary=['upper_back','forearms','quads'];}
+   else if(pattern==='vertical_pull'){primary=['lats'];secondary=['upper_back','biceps','rear_delts'];}
+   else if(pattern==='shoulder_extension'||pattern==='pullover'){primary=['lats'];secondary=['upper_back','triceps'];}
+   else {primary=['upper_back','lats'];secondary=['rear_delts','biceps'];}
+ }else if(muscle==='Lower Back'){
+   primary=['lower_back'];secondary=['glutes','hamstrings'];
+ }else if(muscle==='Shoulders'){
+   if(pattern==='lateral_raise'){primary=['side_delts'];secondary=[];}
+   else if(pattern==='rear_delt'){primary=['rear_delts'];secondary=['upper_back'];}
+   else if(pattern==='front_raise'){primary=['front_delts'];secondary=[];}
+   else if(pattern==='upright_row'){primary=['side_delts','traps'];secondary=['biceps'];}
+   else {primary=['front_delts','side_delts'];secondary=['triceps'];}
+ }else if(muscle==='Traps'){
+   primary=['traps'];secondary=pattern==='shrug'?['forearms']:['upper_back'];
+ }else if(muscle==='Quads'){
+   primary=['quads'];secondary=(pattern==='squat'||pattern==='lunge')?['glutes','adductors']:[];
+ }else if(muscle==='Hamstrings'){
+   primary=['hamstrings'];secondary=pattern==='hinge'?['glutes','lower_back']:[];
+ }else if(muscle==='Glutes'){
+   primary=['glutes'];
+   secondary=pattern==='hip_abduction'?[]:(pattern==='squat'||pattern==='lunge'?['quads','adductors']:['hamstrings']);
+ }else if(muscle==='Adductors'){
+   primary=['adductors'];secondary=['glutes','quads'];
+ }else if(muscle==='Biceps'){
+   primary=['biceps'];secondary=['forearms'];
+ }else if(muscle==='Triceps'){
+   primary=['triceps'];secondary=(pattern==='dip_press'||pattern==='horizontal_press')?['chest','front_delts']:[];
+ }else if(muscle==='Forearms'){
+   primary=['forearms'];secondary=pattern==='elbow_flexion'?['biceps']:[];
+ }else if(muscle==='Calves'){
+   primary=['calves'];
+ }else if(muscle==='Tibialis'){
+   primary=['tibialis'];
+ }else if(muscle==='Core'){
+   if(pattern==='rotation'||pattern==='lateral_flexion'||pattern==='anti_rotation'){primary=['obliques','core'];}
+   else primary=['core'];
+ }else if(muscle==='Full Body'){
+   if(pattern==='carry'){primary=['forearms','traps','core'];secondary=['obliques','quads','glutes'];}
+   else if(pattern==='sled_push'||pattern==='sled_pull'){primary=['quads','glutes'];secondary=['hamstrings','calves','core'];}
+   else {primary=['quads','glutes','upper_back'];secondary=['hamstrings','traps','core','forearms'];}
+ }else{
+   primary=[String(muscle).toLowerCase().replace(/\s+/g,'_')];
+ }
+ return {primary:uniqueMuscles(primary),secondary:uniqueMuscles(secondary.filter(x=>!primary.includes(x))),movementFamily:pattern};
+}
+function sessionMuscleScores(session){
+ const scores={};
+ (session.exercises||[]).forEach(e=>{
+   if(e.skipped)return;
+   const working=progressionSets(e);
+   if(!working.length)return;
+   const meta=exerciseMuscleMetadata(exById(e.exerciseId));
+   const setCount=working.length;
+   meta.primary.forEach(m=>scores[m]=(scores[m]||0)+setCount);
+   meta.secondary.forEach(m=>scores[m]=(scores[m]||0)+setCount*.5);
+ });
+ return scores;
+}
+function muscleHeatLevel(score){
+ if(score>=6)return 3;
+ if(score>=3)return 2;
+ if(score>0)return 1;
+ return 0;
+}
+function muscleRegionClass(region,scores){return 'muscle-region heat-'+muscleHeatLevel(Number(scores?.[region])||0)}
+function muscleMapRegion(region,scores,shape){
+ return `<${shape.tag} class="${muscleRegionClass(region,scores)}" data-region="${region}" ${shape.attrs}></${shape.tag}>`;
+}
+function muscleHeatMapSvg(side,scores={}){
+ const r=(region,tag,attrs)=>muscleMapRegion(region,scores,{tag,attrs});
+ if(side==='back')return `<svg class="muscle-map-svg" viewBox="0 0 180 330" role="img" aria-label="Back muscle involvement map">
+   <circle class="muscle-map-outline" cx="90" cy="28" r="18"/>
+   <path class="muscle-map-outline" d="M61 50 Q90 39 119 50 L129 123 Q122 159 113 183 L109 246 96 316 84 316 71 246 67 183 Q58 159 51 123Z"/>
+   <path class="muscle-map-outline" d="M61 58 40 70 24 151 38 155 57 92M119 58 140 70 156 151 142 155 123 92"/>
+   ${r('traps','path','d="M69 51 90 43 111 51 103 79 77 79Z"')}
+   ${r('rear_delts','path','d="M57 61 76 55 76 80 59 88ZM123 61 104 55 104 80 121 88Z"')}
+   ${r('upper_back','path','d="M70 78 110 78 116 126 64 126Z"')}
+   ${r('lats','path','d="M64 91 79 103 76 157 58 133ZM116 91 101 103 104 157 122 133Z"')}
+   ${r('triceps','path','d="M45 78 58 73 53 130 40 126ZM135 78 122 73 127 130 140 126Z"')}
+   ${r('forearms','path','d="M39 126 52 130 42 164 29 159ZM141 126 128 130 138 164 151 159Z"')}
+   ${r('lower_back','path','d="M73 128 107 128 110 172 70 172Z"')}
+   ${r('glutes','path','d="M69 171 90 174 89 215 68 210ZM111 171 90 174 91 215 112 210Z"')}
+   ${r('hamstrings','path','d="M68 211 88 216 84 267 65 262ZM112 211 92 216 96 267 115 262Z"')}
+   ${r('calves','path','d="M66 264 83 269 80 312 68 312ZM114 264 97 269 100 312 112 312Z"')}
+ </svg>`;
+ return `<svg class="muscle-map-svg" viewBox="0 0 180 330" role="img" aria-label="Front muscle involvement map">
+   <circle class="muscle-map-outline" cx="90" cy="28" r="18"/>
+   <path class="muscle-map-outline" d="M61 50 Q90 39 119 50 L129 123 Q122 159 113 183 L109 246 96 316 84 316 71 246 67 183 Q58 159 51 123Z"/>
+   <path class="muscle-map-outline" d="M61 58 40 70 24 151 38 155 57 92M119 58 140 70 156 151 142 155 123 92"/>
+   ${r('front_delts','path','d="M57 58 Q68 49 78 55 L75 79 58 86ZM123 58 Q112 49 102 55 L105 79 122 86Z"')}
+   ${r('side_delts','path','d="M53 64 62 58 58 91 49 94ZM127 64 118 58 122 91 131 94Z"')}
+   ${r('chest','path','d="M68 58 Q90 48 90 85 L66 91ZM112 58 Q90 48 90 85 L114 91Z"')}
+   ${r('biceps','path','d="M43 82 57 78 53 126 40 124ZM137 82 123 78 127 126 140 124Z"')}
+   ${r('forearms','path','d="M39 125 52 129 42 164 29 159ZM141 125 128 129 138 164 151 159Z"')}
+   ${r('core','path','d="M75 92 105 92 106 157 74 157Z"')}
+   ${r('obliques','path','d="M64 94 75 92 74 158 64 165ZM116 94 105 92 106 158 116 165Z"')}
+   ${r('adductors','path','d="M83 174 90 174 87 244 78 236ZM97 174 90 174 93 244 102 236Z"')}
+   ${r('quads','path','d="M67 174 84 174 81 252 64 246ZM113 174 96 174 99 252 116 246Z"')}
+   ${r('tibialis','path','d="M69 253 80 256 78 313 68 313ZM111 253 100 256 102 313 112 313Z"')}
+   ${r('calves','path','d="M80 260 85 263 82 307 78 307ZM100 260 95 263 98 307 102 307Z"')}
+ </svg>`;
+}
+function muscleHeatMapHtml(session){
+ const scores=sessionMuscleScores(session);
+ const ranked=Object.entries(scores).filter(([,score])=>score>0).sort((a,b)=>b[1]-a[1]);
+ return `<div class="muscle-heatmap-grid">
+   <div class="muscle-map-card"><div class="muscle-map-title">Front</div>${muscleHeatMapSvg('front',scores)}</div>
+   <div class="muscle-map-card"><div class="muscle-map-title">Back</div>${muscleHeatMapSvg('back',scores)}</div>
+ </div>
+ <div class="muscle-map-legend"><span class="muscle-map-dot heat-1"></span>Secondary / light <span class="muscle-map-dot heat-2"></span>Moderate <span class="muscle-map-dot heat-3"></span>Primary / high</div>
+ ${ranked.length?`<div class="muscle-score-list">${ranked.slice(0,8).map(([muscle,score])=>`<span class="muscle-score-chip"><b>${esc(MUSCLE_REGION_LABELS[muscle]||muscle)}</b> · ${score % 1 ? score.toFixed(1) : score} set-eq</span>`).join('')}</div>`:''}
+ <div class="mini" style="margin-top:8px">Color intensity represents relative involvement from completed working sets (primary = 1.0 set-equivalent, secondary = 0.5). It does not measure muscle damage, recovery, or physiological activation.</div>`;
+}
 function sessionVolume(s){
  return s.exercises.reduce((sum,e)=>sum+completedSets(e).reduce((a,x)=>a+(Number(x.weight)||0)*(Number(x.reps)||0),0),0);
 }
@@ -3426,7 +3574,13 @@ function sessionPRCount(s){return s.exercises.reduce((n,e)=>n+(progressionSets(e
 function sessionTotalReps(s){return (s.exercises||[]).reduce((n,e)=>n+completedSets(e).reduce((a,set)=>a+(Number(set.reps)||0),0),0)}
 function sessionCompletedExerciseCount(s){return (s.exercises||[]).filter(e=>!e.skipped&&completedSets(e).length>0).length}
 function sessionMuscleGroups(s){
- return [...new Set((s.exercises||[]).filter(e=>!e.skipped&&completedSets(e).length>0).map(e=>exById(e.exerciseId)?.muscle).filter(Boolean))];
+ const groups=[];
+ (s.exercises||[]).forEach(e=>{
+   if(e.skipped||!completedSets(e).length)return;
+   const meta=exerciseMuscleMetadata(exById(e.exerciseId));
+   meta.primary.forEach(m=>groups.push(MUSCLE_REGION_LABELS[m]||m));
+ });
+ return [...new Set(groups)];
 }
 function sessionPRDetails(s){
  const rows=[];
@@ -3516,6 +3670,10 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[]}={}
    <div class="recap-section">
      <div class="recap-section-title">Muscles trained</div>
      ${muscles.length?`<div class="recap-muscles">${muscles.map(m=>`<span class="recap-muscle">${esc(m)}</span>`).join('')}</div>`:'<div class="notice">Muscle-group metadata is not available for the completed exercises.</div>'}
+   </div>
+   <div class="recap-section">
+     <div class="recap-section-title">Muscle involvement map</div>
+     ${muscleHeatMapHtml(session)}
    </div>
    <div class="recap-section"><div class="recap-section-title">Exercises</div><div class="recap-exercise-list">${exerciseRows}</div></div>
    <div class="recap-section"><div class="recap-section-title">Progression versus last exposure</div>${progressionHtml}</div>
@@ -6076,6 +6234,8 @@ function editExercise(id){
 function saveCustomExercise(id,editing){
  const name=document.getElementById('exName').value.trim(); if(!name)return alert('Give the exercise a name.');
  const obj={id,name,muscle:document.getElementById('exMuscle').value.trim()||'Other',equipment:document.getElementById('exEquip').value,pattern:document.getElementById('exPattern').value,custom:true};
+ const resolved=exerciseMuscleMetadata(obj);
+ obj.primaryMuscles=resolved.primary;obj.secondaryMuscles=resolved.secondary;obj.movementFamily=resolved.movementFamily;
  if(editing)state.customExercises=state.customExercises.map(x=>x.id===id?obj:x); else state.customExercises.push(obj);
  save();closeModal();renderExercises();
 }
