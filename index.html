@@ -235,6 +235,11 @@
   .recap-exercise-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
   .recap-exercise-name{font-weight:900;font-size:.9rem}
   .recap-exercise-meta{font-size:.74rem;color:#97a4b9;margin-top:4px;line-height:1.35}
+  .recap-set-list{display:grid;gap:5px;margin-top:9px;padding-top:8px;border-top:1px solid #253149}
+  .recap-set-row{display:grid;grid-template-columns:minmax(72px,.9fr) minmax(110px,1.15fr) 54px 34px;gap:7px;align-items:center;font-size:.69rem;color:#8f9db1}
+  .recap-set-row b{font-size:.72rem;color:#dce6f3}
+  .recap-set-row .inline-pr-mark{justify-self:end}
+  @media(max-width:390px){.recap-set-row{grid-template-columns:minmax(66px,.9fr) minmax(98px,1.15fr) 48px 30px;gap:5px;font-size:.63rem}.recap-set-row b{font-size:.67rem}}
   .recap-muscles{display:flex;flex-wrap:wrap;gap:6px}
   .recap-muscle{border:1px solid rgba(34,211,238,.24);background:rgba(34,211,238,.055);border-radius:999px;padding:6px 9px;font-size:.72rem;font-weight:850;color:#c9f6fb}
   .recap-progression{background:rgba(34,197,94,.065);border:1px solid rgba(34,197,94,.22);border-radius:12px;padding:10px 11px;margin-top:7px}
@@ -3691,6 +3696,21 @@ function previousSessionExercise(exerciseId,sessions=state.sessions){
  }
  return null;
 }
+function sessionsBeforeSession(session){
+ const at=new Date(session?.date||0).getTime();
+ if(!Number.isFinite(at))return [];
+ return state.sessions
+   .filter(s=>s.id!==session.id&&new Date(s.date).getTime()<at)
+   .sort((a,b)=>new Date(a.date)-new Date(b.date));
+}
+function historicalProgressHighlights(session){
+ return sessionProgressHighlights(session,sessionsBeforeSession(session));
+}
+function openHistoricalWorkoutRecap(id){
+ const session=state.sessions.find(s=>s.id===id);
+ if(!session)return;
+ openModal('Workout recap',workoutRecapHtml(session,{progressHighlights:historicalProgressHighlights(session),historical:true}));
+}
 function sessionProgressHighlights(s,priorSessions=state.sessions){
  const highlights=[];
  (s.exercises||[]).forEach(e=>{
@@ -3722,18 +3742,27 @@ function formatSessionCompletionTime(s){
  const d=new Date(s.date);
  return Number.isNaN(d.getTime())?'Completed workout':d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 }
-function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[]}={}){
+function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],historical=false}={}){
  const workingSets=sessionSetCount(session),allSets=sessionAllSetCount(session),reps=sessionTotalReps(session);
  const volume=Math.round(sessionVolume(session)),prs=sessionPRDetails(session),muscles=sessionMuscleGroups(session);
  const completedExercises=sessionCompletedExerciseCount(session),skipped=(session.exercises||[]).filter(e=>e.skipped).length;
  const exerciseRows=(session.exercises||[]).map(e=>{
    const ex=exById(e.exerciseId),done=completedSets(e),working=progressionSets(e);
    if(e.skipped)return `<div class="recap-exercise"><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">Skipped for this session</div></div>`;
-   if(!done.length)return `<div class="recap-exercise"><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">No completed sets</div></div>`;
+   if(!done.length)return `<div class="recap-exercise"><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">No completed sets</div>${e.notes?`<div class="muscle-map-note" style="margin-top:8px"><b>Notes</b><br>${esc(e.notes)}</div>`:''}</div>`;
    const totalReps=done.reduce((n,set)=>n+(Number(set.reps)||0),0);
    const topWeight=Math.max(...done.map(set=>Number(set.weight)||0));
    const prCount=working.filter(set=>set.pr).length;
-   return `<div class="recap-exercise"><div class="recap-exercise-top"><div><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">${working.length} working set${working.length===1?'':'s'} · ${totalReps} total reps${topWeight>0?` · top ${topWeight} ${state.profile.unit}`:''}</div></div>${prCount?`<span class="preference-badge prefer">PR ×${prCount}</span>`:''}</div></div>`;
+   const setRows=done.map((set,i)=>{
+     const ordinal=e.sets.slice(0,e.sets.indexOf(set)+1).filter(x=>setType(x)===setType(set)).length;
+     const load=Number(set.weight)||0,reps=Number(set.reps)||0;
+     return `<div class="recap-set-row"><span>${esc(setTypeLabel(setType(set)))} ${ordinal}</span><b>${load} ${state.profile.unit} × ${reps}</b>${set.rir!==''&&set.rir!=null?`<span>${esc(String(set.rir))} RIR</span>`:'<span></span>'}${set.pr?`<span class="inline-pr-mark">PR</span>`:'<span></span>'}</div>`;
+   }).join('');
+   return `<div class="recap-exercise">
+     <div class="recap-exercise-top"><div><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">${working.length} working set${working.length===1?'':'s'} · ${totalReps} total reps${topWeight>0?` · top ${topWeight} ${state.profile.unit}`:''}</div></div>${prCount?`<span class="preference-badge prefer">PR ×${prCount}</span>`:''}</div>
+     <div class="recap-set-list">${setRows}</div>
+     ${e.notes?`<div class="muscle-map-note" style="margin-top:8px"><b>Notes</b><br>${esc(e.notes)}</div>`:''}
+   </div>`;
  }).join('');
  const progressionHtml=progressHighlights.length
    ?progressHighlights.map(row=>`<div class="recap-progression"><b>${esc(row.name)}</b><div class="mini">${esc(row.text)}</div></div>`).join('')
@@ -3743,7 +3772,7 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[]}={}
    :'<div class="notice">No PR badge this time. PRs are only called when the logged performance clears the existing record logic.</div>';
  return `
    <div class="workout-recap-hero">
-     <div class="eyebrow">SESSION COMPLETE · SAVED LOCALLY</div>
+     <div class="eyebrow">${historical?'HISTORICAL SESSION · SAVED LOCALLY':'SESSION COMPLETE · SAVED LOCALLY'}</div>
      <div class="workout-recap-title">${esc(session.routineName)}</div>
      <div class="workout-recap-time">${esc(formatSessionCompletionTime(session))} · ${session.durationMinutes||0} min</div>
    </div>
@@ -3772,7 +3801,7 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[]}={}
    <div class="recap-section"><div class="recap-section-title">Progression versus last exposure</div>${progressionHtml}</div>
    <div class="recap-section"><div class="recap-section-title">Personal records</div>${prHtml}</div>
    ${session.programId&&programById(session.programId)?`<div class="summary-win"><b>Next in ${esc(programById(session.programId).name)}</b><div class="mini">${esc(programNextRoutine(programById(session.programId))?.name||'Program complete')}</div></div>`:''}
-   <div class="actions"><button class="btn" onclick="closeModal();go('analytics')">View progress</button><button class="btn secondary" onclick="closeModal()">Done</button></div>
+   <div class="actions">${historical?`<button class="btn" onclick="closeModal();editCompletedWorkout('${escAttr(session.id)}')">Edit Workout</button>`:''}<button class="btn ${historical?'secondary':''}" onclick="closeModal();go('analytics')">View progress</button><button class="btn secondary" onclick="closeModal()">Done</button></div>
  `;
 }
 function exerciseHistory(exerciseId){return derivedSessionData().historyByExercise.get(exerciseId)||[];}
@@ -3862,7 +3891,7 @@ function openProgressDay(key){
    ${sessions.map(s=>`<div class="card" style="margin-bottom:9px">
      <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})} · ${sessionSetCount(s)} working sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div>${sessionPRCount(s)?`<span class="tag pr-tag">PR · ${sessionPRCount(s)}</span>`:''}</div>
      <div class="mini" style="margin-top:8px">${s.exercises.filter(e=>progressionSets(e).length).map(e=>esc(exById(e.exerciseId)?.name||'Exercise')).join(' · ')}</div>
-     <div class="actions"><button class="btn small secondary" onclick="closeModal();go('history')">Open History</button></div>
+     <div class="actions"><button class="btn small" onclick="closeModal();openHistoricalWorkoutRecap('${s.id}')">View Recap</button><button class="btn small secondary" onclick="closeModal();go('history')">Open History</button></div>
    </div>`).join('')}
  `);
 }
@@ -6196,6 +6225,7 @@ function renderHistory(){
    <div class="editor-summary"><span class="tag">${Math.round(sessionVolume(s)).toLocaleString()} ${state.profile.unit}×reps</span>${sessionPRCount(s)?`<span class="tag">🏆 ${sessionPRCount(s)} PR</span>`:''}</div>
    ${s.exercises.map(e=>{const ex=exById(e.exerciseId),sets=completedSets(e); return sets.length?`<table class="history-table"><tr><th colspan="3"><span class="exercise-link" onclick="openExerciseProgress('${e.exerciseId}')">${esc(ex?.name||'Exercise')}</span></th></tr>${sets.map((x,i)=>`<tr><td>${esc(setTypeLabel(setType(x)))} ${e.sets.slice(0,e.sets.indexOf(x)+1).filter(y=>setType(y)===setType(x)).length}</td><td>${x.weight} ${state.profile.unit}</td><td>${x.reps} reps${x.rir!==''&&x.rir!=null?` · ${x.rir} RIR`:''}</td></tr>`).join('')}</table>`:''}).join('')}
    <div class="history-card-actions">
+     <button class="btn small" onclick="openHistoricalWorkoutRecap('${s.id}')">View Recap</button>
      <button class="btn small secondary" onclick="editCompletedWorkout('${s.id}')">Edit Workout</button>
      <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete Workout</button>
    </div>
