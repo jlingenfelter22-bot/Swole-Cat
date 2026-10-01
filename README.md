@@ -28,7 +28,7 @@ Workout data is local to the device. Export backups periodically, especially bef
 
 ## Development
 
-The web app remains intentionally lightweight and framework-free.
+The web app remains intentionally lightweight and framework-free. Source code is modularized by domain under `src/`, then assembled into the production `www/app.js` + `www/app.css` bundle used by both GitHub Pages and Capacitor. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the source layout and future sync/cloud boundaries.
 
 ```bash
 npm install
