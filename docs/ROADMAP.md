@@ -229,6 +229,8 @@ The summary should use the refreshed Swole Cat visual system and feel like a pre
 
 **v0.46.1:** Anatomical heat-map hotfix replaces the hand-built body with granular front/back anatomical SVG path data adapted from the Apache-2.0 `body-muscles` project. Swolecat keeps its own scoring, colors, legend, and cyberpunk presentation while using a substantially more recognizable anatomical base.
 
+**v0.46.2:** Muscle-map data audit checks all 307 built-in exercises for drawable primary/secondary muscle coverage, corrects compound/full-body/deadlift/carry/adduction edge cases, and adds synthetic push/pull/leg/posterior-chain/carry stress tests for heat-map aggregation and intensity.
+
 ---
 
 ## Phase 5 — Muscle Mapping, Heat Maps, and Rich History
