@@ -3407,7 +3407,7 @@ function saveActiveWorkout(defer=false){
  }
  return defer?scheduleStateSave():save();
 }
-function saveActiveWorkoutWithoutExtendingPendingSave(delay=220){
+function saveActiveWorkoutWithoutExtendingPendingSave(delay=90){
  if(state.activeWorkout){
    state.activeWorkout.status='active';
    state.activeWorkout.lastSavedAt=new Date().toISOString();
@@ -6011,7 +6011,7 @@ function changeSetValue(ei,si,key,delta){
  const input=card?.querySelector(`input[aria-label="${key}"]`);
  if(input)input.value=key==='weight'?displaySetWeightValue(set[key]):set[key];
  haptic(8);saveActiveWorkout(true);
- if(key==='weight')scheduleFirstExerciseWeightAutofill(ei,si,180);
+ if(key==='weight')scheduleFirstExerciseWeightAutofill(ei,si,120);
 }
 function workoutCounts(){return activeWorkoutCounts()}
 function workoutElapsedMs(w=state.activeWorkout,nowMs=Date.now()){
@@ -6679,7 +6679,7 @@ function applyFirstExerciseWeightAutofill(ei,sourceSi){
  }
  return targets.length>0;
 }
-function scheduleFirstExerciseWeightAutofill(ei,si,delay=325){
+function scheduleFirstExerciseWeightAutofill(ei,si,delay=250){
  const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];
  if(!e||!set||e.firstWeightAutofillDone||exerciseHasLoggedWeightHistory(e.exerciseId)||!isProgressionSet(set))return;
  const key=String(ei);
