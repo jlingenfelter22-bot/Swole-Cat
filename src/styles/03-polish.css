@@ -1,0 +1,885 @@
+  /* V36 PASS 3: COHESION + RESTRAINT */
+  :root{
+    --motion-fast:120ms;
+    --motion-base:180ms;
+    --motion-slow:240ms;
+    --ease-ui:cubic-bezier(.2,.7,.2,1);
+    --muted:#9aabc0;
+    --shadow-rest:0 12px 30px rgba(0,0,0,.30);
+    --shadow-raised:0 16px 38px rgba(0,0,0,.34);
+  }
+
+  html{
+    color-scheme:dark;
+    -webkit-text-size-adjust:100%;
+  }
+  body{
+    overscroll-behavior-y:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  button,.clickable,.chip,.toolchip,.day-chip,.favbtn,.orderbtn,.set-icon-btn,.exercise-toggle-btn{
+    touch-action:manipulation;
+  }
+
+  /* Keep the retro grid atmospheric instead of constantly repainting a full-screen fixed layer. */
+  body:before{
+    position:absolute;
+    height:min(780px,100vh);
+    opacity:.10;
+    background-size:42px 42px;
+    mask-image:linear-gradient(to bottom,rgba(0,0,0,.58),transparent 72%);
+    -webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,.58),transparent 72%);
+  }
+  header{
+    box-shadow:0 8px 24px rgba(0,0,0,.24);
+  }
+  header:after{opacity:.52}
+  .screen-mark{opacity:.58}
+  .screen-banner:before{box-shadow:0 0 8px rgba(168,85,247,.18)}
+  .screen-banner:after{opacity:.62}
+
+  /* One motion language. */
+  .btn,.card.clickable,.navbtn,.chip,.day-chip,.toolchip,.favbtn,.orderbtn,.set-icon-btn,.exercise-toggle-btn,input,select,textarea,.toggle,.exercise-block{
+    transition-duration:var(--motion-base)!important;
+    transition-timing-function:var(--ease-ui)!important;
+  }
+  .btn:active,.chip:active,.day-chip:active,.toolchip:active,.favbtn:active,.orderbtn:active,.set-icon-btn:active{
+    transform:translateY(1px) scale(.985);
+  }
+  .card.clickable:active{transform:translateY(1px)}
+  .navbtn:active{transform:translateY(1px) scale(.985)}
+
+  /* Reduce duplicate glow. Geometry and contrast should carry the identity first. */
+  .hero,.card,.stat-card,.chart-card,.calendar-card{
+    box-shadow:var(--shadow-rest);
+  }
+  .screen-banner,.workout-overview,.program-home,.active-workout-home,.progress-hero{
+    box-shadow:var(--shadow-raised);
+  }
+  .hero:after,
+  .navbtn.active:before,
+  .signal-stat:after,
+  #analytics .stat-card:after{
+    box-shadow:none;
+  }
+  .card:not(.exercise-block):before,.chart-card:before,.calendar-card:before{opacity:.30}
+  .card:not(.exercise-block):after,.chart-card:after,.calendar-card:after{opacity:.30}
+  .exercise-title{text-shadow:none}
+  .exercise-number{box-shadow:none}
+  .superset-badge{box-shadow:none}
+  .navbtn.active{
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 0 12px rgba(168,85,247,.07);
+  }
+  .navbtn.active .nav-glyph{
+    filter:drop-shadow(0 0 4px rgba(34,211,238,.26));
+  }
+
+  /* Better contrast for secondary information without making it compete with primary text. */
+  .muted,.mini,.screen-copy,.native-note,.preference-help{color:#9aabc0}
+  .navbtn{color:#8398b2}
+  .navbtn.active{color:#f8fbff}
+  .workout-stat span,.stat-card .caption,.metric-mini span,.eyebrow,.picker-section{color:#a6b8cb}
+  .screen-code,.workout-console-code{color:#55dff2}
+
+  /* Minimum interaction affordances, without changing the approved overall sizing system. */
+  .btn.small,.day-chip,.toolchip,.preference-btn,.set-add-btn{min-height:38px}
+  .favbtn,.orderbtn,.set-icon-btn,.exercise-toggle-btn,.x{min-width:38px;min-height:38px}
+  button:disabled{
+    opacity:.46;
+    cursor:not-allowed;
+    filter:saturate(.55);
+  }
+
+  /* Empty states are now pure UI, not emoji art. */
+  .empty-illustration{
+    min-height:38px;
+    display:grid;
+    place-items:center;
+    margin-bottom:8px;
+    font-size:0;
+  }
+  .empty-glyph{
+    position:relative;
+    display:block;
+    width:36px;
+    height:36px;
+    border:1px solid rgba(34,211,238,.34);
+    border-radius:3px 11px 3px 11px;
+    background:linear-gradient(135deg,rgba(34,211,238,.045),rgba(168,85,247,.06));
+  }
+  .empty-glyph:before,.empty-glyph:after{
+    content:"";
+    position:absolute;
+    background:#8da3bd;
+    opacity:.82;
+  }
+  .empty-glyph-program:before{left:8px;right:8px;top:10px;height:2px;box-shadow:0 7px 0 #8da3bd,0 14px 0 #8da3bd}
+  .empty-glyph-program:after{left:12px;top:7px;width:2px;height:22px}
+  .empty-glyph-routine:before{left:6px;right:6px;top:17px;height:2px}
+  .empty-glyph-routine:after{left:9px;top:10px;width:3px;height:16px;box-shadow:15px 0 0 #8da3bd}
+  .empty-glyph-progress:before{left:8px;bottom:8px;width:3px;height:8px;box-shadow:7px -5px 0 #8da3bd,14px -13px 0 #8da3bd}
+  .empty-glyph-progress:after{right:6px;top:7px;width:10px;height:2px;transform:rotate(45deg)}
+  .empty-glyph-history:before{left:9px;right:9px;top:9px;height:2px;box-shadow:0 7px 0 #8da3bd,0 14px 0 #8da3bd}
+  .empty-glyph-history:after{left:6px;top:6px;width:24px;height:24px;background:transparent;border:1px solid rgba(141,163,189,.58);border-radius:2px 8px 2px 8px}
+
+  /* Personal-record treatment is typographic and consistent with the rest of the UI. */
+  .pr-icon{
+    border-radius:3px 10px 3px 10px;
+    background:linear-gradient(135deg,rgba(255,46,136,.08),rgba(168,85,247,.08));
+    border-color:rgba(244,114,182,.30);
+  }
+  .pr-glyph,.inline-pr-mark{
+    font-family:var(--display);
+    font-weight:950;
+    letter-spacing:.08em;
+    color:#ff9ccc;
+  }
+  .pr-glyph{font-size:.68rem}
+  .inline-pr-mark{
+    display:inline-grid;
+    place-items:center;
+    min-width:24px;
+    height:18px;
+    padding:0 4px;
+    margin-right:2px;
+    border:1px solid rgba(244,114,182,.28);
+    border-radius:2px 6px 2px 6px;
+    font-size:.52rem;
+    vertical-align:1px;
+  }
+  .pr-tag{
+    border-color:rgba(244,114,182,.30)!important;
+    color:#ffd0e7!important;
+  }
+
+  /* Long non-interactive lists can skip off-screen paint work on modern Android WebView. */
+  #exerciseList .list-item,
+  #historyList .history-entry{
+    content-visibility:auto;
+    contain-intrinsic-size:auto 76px;
+  }
+
+  /* Color-independent chart/state cues. */
+  .workload-current{
+    background:
+      repeating-linear-gradient(135deg,rgba(255,255,255,.16) 0 2px,transparent 2px 5px),
+      linear-gradient(90deg,var(--cyan),var(--violet))!important;
+  }
+  .workload-average{
+    background:
+      repeating-linear-gradient(90deg,rgba(255,255,255,.10) 0 1px,transparent 1px 4px),
+      #52647a!important;
+  }
+  .trend-up:before{content:"▲ ";font-size:.68em}
+  .trend-down:before{content:"▼ ";font-size:.68em}
+  .trend-flat:before{content:"■ ";font-size:.58em}
+  .calendar-day.trained{
+    background:
+      repeating-linear-gradient(135deg,rgba(53,233,138,.025) 0 4px,transparent 4px 8px),
+      linear-gradient(160deg,rgba(53,233,138,.07),rgba(168,85,247,.035)),
+      #0d1522;
+  }
+
+  /* Cleaner focus for keyboard/accessibility users. */
+  :where(button,input,select,textarea,[tabindex]):focus-visible{
+    outline:2px solid #67e8f9!important;
+    outline-offset:2px;
+    box-shadow:0 0 0 4px rgba(34,211,238,.09)!important;
+  }
+
+  /* Toast reads as a system event, not another glowing card. */
+  .toast{
+    border-radius:4px 12px 4px 12px;
+    border-color:rgba(34,211,238,.32);
+    box-shadow:0 12px 30px rgba(0,0,0,.38);
+    transition:opacity var(--motion-base) var(--ease-ui),transform var(--motion-base) var(--ease-ui)!important;
+  }
+
+  /* Touch devices get the same identity with less GPU-expensive decoration. */
+  @media (hover:none),(pointer:coarse){
+    header{
+      backdrop-filter:none;
+      -webkit-backdrop-filter:none;
+      background:rgba(5,7,13,.985);
+    }
+    .btn:hover{filter:none}
+    .card.clickable:hover{border-color:rgba(71,93,130,.48);box-shadow:var(--shadow-rest)}
+    .btn,.navbtn,.card,.chart-card,.screen-banner,.exercise-block{
+      -webkit-backface-visibility:hidden;
+      backface-visibility:hidden;
+    }
+    .screen-banner,.workout-overview,.program-home,.active-workout-home,.progress-hero{
+      box-shadow:0 12px 30px rgba(0,0,0,.30);
+    }
+  }
+
+  @media (max-width:430px){
+    .screen-mark{opacity:.48}
+    .screen-banner:after{opacity:.44}
+    .card:not(.exercise-block):before,.chart-card:before,.calendar-card:before{opacity:.24}
+    .card:not(.exercise-block):after,.chart-card:after,.calendar-card:after{opacity:.22}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .btn,.card.clickable,.navbtn,.chip,.day-chip,.toolchip,.favbtn,.orderbtn,.set-icon-btn,.exercise-toggle-btn,input,select,textarea,.toggle,.exercise-block,.toast{
+      transition:none!important;
+    }
+  }
+
+
+  /* V37 UI TUNING PASS */
+
+  /* Capacitor 8 injects --safe-area-inset-* for Android edge-to-edge.
+     Native fallback keeps the command chrome clear of system bars even if an
+     older WebView reports a zero inset during first paint. */
+  :root{
+    --sc-safe-top:var(--safe-area-inset-top,env(safe-area-inset-top,0px));
+    --sc-safe-bottom:var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px));
+    --sc-viewport-height:100dvh;
+    --sc-keyboard-height:0px;
+  }
+  .native-app .sheet{
+    padding-bottom:calc(18px + var(--sc-safe-bottom));
+    scroll-padding-bottom:calc(24px + var(--sc-keyboard-height));
+  }
+  .native-app.keyboard-open nav{display:none}
+  .native-app.keyboard-open .app{padding-bottom:24px}
+  .native-app.keyboard-open input:focus,
+  .native-app.keyboard-open textarea:focus,
+  .native-app.keyboard-open select:focus{scroll-margin-bottom:24px}
+  header{
+    padding-top:calc(14px + var(--sc-safe-top));
+  }
+  .native-app header{
+    padding-top:calc(12px + max(var(--sc-safe-top),24px));
+  }
+  .native-app .topline{
+    min-height:43px;
+  }
+  .header-control{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+  .header-control-svg{
+    width:15px;
+    height:15px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:1.65;
+    stroke-linecap:square;
+    stroke-linejoin:miter;
+    flex:0 0 auto;
+  }
+  .header-control-icon{
+    font-size:.55rem;
+    color:var(--success);
+    text-shadow:0 0 8px rgba(53,233,138,.28);
+  }
+
+  /* The command rail now belongs to the bottom system zone instead of floating
+     above it. The full dock paints through the Android navigation safe area. */
+  .app{
+    padding-bottom:calc(102px + var(--sc-safe-bottom));
+  }
+  nav{
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+    border-radius:0!important;
+    border-left:0!important;
+    border-right:0!important;
+    border-bottom:0!important;
+    padding:6px 8px calc(6px + var(--sc-safe-bottom));
+    background:
+      linear-gradient(180deg,rgba(7,11,20,.96),rgba(3,6,12,.995));
+    box-shadow:0 -13px 34px rgba(0,0,0,.34);
+  }
+  .native-app nav{
+    padding-bottom:calc(6px + max(var(--sc-safe-bottom),18px));
+  }
+  nav:before{
+    left:0!important;
+    right:0!important;
+    top:0!important;
+    opacity:.52!important;
+  }
+  nav:after{display:none!important}
+  nav .inner{
+    position:relative;
+    max-width:760px;
+    margin:0 auto;
+    padding:4px!important;
+    gap:3px;
+    border:1px solid rgba(84,110,152,.42);
+    border-radius:5px 15px 5px 15px;
+    background:
+      linear-gradient(90deg,rgba(255,46,136,.018),transparent 24%,transparent 76%,rgba(34,211,238,.018)),
+      linear-gradient(180deg,rgba(10,17,30,.95),rgba(6,11,20,.98));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.022);
+  }
+  nav .inner:after{
+    content:"";
+    position:absolute;
+    left:12px;
+    bottom:-1px;
+    width:38px;
+    height:1px;
+    background:var(--cyan);
+    opacity:.48;
+  }
+  .navbtn{
+    min-height:58px;
+  }
+
+  /* Exercise imagery, recognizable first, branded second. */
+  #exercises #exerciseList .list-item{
+    min-height:76px;
+    padding:10px 10px 10px 9px;
+  }
+  .schematic-exercise-thumb{
+    width:56px!important;
+    height:56px!important;
+    flex:0 0 56px!important;
+    padding:0!important;
+    border-radius:4px 13px 4px 13px!important;
+    border:1px solid rgba(34,211,238,.30)!important;
+    background:#050b13!important;
+    overflow:hidden!important;
+    box-shadow:inset 0 0 0 1px rgba(168,85,247,.035);
+  }
+  .exercise-thumb-shell.schematic-thumb{
+    width:100%;
+    height:100%;
+    display:grid;
+    place-items:center;
+    position:relative;
+    overflow:hidden;
+    isolation:isolate;
+    background:
+      radial-gradient(circle at 68% 22%,rgba(168,85,247,.12),transparent 34%),
+      linear-gradient(145deg,rgba(34,211,238,.035),transparent 52%);
+  }
+  .schematic-grid{
+    position:absolute;
+    inset:0;
+    z-index:0;
+    opacity:.20;
+    background-image:
+      linear-gradient(rgba(34,211,238,.18) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(34,211,238,.15) 1px,transparent 1px);
+    background-size:9px 9px;
+    mask-image:linear-gradient(135deg,#000 20%,transparent 90%);
+    -webkit-mask-image:linear-gradient(135deg,#000 20%,transparent 90%);
+  }
+  .exercise-thumb-art{
+    position:relative;
+    z-index:2;
+    width:60px!important;
+    height:60px!important;
+    object-fit:contain;
+    opacity:.92!important;
+    transform:scale(1.04)!important;
+    filter:
+      brightness(0)
+      saturate(100%)
+      invert(85%)
+      sepia(50%)
+      saturate(1350%)
+      hue-rotate(132deg)
+      brightness(104%)
+      contrast(104%)
+      drop-shadow(1px 0 0 rgba(255,46,136,.42))
+      drop-shadow(-1px 0 0 rgba(34,211,238,.22))!important;
+  }
+  .schematic-axis{
+    position:absolute;
+    z-index:3;
+    left:5px;
+    bottom:7px;
+    width:18px;
+    height:1px;
+    background:linear-gradient(90deg,var(--pink),transparent);
+    opacity:.75;
+  }
+  .schematic-axis:after{
+    content:"";
+    position:absolute;
+    left:0;
+    bottom:-4px;
+    width:1px;
+    height:9px;
+    background:var(--pink);
+  }
+  .schematic-corner{
+    position:absolute;
+    z-index:3;
+    top:5px;
+    right:5px;
+    width:9px;
+    height:9px;
+    border-top:1px solid rgba(34,211,238,.76);
+    border-right:1px solid rgba(34,211,238,.76);
+  }
+  .schematic-thumb.thumb-unavailable .exercise-thumb-art{display:none}
+  .schematic-thumb.thumb-unavailable:before{
+    content:"";
+    position:absolute;
+    z-index:2;
+    width:22px;
+    height:22px;
+    border:1px solid rgba(34,211,238,.48);
+    transform:rotate(45deg);
+  }
+  .schematic-thumb.thumb-unavailable:after{
+    content:"";
+    position:absolute;
+    z-index:2;
+    width:30px;
+    height:1px;
+    background:linear-gradient(90deg,transparent,var(--pink),transparent);
+  }
+
+  /* The older movement sigil remains available for internal/fallback uses but is
+     no longer the primary Exercise Library visual. */
+  #exercises .exercise-sigil{display:none!important}
+
+  @media(max-width:430px){
+    header{
+      padding-left:14px;
+      padding-right:14px;
+    }
+    .topline{gap:8px}
+    .brand{font-size:1.16rem}
+    .brand:after{display:none}
+    .header-control{
+      padding-left:9px;
+      padding-right:9px;
+    }
+    .header-control span:not(.header-control-icon){
+      font-size:.74rem;
+    }
+    nav{padding-left:6px;padding-right:6px}
+    .schematic-exercise-thumb{
+      width:52px!important;
+      height:52px!important;
+      flex-basis:52px!important;
+    }
+    .exercise-thumb-art{
+      width:56px!important;
+      height:56px!important;
+    }
+  }
+
+  @media(max-width:360px){
+    .header-control span:not(.header-control-icon){display:none}
+    .header-control{width:38px;padding:0}
+  }
+
+
+  /* V38 UI TUNING PASS 2 */
+
+  /* Native selects remain the state/data source, but never invoke Android's
+     platform picker. Every user-facing select uses this app-owned control. */
+  .app-select-wrap{
+    position:relative;
+    width:100%;
+    min-width:0;
+  }
+  .app-select-source{
+    position:absolute!important;
+    width:1px!important;
+    height:1px!important;
+    opacity:0!important;
+    pointer-events:none!important;
+    overflow:hidden!important;
+    clip:rect(0 0 0 0)!important;
+    clip-path:inset(50%)!important;
+    white-space:nowrap!important;
+  }
+  .app-select-trigger{
+    width:100%;
+    min-height:47px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:11px 13px;
+    color:var(--text);
+    text-align:left;
+    border:1px solid rgba(71,93,130,.62);
+    border-radius:4px 11px 4px 11px;
+    background:
+      linear-gradient(180deg,rgba(8,13,24,.99),rgba(6,10,19,.99));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.018);
+    font:inherit;
+  }
+  .app-select-trigger:active{transform:translateY(1px)}
+  .app-select-trigger:disabled{opacity:.46}
+  .app-select-value{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .app-select-chevron{
+    width:9px;
+    height:9px;
+    flex:0 0 9px;
+    border-right:1.5px solid #9eb3ca;
+    border-bottom:1.5px solid #9eb3ca;
+    transform:rotate(45deg) translateY(-2px);
+  }
+  .app-select-trigger:focus-visible{
+    outline:2px solid #67e8f9!important;
+    outline-offset:2px;
+    border-color:rgba(34,211,238,.72);
+    box-shadow:0 0 0 4px rgba(34,211,238,.09)!important;
+  }
+  .app-select-wrap[data-value="guided"] .app-select-trigger,
+  .app-select-wrap[data-value="strength"] .app-select-trigger,
+  .app-select-wrap[data-value="track"] .app-select-trigger,
+  .app-select-wrap[data-value="inherit"] .app-select-trigger{
+    border-color:rgba(168,85,247,.40);
+    background:
+      linear-gradient(100deg,rgba(168,85,247,.065),transparent 44%),
+      linear-gradient(180deg,rgba(8,13,24,.99),rgba(6,10,19,.99));
+  }
+
+  .app-select-overlay{
+    position:fixed;
+    inset:0;
+    z-index:190;
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+    padding:18px 10px calc(10px + var(--sc-safe-bottom));
+    background:rgba(0,0,0,.70);
+  }
+  .app-select-overlay.open{display:flex}
+  .app-select-sheet{
+    width:min(100%,720px);
+    max-height:min(68vh,620px);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    border:1px solid rgba(34,211,238,.25);
+    border-radius:6px 20px 6px 20px;
+    background:
+      radial-gradient(circle at 92% 0%,rgba(34,211,238,.07),transparent 27%),
+      linear-gradient(120deg,rgba(168,85,247,.08),transparent 42%),
+      #080e19;
+    box-shadow:0 28px 72px rgba(0,0,0,.58);
+  }
+  .app-select-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:15px 15px 12px;
+    border-bottom:1px solid rgba(81,108,147,.32);
+  }
+  .app-select-head h2{
+    margin:3px 0 0;
+    font-size:1.02rem;
+  }
+  .app-select-options{
+    overflow:auto;
+    overscroll-behavior:contain;
+    padding:7px;
+  }
+  .app-select-option{
+    width:100%;
+    min-height:54px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    padding:11px 12px;
+    margin:2px 0;
+    color:#dbe7f5;
+    text-align:left;
+    border:1px solid transparent;
+    border-radius:4px 12px 4px 12px;
+    background:transparent;
+  }
+  .app-select-option+.app-select-option{
+    border-top-color:rgba(81,108,147,.16);
+  }
+  .app-select-option.selected{
+    color:#fff;
+    border-color:rgba(34,211,238,.38);
+    background:
+      linear-gradient(105deg,rgba(34,211,238,.075),rgba(168,85,247,.11) 62%,rgba(255,46,136,.035)),
+      rgba(12,20,35,.94);
+  }
+  .app-select-option:disabled{opacity:.38}
+  .app-select-option-text{
+    font-size:.96rem;
+    line-height:1.3;
+  }
+  .app-select-option-mark{
+    width:27px;
+    height:27px;
+    flex:0 0 27px;
+    display:grid;
+    place-items:center;
+    border:1px solid rgba(91,121,166,.54);
+    border-radius:3px 9px 3px 9px;
+    color:transparent;
+    background:#070d17;
+  }
+  .app-select-option-mark svg{
+    width:17px;
+    height:17px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:2;
+    stroke-linecap:square;
+    stroke-linejoin:miter;
+  }
+  .app-select-option.selected .app-select-option-mark{
+    color:#6ee7f9;
+    border-color:rgba(34,211,238,.62);
+    background:linear-gradient(135deg,rgba(34,211,238,.11),rgba(168,85,247,.14));
+  }
+  body.app-select-open{overflow:hidden}
+
+  /* Compact selector variant for set type inside the live workout console. */
+  .app-select-wrap.app-select-compact{
+    width:auto;
+    flex:0 0 auto;
+  }
+  .app-select-compact .app-select-trigger{
+    width:auto;
+    min-width:92px;
+    min-height:34px;
+    padding:7px 9px;
+    gap:8px;
+    border-radius:3px 9px 3px 9px;
+    font-size:.7rem;
+    font-weight:900;
+  }
+  .app-select-compact .app-select-chevron{
+    width:7px;height:7px;flex-basis:7px;
+  }
+  .set-card.type-warmup .app-select-compact .app-select-trigger{border-color:rgba(56,189,248,.4);color:#bae6fd}
+  .set-card.type-drop .app-select-compact .app-select-trigger{border-color:rgba(245,158,11,.4);color:#fde68a}
+  .set-card.type-failure .app-select-compact .app-select-trigger{border-color:rgba(248,113,113,.42);color:#fecaca}
+
+  /* Settings toggles own a fixed control column so long copy can never squeeze
+     the switch outside its card. */
+  .setting-toggle{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 52px;
+    align-items:center;
+    gap:14px;
+    width:100%;
+    min-width:0;
+  }
+  .setting-toggle>div{
+    min-width:0;
+    overflow-wrap:anywhere;
+  }
+  .setting-toggle .toggle{
+    width:50px;
+    height:29px;
+    min-width:50px;
+    min-height:29px;
+    justify-self:end;
+    flex:none;
+    overflow:hidden;
+  }
+  .setting-toggle .toggle:after{
+    top:3px;
+    left:3px;
+    width:21px;
+    height:21px;
+  }
+  .setting-toggle .toggle.on:after{left:24px}
+
+  @media(max-width:430px){
+    .app-select-overlay{
+      padding-left:6px;
+      padding-right:6px;
+    }
+    .app-select-sheet{
+      border-radius:5px 17px 5px 17px;
+      max-height:72vh;
+    }
+    .app-select-option{min-height:52px}
+    .setting-toggle{
+      grid-template-columns:minmax(0,1fr) 50px;
+      gap:10px;
+    }
+  }
+
+
+  /* V40 CONTEXTUAL HEADER CONTROLS */
+  header .topline>div:last-child{
+    flex:0 0 auto;
+    min-width:0;
+  }
+  .workout-context-control,
+  .settings-header-control{
+    width:44px;
+    min-width:44px;
+    height:44px;
+    min-height:44px;
+    padding:0;
+    position:relative;
+    overflow:hidden;
+    border-radius:5px 14px 5px 14px;
+    background:
+      linear-gradient(145deg,rgba(255,255,255,.035),transparent 44%),
+      linear-gradient(180deg,rgba(12,22,39,.97),rgba(6,12,23,.98));
+    border:1px solid rgba(91,120,163,.64);
+    color:#eaf5ff;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.045),
+      0 8px 18px rgba(0,0,0,.22);
+  }
+  .workout-context-control:before,
+  .settings-header-control:before{
+    content:"";
+    position:absolute;
+    inset:3px;
+    pointer-events:none;
+    border-top:1px solid rgba(34,211,238,.34);
+    border-right:1px solid rgba(255,46,136,.22);
+    border-radius:3px 10px 3px 10px;
+    opacity:.72;
+  }
+  .workout-context-control:after,
+  .settings-header-control:after{
+    content:"";
+    position:absolute;
+    left:5px;
+    bottom:4px;
+    width:12px;
+    height:1px;
+    pointer-events:none;
+    background:linear-gradient(90deg,var(--cyan),var(--accent));
+    opacity:.8;
+  }
+  .workout-context-control{display:none}
+  .workout-context-control.show{display:inline-flex}
+  .workout-context-control[data-state="pause"]{
+    color:#ffd7ec;
+    border-color:rgba(255,46,136,.58);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.045),
+      0 0 0 1px rgba(34,211,238,.055),
+      0 8px 18px rgba(0,0,0,.22);
+  }
+  .workout-context-control[data-state="resume"]{
+    color:#bff8ff;
+    border-color:rgba(34,211,238,.58);
+  }
+  .workout-context-control .header-control-svg{
+    width:20px;
+    height:20px;
+    position:relative;
+    z-index:1;
+  }
+  .workout-context-control[data-state="pause"] .header-control-svg{
+    color:#ff4fa4;
+    fill:currentColor;
+    stroke:none;
+    filter:drop-shadow(0 0 5px rgba(255,46,136,.28));
+  }
+  .workout-context-control[data-state="resume"] .header-control-svg{
+    color:#4eeaff;
+    fill:currentColor;
+    stroke:none;
+    filter:drop-shadow(0 0 5px rgba(34,211,238,.28));
+  }
+  .settings-header-control{
+    display:inline-flex;
+    flex:0 0 44px;
+  }
+  .settings-header-control .header-control-svg{
+    width:22px;
+    height:22px;
+    position:relative;
+    z-index:1;
+    color:#ddecff;
+    stroke-width:1.8;
+    filter:drop-shadow(0 0 4px rgba(34,211,238,.16));
+  }
+  .workout-context-control:active,
+  .settings-header-control:active{
+    transform:translateY(1px) scale(.97);
+  }
+
+  /* The PWA install action is no longer part of the persistent app header.
+     installApp() remains available for a future web-only placement. */
+  header .install-pill{display:none!important}
+
+  @media(max-width:430px){
+    .topline{align-items:center}
+    .workout-context-control,
+    .settings-header-control{
+      width:42px;
+      min-width:42px;
+      height:42px;
+      min-height:42px;
+    }
+  }
+
+  @media(max-width:350px){
+    .brand{font-size:1.05rem}
+    .workout-context-control,
+    .settings-header-control{
+      width:40px;
+      min-width:40px;
+      height:40px;
+      min-height:40px;
+    }
+  }
+
+
+  /* COACH SWOLECAT // QUICK BUILD */
+  .coach-builder{display:grid;gap:12px}
+  .coach-console{background:
+    linear-gradient(135deg,rgba(34,211,238,.075),transparent 42%),
+    linear-gradient(315deg,rgba(139,92,246,.10),transparent 44%),#0d141f;
+    border:1px solid rgba(74,103,141,.62);border-radius:17px;padding:14px;position:relative;overflow:hidden}
+  .coach-console:after{content:"COACH // LOCAL";position:absolute;right:10px;top:9px;color:rgba(34,211,238,.22);font-size:.52rem;font-weight:950;letter-spacing:.14em}
+  .coach-prompt{min-height:100px;resize:vertical}
+  .coach-example-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .coach-example{border:1px solid #34435b;background:#121b29;color:#aebbd0;border-radius:999px;padding:6px 9px;font-size:.64rem;font-weight:800}
+  .coach-preview-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .coach-preview-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .coach-exercise-list{display:grid;gap:8px;margin-top:10px}
+  .coach-exercise{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:9px;align-items:center;background:#101824;border:1px solid #29364a;border-radius:13px;padding:9px}
+  .coach-exercise-index{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;border:1px solid rgba(34,211,238,.23);background:rgba(34,211,238,.05);font-size:.67rem;font-weight:950;color:#c8f6fb}
+  .coach-exercise-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+  .coach-rationale{margin-top:10px;padding:10px 11px;border-left:2px solid rgba(139,92,246,.58);background:rgba(139,92,246,.045);font-size:.68rem;color:#98a7bb;line-height:1.45}
+  .coach-question{font-size:1.15rem;font-weight:950;margin:3px 0 10px}
+  .coach-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  @media(max-width:430px){.coach-exercise{grid-template-columns:34px minmax(0,1fr)}.coach-exercise-actions{grid-column:2;justify-content:flex-start}.coach-choice-grid{grid-template-columns:1fr 1fr}}
+
+  /* V41 PERFORMANCE PASS 1 */
+  :root{
+    --motion-fast:85ms;
+    --motion-base:125ms;
+    --motion-slow:175ms;
+  }
+  .native-app nav{
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+  #exerciseList .list-item,
+  #historyList .history-entry{
+    content-visibility:auto;
+    contain-intrinsic-size:auto 82px;
+  }
+  #historyList .history-entry{
+    contain-intrinsic-size:auto 320px;
+  }
+  .exercise-block{
+    contain:layout paint;
+  }
