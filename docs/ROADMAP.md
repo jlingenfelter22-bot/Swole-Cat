@@ -302,8 +302,10 @@ Goal: let a user create a useful workout or full routine in seconds without manu
 
 **v0.49.0: Coach Swolecat Quick Build Foundation** — Initial local deterministic builder: natural-language target/time/equipment parsing, concise missing-info follow-ups, evidence-versioned hypertrophy/strength/general presets, audited muscle matching, preference-aware exercise ranking, movement-pattern balancing, preview/swap/remove controls, temporary Start Now workouts, and explicit Save as Routine.
 
+**v0.50.0: Adaptive Home Launchpad** — Rebuilds Home around the user's next action instead of duplicating navigation. Active workouts become Resume-first, active programs surface the next workout, saved-routine users get a direct Start action, and brand-new users land on Coach Swolecat with Build Manually as the alternate path. Zero-value telemetry and generic empty-state clutter are hidden until training history exists. The generic 3-day starter is retired from the product and onboarding.
+
 ### Locked: Quick workout builder
-The home screen should eventually include a fast **Build a Workout** entry point powered by Coach Swole Cat.
+The home screen includes Coach Swolecat as the primary build path for new users and a secondary quick-build path for returning users when no workout is active.
 
 A user should be able to type something naturally such as:
 - "Give me a chest and back workout today."
