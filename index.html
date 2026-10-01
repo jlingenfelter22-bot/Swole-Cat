@@ -4829,10 +4829,12 @@ function coachParseLiftingGrammar(text){
  const raw=String(text||''),lower=raw.toLowerCase(),out={};
  if(/\b(?:no|skip|without)\s+(?:the\s+)?warm[- ]?ups?\b/i.test(lower))out.warmupMode='none';
  else if(/\b(?:warm me up first|warm up first|start with (?:a )?warm[- ]?up|include warm[- ]?ups?|add warm[- ]?up sets?|ramp me up|ramp up first)\b/i.test(lower))out.warmupMode='first_compound';
- let m=lower.match(/\b(\d+(?:\.\d+)?)\s*(?:minutes?|mins?|min)\s+(?:of\s+)?rest\b/i);
+ let m=lower.match(/\b(\d+(?:\.\d+)?)\s*(?:minutes?|mins?|min)\s+(?:of\s+)?rest\b/i)
+   ||lower.match(/\brest\s+(?:for\s+)?(\d+(?:\.\d+)?)\s*(?:minutes?|mins?|min)\b/i);
  if(m)out.restSeconds=Math.max(15,Math.min(600,Math.round(Number(m[1])*60)));
  else{
-   m=lower.match(/\b(\d{2,3})\s*(?:seconds?|secs?|sec|s)\s+(?:of\s+)?rest\b/i);
+   m=lower.match(/\b(\d{2,3})\s*(?:seconds?|secs?|sec|s)\s+(?:of\s+)?rest\b/i)
+     ||lower.match(/\brest\s+(?:for\s+)?(\d{2,3})\s*(?:seconds?|secs?|sec|s)\b/i);
    if(m)out.restSeconds=Math.max(15,Math.min(600,Number(m[1])||0));
  }
  m=lower.match(/\b([0-5])\s*(?:rir|reps?\s+in\s+reserve)\b/i)
