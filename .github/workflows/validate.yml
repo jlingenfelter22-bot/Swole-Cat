@@ -77,6 +77,9 @@ jobs:
           fs.writeFileSync('/tmp/swole-cat-test.html',html);
           JS
 
+      - name: Stress test Coach Swolecat prompt matrix
+        run: node scripts/coach-stress.mjs
+
       - name: Smoke test active workouts, set types, progression, and supersets
         run: |
           node <<'JS'
