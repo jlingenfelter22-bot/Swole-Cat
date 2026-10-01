@@ -2462,3 +2462,75 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V530 Coach voice and explicit workout prescriptions
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          let recognitionInstance=null;
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+            window.webkitSpeechRecognition=function(){
+              recognitionInstance=this;
+              this.start=()=>{
+                this.onstart?.();
+                setTimeout(()=>{
+                  this.onresult?.({results:[[{transcript:'three sets of bench press for eight, three sets of pull ups for nine'}]]});
+                  this.onend?.();
+                },5);
+              };
+            };
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(90);
+            const w=dom.window;
+
+            const spoken='three sets of bench press for eight, three sets of pull ups for nine, two sets of barbell curls for twelve, three sets of squats for eight';
+            const parsed=w.coachParseExplicitWorkout(spoken,'hypertrophy');
+            assert(parsed.signal,'explicit workout language should be recognized');
+            assert.equal(parsed.items.length,4,'all named exercises should resolve');
+            const names=parsed.items.map(x=>w.exById(x.exerciseId).name);
+            assert.deepEqual(names,['Barbell Bench Press','Pull-Up','Barbell Curl','Back Squat']);
+            assert.deepEqual(parsed.items.map(x=>[x.sets,x.minReps,x.maxReps]),[[3,8,8],[3,9,9],[2,12,12],[3,8,8]]);
+
+            const global=w.coachParseExplicitWorkout('3 sets bench press, 3 sets pull ups, 3 sets barbell curls, targeting 9 reps for each one','hypertrophy');
+            assert.equal(global.items.length,3);
+            assert(global.items.every(x=>x.minReps===9&&x.maxReps===9),'global rep target should apply to every unspecified exercise');
+
+            const request=w.coachParsePrompt(spoken,'hypertrophy');
+            const draft=w.coachGenerateExplicitWorkout(request,parsed);
+            assert(draft?.explicitPrescription,'explicit request should create an exact-prescription Coach draft');
+            const routine=w.coachDraftRoutine(draft,'preview_explicit');
+            assert.deepEqual(routine.exercises.map(x=>[w.exById(x.exerciseId).name,x.sets,x.minReps,x.maxReps]),[
+              ['Barbell Bench Press',3,8,8],['Pull-Up',3,9,9],['Barbell Curl',2,12,12],['Back Squat',3,8,8]
+            ],'routine should preserve per-exercise sets and rep targets');
+
+            w.eval('state.activeWorkout=null');
+            assert(w.coachStartWorkoutNow(draft),'explicit Coach workout should start immediately');
+            let active=w.eval('state.activeWorkout');
+            assert.deepEqual(active.exercises.map(e=>[w.exById(e.exerciseId).name,e.sets.length,e.sets[0].reps]),[
+              ['Barbell Bench Press',3,8],['Pull-Up',3,9],['Barbell Curl',2,12],['Back Squat',3,8]
+            ],'started workout should use the exact spoken prescription');
+
+            w.eval('state.activeWorkout=null');
+            w.openCoachSwolecat(true);
+            await wait(10);
+            const input=w.document.getElementById('coachPrompt');
+            assert(input,'Coach prompt should exist');
+            assert(w.document.querySelector('[data-coach-mic-for="coachPrompt"]'),'Coach prompt should have a microphone button');
+            await w.coachStartVoiceInput('coachPrompt');
+            await wait(30);
+            assert(recognitionInstance,'web speech fallback should initialize when native speech is unavailable');
+            assert.match(input.value,/three sets of bench press for eight/i,'dictation transcript should be inserted into the Coach field');
+
+            dom.window.close();
+            console.log('Swole Cat V53.0 Coach voice + explicit workout prescriptions PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
