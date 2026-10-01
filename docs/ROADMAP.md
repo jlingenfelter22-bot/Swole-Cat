@@ -308,7 +308,9 @@ Goal: let a user create a useful workout or full routine in seconds without manu
 
 **v0.50.2: Save Completed Workout as Routine** — Completed workout recaps can now create a reusable routine after the fact. This is especially useful for temporary Coach Swolecat Quick Build sessions started without saving first. Exercise order and original programming config are preserved when available, completed-set counts are respected, historical sessions remain unchanged, existing-routine sessions use a clear “Save Copy” action, and duplicate saves from the same completed session are guarded.
 
-**v0.50.3: First-Time Weight Autofill** — When an exercise has no previously logged history, the first positive working-set weight entered during a workout is copied once into the remaining empty working sets for that exercise. Existing weights, completed sets, warm-up/drop/failure sets, and exercises with prior history are never overwritten. Direct typing is briefly debounced so multi-digit loads seed from the finished value rather than the first keystroke.
+**v0.50.3: First-Time Weight Autofill** — When an exercise has no previously logged history, the first positive working-set weight entered during a workout is copied once into the remaining empty working sets for that exercise. Existing weights, completed sets, warm-up/drop/failure sets, and exercises with prior history are never overwritten. Typed values now commit only after the active weight field is finished, preventing partial multi-digit entries from seeding other sets.
+
+**v0.50.4: Multi-Digit Weight Autofill Hotfix** — First-time weight propagation no longer relies on a short typing debounce. While the source weight field has focus, partial values such as `1` or `10` cannot seed the remaining sets. Leaving the field commits the final value, so entering `100` fills eligible blank working sets with `100`. The increment/decrement controls retain their immediate autofill behavior.
 
 ### Locked: Quick workout builder
 The home screen includes Coach Swolecat as the primary build path for new users and a secondary quick-build path for returning users when no workout is active.
