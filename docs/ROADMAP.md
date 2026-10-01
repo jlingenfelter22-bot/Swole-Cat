@@ -304,6 +304,8 @@ Goal: let a user create a useful workout or full routine in seconds without manu
 
 **v0.50.0: Adaptive Home Launchpad** — Rebuilds Home around the user's next action instead of duplicating navigation. Active workouts become Resume-first, active programs surface the next workout, saved-routine users get a direct Start action, and brand-new users land on Coach Swolecat with Build Manually as the alternate path. Zero-value telemetry and generic empty-state clutter are hidden until training history exists. The generic 3-day starter is retired from the product and onboarding.
 
+**v0.50.1: Adaptive Routines Priority** — The Routines tab now prioritizes actual content: existing Programs render first when present; when no Programs exist, Workout Routines move to the top and the empty Programs state becomes a compact secondary creation prompt below them.
+
 ### Locked: Quick workout builder
 The home screen includes Coach Swolecat as the primary build path for new users and a secondary quick-build path for returning users when no workout is active.
 
