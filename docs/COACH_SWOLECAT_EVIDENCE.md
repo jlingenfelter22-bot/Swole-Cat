@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.53.1
+Version: v0.53.2
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -183,3 +183,18 @@ The presence of clearly resolved named exercises changes Coach's routing behavio
 - Flexible forms such as “3 sets of bench press,” “bench press for 3 sets,” “3 × 8 bench press,” and plain exercise lists are accepted where the exercise names can be confidently resolved.
 
 The microphone control is rendered inside the input field rather than beside it so the voice interaction is visible as part of the Coach composer.
+
+
+## v0.53.2 explicit-draft refinement rule
+
+An explicit user-authored workout remains user-authored throughout refinement.
+
+- Refine requests on an explicit draft do not invoke the normal exercise-selection generator.
+- "Add" appends only the requested resolved exercise.
+- "A set" / "one set" resolves to exactly one set.
+- Set/rep changes mutate only the named existing exercise.
+- Remove/drop/skip deletes only the named existing exercise.
+- Original exercise order and all unrelated per-exercise prescriptions are preserved.
+- Target-muscle metadata is recalculated from the resulting explicit list for reporting only; it is not used to regenerate or fill the list.
+
+Regression coverage includes the exact natural-language request: "can you also add a set of assisted pull-ups?" and asserts that no unrelated exercises are introduced.
