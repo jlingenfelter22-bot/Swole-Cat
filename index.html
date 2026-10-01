@@ -2868,7 +2868,7 @@ function freshState(){
    exercisePreferences:{},
    bodyweight:[],
    ui:{onboardingDone:false,haptics:true,keepAwake:true},
-   settings:{defaultMin:8,defaultMax:12,defaultSets:3,defaultIncrement:5}
+   settings:{defaultMin:8,defaultMax:12,defaultSets:3,defaultIncrement:5,coachAliases:{}}
  };
 }
 function isPlainObject(v){return !!v&&typeof v==='object'&&!Array.isArray(v)}
@@ -2911,6 +2911,7 @@ function normalizeState(saved){
  merged.meta=Object.assign(base.meta,isPlainObject(saved.meta)?saved.meta:{});
  merged.profile=Object.assign(base.profile,isPlainObject(saved.profile)?saved.profile:{});
  merged.settings=Object.assign(base.settings,isPlainObject(saved.settings)?saved.settings:{});
+ merged.settings.coachAliases=isPlainObject(merged.settings.coachAliases)?merged.settings.coachAliases:{};
  merged.ui=Object.assign(base.ui,isPlainObject(saved.ui)?saved.ui:{});
  merged.customExercises=Array.isArray(saved.customExercises)?saved.customExercises:[];
  merged.routines=Array.isArray(saved.routines)?saved.routines:[];
@@ -4962,13 +4963,82 @@ function coachNormalizeWords(value){
 }
 
 const COACH_EXERCISE_ALIASES={
- 'bench':'Barbell Bench Press','bench press':'Barbell Bench Press','barbell bench':'Barbell Bench Press',
- 'flat bench':'Barbell Bench Press','pull up':'Pull-Up','pull ups':'Pull-Up','pullup':'Pull-Up','pullups':'Pull-Up',
- 'chin up':'Chin-Up','chin ups':'Chin-Up','chinup':'Chin-Up','chinups':'Chin-Up',
- 'squat':'Back Squat','squats':'Back Squat','barbell squat':'Back Squat',
- 'curl':'Barbell Curl','curls':'Barbell Curl','barbell curls':'Barbell Curl',
- 'deadlift':'Deadlift','deadlifts':'Deadlift','overhead press':'Barbell Overhead Press','ohp':'Barbell Overhead Press'
+ 'bench':'Barbell Bench Press','bench press':'Barbell Bench Press','barbell bench':'Barbell Bench Press','flat bench':'Barbell Bench Press',
+ 'paused bench':'Paused Bench Press','pause bench':'Paused Bench Press','spoto':'Spoto Press','close grip bench':'Close Grip Bench Press','cgbp':'Close Grip Bench Press',
+ 'db bench':'Dumbbell Bench Press','dumbbell bench':'Dumbbell Bench Press','dumbbell press':'Dumbbell Bench Press',
+ 'incline db':'Incline Dumbbell Press','incline dumbbells':'Incline Dumbbell Press','incline db press':'Incline Dumbbell Press','incline dumbbell bench':'Incline Dumbbell Press',
+ 'incline bench':'Incline Barbell Bench Press','incline barbell':'Incline Barbell Bench Press',
+ 'chest machine':'Chest Press Machine','machine chest press':'Chest Press Machine','pec deck machine':'Pec Deck',
+ 'cable flyes':'Cable Fly','cable flies':'Cable Fly','pushups':'Push-Up','push ups':'Push-Up','weighted pushups':'Weighted Push-Up',
+ 'squat':'Back Squat','squats':'Back Squat','barbell squat':'Back Squat','back squats':'Back Squat',
+ 'high bar':'High Bar Squat','high bar squats':'High Bar Squat','low bar':'Low Bar Squat','low bar squats':'Low Bar Squat',
+ 'front squats':'Front Squat','goblets':'Goblet Squat','goblet squats':'Goblet Squat','hack':'Hack Squat','hack squats':'Hack Squat',
+ 'bulgarians':'Bulgarian Split Squat','bulgarian splits':'Bulgarian Split Squat','bulgarian split squats':'Bulgarian Split Squat',
+ 'split squats':'Bulgarian Split Squat','walking lunges':'Walking Lunge','reverse lunges':'Reverse Lunge','step ups':'Step-Up',
+ 'leg extensions':'Leg Extension','leg press machine':'Leg Press','leg presses':'Leg Press',
+ 'deadlift':'Deadlift','deadlifts':'Deadlift','conventional deadlift':'Deadlift','conventional deads':'Deadlift',
+ 'rdl':'Romanian Deadlift','rdls':'Romanian Deadlift','romanian deads':'Romanian Deadlift','romanian deadlifts':'Romanian Deadlift',
+ 'db rdl':'Dumbbell Romanian Deadlift','db rdls':'Dumbbell Romanian Deadlift','dumbbell rdls':'Dumbbell Romanian Deadlift',
+ 'stiff leg':'Stiff-Leg Deadlift','stiff legs':'Stiff-Leg Deadlift','stiff leg deadlift':'Stiff-Leg Deadlift','sldl':'Stiff-Leg Deadlift',
+ 'sumo':'Sumo Deadlift','sumo deads':'Sumo Deadlift','trap bar deads':'Trap Bar Deadlift',
+ 'good mornings':'Good Morning','hip thrusts':'Hip Thrust','glute bridges':'Glute Bridge',
+ 'pull up':'Pull-Up','pull ups':'Pull-Up','pullup':'Pull-Up','pullups':'Pull-Up',
+ 'assisted pullup':'Assisted Pull-Up','assisted pullups':'Assisted Pull-Up','assisted pull ups':'Assisted Pull-Up','assist pullups':'Assisted Pull-Up',
+ 'chin up':'Chin-Up','chin ups':'Chin-Up','chinup':'Chin-Up','chinups':'Chin-Up','assisted chins':'Assisted Chin-Up',
+ 'lat pull down':'Lat Pulldown','lat pull downs':'Lat Pulldown','lat pulldowns':'Lat Pulldown','pulldowns':'Lat Pulldown',
+ 'wide pulldown':'Wide Grip Lat Pulldown','close pulldown':'Close Grip Lat Pulldown',
+ 'barbell rows':'Barbell Row','bent over row':'Barbell Row','bent rows':'Barbell Row','pendlays':'Pendlay Row',
+ 'db row':'Dumbbell Row','db rows':'Dumbbell Row','dumbbell rows':'Dumbbell Row','cable rows':'Seated Cable Row','seated rows':'Seated Cable Row',
+ 'chest supported rows':'Chest Supported Row','chest supported db row':'Chest Supported Dumbbell Row','t bar':'T-Bar Row','t bar row':'T-Bar Row',
+ 'overhead press':'Overhead Press','ohp':'Overhead Press','military press':'Overhead Press','barbell shoulder press':'Overhead Press',
+ 'db shoulder press':'Dumbbell Shoulder Press','dumbbell overhead press':'Dumbbell Shoulder Press','arnolds':'Arnold Press',
+ 'lateral raises':'Dumbbell Lateral Raise','side raises':'Dumbbell Lateral Raise','db laterals':'Dumbbell Lateral Raise',
+ 'cable laterals':'Cable Lateral Raise','rear delt flies':'Rear Delt Fly','rear delt flyes':'Rear Delt Fly','rear delt machine':'Reverse Pec Deck',
+ 'reverse pec deck machine':'Reverse Pec Deck','face pulls':'Face Pull',
+ 'curl':'Barbell Curl','curls':'Barbell Curl','barbell curls':'Barbell Curl','ez curls':'EZ-Bar Curl','ez bar curls':'EZ-Bar Curl',
+ 'db curls':'Dumbbell Curl','dumbbell curls':'Dumbbell Curl','hammer curls':'Hammer Curl','hammers':'Hammer Curl',
+ 'preachers':'Preacher Curl','preacher curls':'Preacher Curl','incline curls':'Incline Dumbbell Curl','concentration curls':'Concentration Curl',
+ 'rope hammers':'Rope Hammer Curl','bayesian curls':'Bayesian Cable Curl',
+ 'pushdowns':'Triceps Pushdown','tricep pushdowns':'Triceps Pushdown','triceps pushdowns':'Triceps Pushdown',
+ 'rope pushdowns':'Rope Triceps Pushdown','skullcrushers':'Skull Crusher','skull crushers':'Skull Crusher',
+ 'overhead tricep extension':'Overhead Triceps Extension','overhead tricep extensions':'Overhead Triceps Extension',
+ 'dips':'Dip','assisted dips':'Assisted Dip','bench dips':'Bench Dip','diamond pushups':'Diamond Push-Up',
+ 'calf raises':'Standing Calf Raise','standing calves':'Standing Calf Raise','seated calves':'Seated Calf Raise',
+ 'shrugs':'Barbell Shrug','barbell shrugs':'Barbell Shrug','db shrugs':'Dumbbell Shrug',
+ 'ab wheel rollout':'Ab Wheel','ab wheel rollouts':'Ab Wheel','hanging leg raises':'Hanging Leg Raise','hanging knee raises':'Hanging Knee Raise',
+ 'cable crunches':'Cable Crunch','pallof':'Pallof Press','pallof press':'Pallof Press','woodchops':'Cable Woodchop',
+ 'farmers carry':'Dumbbell Farmer Carry','farmer carry':'Dumbbell Farmer Carry','farmer walks':'Dumbbell Farmer Carry',
+ 'sled pushes':'Sled Push','sled drags':'Sled Drag'
 };
+const COACH_GYM_TEXT_REPLACEMENTS=[
+ [/dumbells?/gi,'dumbbell'],[/dumb bell/gi,'dumbbell'],[/barbel/gi,'barbell'],
+ [/db/gi,'dumbbell'],[/bb/gi,'barbell'],[/o h p/gi,'ohp'],
+ [/r d l s?/gi,'rdl'],[/romanian dead lefts?/gi,'romanian deadlift'],
+ [/dead lefts?/gi,'deadlift'],[/pull downs?/gi,'pulldown'],[/push downs?/gi,'pushdown'],
+ [/preacher corals?/gi,'preacher curl'],[/bulgarian split squads?/gi,'bulgarian split squat'],
+ [/lat pull towns?/gi,'lat pulldown'],[/hamer/gi,'hammer'],[/tricept?s?/gi,'triceps']
+];
+function coachNormalizeGymText(text){
+ let out=String(text||'').toLowerCase().replace(/[’']/g,'');
+ COACH_GYM_TEXT_REPLACEMENTS.forEach(([re,value])=>{out=out.replace(re,value)});
+ return coachNormalizeWords(out);
+}
+function coachLearnedAliases(){
+ return isPlainObject(state?.settings?.coachAliases)?state.settings.coachAliases:{};
+}
+function coachAllAliases(){
+ const out={...COACH_EXERCISE_ALIASES};
+ Object.entries(coachLearnedAliases()).forEach(([alias,id])=>{
+   const ex=exById(id);if(ex)out[coachNormalizeGymText(alias)]=ex.name;
+ });
+ return out;
+}
+function coachLearnAlias(alias,exerciseId){
+ const key=coachNormalizeGymText(alias),ex=exById(exerciseId);
+ if(!key||key.length<2||!ex)return false;
+ state.settings.coachAliases=isPlainObject(state.settings.coachAliases)?state.settings.coachAliases:{};
+ state.settings.coachAliases[key]=exerciseId;save();return true;
+}
 const COACH_NUMBER_WORDS={
  zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,
  eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20
@@ -4989,34 +5059,109 @@ function coachParseRepTarget(value){
  if(m)return {minReps:Number(m[1]),maxReps:Number(m[1])};
  return null;
 }
-function coachExerciseMentionCandidates(){
- const byPhrase=new Map();
- visibleExercises().forEach(ex=>{
-   const phrase=coachNormalizeWords(ex.name);
-   if(phrase.length>=3&&!byPhrase.has(phrase))byPhrase.set(phrase,ex);
- });
- Object.entries(COACH_EXERCISE_ALIASES).forEach(([alias,name])=>{
-   const ex=visibleExercises().find(x=>coachNormalizeWords(x.name)===coachNormalizeWords(name));
-   const phrase=coachNormalizeWords(alias);
-   if(ex&&phrase.length>=2)byPhrase.set(phrase,ex);
- });
- return [...byPhrase.entries()].map(([phrase,ex])=>({phrase,ex})).sort((a,b)=>b.phrase.length-a.phrase.length||a.phrase.localeCompare(b.phrase));
+function coachLevenshtein(a,b){
+ a=String(a||'');b=String(b||'');
+ if(a===b)return 0;if(!a.length)return b.length;if(!b.length)return a.length;
+ let prev=Array.from({length:b.length+1},(_,i)=>i),cur=[];
+ for(let i=1;i<=a.length;i++){
+   cur=[i];
+   for(let j=1;j<=b.length;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
+   prev=cur;
+ }
+ return prev[b.length];
 }
-function coachRegexEscape(value){return String(value||'').replace(/[.*+?^$(){}|[\]\\]/g,'\\$&')}
-function coachFindExerciseMentions(text){
- const raw=coachNormalizeWords(coachNumbersToDigits(text)),mentions=[],occupied=[];
+function coachStringSimilarity(a,b){
+ a=coachNormalizeGymText(a);b=coachNormalizeGymText(b);if(!a||!b)return 0;if(a===b)return 1;
+ const ac=a.replace(/\s+/g,''),bc=b.replace(/\s+/g,'');
+ return 1-coachLevenshtein(ac,bc)/Math.max(ac.length,bc.length,1);
+}
+function coachTokenSimilarity(a,b){
+ const aa=coachNormalizeGymText(a).split(' ').filter(Boolean),bb=coachNormalizeGymText(b).split(' ').filter(Boolean);
+ if(!aa.length||!bb.length)return 0;
+ const oneWay=(from,to)=>from.reduce((sum,token)=>sum+Math.max(...to.map(t=>coachStringSimilarity(token,t))),0)/from.length;
+ return (oneWay(aa,bb)+oneWay(bb,aa))/2;
+}
+function coachExerciseLanguagePhrases(){
+ const rows=[];
+ visibleExercises().forEach(ex=>rows.push({phrase:coachNormalizeGymText(ex.name),ex,source:'name'}));
+ Object.entries(coachAllAliases()).forEach(([alias,name])=>{
+   const ex=visibleExercises().find(x=>coachNormalizeGymText(x.name)===coachNormalizeGymText(name));
+   if(ex)rows.push({phrase:coachNormalizeGymText(alias),ex,source:coachLearnedAliases()[coachNormalizeGymText(alias)]?'learned':'alias'});
+ });
+ return rows;
+}
+function coachUnderstandExercisePhrase(phrase,ids=null){
+ const q=coachNormalizeGymText(phrase);if(!q||q.length<2)return {exercise:null,confidence:0,level:'none',alternatives:[],query:q};
+ const allowed=ids?.length?new Set(ids):null,byExercise=new Map();
+ coachExerciseLanguagePhrases().forEach(row=>{
+   if(allowed&&!allowed.has(row.ex.id))return;
+   const p=row.phrase;if(!p)return;
+   let score=0;
+   if(q===p)score=1;
+   else if(q.replace(/\s+/g,'')===p.replace(/\s+/g,''))score=.995;
+   else{
+     const compact=coachStringSimilarity(q,p),tokens=coachTokenSimilarity(q,p);
+     score=Math.max(compact*.82+tokens*.18,tokens*.72+compact*.28);
+     if(q.length>=5&&p.includes(q))score=Math.max(score,.91);
+     if(p.length>=5&&q.includes(p))score=Math.max(score,.89);
+   }
+   if(row.source==='learned')score=Math.min(1,score+.06);
+   else if(row.source==='alias')score=Math.min(1,score+.025);
+   const existing=byExercise.get(row.ex.id);
+   if(!existing||score>existing.score)byExercise.set(row.ex.id,{exercise:row.ex,score,matchedPhrase:p,source:row.source});
+ });
+ const ranked=[...byExercise.values()].sort((a,b)=>b.score-a.score||a.exercise.name.localeCompare(b.exercise.name));
+ const top=ranked[0],second=ranked[1],gap=top?(top.score-(second?.score||0)):0;
+ const confidence=top?.score||0;
+ const level=confidence>=.92||confidence>=.86&&gap>=.055?'high':confidence>=.72?'medium':'low';
+ return {exercise:level==='high'?top.exercise:null,confidence,level,gap,query:q,alternatives:ranked.slice(0,3)};
+}
+function coachExerciseMentionCandidates(){
+ const out=[],seen=new Set();
+ coachExerciseLanguagePhrases().forEach(({phrase,ex})=>{
+   const key=phrase+'|'+ex.id;if(!phrase||seen.has(key))return;seen.add(key);out.push({phrase,ex});
+ });
+ return out.sort((a,b)=>b.phrase.length-a.phrase.length||a.phrase.localeCompare(b.phrase));
+}
+function coachExerciseChunkText(value){
+ return coachNormalizeGymText(String(value||'')
+   .replace(/\b(?:please|can you|could you|would you|hey|coach|also|then|next|i want|i need|want to do|need to do|do|doing|exercise|add|include|remove|drop|skip|delete|make|change|set|update|some)\b/gi,' ')
+   .replace(/\b\d+\s*(?:sets?|reps?)\b/gi,' ')
+   .replace(/\b\d+\s*x\s*\d+(?:\s*(?:-|to)\s*\d+)?\b/gi,' ')
+   .replace(/\b(?:for|at|targeting|aiming for|to)\s*\d+(?:\s*(?:-|to)\s*\d+)?\s*(?:reps?)?\b/gi,' ')
+   .replace(/\b(?:a|an|one)\s+sets?\s+(?:of\s+)?/gi,' '));
+}
+function coachAnalyzeExerciseMentions(text){
+ const raw=coachNormalizeGymText(coachNumbersToDigits(text)),mentions=[],occupied=[],ambiguities=[];
  coachExerciseMentionCandidates().forEach(({phrase,ex})=>{
-   const pattern=new RegExp('(?:^|\\s)'+coachRegexEscape(phrase)+'s?(?=\\s|$)','g');
-   let m;
+   const pattern=new RegExp('(?:^|\\s)'+coachRegexEscape(phrase)+'s?(?=\\s|$)','g');let m;
    while((m=pattern.exec(raw))){
      const leading=m[0].startsWith(' ')?1:0,start=m.index+leading,end=m.index+m[0].length;
      if(occupied.some(([a,b])=>start<b&&end>a))continue;
-     mentions.push({exerciseId:ex.id,ex,start,end,phrase:raw.slice(start,end).trim()});
+     mentions.push({exerciseId:ex.id,ex,start,end,phrase:raw.slice(start,end).trim(),confidence:1});
      occupied.push([start,end]);
    }
  });
- return mentions.sort((a,b)=>a.start-b.start);
+ let cursor=0;
+ const chunks=raw.split(/\s*(?:,|;|\band\b|\bthen\b)\s*/).filter(Boolean);
+ chunks.forEach(chunk=>{
+   const start=raw.indexOf(chunk,cursor);cursor=Math.max(cursor,start+chunk.length);
+   const end=start+chunk.length;
+   if(start>=0&&occupied.some(([a,b])=>start<b&&end>a))return;
+   const cleaned=coachExerciseChunkText(chunk);if(!cleaned||cleaned.length<2)return;
+   const understood=coachUnderstandExercisePhrase(cleaned);
+   if(understood.level==='high'&&understood.exercise){
+     mentions.push({exerciseId:understood.exercise.id,ex:understood.exercise,start:Math.max(0,start),end:Math.max(0,end),phrase:cleaned,segmentText:chunk,confidence:understood.confidence});
+     occupied.push([Math.max(0,start),Math.max(0,end)]);
+   }else if(understood.level==='medium'){
+     ambiguities.push({phrase:cleaned,segmentText:chunk,start:Math.max(0,start),end:Math.max(0,end),alternatives:understood.alternatives});
+   }
+ });
+ const deduped=[];const seenIds=new Set();
+ mentions.sort((a,b)=>a.start-b.start).forEach(m=>{if(!seenIds.has(m.exerciseId)){seenIds.add(m.exerciseId);deduped.push(m)}});
+ return {mentions:deduped,ambiguities};
 }
+function coachFindExerciseMentions(text){return coachAnalyzeExerciseMentions(text).mentions}
 function coachPrescriptionNumbersAround(text,mention,index,mentions,goal,globalRep){
  const beforeStart=index?mentions[index-1].end:0,nextStart=index<mentions.length-1?mentions[index+1].start:text.length;
  const before=text.slice(beforeStart,mention.start).trim(),after=text.slice(mention.end,nextStart).trim();
@@ -5072,26 +5217,16 @@ function coachGenerateExplicitWorkout(request,prescription){
  return coachBuildDraft;
 }
 function coachResolveExercisePhrase(phrase,ids=null){
- const q=coachNormalizeWords(phrase);if(!q||q.length<2)return null;
- const pool=(ids?.length?ids.map(exById).filter(Boolean):visibleExercises());
- const aliasName=COACH_EXERCISE_ALIASES[q];
- if(aliasName){
-   const alias=pool.find(ex=>coachNormalizeWords(ex.name)===coachNormalizeWords(aliasName));
-   if(alias)return alias;
- }
- const exact=pool.find(ex=>coachNormalizeWords(ex.name)===q);if(exact)return exact;
- const contains=pool.filter(ex=>{
-   const name=coachNormalizeWords(ex.name);
-   return name.includes(q)||q.includes(name);
- });
- if(contains.length)return contains.sort((a,b)=>a.name.length-b.name.length||a.name.localeCompare(b.name))[0];
- const tokens=q.split(' ').filter(x=>x.length>2);
- if(!tokens.length)return null;
- const ranked=pool.map(ex=>{
-   const name=coachNormalizeWords(ex.name),score=tokens.reduce((n,t)=>n+(name.includes(t)?1:0),0);
-   return {ex,score};
- }).filter(x=>x.score===tokens.length).sort((a,b)=>a.ex.name.length-b.ex.name.length||a.ex.name.localeCompare(b.ex.name));
- return ranked[0]?.ex||null;
+ const understood=coachUnderstandExercisePhrase(phrase,ids);
+ return understood.exercise||null;
+}
+function coachExerciseClarification(phrase,ids=null){
+ const understood=coachUnderstandExercisePhrase(phrase,ids);
+ if(understood.level!=='medium')return null;
+ return {
+   phrase:understood.query,
+   options:understood.alternatives.slice(0,3).map(x=>({exerciseId:x.exercise.id,name:x.exercise.name,confidence:x.score}))
+ };
 }
 function coachTargetRegionsForKey(key){return COACH_TARGET_GROUPS[key]?.regions||[]}
 function coachRemoveTargetKey(req,key){
