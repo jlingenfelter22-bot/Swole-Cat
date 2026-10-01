@@ -2737,7 +2737,6 @@ jobs:
             w.eval('state.sessions.push('+JSON.stringify(mkSession(10,bench.id,row.id))+')');
             w.eval('state.sessions.push('+JSON.stringify(mkSession(5,bench.id,row.id))+')');
             w.eval('state.sessions.push('+JSON.stringify(mkSession(1,bench.id,row.id))+')');
-            w.eval('invalidateDerivedSessionData?.()');
             const insight=w.coachHistoryInsight();
             assert(insight,'Coach should surface a history insight when enough evidence exists');
             assert.equal(insight.group.key,'lower body');
