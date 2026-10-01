@@ -5031,12 +5031,12 @@ const COACH_EXERCISE_ALIASES={
  'sled pushes':'Sled Push','sled drags':'Sled Drag'
 };
 const COACH_GYM_TEXT_REPLACEMENTS=[
- [/dumbells?/gi,'dumbbell'],[/dumb bell/gi,'dumbbell'],[/barbel/gi,'barbell'],
- [/db/gi,'dumbbell'],[/bb/gi,'barbell'],[/o h p/gi,'ohp'],
- [/r d l s?/gi,'rdl'],[/romanian dead lefts?/gi,'romanian deadlift'],
- [/dead lefts?/gi,'deadlift'],[/pull downs?/gi,'pulldown'],[/push downs?/gi,'pushdown'],
- [/preacher corals?/gi,'preacher curl'],[/bulgarian split squads?/gi,'bulgarian split squat'],
- [/lat pull towns?/gi,'lat pulldown'],[/hamer/gi,'hammer'],[/tricept?s?/gi,'triceps']
+ [/\bdumbells?\b/gi,'dumbbell'],[/\bdumb bell\b/gi,'dumbbell'],[/\bbarbel\b/gi,'barbell'],
+ [/\bdb\b/gi,'dumbbell'],[/\bbb\b/gi,'barbell'],[/\bo h p\b/gi,'ohp'],
+ [/\br d l s?\b/gi,'rdl'],[/\bromanian dead lefts?\b/gi,'romanian deadlift'],
+ [/\bdead lefts?\b/gi,'deadlift'],[/\bpull downs?\b/gi,'pulldown'],[/\bpush downs?\b/gi,'pushdown'],
+ [/\bpreacher corals?\b/gi,'preacher curl'],[/\bbulgarian split squads?\b/gi,'bulgarian split squat'],
+ [/\blat pull towns?\b/gi,'lat pulldown'],[/\bhamer\b/gi,'hammer'],[/\btricept?s?\b/gi,'triceps']
 ];
 function coachNormalizeGymText(text){
  let out=String(text||'').toLowerCase().replace(/[’']/g,'');
