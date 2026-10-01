@@ -3453,23 +3453,65 @@ const MUSCLE_REGION_LABELS={
  quads:'Quads',hamstrings:'Hamstrings',adductors:'Adductors',calves:'Calves',tibialis:'Tibialis'
 };
 function uniqueMuscles(list){return [...new Set((list||[]).filter(Boolean))]}
+const EXERCISE_MUSCLE_OVERRIDES={
+ 'Deadlift':{primary:['quads','glutes','lower_back'],secondary:['hamstrings','upper_back','forearms','core']},
+ 'Rack Pull':{primary:['glutes','lower_back','upper_back'],secondary:['hamstrings','traps','forearms','core']},
+ 'Block Pull':{primary:['glutes','lower_back','upper_back'],secondary:['hamstrings','traps','forearms','core']},
+ 'Deficit Deadlift':{primary:['quads','glutes','lower_back'],secondary:['hamstrings','upper_back','forearms','core']},
+ 'Sumo Deadlift':{primary:['quads','glutes','adductors'],secondary:['hamstrings','lower_back','forearms','core']},
+ 'Trap Bar Deadlift':{primary:['quads','glutes'],secondary:['hamstrings','lower_back','traps','forearms','core']},
+ 'Reverse Hyperextension':{primary:['glutes','hamstrings'],secondary:['lower_back']},
+ '45-Degree Back Extension':{primary:['hamstrings','glutes'],secondary:['lower_back']},
+ 'Glute Ham Raise':{primary:['hamstrings'],secondary:['glutes']},
+ 'Assisted Dip':{primary:['triceps'],secondary:['chest','front_delts']},
+ 'Plate Loaded Dip':{primary:['triceps'],secondary:['chest','front_delts']},
+ 'Bench Dip':{primary:['triceps'],secondary:['chest','front_delts']},
+ 'Diamond Push-Up':{primary:['triceps'],secondary:['chest','front_delts']},
+ 'Reverse Barbell Curl':{primary:['forearms'],secondary:['biceps']},
+ 'Reverse Dumbbell Curl':{primary:['forearms'],secondary:['biceps']},
+ 'Zottman Curl':{primary:['biceps','forearms'],secondary:[]},
+ 'Dumbbell Farmer Carry':{primary:['forearms','traps','core'],secondary:['glutes','quads']},
+ 'Trap Bar Farmer Carry':{primary:['forearms','traps','core'],secondary:['glutes','quads']},
+ 'Plate Pinch Carry':{primary:['forearms'],secondary:['traps','core']},
+ 'Kettlebell Farmer Carry':{primary:['forearms','traps','core'],secondary:['glutes','quads']},
+ 'Kettlebell Suitcase Carry':{primary:['forearms','obliques','core'],secondary:['traps','glutes']},
+ 'Kettlebell Swing':{primary:['glutes','hamstrings'],secondary:['quads','lower_back','core']},
+ 'Kettlebell Romanian Deadlift':{primary:['hamstrings','glutes'],secondary:['lower_back','core']},
+ 'Kettlebell Goblet Squat':{primary:['quads','glutes'],secondary:['adductors','core']},
+ 'Double Kettlebell Front Squat':{primary:['quads','glutes'],secondary:['adductors','core']},
+ 'Landmine Squat':{primary:['quads','glutes'],secondary:['adductors','core']},
+ 'Landmine Reverse Lunge':{primary:['quads','glutes'],secondary:['adductors','core']},
+ 'Kettlebell Press':{primary:['front_delts'],secondary:['side_delts','triceps','core']},
+ 'Double Kettlebell Press':{primary:['front_delts'],secondary:['side_delts','triceps','core']},
+ 'Landmine Press':{primary:['front_delts','chest'],secondary:['triceps','core']},
+ 'Half-Kneeling Landmine Press':{primary:['front_delts','chest'],secondary:['triceps','core']},
+ 'Backward Sled Drag':{primary:['quads'],secondary:['glutes','calves','core']},
+ 'Sled Drag':{primary:['quads','glutes'],secondary:['hamstrings','calves','core']}
+};
+function auditedMuscleResult(primary,secondary,pattern){
+ const p=uniqueMuscles(primary),s=uniqueMuscles((secondary||[]).filter(x=>!p.includes(x)));
+ return {primary:p,secondary:s,movementFamily:pattern||'other'};
+}
 function exerciseMuscleMetadata(ex){
  if(!ex)return {primary:[],secondary:[],movementFamily:'other'};
  if(Array.isArray(ex.primaryMuscles)&&ex.primaryMuscles.length){
-   return {primary:uniqueMuscles(ex.primaryMuscles),secondary:uniqueMuscles(ex.secondaryMuscles||[]),movementFamily:ex.movementFamily||ex.pattern||'other'};
+   return auditedMuscleResult(ex.primaryMuscles,ex.secondaryMuscles||[],ex.movementFamily||ex.pattern||'other');
  }
- const muscle=ex.muscle||'Other',pattern=ex.pattern||'other';
+ const name=ex.name||'',muscle=ex.muscle||'Other',pattern=ex.pattern||'other';
+ const override=EXERCISE_MUSCLE_OVERRIDES[name];
+ if(override)return auditedMuscleResult(override.primary,override.secondary,pattern);
  let primary=[],secondary=[];
  if(muscle==='Chest'){
    primary=['chest'];
    secondary=['front_delts',...(pattern==='chest_fly'?[]:['triceps'])];
  }else if(muscle==='Back'){
-   if(pattern==='hinge') {primary=['glutes','hamstrings','lower_back'];secondary=['upper_back','forearms','quads'];}
+   if(pattern==='hinge'){primary=['quads','glutes','lower_back'];secondary=['hamstrings','upper_back','forearms','core'];}
    else if(pattern==='vertical_pull'){primary=['lats'];secondary=['upper_back','biceps','rear_delts'];}
    else if(pattern==='shoulder_extension'||pattern==='pullover'){primary=['lats'];secondary=['upper_back','triceps'];}
    else {primary=['upper_back','lats'];secondary=['rear_delts','biceps'];}
  }else if(muscle==='Lower Back'){
-   primary=['lower_back'];secondary=['glutes','hamstrings'];
+   if(pattern==='back_extension'){primary=['lower_back'];secondary=['glutes','hamstrings'];}
+   else {primary=['lower_back','glutes'];secondary=['hamstrings','upper_back','forearms'];}
  }else if(muscle==='Shoulders'){
    if(pattern==='lateral_raise'){primary=['side_delts'];secondary=[];}
    else if(pattern==='rear_delt'){primary=['rear_delts'];secondary=['upper_back'];}
@@ -3479,36 +3521,48 @@ function exerciseMuscleMetadata(ex){
  }else if(muscle==='Traps'){
    primary=['traps'];secondary=pattern==='shrug'?['forearms']:['upper_back'];
  }else if(muscle==='Quads'){
-   primary=['quads'];secondary=(pattern==='squat'||pattern==='lunge')?['glutes','adductors']:[];
+   if(pattern==='squat'||pattern==='lunge'){primary=['quads','glutes'];secondary=['adductors'];}
+   else if(pattern==='sled_push'){primary=['quads','glutes'];secondary=['hamstrings','calves','core'];}
+   else primary=['quads'];
  }else if(muscle==='Hamstrings'){
-   primary=['hamstrings'];secondary=pattern==='hinge'?['glutes','lower_back']:[];
+   if(pattern==='hinge'){primary=['hamstrings','glutes'];secondary=['lower_back'];}
+   else primary=['hamstrings'];
  }else if(muscle==='Glutes'){
    primary=['glutes'];
-   secondary=pattern==='hip_abduction'?[]:(pattern==='squat'||pattern==='lunge'?['quads','adductors']:['hamstrings']);
+   if(pattern==='hip_abduction')secondary=[];
+   else if(pattern==='hip_extension')secondary=['hamstrings'];
+   else if(pattern==='squat'||pattern==='lunge')secondary=['quads','adductors'];
  }else if(muscle==='Adductors'){
-   primary=['adductors'];secondary=['glutes','quads'];
+   primary=['adductors'];secondary=[];
  }else if(muscle==='Biceps'){
    primary=['biceps'];secondary=['forearms'];
  }else if(muscle==='Triceps'){
-   primary=['triceps'];secondary=(pattern==='dip_press'||pattern==='horizontal_press')?['chest','front_delts']:[];
+   primary=['triceps'];
+   secondary=(pattern==='dip_press'||pattern==='horizontal_press')?['chest','front_delts']:[];
  }else if(muscle==='Forearms'){
-   primary=['forearms'];secondary=pattern==='elbow_flexion'?['biceps']:[];
+   primary=['forearms'];
+   secondary=pattern==='grip'?['traps','core']:(pattern==='elbow_flexion'?['biceps']:[]);
  }else if(muscle==='Calves'){
    primary=['calves'];
  }else if(muscle==='Tibialis'){
    primary=['tibialis'];
  }else if(muscle==='Core'){
-   if(pattern==='rotation'||pattern==='lateral_flexion'||pattern==='anti_rotation'){primary=['obliques','core'];}
+   if(pattern==='rotation'||pattern==='lateral_flexion'||pattern==='anti_rotation')primary=['obliques','core'];
    else primary=['core'];
  }else if(muscle==='Full Body'){
    if(pattern==='carry'){primary=['forearms','traps','core'];secondary=['obliques','quads','glutes'];}
+   else if(pattern==='hinge'){primary=['glutes','hamstrings'];secondary=['lower_back','core','quads'];}
+   else if(pattern==='squat'||pattern==='lunge'){primary=['quads','glutes'];secondary=['adductors','core'];}
+   else if(pattern==='vertical_press'){primary=['front_delts'];secondary=['side_delts','triceps','core'];}
    else if(pattern==='sled_push'||pattern==='sled_pull'){primary=['quads','glutes'];secondary=['hamstrings','calves','core'];}
+   else if(pattern==='olympic_pull'){primary=['quads','glutes','traps'];secondary=['hamstrings','upper_back','core','forearms'];}
    else {primary=['quads','glutes','upper_back'];secondary=['hamstrings','traps','core','forearms'];}
  }else{
    primary=[String(muscle).toLowerCase().replace(/\s+/g,'_')];
  }
- return {primary:uniqueMuscles(primary),secondary:uniqueMuscles(secondary.filter(x=>!primary.includes(x))),movementFamily:pattern};
+ return auditedMuscleResult(primary,secondary,pattern);
 }
+
 function sessionMuscleScores(session){
  const scores={};
  (session.exercises||[]).forEach(e=>{
@@ -3556,6 +3610,18 @@ function anatomyScoreRegion(id){
  if(/^hamstrings-/.test(id))return 'hamstrings';
  return '';
 }
+function availableHeatMapMuscleRegions(){
+ return [...new Set([...SWOLECAT_ANATOMY_FRONT,...SWOLECAT_ANATOMY_BACK].map(x=>anatomyScoreRegion(x.id)).filter(Boolean))];
+}
+function auditExerciseMuscleCoverage(){
+ const drawable=new Set(availableHeatMapMuscleRegions());
+ return LIBRARY.map(ex=>{
+   const meta=exerciseMuscleMetadata(ex);
+   const missing=[...meta.primary,...meta.secondary].filter(m=>!drawable.has(m));
+   return {id:ex.id,name:ex.name,primary:meta.primary,secondary:meta.secondary,missing};
+ });
+}
+
 function anatomyPathClass(part,scores){
  const region=anatomyScoreRegion(part.id);
  if(!region)return 'anatomy-neutral';
