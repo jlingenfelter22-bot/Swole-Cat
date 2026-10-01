@@ -1392,6 +1392,11 @@
     display:grid;
     gap:12px;
   }
+  .program-empty-compact{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;border:1px solid #2a364a;border-radius:13px;background:#0e1621}
+  .program-empty-compact b{font-size:.78rem}
+  .program-empty-compact .mini{margin-top:3px;font-size:.66rem}
+  .routine-page-section:first-child>.section-title{margin-top:18px}
+  @media(max-width:430px){.program-empty-compact{align-items:flex-start;flex-direction:column}}
   #routines .program-card{
     border-color:rgba(168,85,247,.30);
     background:
@@ -2718,10 +2723,16 @@
       <div><div class="screen-code">PROGRAM MATRIX // 02</div><h1>Build the rotation.</h1><div class="screen-copy">Organize routines into repeatable training systems, then launch the next session without losing your individual progression.</div></div>
       <div class="screen-mark" aria-hidden="true"><span></span><span></span><span></span></div>
     </div>
-    <div class="section-title"><h2>Programs</h2><button class="btn small" onclick="newProgram()">+ Program</button></div>
-    <div id="programList" class="grid"></div>
-    <div class="section-title"><h2>Workout routines</h2><button class="btn small" onclick="newRoutine()">+ Create</button></div>
-    <div id="routineList" class="grid"></div>
+    <div id="routinePageSections">
+      <div id="programsSection" class="routine-page-section">
+        <div class="section-title"><h2>Programs</h2><button class="btn small" onclick="newProgram()">+ Program</button></div>
+        <div id="programList" class="grid"></div>
+      </div>
+      <div id="workoutRoutinesSection" class="routine-page-section">
+        <div class="section-title"><h2>Workout routines</h2><button class="btn small" onclick="newRoutine()">+ Create</button></div>
+        <div id="routineList" class="grid"></div>
+      </div>
+    </div>
   </section>
 
   <section id="exercises" class="view">
@@ -4429,7 +4440,7 @@ function programCard(p){
 }
 function renderPrograms(){
  const host=document.getElementById('programList');if(!host)return;
- host.innerHTML=state.programs.length?state.programs.map(programCard).join(''):`<div class="empty"><div class="empty-illustration"><span class="empty-glyph empty-glyph-program" aria-hidden="true"></span></div><strong>No programs yet</strong>Group routines like Workout A, B, and C into one training rotation.</div>`;
+ host.innerHTML=state.programs.length?state.programs.map(programCard).join(''):`<div class="program-empty-compact"><div><b>No programs yet</b><div class="mini">When you want a multi-workout rotation, combine your saved routines into a program.</div></div><button class="btn small secondary" onclick="newProgram()">Create Program</button></div>`;
 }
 function renderActiveProgramHome(){
  const host=document.getElementById('activeProgramHome');if(!host)return;
@@ -5266,7 +5277,17 @@ function equipmentIcon(e){return {'barbell':'🏋','dumbbell':'◐','machine':'�
 function routineIsArchived(r){return !!r?.archivedAt}
 function activeRoutines(){return state.routines.filter(r=>!routineIsArchived(r))}
 function archivedRoutines(){return state.routines.filter(r=>routineIsArchived(r))}
+function syncRoutinePagePriority(){
+ const host=document.getElementById('routinePageSections'),programs=document.getElementById('programsSection'),routines=document.getElementById('workoutRoutinesSection');
+ if(!host||!programs||!routines)return;
+ if(state.programs.length){
+   host.append(programs,routines);
+ }else{
+   host.append(routines,programs);
+ }
+}
 function renderRoutines(){
+ syncRoutinePagePriority();
  renderPrograms();
  const el=document.getElementById('routineList'),activeList=activeRoutines(),archived=archivedRoutines();
  const activeHtml=activeList.length?activeList.map(r=>{
