@@ -3809,8 +3809,67 @@ function formatSessionCompletionTime(s){
  const d=new Date(s.date);
  return Number.isNaN(d.getTime())?'Completed workout':d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 }
+function routineSavedFromSession(sessionId){
+ return state.routines.find(r=>r.sourceSessionId===sessionId)||null;
+}
+function completedSessionRoutineExercises(session){
+ return (session?.exercises||[])
+   .filter(e=>!e.skipped&&completedSets(e).length)
+   .map(e=>{
+     const row=routineExerciseFromWorkout(e);
+     const completedWorking=progressionSets(e).length,completedAny=completedSets(e).length;
+     row.sets=Math.max(1,completedWorking||completedAny||row.sets||1);
+     return row;
+   });
+}
+function routineFromCompletedSession(session,name){
+ if(!session)return null;
+ const exercises=completedSessionRoutineExercises(session);
+ if(!exercises.length)return null;
+ const existingLinked=!!(session.routineId&&state.routines.some(r=>r.id===session.routineId));
+ const routine={
+   id:uid(),
+   name:(name||session.routineName||'Saved Workout').trim()||'Saved Workout',
+   description:`Saved from completed workout · ${formatSessionCompletionTime(session)}`,
+   trainingMode:normalizeTrainingMode(session.trainingMode),
+   sourceSessionId:session.id,
+   sourceType:'completed_session',
+   exercises
+ };
+ cleanupRoutineSupersets(routine);
+ if(existingLinked&&routine.name===session.routineName)routine.name=`${routine.name} Copy`;
+ return routine;
+}
+function openSaveSessionAsRoutine(sessionId){
+ const session=state.sessions.find(s=>s.id===sessionId);if(!session)return;
+ const already=routineSavedFromSession(sessionId);
+ if(already){closeModal();go('routines');showToast('That workout is already saved as a routine');return}
+ const exercises=completedSessionRoutineExercises(session);
+ if(!exercises.length){showToast('No completed exercises to save');return}
+ const linked=!!(session.routineId&&state.routines.some(r=>r.id===session.routineId));
+ const defaultName=linked?`${session.routineName||'Workout'} Copy`:(session.routineName||'Saved Workout');
+ openModal('Save workout as routine',`
+   <div class="notice"><b>Save what you actually trained.</b><br>This creates a new reusable routine from the completed workout. Your historical session stays unchanged.</div>
+   <div class="field" style="margin-top:12px"><label>Routine name</label><input id="sessionRoutineName" value="${escAttr(defaultName)}"></div>
+   <div class="picker-section">Exercises</div>
+   <div class="card">${exercises.map((row,i)=>`<div class="list-item"><div class="program-letter">${i+1}</div><div class="grow"><div class="exercise-name">${esc(exById(row.exerciseId)?.name||'Exercise')}</div><div class="mini">${row.sets} working set${row.sets===1?'':'s'} · ${row.minReps}–${row.maxReps} reps · ${row.restSeconds}s rest</div></div></div>`).join('')}</div>
+   <div class="actions"><button class="btn" onclick="saveCompletedSessionAsRoutine('${escAttr(sessionId)}')">Save Routine</button><button class="btn secondary" onclick="closeModal()">Cancel</button></div>
+ `);
+}
+function saveCompletedSessionAsRoutine(sessionId){
+ const session=state.sessions.find(s=>s.id===sessionId);if(!session)return null;
+ const already=routineSavedFromSession(sessionId);
+ if(already){showToast('That workout is already saved as a routine');return already.id}
+ const name=document.getElementById('sessionRoutineName')?.value?.trim()||session.routineName||'Saved Workout';
+ const routine=routineFromCompletedSession(session,name);
+ if(!routine){showToast('No completed exercises to save');return null}
+ state.routines.push(routine);save();renderRoutines();renderHome();closeModal();showToast('Workout saved as a routine');
+ return routine.id;
+}
 function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],historical=false}={}){
  const workingSets=sessionSetCount(session),allSets=sessionAllSetCount(session),reps=sessionTotalReps(session);
+ const savedRoutine=routineSavedFromSession(session.id);
+ const linkedRoutine=!!(session.routineId&&state.routines.some(r=>r.id===session.routineId));
  const volume=Math.round(sessionVolume(session)),prs=sessionPRDetails(session),muscles=sessionMuscleGroups(session);
  const completedExercises=sessionCompletedExerciseCount(session),skipped=(session.exercises||[]).filter(e=>e.skipped).length;
  const exerciseRows=(session.exercises||[]).map(e=>{
@@ -3868,7 +3927,12 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
    <div class="recap-section"><div class="recap-section-title">Progression versus last exposure</div>${progressionHtml}</div>
    <div class="recap-section"><div class="recap-section-title">Personal records</div>${prHtml}</div>
    ${session.programId&&programById(session.programId)?`<div class="summary-win"><b>Next in ${esc(programById(session.programId).name)}</b><div class="mini">${esc(programNextRoutine(programById(session.programId))?.name||'Program complete')}</div></div>`:''}
-   <div class="actions">${historical?`<button class="btn" onclick="closeModal();editCompletedWorkout('${escAttr(session.id)}')">Edit Workout</button>`:''}<button class="btn ${historical?'secondary':''}" onclick="closeModal();go('analytics')">View progress</button><button class="btn secondary" onclick="closeModal()">Done</button></div>
+   <div class="actions">
+     ${savedRoutine?`<button class="btn green" onclick="closeModal();go('routines')">Routine Saved ✓</button>`:`<button class="btn" onclick="openSaveSessionAsRoutine('${escAttr(session.id)}')">${linkedRoutine?'Save Copy as Routine':'Save as Routine'}</button>`}
+     ${historical?`<button class="btn secondary" onclick="closeModal();editCompletedWorkout('${escAttr(session.id)}')">Edit Workout</button>`:''}
+     <button class="btn secondary" onclick="closeModal();go('analytics')">View progress</button>
+     <button class="btn secondary" onclick="closeModal()">Done</button>
+   </div>
  `;
 }
 function exerciseHistory(exerciseId){return derivedSessionData().historyByExercise.get(exerciseId)||[];}
