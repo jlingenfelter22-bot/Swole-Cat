@@ -13,3 +13,9 @@ const SwoleCatRuntime = window.SwoleCatRuntime = window.SwoleCatRuntime || {
   },
   getService(name){return this.services[name]||null}
 };
+
+const swoleCatStorage = SwoleCatRuntime.registerService('storage',{
+  getItem(key){return window.localStorage.getItem(key)},
+  setItem(key,value){return window.localStorage.setItem(key,value)},
+  removeItem(key){return window.localStorage.removeItem(key)}
+});
