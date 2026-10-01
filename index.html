@@ -1353,6 +1353,34 @@
   #home .active-workout-home,#home .program-home{margin-top:10px}
   #home #homeRoutines .card,#home #recentProgress .card{border-left-color:rgba(34,211,238,.28)}
 
+  /* HOME // adaptive launchpad */
+  #home .home-command-hero{min-height:0;padding:19px;border-radius:5px 22px 5px 22px!important}
+  #home .home-command-hero h1{font-size:clamp(1.65rem,6.5vw,2.35rem);margin:6px 0 8px}
+  .home-primary-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .home-primary-progress{margin-top:12px}
+  .home-coach-launcher{margin-top:10px;background:linear-gradient(120deg,rgba(168,85,247,.08),rgba(34,211,238,.04)),#0c131e;border:1px solid rgba(69,93,128,.62);border-radius:5px 17px 5px 17px;padding:13px}
+  .home-coach-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}
+  .home-coach-title{font-family:var(--display);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase;color:#dceaff}
+  .home-coach-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
+  .home-coach-row input{min-width:0}
+  .home-coach-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+  .home-coach-chip{border:1px solid #34435b;background:#111a27;color:#9eacc0;border-radius:999px;padding:6px 8px;font-size:.61rem;font-weight:800}
+  .home-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+  .home-route-btn{border:1px solid #2c384c;background:#0f1722;border-radius:12px;padding:11px 12px;text-align:left;color:#dce6f3}
+  .home-route-btn b{display:block;font-size:.78rem}
+  .home-route-btn span{display:block;font-size:.61rem;color:#7f8ea3;margin-top:3px}
+  .home-telemetry{display:block;margin:10px 0 0}
+  .home-signal-card{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0e1621;border:1px solid rgba(64,88,120,.55);border-radius:12px;padding:10px 12px;cursor:pointer}
+  .home-signal-card .signal-copy{font-size:.7rem;color:#9eacbe;line-height:1.35}
+  .home-signal-card .signal-copy b{color:#edf5ff}
+  .home-latest{margin-top:10px;background:#0e1621;border:1px solid rgba(64,88,120,.55);border-radius:14px;padding:12px;cursor:pointer}
+  .home-latest .eyebrow{font-size:.55rem}
+  .home-latest-title{font-weight:900;font-size:.92rem;margin-top:5px}
+  .home-latest-meta{font-size:.66rem;color:#8d9db1;margin-top:4px;line-height:1.35}
+  .home-new-user .home-coach-row{margin-top:12px}
+  .home-new-user .home-coach-chips{margin-top:9px}
+  @media(max-width:390px){.home-quick-actions{grid-template-columns:1fr}.home-coach-row{grid-template-columns:1fr}.home-coach-row .btn{width:100%}}
+
   /* ROUTINES // program matrix */
   #routines .routines-banner{
     background:
@@ -2678,26 +2706,11 @@
 
 <main>
   <section id="home" class="view active">
-    <div class="hero home-command-hero">
-      <div class="eyebrow">Ready when you are</div>
-      <h1 id="helloTitle">Build your training.</h1>
-      <div class="muted" id="helloText">Create a routine, log your sets, and come back next week knowing exactly what to beat.</div>
-      <div class="actions">
-        <button class="btn" onclick="openCoachSwolecat()">Coach Swolecat · Quick Build</button>
-        <button class="btn secondary" onclick="go('routines')">Routines</button>
-        <button class="btn secondary" onclick="go('exercises')">Browse Exercises</button>
-      </div>
-    </div>
+    <div id="homePrimary" class="hero home-command-hero" aria-live="polite"></div>
+    <div id="homeCoachLauncher"></div>
+    <div id="homeQuickActions" class="home-quick-actions"></div>
     <div id="homeTelemetry" class="home-telemetry" aria-label="Training summary"></div>
-
-    <div id="activeWorkoutHome"></div>
-    <div id="activeProgramHome"></div>
-
-    <div class="section-title"><h2>Your routines</h2><div><button class="btn small secondary" onclick="installStarterPlan()">3-Day starter</button> <button class="btn small secondary" onclick="newRoutine()">+ New</button></div></div>
-    <div id="homeRoutines" class="grid"></div>
-
-    <div class="section-title"><h2>Recent progress</h2></div>
-    <div id="recentProgress" class="grid"></div>
+    <div id="homeLatest"></div>
   </section>
 
   <section id="routines" class="view">
@@ -2707,7 +2720,7 @@
     </div>
     <div class="section-title"><h2>Programs</h2><button class="btn small" onclick="newProgram()">+ Program</button></div>
     <div id="programList" class="grid"></div>
-    <div class="section-title"><h2>Workout routines</h2><div><button class="btn small secondary" onclick="installStarterPlan()">3-Day starter</button> <button class="btn small" onclick="newRoutine()">+ Create</button></div></div>
+    <div class="section-title"><h2>Workout routines</h2><button class="btn small" onclick="newRoutine()">+ Create</button></div>
     <div id="routineList" class="grid"></div>
   </section>
 
@@ -3336,23 +3349,21 @@ function onboarding(){
  openModal('Welcome to Swole Cat',`
  <div class="onboard-hero"><div class="onboard-logo">🐱</div><div class="eyebrow">${isNativeApp()?'ANDROID · LOCAL. FAST. YOURS.':'LOCAL. FAST. YOURS.'}</div><h1 style="font-size:1.8rem;margin:7px 0">Train, log, progress.</h1><div class="muted">No account, no subscription, no cloud workout profile. Your training data stays on this device.</div></div>
  ${isNativeApp()?'<div class="notice"><b>Already use the Swole Cat PWA?</b><br>Android app storage is separate from the browser version. Export a backup from the PWA first, then import it here to bring over your routines, workouts, programs, PRs, preferences, and bodyweight history.</div>':''}
- <div class="onboard-step"><div class="num">1</div><div><b>Build your routines</b><div class="mini">Start from the editable 3-day plan or create your own from the full exercise library.</div></div></div>
+ <div class="onboard-step"><div class="num">1</div><div><b>Choose your path</b><div class="mini">Tell Coach Swolecat what you want to train, or build a workout manually if you already know exactly what you want.</div></div></div>
  <div class="onboard-step"><div class="num">2</div><div><b>Log what actually happened</b><div class="mini">Weight, reps, optional RIR, substitutions, rest timing, and notes.</div></div></div>
- <div class="onboard-step"><div class="num">3</div><div><b>Beat the right thing next time</b><div class="mini">The coach uses your own history to suggest conservative progression.</div></div></div>
+ <div class="onboard-step"><div class="num">3</div><div><b>Come back with context</b><div class="mini">Your previous numbers, workout recaps, muscle coverage, and progression history stay ready for the next session.</div></div></div>
  <div class="field"><label>Your name (optional)</label><input id="onName" value="${escAttr(state.profile.name||'')}" placeholder="Jake"></div>
  <div class="field"><label>Units</label><select id="onUnit"><option value="lb" ${state.profile.unit==='lb'?'selected':''}>Pounds (lb)</option><option value="kg" ${state.profile.unit==='kg'?'selected':''}>Kilograms (kg)</option></select></div>
  <div class="actions">
-   ${isNativeApp()?'<label class="btn" style="display:inline-block;margin:0">Import existing Swole Cat backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0],this)" style="display:none"></label>':''}
-   <button class="btn ${isNativeApp()?'secondary':''}" onclick="finishOnboarding(false)">Start empty</button>
-   <button class="btn secondary" onclick="finishOnboarding(true)">Use 3-day starter</button>
+   ${isNativeApp()?'<label class="btn secondary" style="display:inline-block;margin:0">Import existing Swole Cat backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0],this)" style="display:none"></label>':''}
+   <button class="btn" onclick="finishOnboarding()">Enter Swolecat</button>
  </div>
  `);
 }
-function finishOnboarding(starter){
+function finishOnboarding(){
  state.profile.name=document.getElementById('onName').value.trim();
  state.profile.unit=document.getElementById('onUnit').value;
  state.ui.onboardingDone=true;save();closeModal();
- if(starter)installStarterPlan();
  renderHome();showToast('You’re ready to train.');
 }
 
@@ -4807,40 +4818,63 @@ function openCoachSwolecat(reset=false){
  coachSetGoal(coachPromptGoal);
 }
 
+function homeSuggestedRoutine(){
+ const active=activeRoutines();if(!active.length)return null;
+ const byId=new Map(active.map(r=>[r.id,r]));
+ const recent=state.sessions.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).find(s=>byId.has(s.routineId));
+ return recent?byId.get(recent.routineId):active[0];
+}
+function homeCoachBuildPrompt(){
+ const input=document.getElementById('homeCoachPrompt'),prompt=input?.value.trim()||'';
+ if(!prompt){showToast('Tell Coach Swolecat what you want to train');return}
+ coachBuildDraft={request:coachParsePrompt(prompt,coachPromptGoal),selectedIds:[],defaults:null,createdAt:new Date().toISOString()};
+ coachContinueRequest();
+}
+function homeCoachExample(text){
+ const input=document.getElementById('homeCoachPrompt');if(input){input.value=text;input.focus()}
+}
+function homeCoachLauncherHtml({embedded=false}={}){
+ return `<div class="${embedded?'home-new-user':''}">
+   ${embedded?'':`<div class="home-coach-head"><div><div class="home-coach-title">Coach Swolecat</div><div class="mini">Need something different today?</div></div><span class="tag">QUICK BUILD</span></div>`}
+   <div class="home-coach-row"><input id="homeCoachPrompt" placeholder="45 min chest + back, cables and dumbbells..." onkeydown="if(event.key==='Enter')homeCoachBuildPrompt()"><button class="btn" onclick="homeCoachBuildPrompt()">Build</button></div>
+   <div class="home-coach-chips"><button class="home-coach-chip" onclick="homeCoachExample('30 minute leg workout')">30m legs</button><button class="home-coach-chip" onclick="homeCoachExample('Chest and back, 45 minutes')">Chest + back</button><button class="home-coach-chip" onclick="homeCoachExample('Strength focused push workout, 60 minutes')">Strength push</button></div>
+ </div>`;
+}
+function homeQuickActionsHtml(){
+ return `<button class="home-route-btn" onclick="go('routines')"><b>Saved workouts</b><span>Routines and programs</span></button><button class="home-route-btn" onclick="newRoutine()"><b>Build manually</b><span>Choose every exercise yourself</span></button>`;
+}
 function renderHome(){
- const n=state.profile.name?.trim();
- document.getElementById('helloTitle').textContent=n?`Let’s work, ${n}.`:'Build your training.';
- document.getElementById('helloText').textContent=state.routines.length?'Your previous numbers are ready. Pick a routine and beat them.':'Create a routine, log your sets, and come back next week knowing exactly what to beat.';
- const activeHost=document.getElementById('activeWorkoutHome');
- if(activeHost){
-   if(state.activeWorkout){
-     const aw=state.activeWorkout,ac=activeWorkoutCounts(aw);
-     const saved=aw.lastSavedAt?new Date(aw.lastSavedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'just now';
-     activeHost.innerHTML=`<div class="active-workout-home clickable" onclick="resumeActiveWorkout()">
-       <div class="row"><div><div class="eyebrow"><span class="active-pulse"></span>ACTIVE WORKOUT</div><div class="exercise-name" style="margin-top:5px">${esc(aw.routineName)}</div><div class="mini" style="margin-top:4px">${ac.done} of ${ac.total} sets complete · ${ac.pct}%</div><div class="autosave-note">✓ Autosaved locally · last update ${esc(saved)}</div></div><span class="tag">RESUME ›</span></div>
-       <div class="progress-bar"><div style="width:${ac.pct}%"></div></div>
-     </div>`;
-   }else activeHost.innerHTML='';
+ const primary=document.getElementById('homePrimary'),coach=document.getElementById('homeCoachLauncher'),quick=document.getElementById('homeQuickActions'),signal=document.getElementById('homeTelemetry'),latest=document.getElementById('homeLatest');
+ if(!primary)return;
+ const name=state.profile.name?.trim(),active=state.activeWorkout,p=activeProgram(),next=p?programNextRoutine(p):null,suggested=homeSuggestedRoutine();
+
+ if(active){
+   const ac=activeWorkoutCounts(active),saved=active.lastSavedAt?new Date(active.lastSavedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'just now';
+   primary.innerHTML=`<div class="eyebrow"><span class="active-pulse"></span>WORKOUT IN PROGRESS</div><h1>Resume ${esc(active.routineName||'Workout')}</h1><div class="muted">${ac.done} of ${ac.total} sets complete · autosaved ${esc(saved)}</div><div class="home-primary-progress progress-bar"><div style="width:${ac.pct}%"></div></div><div class="actions"><button class="btn green" onclick="resumeActiveWorkout()">Resume Workout</button></div>`;
+   coach.innerHTML='';quick.innerHTML='';
+ }else if(p&&next){
+   const logs=programSessions(p),last=logs[0];
+   primary.innerHTML=`<div class="eyebrow">UP NEXT · ${esc(p.name)}</div><h1>${esc(next.name)}</h1><div class="muted">${next.exercises.length} exercise${next.exercises.length===1?'':'s'} · ${esc(trainingModeLabel(normalizeProgramTrainingMode(p.trainingMode)==='inherit'?next.trainingMode:p.trainingMode))}${last?` · last program session ${new Date(last.date).toLocaleDateString()}`:''}</div><div class="actions"><button class="btn green" onclick="startProgramWorkout('${p.id}')">Start Next Workout</button><button class="btn secondary" onclick="go('routines')">View Program</button></div>`;
+   coach.innerHTML=`<div class="home-coach-launcher">${homeCoachLauncherHtml()}</div>`;quick.innerHTML=homeQuickActionsHtml();
+ }else if(suggested){
+   const last=state.sessions.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).find(s=>s.routineId===suggested.id);
+   primary.innerHTML=`<div class="eyebrow">READY TO TRAIN${name?` · ${esc(name)}`:''}</div><h1>${esc(suggested.name)}</h1><div class="muted">${suggested.exercises.length} exercise${suggested.exercises.length===1?'':'s'} · ${esc(trainingModeLabel(suggested.trainingMode))}${last?` · last trained ${new Date(last.date).toLocaleDateString()}`:''}</div><div class="actions"><button class="btn green" onclick="openRoutine('${suggested.id}')">Start Workout</button><button class="btn secondary" onclick="go('routines')">Choose Another</button></div>`;
+   coach.innerHTML=`<div class="home-coach-launcher">${homeCoachLauncherHtml()}</div>`;quick.innerHTML=homeQuickActionsHtml();
+ }else{
+   primary.innerHTML=`<div class="eyebrow">COACH SWOLECAT · QUICK BUILD</div><h1>What are we training today?</h1><div class="muted">Tell Swolecat the muscles, time, equipment, or goal. Or build the workout manually if you already know exactly what you want.</div>${homeCoachLauncherHtml({embedded:true})}`;
+   coach.innerHTML='';quick.innerHTML=`<button class="home-route-btn" onclick="newRoutine()"><b>Build manually</b><span>Choose every exercise yourself</span></button><button class="home-route-btn" onclick="go('routines')"><b>Saved workouts</b><span>Nothing saved yet — manage them here later</span></button>`;
+ }
+
+ if(!state.sessions.length){
+   signal.innerHTML='';latest.innerHTML='';
+ }else{
+   const weekStart=startOfWeek(),weekSessions=state.sessions.filter(s=>new Date(s.date)>=weekStart);
+   const weekSets=weekSessions.reduce((n,s)=>n+sessionSetCount(s),0),weekPrs=weekSessions.reduce((n,s)=>n+sessionPRCount(s),0);
+   signal.innerHTML=`<div class="home-signal-card" onclick="go('analytics')"><div><div class="eyebrow">THIS WEEK</div><div class="signal-copy"><b>${weekSessions.length} workout${weekSessions.length===1?'':'s'}</b> · ${weekSets} working sets · ${weekPrs} PR${weekPrs===1?'':'s'}</div></div><span class="tag">PROGRESS ›</span></div>`;
+   const last=state.sessions.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0],sets=sessionSetCount(last),prs=sessionPRCount(last);
+   latest.innerHTML=`<div class="home-latest" onclick="openHistoricalWorkoutRecap('${last.id}')"><div class="row"><div><div class="eyebrow">LAST WORKOUT</div><div class="home-latest-title">${esc(last.routineName)}</div><div class="home-latest-meta">${new Date(last.date).toLocaleDateString()} · ${sets} working sets${last.durationMinutes!=null?` · ${last.durationMinutes} min`:''}${prs?` · ${prs} PR${prs===1?'':'s'}`:''}</div></div><span class="tag">RECAP ›</span></div></div>`;
  }
  updateActiveWorkoutChrome();
- const homeTelemetry=document.getElementById('homeTelemetry');
- if(homeTelemetry){
-   const weekStart=startOfWeek(),weekSessions=state.sessions.filter(x=>new Date(x.date)>=weekStart);
-   const last30=state.sessions.filter(x=>Date.now()-new Date(x.date).getTime()<=30*86400000);
-   const pr30=last30.reduce((sum,x)=>sum+sessionPRCount(x),0);
-   homeTelemetry.innerHTML=`
-     <div class="signal-stat"><span>Completed</span><b>${state.sessions.length}</b><small>workouts</small></div>
-     <div class="signal-stat"><span>This week</span><b>${weekSessions.length}</b><small>sessions</small></div>
-     <div class="signal-stat"><span>PR signal</span><b>${pr30}</b><small>last 30d</small></div>`;
- }
- renderActiveProgramHome();
- const wrap=document.getElementById('homeRoutines'),homeRoutineList=activeRoutines();
- if(!homeRoutineList.length) wrap.innerHTML=`<div class="empty"><div class="empty-illustration"><span class="empty-glyph empty-glyph-routine" aria-hidden="true"></span></div><strong>No active routines</strong>Build a workout, restore an archived routine, or install the editable 3-day starter.</div>`;
- else wrap.innerHTML=homeRoutineList.slice(0,4).map(r=>routineCard(r)).join('');
- const recent=document.getElementById('recentProgress');
- const s=state.sessions.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4);
- if(!s.length) recent.innerHTML=`<div class="empty"><div class="empty-illustration"><span class="empty-glyph empty-glyph-progress" aria-hidden="true"></span></div><strong>Your progress starts with workout one</strong>PRs, strength trends, and recent sessions will show here.</div>`;
- else recent.innerHTML=s.map(sessionCard).join('');
 }
 
 function routineCard(r){
@@ -5255,48 +5289,28 @@ function renderRoutines(){
  el.innerHTML=activeHtml+archivedHtml;
  updateActiveWorkoutChrome();
 }
-function installStarterPlan(){
- const names=['Full Body A','Full Body B','Full Body C'];
- const existing=names.map(n=>activeRoutines().find(r=>r.name===n));
- const ensureProgram=(routines)=>{
-   const ids=routines.map(r=>r.id);
-   let p=state.programs.find(x=>x.name==='3-Day Full Body');
-   if(!p){
-     p={id:uid(),name:'3-Day Full Body',routineIds:ids,frequency:3,preferredDays:[1,3,5],trainingMode:'inherit',nextIndex:0};
-     state.programs.push(p);
-   }else{
-     p.routineIds=ids;p.frequency=p.frequency||3;p.preferredDays=p.preferredDays?.length?p.preferredDays:[1,3,5];
-     p.nextIndex=Math.min(Number(p.nextIndex)||0,Math.max(0,ids.length-1));
-   }
-   if(!state.activeProgramId)state.activeProgramId=p.id;
-   return p;
- };
- if(existing.every(Boolean)){
-   const p=ensureProgram(existing);
-   save();renderHome();renderRoutines();
-   alert(`Full Body A, B, and C were already installed. They are grouped into the "${p.name}" program.`);
-   return;
- }
- if(existing.some(Boolean)){alert('Some starter routines already exist. Rename or remove the duplicates before installing the full starter program.');return}
+function installRegressionFixturePlan(){
+ // Internal deterministic fixture used by the repository smoke tests.
+ // It is intentionally not exposed in the product UI or onboarding.
  const find=name=>allExercises().find(x=>x.name===name)?.id;
- const make=(name,items)=>({id:uid(),name,description:'',trainingMode:'guided',exercises:items.map(([exercise,sets,min,max,inc,rest])=>({
+ const make=(name,items)=>({id:uid(),name,description:'Regression fixture',trainingMode:'guided',exercises:items.map(([exercise,sets,min,max,inc,rest])=>({
    exerciseId:find(exercise),sets,minReps:min,maxReps:max,increment:inc,mode:'double',restSeconds:rest
  })).filter(x=>x.exerciseId)});
  const created=[
-   make('Full Body A',[
+   make('Fixture Full Body A',[
     ['Back Squat',3,6,10,5,150],['Barbell Bench Press',3,6,10,5,150],['Seated Cable Row',3,8,12,5,120],['Romanian Deadlift',2,8,12,5,150],['Dumbbell Lateral Raise',2,10,15,5,75],['Cable Crunch',2,10,15,5,75]
    ]),
-   make('Full Body B',[
+   make('Fixture Full Body B',[
     ['Deadlift',2,5,8,5,180],['Dumbbell Shoulder Press',3,8,12,5,120],['Lat Pulldown',3,8,12,5,120],['Bulgarian Split Squat',3,8,12,5,120],['Incline Dumbbell Press',2,8,12,5,120],['Cable Curl',2,10,15,5,75],['Triceps Pushdown',2,10,15,5,75]
    ]),
-   make('Full Body C',[
+   make('Fixture Full Body C',[
     ['Leg Press',3,8,12,10,150],['Dumbbell Bench Press',3,8,12,5,120],['Chest Supported Row',3,8,12,5,120],['Hip Thrust',3,8,12,5,150],['Seated Leg Curl',2,10,15,5,90],['Cable Lateral Raise',2,10,15,5,75]
    ])
  ];
  state.routines.push(...created);
- const p=ensureProgram(created);
- save();renderHome();renderRoutines();
- alert(`Added Full Body A, B, and C and grouped them into "${p.name}". Every routine stays fully editable.`);
+ const p={id:uid(),name:'Fixture 3-Day Rotation',routineIds:created.map(r=>r.id),frequency:3,preferredDays:[1,3,5],trainingMode:'inherit',nextIndex:0};
+ state.programs.push(p);state.activeProgramId=p.id;save();renderHome();renderRoutines();
+ return {routines:created,program:p};
 }
 
 let routinePickerSelection=new Set(),routinePickerCategory='home',routinePickerMovement='';
