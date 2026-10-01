@@ -2813,3 +2813,70 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V551 Coach lifting grammar foundation
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(100);
+            const w=dom.window;
+
+            let req=w.coachParsePrompt('60 minute chest and back workout, warm me up first, 2 minutes rest, RPE 8, last set AMRAP','hypertrophy');
+            assert.equal(req.liftingGrammar.warmupMode,'first_compound');
+            assert.equal(req.liftingGrammar.restSeconds,120);
+            assert.equal(req.liftingGrammar.targetRPE,8);
+            assert.equal(req.liftingGrammar.targetRIR,2,'RPE 8 should map to a 2 RIR target');
+            assert.equal(req.liftingGrammar.lastSetAmrap,true);
+
+            const draft=w.coachGenerateWorkout(req);
+            assert(draft);
+            assert.equal(draft.defaults.restSeconds,120);
+            assert.equal(draft.defaults.targetRIR,2);
+
+            const routine=w.coachDraftRoutine(draft,'preview');
+            const warmupRows=routine.exercises.filter(ex=>ex.autoWarmup);
+            assert.equal(warmupRows.length,1,'warm me up first should only auto-ramp the first compound');
+            assert(routine.exercises.every(ex=>ex.restSeconds===120));
+            assert(routine.exercises.every(ex=>ex.targetRIR===2));
+            assert(routine.exercises.every(ex=>ex.lastSetAmrap===true));
+
+            const active=w.coachActiveWorkoutFromDraft(draft);
+            assert(active);
+            const first=active.exercises.find(ex=>ex.config.autoWarmup);
+            assert(first,'active workout should retain auto warmup metadata');
+            const firstTypes=first.sets.map(set=>set.type);
+            assert(firstTypes.includes('warmup'),'first compound should receive warm-up sets');
+            const firstWorking=first.sets.filter(set=>set.type==='working');
+            assert(firstWorking.length>=1);
+            assert.equal(firstWorking.at(-1).amrap,true,'last working set should be marked AMRAP');
+            assert.match(w.setDisplayLabel(first,first.sets.lastIndexOf(firstWorking.at(-1))),/AMRAP/);
+            active.exercises.filter(ex=>ex!==first).forEach(ex=>{
+              assert.equal(ex.sets.filter(set=>set.type==='warmup').length,0,'only first compound should auto-ramp');
+            });
+
+            const tank=w.coachParseLiftingGrammar('leave 3 reps in the tank and rest 90 seconds');
+            assert.equal(tank.targetRIR,3);
+            assert.equal(tank.restSeconds,90);
+
+            const noGrammar=w.coachParsePrompt('45 minute chest workout','hypertrophy');
+            const plainDraft=w.coachGenerateWorkout(noGrammar);
+            const plainRoutine=w.coachDraftRoutine(plainDraft,'plain');
+            assert(plainRoutine.exercises.every(ex=>ex.targetRIR===null),'ordinary Coach workouts should not silently become 0 RIR workouts');
+            assert(plainRoutine.exercises.every(ex=>!ex.autoWarmup),'warmups should only auto-insert when requested');
+            assert(plainRoutine.exercises.every(ex=>!ex.lastSetAmrap),'AMRAP should only appear when requested');
+
+            dom.window.close();
+            console.log('Swole Cat V55.1 lifting grammar foundation PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
