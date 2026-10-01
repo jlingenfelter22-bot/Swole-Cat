@@ -4671,6 +4671,10 @@ function coachVoiceTranscriptScore(text){
  if(/\b(?:add|remove|drop|swap|change|make|build|workout|routine|program)\b/i.test(raw))score+=10;
  if(/\b\d+\s*x\s*\d+\b/i.test(raw))score+=12;
  score+=Math.min(18,raw.length/12);
+ const rawNormalized=coachNormalizeWords(raw.toLowerCase().replace(/[’']/g,''));
+ const gymNormalized=coachNormalizeGymText(raw);
+ const repairCost=coachLevenshtein(rawNormalized,gymNormalized);
+ score-=Math.min(24,repairCost*2);
  return score;
 }
 function coachChooseVoiceTranscript(matches){
