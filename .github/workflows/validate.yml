@@ -46,7 +46,8 @@ jobs:
           assert(!/<script>[\s\S]*<\/script>/.test(source),'index.html should not contain the application runtime');
           const moduleTags=[...source.matchAll(/<script src="\.\/src\/js\/([^"]+)"><\/script>/g)].map(m=>m[1]);
           assert(moduleTags.length>=10,'source shell should load modular JavaScript domains');
-          assert(source.includes('./src/styles/app.css'),'source shell should load modular CSS');
+          const styleTags=[...source.matchAll(/<link rel="stylesheet" href="\.\/src\/styles\/([^"]+)">/g)].map(m=>m[1]);
+          assert(styleTags.length>=4,'source shell should load layered modular CSS');
           const built=fs.readFileSync('www/index.html','utf8');
           assert(built.includes('./app.js'),'production shell should use bundled app.js');
           assert(built.includes('./app.css'),'production shell should use bundled app.css');
