@@ -2019,15 +2019,28 @@ jobs:
           assert(!html.includes('Use 3-day starter'),'starter onboarding choice must be removed');
           assert(!html.includes('function installStarterPlan'),'starter product helper must be retired');
 
-          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
-            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
-            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
-          }});
           const wait=ms=>new Promise(r=>setTimeout(r,ms));
-          const run=async()=>{
+          const boot=async(seed)=>{
+            const seedJson=JSON.stringify(seed||{ui:{onboardingDone:true,haptics:false,keepAwake:false}});
+            const dom=new JSDOM(html,{
+              runScripts:'dangerously',
+              url:'https://swole-cat.test/',
+              pretendToBeVisual:true,
+              beforeParse(window){
+                window.localStorage.setItem('overload_v3',seedJson);
+                window.alert=()=>{};
+                window.confirm=()=>true;
+                window.scrollTo=()=>{};
+              }
+            });
             await wait(70);
-            const w=dom.window;
+            if(dom.window.HTMLElement)dom.window.HTMLElement.prototype.scrollIntoView=()=>{};
+            return dom;
+          };
 
+          const run=async()=>{
+            let dom=await boot();
+            let w=dom.window;
             w.renderHome();
             let primary=w.document.getElementById('homePrimary').textContent;
             assert(primary.includes('What are we training today?'),'new user home should lead with Coach intent');
@@ -2044,28 +2057,45 @@ jobs:
             w.closeModal();
 
             const fixture=w.installRegressionFixturePlan();
-            w.eval('state.activeProgramId=null;save();renderHome()');
+            const fixtureState=JSON.parse(w.localStorage.getItem('overload_v3'));
+            const rid=fixture.routines[0].id;
+            const pid=fixture.program.id;
+            dom.window.close();
+
+            const savedState=JSON.parse(JSON.stringify(fixtureState));
+            savedState.activeProgramId=null;
+            savedState.activeWorkout=null;
+            savedState.sessions=[];
+            dom=await boot(savedState);w=dom.window;w.renderHome();
             primary=w.document.getElementById('homePrimary').textContent;
             assert(primary.includes('READY TO TRAIN'),'saved-routine user should get direct next-action hero');
             assert(primary.includes('Fixture Full Body A'),'home should surface a concrete saved routine');
             assert(w.document.getElementById('homeCoachLauncher').textContent.includes('Coach Swolecat'),'returning user should still have Coach close at hand');
 
-            const rid=fixture.routines[0].id;
-            w.openRoutine(rid);await wait(10);
-            w.go('home');await wait(10);
+            w.openRoutine(rid);await wait(15);
+            const activeState=JSON.parse(w.localStorage.getItem('overload_v3'));
+            dom.window.close();
+            dom=await boot(activeState);w=dom.window;w.renderHome();
             primary=w.document.getElementById('homePrimary').textContent;
             assert(primary.includes('WORKOUT IN PROGRESS'),'active workout must dominate Home');
             assert(primary.includes('Resume'),'active workout home should be Resume-first');
             assert.equal(w.document.getElementById('homeCoachLauncher').textContent.trim(),'','Coach should not compete with an active workout');
+            dom.window.close();
 
-            w.eval(`state.activeWorkout=null;state.activeProgramId='${fixture.program.id}';save();renderHome()`);
+            const programState=JSON.parse(JSON.stringify(fixtureState));
+            programState.activeWorkout=null;
+            programState.activeProgramId=pid;
+            programState.sessions=[];
+            dom=await boot(programState);w=dom.window;w.renderHome();
             primary=w.document.getElementById('homePrimary').textContent;
             assert(primary.includes('UP NEXT'),'active program should surface next workout');
             assert(primary.includes('Fixture Full Body A'),'program home should name concrete next workout');
+            dom.window.close();
 
-            const ex=fixture.routines[0].exercises[0];
-            const session={id:'home_hist',routineId:rid,routineName:'Fixture Full Body A',date:new Date().toISOString(),durationMinutes:42,exercises:[{exerciseId:ex.exerciseId,sets:[{done:true,weight:100,reps:8,type:'working',pr:''}],notes:''}]};
-            w.eval(`state.sessions=[${JSON.stringify(session)}];state.activeProgramId=null;save();renderHome()`);
+            const historyState=JSON.parse(JSON.stringify(savedState));
+            const ex=historyState.routines.find(r=>r.id===rid).exercises[0];
+            historyState.sessions=[{id:'home_hist',routineId:rid,routineName:'Fixture Full Body A',status:'finished',date:new Date().toISOString(),durationMinutes:42,exercises:[{exerciseId:ex.exerciseId,sets:[{done:true,weight:100,reps:8,type:'working',pr:''}],notes:''}]}];
+            dom=await boot(historyState);w=dom.window;w.renderHome();
             assert(w.document.getElementById('homeTelemetry').textContent.includes('THIS WEEK'),'history should reveal compact weekly signal');
             assert(w.document.getElementById('homeLatest').textContent.includes('LAST WORKOUT'),'history should reveal only the latest workout recap');
 
@@ -2073,5 +2103,6 @@ jobs:
             dom.window.close();
             console.log('Swole Cat V50 adaptive home launchpad PASS');
           };
-          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          run().catch(err=>{console.error(err);process.exit(1)});
           JS
+
