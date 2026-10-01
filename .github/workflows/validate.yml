@@ -2323,3 +2323,67 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V510 conversational Coach refinement
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(80);
+            const w=dom.window;
+
+            const request=w.coachParsePrompt('Chest and back, 45 minutes, dumbbells and cables','hypertrophy');
+            assert.deepEqual(request.allowedEquipment.sort(),['cable','dumbbell']);
+            assert(request.targetRegions.includes('chest')&&request.targetRegions.includes('lats'),'initial prompt should parse target muscles');
+            assert(w.coachGenerateWorkout(request),'Coach should create an initial draft');
+
+            let result=w.coachRefineDraftText('make it 30 minutes, strength focused, no cables, more chest');
+            assert(result.ok,'natural refinement should be understood');
+
+            let draft=w.eval('coachBuildDraft');
+            assert.equal(draft.request.duration,30,'duration refinement should apply');
+            assert.equal(draft.request.goal,'strength','goal refinement should apply');
+            assert.deepEqual(draft.request.allowedEquipment,['dumbbell'],'negative equipment refinement should narrow prior allowed equipment');
+            assert(draft.request.excludedEquipment.includes('cable'),'excluded equipment should persist');
+            assert(draft.request.priorityRegions.includes('chest'),'more chest should create a chest priority');
+            assert.equal(draft.defaults.restSeconds,180,'strength refinement should regenerate programming defaults');
+            assert.equal(draft.defaults.minReps,4);
+            assert.equal(draft.defaults.maxReps,6);
+            assert(draft.selectedIds.length>=3,'refined workout should remain usable');
+            assert(draft.selectedIds.every(id=>w.exById(id).equipment==='dumbbell'),'regenerated workout must obey refined equipment');
+
+            const removedId=draft.selectedIds[0];
+            const removedName=w.exById(removedId).name;
+            result=w.coachRefineDraftText('remove '+removedName);
+            assert(result.ok,'Coach should remove a specifically named selected exercise');
+            draft=w.eval('coachBuildDraft');
+            assert(draft.request.excludedExerciseIds.includes(removedId),'removed exercise should stay excluded on later refinements');
+            assert(!draft.selectedIds.includes(removedId),'removed exercise should leave the draft');
+
+            result=w.coachRefineDraftText('add '+removedName);
+            assert(result.ok,'Coach should understand adding a compatible named exercise back');
+            draft=w.eval('coachBuildDraft');
+            assert(draft.request.requiredExerciseIds.includes(removedId),'added exercise should become a persistent requested exercise');
+            assert(draft.selectedIds.includes(removedId),'added exercise should return to the generated draft');
+
+            w.eval("state.programs=[{id:'coach_p1',name:'Test Program',routineIds:[],frequency:3,preferredDays:[],trainingMode:'inherit',nextIndex:0}];save()");
+            const savedRoutineId=w.coachAttachDraftToProgram('coach_p1');
+            assert(savedRoutineId,'program handoff should persist the Coach workout as a routine');
+            const snapshot=w.eval("({routine:state.routines.find(r=>r.id==='"+savedRoutineId+"'),program:state.programs.find(p=>p.id==='coach_p1')})");
+            assert(snapshot.routine,'Coach routine should exist after program handoff');
+            assert(snapshot.program.routineIds.includes(savedRoutineId),'selected program should reference the Coach routine');
+
+            dom.window.close();
+            console.log('Swole Cat V51.0 conversational Coach refinement PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
