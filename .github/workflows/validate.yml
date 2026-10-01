@@ -45,9 +45,12 @@ jobs:
           assert(!/<style>[\s\S]*<\/style>/.test(source),'index.html should not contain the application stylesheet');
           assert(!/<script>[\s\S]*<\/script>/.test(source),'index.html should not contain the application runtime');
           const moduleTags=[...source.matchAll(/<script src="\.\/src\/js\/([^"]+)"><\/script>/g)].map(m=>m[1]);
-          assert(moduleTags.length>=10,'source shell should load modular JavaScript domains');
+          assert.equal(moduleTags.length,14,'source shell should load all JavaScript domain modules');
+          assert(!moduleTags.includes('04-coach.js'),'legacy monolithic Coach module must stay removed');
+          const dataTags=[...source.matchAll(/<script src="\.\/src\/data\/([^"]+)"><\/script>/g)].map(m=>m[1]);
+          assert.deepEqual(dataTags,['exercises.js','anatomy.js'],'source shell should load static data modules in order');
           const styleTags=[...source.matchAll(/<link rel="stylesheet" href="\.\/src\/styles\/([^"]+)">/g)].map(m=>m[1]);
-          assert(styleTags.length>=4,'source shell should load layered modular CSS');
+          assert.equal(styleTags.length,4,'source shell should load all stylesheet layers');
           const built=fs.readFileSync('www/index.html','utf8');
           assert(built.includes('./app.js'),'production shell should use bundled app.js');
           assert(built.includes('./app.css'),'production shell should use bundled app.css');
