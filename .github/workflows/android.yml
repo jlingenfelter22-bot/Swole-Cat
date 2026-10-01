@@ -11,6 +11,7 @@ on:
       - "icon-512.svg"
       - "sw.js"
       - "assets/**"
+      - "src/**"
       - "resources/**"
       - "package.json"
       - "capacitor.config.json"
@@ -65,7 +66,7 @@ jobs:
         run: |
           grep -Eq "versionCode[[:space:]]+${{ steps.meta.outputs.version_code }}" android/app/build.gradle
           grep -Eq "versionName[[:space:]]+\"${{ steps.meta.outputs.version }}\"" android/app/build.gradle
-          grep -F "const APP_VERSION='${{ steps.meta.outputs.version }}';" www/index.html
+          grep -F "const APP_VERSION='${{ steps.meta.outputs.version }}';" www/app.js
 
       - name: Build debug APK
         working-directory: android
