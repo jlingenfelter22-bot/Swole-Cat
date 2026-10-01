@@ -282,7 +282,7 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 
 ## Phase 6 — Coach Swole Cat / Quick Build
 
-**Status: In progress through v0.51.0**
+**Status: In progress through v0.52.0**
 
 ### Product intent: useful, not bloated
 Coach Swole Cat should reinforce the core product philosophy rather than turn the app into a noisy AI product.
@@ -315,6 +315,8 @@ Goal: let a user create a useful workout or full routine in seconds without manu
 **v0.50.4: Multi-Digit Weight Autofill Hotfix** — First-time weight propagation no longer relies on a short typing debounce. While the source weight field has focus, partial values such as `1` or `10` cannot seed the remaining sets. Leaving the field commits the final value, so entering `100` fills eligible blank working sets with `100`. The increment/decrement controls retain their immediate autofill behavior.
 
 **v0.51.0: Conversational Coach Refinement + Program Handoff** — Coach Swolecat now keeps the generated workout as a live local draft that can be refined in natural language instead of forcing a new request. Users can change session duration, training goal, equipment constraints, muscle emphasis, and named exercises with commands such as “make it 30 minutes,” “no barbells,” “more chest,” “strength focused,” “remove bench press,” or “add lateral raises.” Explicit exercise requests override Coach ranking when they satisfy hard equipment/visibility constraints. Manual Remove/Swap choices persist through later refinements. Recent exercise history is used only as a light variety signal and recent target-muscle context, never as a recovery/readiness diagnosis. Generated workouts can now be saved directly into an existing Program or used to create a new Program.
+
+**v0.52.0: Multi-Day Program Builder** — Coach Swolecat can now build complete 2–6 day Programs from natural-language requests such as “3-day PPL, Monday/Wednesday/Friday, 45 minutes” or “4-day upper/lower, dumbbells only.” Explicit frequency, weekdays, split, goal, time, equipment, and muscle-emphasis instructions are parsed into a weekly plan. When the user does not request a split, Coach uses transparent frequency-based defaults: 2–3 days favor full-body distribution, 4 days favors upper/lower, 5 days uses upper/lower plus push/pull/legs, and 6 days uses push/pull/legs twice. These are practical defaults rather than claims of universal superiority. Exercise selection balances target coverage across each session, lightly discourages repeating the same exact exercise across the week when alternatives are available, respects Favorite/Prefer/Avoid/Hidden settings, and preserves manual per-day Remove/Swap choices. The preview exposes approximate weekly primary/secondary set-equivalents, supports whole-program conversational refinement, and saves each day as a standard Swole Cat Routine inside one standard Program.
 
 ### Locked: Quick workout builder
 The home screen includes Coach Swolecat as the primary build path for new users and a secondary quick-build path for returning users when no workout is active.
@@ -396,14 +398,17 @@ The user must always remain in control of the final workout.
 Once the local builder is proven, an optional AI-backed Coach layer can add more flexible natural-language understanding and programming discussion without replacing the deterministic training engine.
 
 Potential later capabilities:
-- multi-day program generation
-- "build me a 3-day plan" conversations
 - modify an existing saved routine from natural language
 - deeper history-aware muscle scheduling across multi-day plans
 - more nuanced conversational substitutions and exercise aliases
 - optional cloud-language understanding for requests the deterministic parser cannot confidently interpret
 
-Implemented locally in v0.51.0:
+Implemented locally through v0.52.0:
+- generate complete 2–6 day programs from natural-language frequency/split/schedule requests
+- refine a whole generated program's frequency, split, weekdays, session duration, goal, equipment, and muscle emphasis
+- preview approximate weekly primary/secondary set-equivalents
+- preserve manual per-day exercise rejects during program regeneration
+- persist generated days as normal Routines inside a normal Program
 - adapt a generated workout to time/equipment changes
 - refine goal and muscle emphasis conversationally
 - add/remove named exercises while preserving user control
