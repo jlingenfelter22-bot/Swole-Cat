@@ -1732,3 +1732,85 @@ jobs:
             }catch(err){console.error(err);dom.window.close();process.exit(1)}
           },70);
           JS
+
+
+      - name: Smoke test V462 complete muscle mapping audit
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const has=(arr,x)=>arr.includes(x);
+          const run=async()=>{
+            await wait(70);
+            const w=dom.window;
+            const audit=w.auditExerciseMuscleCoverage();
+            assert.equal(audit.length,307,'every built-in exercise must be audited');
+            assert.equal(audit.filter(x=>!x.primary.length).length,0,'every exercise needs a primary muscle');
+            assert.equal(audit.filter(x=>x.missing.length).length,0,'every mapped muscle must be drawable on the heat map');
+
+            const meta=name=>w.exerciseMuscleMetadata(w.exById(audit.find(x=>x.name===name).id));
+            let m=meta('Barbell Bench Press');
+            assert(has(m.primary,'chest')&&has(m.secondary,'front_delts')&&has(m.secondary,'triceps'),'bench press mapping');
+            m=meta('Back Squat');
+            assert(has(m.primary,'quads')&&has(m.primary,'glutes')&&has(m.secondary,'adductors'),'squat mapping');
+            m=meta('Romanian Deadlift');
+            assert(has(m.primary,'hamstrings')&&has(m.primary,'glutes')&&has(m.secondary,'lower_back'),'RDL mapping');
+            m=meta('Barbell Row');
+            assert(has(m.primary,'upper_back')&&has(m.primary,'lats')&&has(m.secondary,'biceps'),'row mapping');
+            m=meta('Lat Pulldown');
+            assert(has(m.primary,'lats')&&has(m.secondary,'biceps')&&has(m.secondary,'upper_back'),'pulldown mapping');
+            m=meta('Overhead Press');
+            assert(has(m.primary,'front_delts')&&has(m.secondary,'triceps'),'overhead press mapping');
+            m=meta('Hip Adduction Machine');
+            assert.deepEqual(m.primary,['adductors']);assert.equal(m.secondary.length,0,'hip adduction must not falsely light glutes/quads');
+            m=meta('Trap Bar Deadlift');
+            assert(has(m.primary,'quads')&&has(m.primary,'glutes')&&!has(m.primary,'lower_back'),'trap bar deadlift mapping');
+            m=meta('Sumo Deadlift');
+            assert(has(m.primary,'quads')&&has(m.primary,'glutes')&&has(m.primary,'adductors'),'sumo deadlift mapping');
+            m=meta('Kettlebell Swing');
+            assert(has(m.primary,'glutes')&&has(m.primary,'hamstrings')&&!has(m.primary,'upper_back'),'kettlebell swing mapping');
+            m=meta('Landmine Press');
+            assert(has(m.primary,'front_delts')&&has(m.primary,'chest')&&!has(m.primary,'quads'),'landmine press mapping');
+            m=meta('Kettlebell Suitcase Carry');
+            assert(has(m.primary,'obliques')&&has(m.primary,'core')&&has(m.primary,'forearms'),'suitcase carry mapping');
+            m=meta('Bench Dip');
+            assert(has(m.primary,'triceps')&&has(m.secondary,'chest')&&has(m.secondary,'front_delts'),'bench dip mapping');
+            m=meta('Reverse Barbell Curl');
+            assert(has(m.primary,'forearms')&&has(m.secondary,'biceps'),'reverse curl mapping');
+
+            const exId=name=>audit.find(x=>x.name===name).id;
+            const ex=(name,n)=>({exerciseId:exId(name),sets:Array.from({length:n},()=>({done:true,weight:100,reps:10,type:'working'}))});
+            let scores=w.sessionMuscleScores({exercises:[ex('Barbell Bench Press',3)]});
+            assert.equal(scores.chest,3);assert.equal(scores.front_delts,1.5);assert.equal(scores.triceps,1.5);
+            assert.equal(w.muscleHeatLevel(scores.chest),2,'3-set bench should be moderate chest involvement');
+            assert.equal(w.muscleHeatLevel(scores.triceps),1,'bench secondary triceps should remain light');
+
+            scores=w.sessionMuscleScores({exercises:[ex('Barbell Bench Press',3),ex('Incline Dumbbell Press',3)]});
+            assert.equal(scores.chest,6);assert.equal(w.muscleHeatLevel(scores.chest),3,'6 pressing sets should produce high chest involvement');
+            assert.equal(w.muscleHeatLevel(scores.front_delts),2,'pressing secondaries should aggregate to moderate');
+
+            scores=w.sessionMuscleScores({exercises:[ex('Barbell Row',3),ex('Lat Pulldown',3)]});
+            assert.equal(scores.lats,6);assert.equal(w.muscleHeatLevel(scores.lats),3,'row + pulldown should produce high lat involvement');
+            assert.equal(w.muscleHeatLevel(scores.biceps),2,'pulling secondary biceps should aggregate to moderate');
+
+            scores=w.sessionMuscleScores({exercises:[ex('Back Squat',3),ex('Romanian Deadlift',3)]});
+            assert.equal(scores.glutes,6);assert.equal(w.muscleHeatLevel(scores.glutes),3,'squat + RDL should produce high glute involvement');
+            assert.equal(scores.quads,3);assert.equal(scores.hamstrings,3);
+            assert.equal(w.muscleHeatLevel(scores.quads),2);assert.equal(w.muscleHeatLevel(scores.hamstrings),2);
+
+            scores=w.sessionMuscleScores({exercises:[ex('Kettlebell Suitcase Carry',4)]});
+            assert.equal(scores.core,4);assert.equal(scores.obliques,4);assert.equal(scores.forearms,4);
+            assert.equal(w.muscleHeatLevel(scores.obliques),2,'loaded suitcase carry should show moderate oblique involvement');
+
+            dom.window.close();
+            console.log('Swole Cat V46.2 complete muscle mapping audit PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
