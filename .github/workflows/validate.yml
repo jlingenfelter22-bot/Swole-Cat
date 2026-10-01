@@ -1814,3 +1814,65 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V47 historical workout recaps
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(70);
+            const w=dom.window;
+            w.installStarterPlan();
+            const persisted=JSON.parse(w.localStorage.getItem('overload_v3'));
+            const rid=persisted.routines[0].id;
+
+            w.startRoutineFresh(rid);await wait(10);
+            w.updateSet(0,0,'weight','100');w.updateSet(0,0,'reps','8');w.toggleSet(0,0);
+            w.updateNotes(0,'first historical note');
+            w.finalizeWorkout(false);await wait(10);
+            const first=JSON.parse(w.localStorage.getItem('overload_v3')).sessions.at(-1);
+
+            w.closeModal();
+            w.startRoutineFresh(rid);await wait(10);
+            w.updateSet(0,0,'weight','105');w.updateSet(0,0,'reps','8');w.toggleSet(0,0);
+            w.finalizeWorkout(false);await wait(10);
+            const state=JSON.parse(w.localStorage.getItem('overload_v3'));
+            const second=state.sessions.at(-1);
+
+            const beforeSecond=w.sessionsBeforeSession(second);
+            assert(beforeSecond.some(s=>s.id===first.id),'later session should see earlier session as prior history');
+            const beforeFirst=w.sessionsBeforeSession(first);
+            assert(!beforeFirst.some(s=>s.id===second.id),'historical progression must never compare against future workouts');
+
+            w.closeModal();
+            w.go('history');await wait(10);
+            assert(w.document.getElementById('historyList').textContent.includes('View Recap'),'history should expose recap action');
+
+            w.openHistoricalWorkoutRecap(first.id);await wait(10);
+            const modal=w.document.getElementById('modal');
+            const text=modal.textContent;
+            assert(modal.classList.contains('open'),'historical recap should open');
+            assert(text.includes('HISTORICAL SESSION'),'historical recap hero should identify saved session');
+            assert(text.includes('Working 1'),'exact completed set row should render');
+            assert(text.includes('100')&&text.includes('8'),'historical set should preserve exact weight/reps');
+            assert(text.includes('first historical note'),'exercise notes should render');
+            assert(text.includes('Muscle involvement map'),'historical recap should reuse heat map');
+            assert.equal(modal.querySelectorAll('.muscle-map-svg').length,2,'historical recap should render front/back maps');
+            assert(text.includes('Progression versus last exposure'),'historical recap should include progression section');
+            assert(text.includes('Edit Workout'),'historical recap should link to correction flow');
+
+            w.stopRestTimer();
+            dom.window.close();
+            console.log('Swole Cat V47 historical workout recaps PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
