@@ -12,6 +12,7 @@ const JS_SOURCES = [
   'src/data/exercises.js',
   'src/js/01-core-runtime.js',
   'src/data/anatomy.js',
+  'src/data/coach-knowledge.js',
   'src/js/02-muscle-history-analytics.js',
   'src/js/03-programs.js',
   'src/js/04a-coach-input-intent.js',
