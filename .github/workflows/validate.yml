@@ -2044,7 +2044,7 @@ jobs:
             w.closeModal();
 
             const fixture=w.installRegressionFixturePlan();
-            w.state.activeProgramId=null;w.save();w.renderHome();
+            w.eval('state.activeProgramId=null;save();renderHome()');
             primary=w.document.getElementById('homePrimary').textContent;
             assert(primary.includes('READY TO TRAIN'),'saved-routine user should get direct next-action hero');
             assert(primary.includes('Fixture Full Body A'),'home should surface a concrete saved routine');
@@ -2058,15 +2058,14 @@ jobs:
             assert(primary.includes('Resume'),'active workout home should be Resume-first');
             assert.equal(w.document.getElementById('homeCoachLauncher').textContent.trim(),'','Coach should not compete with an active workout');
 
-            w.state.activeWorkout=null;
-            w.state.activeProgramId=fixture.program.id;w.save();w.renderHome();
+            w.eval(`state.activeWorkout=null;state.activeProgramId='${fixture.program.id}';save();renderHome()`);
             primary=w.document.getElementById('homePrimary').textContent;
             assert(primary.includes('UP NEXT'),'active program should surface next workout');
             assert(primary.includes('Fixture Full Body A'),'program home should name concrete next workout');
 
             const ex=fixture.routines[0].exercises[0];
             const session={id:'home_hist',routineId:rid,routineName:'Fixture Full Body A',date:new Date().toISOString(),durationMinutes:42,exercises:[{exerciseId:ex.exerciseId,sets:[{done:true,weight:100,reps:8,type:'working',pr:''}],notes:''}]};
-            w.state.sessions=[session];w.state.activeProgramId=null;w.save();w.renderHome();
+            w.eval(`state.sessions=[${JSON.stringify(session)}];state.activeProgramId=null;save();renderHome()`);
             assert(w.document.getElementById('homeTelemetry').textContent.includes('THIS WEEK'),'history should reveal compact weekly signal');
             assert(w.document.getElementById('homeLatest').textContent.includes('LAST WORKOUT'),'history should reveal only the latest workout recap');
 
