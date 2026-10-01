@@ -263,7 +263,8 @@ document.addEventListener('visibilitychange',()=>{
 });
 window.addEventListener('pagehide',()=>{if(pendingStateSave)flushPendingStateSave();else if(state.activeWorkout)saveActiveWorkout()});
 window.addEventListener('beforeunload',()=>{if(pendingStateSave)flushPendingStateSave();else if(state.activeWorkout)saveActiveWorkout()});
-if('serviceWorker' in navigator&&!isNativeApp()){
+const sourceRuntimeMode=!!document.querySelector('script[src^="./src/"]');
+if('serviceWorker' in navigator&&!isNativeApp()&&!sourceRuntimeMode){
  let swRefreshing=false;
  navigator.serviceWorker.addEventListener('controllerchange',()=>{
    if(swRefreshing)return;
