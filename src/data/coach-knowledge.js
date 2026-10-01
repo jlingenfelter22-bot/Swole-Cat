@@ -52,6 +52,12 @@ const COACH_EVIDENCE_MODEL=Object.freeze({
      year:2025,
      url:'https://pubmed.ncbi.nlm.nih.gov/40692697/'
    }),
+   deltoidActivation2020:Object.freeze({
+     id:'deltoid-exercise-activation-2020',
+     title:'Different Shoulder Exercises Affect the Activation of Deltoid Portions in Resistance-Trained Individuals',
+     year:2020,
+     url:'https://pubmed.ncbi.nlm.nih.gov/33312291/'
+   }),
    muscleLength2025:Object.freeze({
      id:'muscle-length-regional-hypertrophy-2025',
      title:'Does Muscle Length Influence Regional Hypertrophy? A Systematic Review and Meta-Analysis',
