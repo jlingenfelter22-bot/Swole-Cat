@@ -75,7 +75,7 @@ jobs:
             const w=dom.window;
             if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
 
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             let state=read();
             assert.equal(state.routines.length,3,'starter routines should install');
             const rid=state.routines[0].id;
@@ -186,7 +186,7 @@ jobs:
             const w=dom.window;
             if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
 
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             let state=read();
             const rid=state.routines[0].id;
             w.openRoutine(rid);
@@ -262,7 +262,7 @@ jobs:
             const w=dom.window;
             if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
 
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             let state=read();
             const rid=state.routines[0].id;
             const originalOrder=state.routines[0].exercises.map(e=>e.exerciseId);
@@ -356,7 +356,7 @@ jobs:
             if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
 
             // Starter now installs A/B/C as one active program.
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             let state=read();
             assert.equal(state.routines.length,3,'starter should create three routines');
             assert.equal(state.programs.length,1,'starter should create one program');
@@ -471,7 +471,7 @@ jobs:
             const w=dom.window;
             if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
 
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             let state=read();
             const bench=w.exById('lib_0');
             const dbBench=w.allExercises().find(x=>x.name==='Dumbbell Bench Press');
@@ -560,7 +560,7 @@ jobs:
             const w=dom.window;
             if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
 
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             let state=read();
             const routine=state.routines.find(r=>r.name==='Full Body A');
             const squat=w.allExercises().find(x=>x.name==='Back Squat');
@@ -880,7 +880,7 @@ jobs:
             const w=dom.window;
             if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
 
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             let state=read();
             const rid=state.routines[0].id;
             assert.equal(state.routines[0].trainingMode,'guided','legacy/default routines should normalize to guided');
@@ -988,7 +988,7 @@ jobs:
             const w=dom.window;
             if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
 
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             let state=read();
             const rid=state.routines[0].id;
             const pid=state.programs[0].id;
@@ -1176,7 +1176,7 @@ jobs:
 
             // Dynamic program editor select should enhance automatically.
             w.closeModal();
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             const pid=JSON.parse(w.localStorage.getItem('overload_v3')).programs[0].id;
             w.newProgram(pid);
             await wait(15);
@@ -1240,7 +1240,7 @@ jobs:
             assert.equal(settings.getAttribute('aria-label'),'Settings','settings icon should remain accessible');
             assert(!control.classList.contains('show'),'workout control should stay hidden with no active workout');
 
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             const state=JSON.parse(w.localStorage.getItem('overload_v3'));
             w.openRoutine(state.routines[0].id);
             await wait(15);
@@ -1322,7 +1322,7 @@ jobs:
             assert.equal(exerciseRenders,1,'unchanged exercise view should reuse its rendered DOM');
 
             // A real state save invalidates the cached view.
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             w.go('home');
             w.go('exercises');
             await wait(25);
@@ -1435,7 +1435,7 @@ jobs:
             backHandler();
             assert.equal(exitCount,1,'Second Back at Home should exit');
 
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             const starterState=JSON.parse(w.localStorage.getItem('overload_v3'));
             w.openRoutine(starterState.routines[0].id);
             await wait(10);
@@ -1511,7 +1511,7 @@ jobs:
             keyboardHide();
             assert(!w.document.body.classList.contains('keyboard-open'),'keyboard hide should restore native layout');
 
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             await w.exportBackup();
             assert.equal(writeCalls,1,'native export should write a JSON backup to cache');
             assert.equal(shareCalls,1,'native export should open Android share flow');
@@ -1551,7 +1551,7 @@ jobs:
             assert.equal(typeof w.sessionTotalReps,'function','total-rep helper should exist');
             assert.equal(typeof w.sessionProgressHighlights,'function','progression comparison helper should exist');
 
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             const persisted=JSON.parse(w.localStorage.getItem('overload_v3'));
             const routineId=persisted.routines[0].id;
             w.startRoutineFresh(routineId);
@@ -1616,7 +1616,7 @@ jobs:
             assert(row.primary.includes('upper_back')||row.primary.includes('lats'),'row should resolve back regions');
             assert(row.secondary.includes('biceps'),'row should resolve biceps as secondary');
 
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             const persisted=JSON.parse(w.localStorage.getItem('overload_v3'));
             w.startRoutineFresh(persisted.routines[0].id);
             await wait(10);
@@ -1680,7 +1680,7 @@ jobs:
             assert(html.includes('Untargeted'),'legend should include untargeted state');
             assert(html.includes('relative training involvement only'),'interpretation guardrail should remain explicit');
 
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             const persisted=JSON.parse(w.localStorage.getItem('overload_v3'));
             w.startRoutineFresh(persisted.routines[0].id);
             await wait(10);
@@ -1831,7 +1831,7 @@ jobs:
           const run=async()=>{
             await wait(70);
             const w=dom.window;
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             const persisted=JSON.parse(w.localStorage.getItem('overload_v3'));
             const rid=persisted.routines[0].id;
 
@@ -1922,7 +1922,7 @@ jobs:
             assert.equal(w.frequencyCellLevel(2),2);
             assert.equal(w.frequencyCellLevel(4),3);
 
-            w.installStarterPlan();
+            w.installRegressionFixturePlan();
             w.go('analytics');await wait(20);
             const text=w.document.getElementById('analyticsArea').textContent;
             assert(text.includes('Muscle coverage'),'progress screen should render muscle coverage');
@@ -2003,6 +2003,76 @@ jobs:
             w.cancelWorkout();
             dom.window.close();
             console.log('Swole Cat V49 Coach Swolecat quick build PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
+
+
+      - name: Smoke test V50 adaptive home launchpad
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          assert(!html.includes('3-Day starter'),'generic starter button/copy must be removed');
+          assert(!html.includes('Use 3-day starter'),'starter onboarding choice must be removed');
+          assert(!html.includes('function installStarterPlan'),'starter product helper must be retired');
+
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(70);
+            const w=dom.window;
+
+            w.renderHome();
+            let primary=w.document.getElementById('homePrimary').textContent;
+            assert(primary.includes('What are we training today?'),'new user home should lead with Coach intent');
+            assert(w.document.getElementById('homeQuickActions').textContent.includes('Build manually'),'manual build must remain obvious');
+            assert.equal(w.document.getElementById('homeTelemetry').textContent.trim(),'','zero-value telemetry should be hidden before first workout');
+            assert.equal(w.document.getElementById('homeLatest').textContent.trim(),'','empty recent-progress state should be hidden');
+
+            const coachInput=w.document.getElementById('homeCoachPrompt');
+            assert(coachInput,'Coach prompt should be directly on Home for a new user');
+            coachInput.value='30 minute legs';
+            w.homeCoachBuildPrompt();
+            await wait(10);
+            assert(w.document.getElementById('modal').classList.contains('open'),'home Coach prompt should enter Quick Build flow');
+            w.closeModal();
+
+            const fixture=w.installRegressionFixturePlan();
+            w.state.activeProgramId=null;w.save();w.renderHome();
+            primary=w.document.getElementById('homePrimary').textContent;
+            assert(primary.includes('READY TO TRAIN'),'saved-routine user should get direct next-action hero');
+            assert(primary.includes('Fixture Full Body A'),'home should surface a concrete saved routine');
+            assert(w.document.getElementById('homeCoachLauncher').textContent.includes('Coach Swolecat'),'returning user should still have Coach close at hand');
+
+            const rid=fixture.routines[0].id;
+            w.openRoutine(rid);await wait(10);
+            w.go('home');await wait(10);
+            primary=w.document.getElementById('homePrimary').textContent;
+            assert(primary.includes('WORKOUT IN PROGRESS'),'active workout must dominate Home');
+            assert(primary.includes('Resume'),'active workout home should be Resume-first');
+            assert.equal(w.document.getElementById('homeCoachLauncher').textContent.trim(),'','Coach should not compete with an active workout');
+
+            w.state.activeWorkout=null;
+            w.state.activeProgramId=fixture.program.id;w.save();w.renderHome();
+            primary=w.document.getElementById('homePrimary').textContent;
+            assert(primary.includes('UP NEXT'),'active program should surface next workout');
+            assert(primary.includes('Fixture Full Body A'),'program home should name concrete next workout');
+
+            const ex=fixture.routines[0].exercises[0];
+            const session={id:'home_hist',routineId:rid,routineName:'Fixture Full Body A',date:new Date().toISOString(),durationMinutes:42,exercises:[{exerciseId:ex.exerciseId,sets:[{done:true,weight:100,reps:8,type:'working',pr:''}],notes:''}]};
+            w.state.sessions=[session];w.state.activeProgramId=null;w.save();w.renderHome();
+            assert(w.document.getElementById('homeTelemetry').textContent.includes('THIS WEEK'),'history should reveal compact weekly signal');
+            assert(w.document.getElementById('homeLatest').textContent.includes('LAST WORKOUT'),'history should reveal only the latest workout recap');
+
+            w.stopRestTimer();
+            dom.window.close();
+            console.log('Swole Cat V50 adaptive home launchpad PASS');
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
