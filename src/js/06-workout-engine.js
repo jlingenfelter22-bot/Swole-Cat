@@ -1,0 +1,1013 @@
+function previousExercise(exerciseId){return derivedSessionData().previousByExercise.get(exerciseId);}
+function setType(set){return ['working','warmup','drop','failure'].includes(set?.type)?set.type:'working'}
+function isProgressionSet(set){return setType(set)==='working'}
+function completedSets(prev){return (prev?.sets||[]).filter(s=>s.done && Number(s.weight)>=0 && Number(s.reps)>0)}
+function progressionSets(prev){return completedSets(prev).filter(isProgressionSet)}
+function workingSetIndexes(e){return (e?.sets||[]).map((s,i)=>isProgressionSet(s)?i:-1).filter(i=>i>=0)}
+function workingSetOrdinal(e,si){
+ const indexes=workingSetIndexes(e),pos=indexes.indexOf(si);
+ return pos>=0?pos:Math.max(0,indexes.filter(i=>i<si).length);
+}
+function firstWorkingSetIndex(e){const a=workingSetIndexes(e);return a.length?a[0]:0}
+function setTypeLabel(type){
+ return type==='warmup'?'Warm-up':type==='drop'?'Drop set':type==='failure'?'Failure':'Working';
+}
+function setTypeShort(type){return type==='warmup'?'W':type==='drop'?'D':type==='failure'?'F':'S'}
+function finiteNumber(value,fallback=0){
+ const n=Number(value);
+ return Number.isFinite(n)?n:fallback;
+}
+function distributeTarget(previousReps,minReps,maxReps,setCount){
+ // "Beat total reps" mode: add one rep somewhere across the exercise.
+ const reps=Array.from({length:setCount},(_,i)=>Math.max(minReps,Math.min(maxReps,finiteNumber(previousReps[i],minReps))));
+ for(let i=0;i<reps.length;i++){ if(reps[i]<maxReps){ reps[i]++; break; } }
+ return reps;
+}
+function progressEverySetTarget(previousReps,minReps,maxReps,setCount){
+ // Default double progression: every programmed set gets +1 rep next exposure,
+ // capped at the top of the rep range.
+ return Array.from({length:setCount},(_,i)=>{
+   const previous=Math.max(minReps-1,finiteNumber(previousReps[i],minReps-1));
+   return Math.min(maxReps,Math.max(minReps,previous+1));
+ });
+}
+
+function normalizeTrainingMode(mode){return ['guided','strength','track'].includes(mode)?mode:'guided'}
+function trainingModeLabel(mode){
+ mode=normalizeTrainingMode(mode);
+ return mode==='strength'?'Strength Focus':mode==='track'?'Track Only':'Guided Overload';
+}
+function normalizeProgramTrainingMode(mode){return ['inherit','guided','strength','track'].includes(mode)?mode:'inherit'}
+function programTrainingModeLabel(mode){mode=normalizeProgramTrainingMode(mode);return mode==='inherit'?'Use routine modes':trainingModeLabel(mode)}
+function trainingModeDescription(mode){
+ mode=normalizeTrainingMode(mode);
+ if(mode==='strength')return 'Load-priority progression. After you complete the programmed minimum reps across all working sets, Swole Cat can move the configured weight step next time.';
+ if(mode==='track')return 'Log what you do without automatic progression targets or coach pressure. Previous numbers are carried forward only as a reference.';
+ return 'Rep-first double progression. Build reps through the programmed range, then add the configured weight step after all working sets reach the top.';
+}
+function goalLabel(goal){
+ return goal==='strength'?'Strength':goal==='hypertrophy'?'Muscle growth':'General';
+}
+function goalRIRText(goal){
+ return goal==='hypertrophy'?'Usually aim to finish hard working sets with roughly 1-3 reps in reserve.':
+        goal==='strength'?'Quality reps matter more than grinding. Strength can progress without taking every set close to failure.':
+        'Use the rep target as the main guide and RIR as optional context.';
+}
+function averageLoggedRIR(sets){
+ const vals=(sets||[]).map(s=>s.rir).filter(v=>v!==''&&v!=null&&Number.isFinite(Number(v))).map(Number);
+ return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
+}
+function recentExerciseSessions(exerciseId,n=4){
+ return exerciseHistory(exerciseId).slice(-n);
+}
+function coachSignal(exerciseId,config){
+ if(normalizeTrainingMode(config.routineMode)==='track')return null;
+ const hist=recentExerciseSessions(exerciseId,4);
+ if(hist.length<2)return {level:'info',title:'Building baseline',text:`Keep logging this movement. The coach waits for repeated sessions before calling anything a stall.`,stalled:false,canReset:false};
+ const scores=hist.map(h=>({
+   e1:Math.max(...h.sets.map(s=>estimated1RM(s.weight,s.reps))),
+   reps:h.sets.reduce((a,s)=>a+Number(s.reps||0),0),
+   avgRIR:averageLoggedRIR(h.sets),
+   weight:Math.max(...h.sets.map(s=>Number(s.weight)||0))
+ }));
+ const latest=scores.at(-1),prev=scores.at(-2);
+ const first=scores[0];
+ const gain=(latest.e1-first.e1)/Math.max(1,first.e1);
+ const recentGain=(latest.e1-prev.e1)/Math.max(1,prev.e1);
+ const highEffort=[...scores].reverse().find(x=>x.avgRIR!=null)?.avgRIR;
+ const sameLoadish=Math.abs(latest.weight-first.weight)<=Math.max(.5,Number(config.increment||5));
+ const enoughForStall=hist.length>=3;
+ const stalled=enoughForStall && sameLoadish && gain<0.012 && latest.reps<=Math.max(...scores.slice(0,-1).map(x=>x.reps))+1;
+ const regressing=enoughForStall && recentGain<-0.04 && gain<-0.02;
+ const highEffortKnown=highEffort!=null && highEffort<=1;
+ const resetPercent=Number(config.resetPercent||7.5);
+ const resetWeight=roundLoad(latest.weight*(1-resetPercent/100));
+ if(regressing && highEffortKnown){
+   return {level:'reset',title:'Repeated hard-session drop',text:`Recent performance is down and your latest logged effort was very high. Consider a ${resetPercent}% session-only reset to ${resetWeight} ${state.profile.unit}, then rebuild.`,stalled:true,canReset:true,resetWeight,resetPercent};
+ }
+ if(stalled && highEffortKnown){
+   return {level:'reset',title:'Stall detected',text:`Performance has been essentially flat across ${hist.length} exposures while effort is high. A small ${resetPercent}% reset is available, or you can keep the current load and try again.`,stalled:true,canReset:true,resetWeight,resetPercent};
+ }
+ if(stalled){
+   return {level:'watch',title:'Holding pattern',text:`Progress has been flat across ${hist.length} exposures, but there isn't enough evidence of excessive effort to force a reset. Hold the plan, improve execution, or override the target if needed.`,stalled:true,canReset:false};
+ }
+ if(recentGain>0.015){
+   return {level:'good',title:'Progressing',text:`Your recent estimated strength trend is moving up. Keep the current progression rules unless the sets feel meaningfully different than the log suggests.`,stalled:false,canReset:false};
+ }
+ return {level:'info',title:'On track',text:goalRIRText(config.trainingGoal||'general'),stalled:false,canReset:false};
+}
+function workoutCoachSignal(){
+ const w=state.activeWorkout;if(!w)return null;
+ const signals=w.exercises.filter(e=>!e.skipped).map(e=>coachSignal(e.exerciseId,e.config)).filter(Boolean);
+ const reset=signals.filter(x=>x.canReset).length,stalls=signals.filter(x=>x.stalled).length;
+ if(reset>=2)return {level:'reset',text:`${reset} exercises are showing repeated high-effort stalls. A lighter session may be worth considering, but it is optional.`};
+ if(stalls>=3)return {level:'watch',text:`Several movements are flat right now. That can happen normally. Watch the next session before making large changes.`};
+ return null;
+}
+function applyCoachReset(ei){
+ const e=state.activeWorkout.exercises[ei],sig=coachSignal(e.exerciseId,e.config);
+ if(!sig.canReset)return;
+ e.targetOverride={weight:sig.resetWeight,reps:e.config.minReps,reason:`Coach reset ${sig.resetPercent}%`};
+ e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=sig.resetWeight;s.reps=e.config.minReps;}});
+ saveActiveWorkout();renderWorkout();
+}
+function openTargetOverride(ei){
+ const e=state.activeWorkout.exercises[ei],prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
+ openModal('Override session target',`
+ <div class="notice">This changes the target for this workout only. It does not rewrite your routine or old history.</div>
+ <div class="form-grid" style="margin-top:12px">
+   <div><label>Target weight (${state.profile.unit})</label><input id="ovWeight" type="number" step=".25" value="${e.targetOverride?.weight??t.weight}"></div>
+   <div><label>Target reps</label><input id="ovReps" type="number" min="1" value="${e.targetOverride?.reps??t.reps}"></div>
+ </div>
+ <div class="actions"><button class="btn" onclick="saveTargetOverride(${ei})">Use for this session</button>${e.targetOverride?`<button class="btn secondary" onclick="clearTargetOverride(${ei})">Clear override</button>`:''}<button class="btn secondary" onclick="closeModal()">Cancel</button></div>`);
+}
+function saveTargetOverride(ei){
+ const e=state.activeWorkout.exercises[ei],weight=Math.max(0,+document.getElementById('ovWeight').value||0),reps=Math.max(1,+document.getElementById('ovReps').value||1);
+ e.targetOverride={weight:roundLoad(weight),reps:Math.round(reps),reason:'Manual override'};
+ e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=e.targetOverride.weight;s.reps=e.targetOverride.reps;}});
+ saveActiveWorkout();closeModal();renderWorkout();
+}
+function clearTargetOverride(ei){
+ const e=state.activeWorkout.exercises[ei];e.targetOverride=null;
+ const prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId);
+ let wi=0;e.sets.forEach(s=>{if(!isProgressionSet(s))return;if(!s.done){s.weight=rec.weights?.[wi]??rec.weight??0;s.reps=rec.targetReps?.[wi]??e.config.minReps;}wi++;});
+ saveActiveWorkout();closeModal();renderWorkout();
+}
+function applyLightSession(){
+ const w=state.activeWorkout;if(!w)return;
+ w.exercises.forEach(e=>{
+   const prev=previousExercise(e.exerciseId),base=liveSetTarget(e,firstWorkingSetIndex(e),prev);
+   const wt=roundLoad(base.weight*.925);
+   e.targetOverride={weight:wt,reps:e.config.minReps,reason:'Light session'};
+   e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=wt;s.reps=e.config.minReps;}});
+ });
+ saveActiveWorkout();renderWorkout();
+}
+
+function buildRecommendation(config,prev,exerciseId=null){
+ const done=progressionSets(prev);
+ const goal=config.trainingGoal||'general';
+ const routineMode=normalizeTrainingMode(config.routineMode);
+ const avgRIR=averageLoggedRIR(done);
+ if(!done.length){
+   const mode=normalizeTrainingMode(config.routineMode);
+   const headline=mode==='track'?'Log your starting sets':mode==='strength'?'Choose a strength starting load':'Set your starting weight';
+   const detail=mode==='track'?`No automatic progression target is active. Log the weight and reps you actually perform.`:mode==='strength'?`Choose a controlled load you can perform for at least ${config.minReps} clean reps across the programmed sets. Once the minimum is established, Strength Focus can prioritize small load increases.`:`Choose a clean starting load for about ${config.minReps}-${config.maxReps} reps. ${goalRIRText(goal)}`;
+   return {status:'baseline',weight:0,weights:Array(config.sets).fill(0),targetReps:Array(config.sets).fill(config.minReps),headline,detail};
+ }
+ const weights=done.map(s=>Math.max(0,finiteNumber(s.weight,0)));
+ const reps=done.map(s=>Math.max(0,finiteNumber(s.reps,0)));
+ const sameWeight=weights.every(w=>w===weights[0]);
+ const baseWeight=weights[0]||0;
+ const total=reps.reduce((a,b)=>a+b,0);
+ if(routineMode==='track'){
+   return {status:'track',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),headline:'Track your working sets',detail:`Previous session: ${done.map(s=>`${s.weight}×${s.reps}`).join(' · ')}. No automatic progression target is active for this routine.`};
+ }
+ if(routineMode==='strength'){
+   const enoughSets=done.length>=config.sets;
+   const completedMinimum=enoughSets&&done.slice(0,config.sets).every(s=>finiteNumber(s.reps,0)>=config.minReps);
+   const inc=Math.max(0,finiteNumber(config.increment,0));
+   if(completedMinimum&&inc>0){
+     const nextWeights=Array.from({length:config.sets},(_,i)=>roundLoad((weights[i]??baseWeight)+inc));
+     return {status:'load',weight:nextWeights[0]||0,weights:nextWeights,targetReps:Array(config.sets).fill(config.minReps),headline:`Add ${inc} ${state.profile.unit} next time`,detail:`You completed at least ${config.minReps} reps across all programmed working sets. Strength Focus prioritizes a small load increase, then asks you to re-establish the bottom of the rep range.`};
+   }
+   const holdWeights=Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight);
+   return {status:'hold',weight:baseWeight,weights:holdWeights,targetReps:Array(config.sets).fill(config.minReps),headline:`Hold the load and own ${config.minReps}+ reps`,detail:`Strength Focus is load-priority. Keep the current working weights until every programmed set reaches at least ${config.minReps} clean reps, then the configured load step becomes available.`};
+ }
+ if(config.mode==='manual'){
+   return {status:'manual',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),
+     headline:'Repeat or adjust manually',detail:`Last session: ${done.map(s=>`${s.weight}×${s.reps}`).join(' · ')}`};
+ }
+ if(config.mode==='total'){
+   const target=distributeTarget(reps,config.minReps,config.maxReps,config.sets);
+   return {status:'reps',weight:baseWeight,weights:Array(config.sets).fill(baseWeight),targetReps:target,
+     headline:`Beat ${total} total reps at ${baseWeight} ${state.profile.unit}`,detail:`Keep the same load. A one-rep improvement anywhere counts as progress.`};
+ }
+ // Double progression: add one rep to every programmed set on the next exposure, capped at the top of the rep range. Add load only after every set reaches the top of the range at one stable weight.
+ const enoughSets=done.length>=config.sets;
+ const allTop=enoughSets && done.slice(0,config.sets).every(s=>finiteNumber(s.reps,0)>=config.maxReps);
+ if(sameWeight && allTop){
+   const next=roundLoad(baseWeight+finiteNumber(config.increment,0));
+   return {status:'load',weight:next,weights:Array(config.sets).fill(next),targetReps:Array(config.sets).fill(config.minReps),
+     headline:`Increase to ${next} ${state.profile.unit}`,detail:`You earned one configured load step after reaching the top of the rep range across all working sets. ${goalRIRText(goal)}`};
+ }
+ const target=progressEverySetTarget(reps,config.minReps,config.maxReps,config.sets);
+ const nextWeights=Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight);
+ const headline=sameWeight
+   ?`Stay at ${baseWeight} ${state.profile.unit} and add 1 rep to each set`
+   :'Add 1 rep to each working set';
+ return {status:'reps',weight:baseWeight,weights:nextWeights,targetReps:target,
+   headline,
+   detail:`Last session: ${done.map(s=>`${s.weight}×${s.reps}`).join(' · ')}. Next target: ${target.map((r,i)=>`${nextWeights[i]??baseWeight}×${r}`).join(' · ')}. Each set progresses by one rep until all ${config.sets} sets reach ${config.maxReps}, then the load increases by your configured increment. RIR remains optional context and never blocks a rep-range progression step. ${goalRIRText(goal)}`};
+}
+function roundLoad(n){return Math.round(Number(n)*4)/4}
+function previousSummary(prev){
+ const done=progressionSets(prev); if(!done.length)return 'No previous working sets logged.';
+ return done.map((s,i)=>`S${i+1} ${s.weight}×${s.reps}${s.rir!==''&&s.rir!=null?` @${s.rir} RIR`:''}`).join(' · ');
+}
+
+function setReference(prev,workingIndex){
+ const done=progressionSets(prev),s=done[workingIndex]||done[done.length-1];
+ return s?`${s.weight} ${state.profile.unit} × ${s.reps}${s.rir!==''&&s.rir!=null?` @${s.rir} RIR`:''}`:'No prior set';
+}
+function liveSetTarget(e,si,prev){
+ const current=e.sets?.[si],type=setType(current);
+ if(type!=='working')return {weight:roundLoad(Number(current?.weight)||0),reps:Math.max(1,Number(current?.reps)||e.config.minReps)};
+ const wi=workingSetOrdinal(e,si);
+ if(e.targetOverride)return {weight:roundLoad(e.targetOverride.weight),reps:Math.max(1,Number(e.targetOverride.reps)||e.config.minReps)};
+ const base=buildRecommendation(e.config,prev,e.exerciseId);
+ if(normalizeTrainingMode(e.config.routineMode)==='track')return {weight:roundLoad(Number(current?.weight??base.weights?.[wi]??base.weight??0)),reps:Math.max(1,Number(current?.reps??base.targetReps?.[wi]??e.config.minReps))};
+ let weight=Number(base.weights?.[wi]??base.weight??current?.weight??0);
+ let reps=Number(base.targetReps?.[wi]??e.config.minReps);
+ const earlier=e.sets.slice(0,si).filter(s=>s.done&&isProgressionSet(s));
+ if(earlier.length){
+   const last=earlier[earlier.length-1];
+   const prevWi=Math.max(0,wi-1);
+   const expected=Number(base.targetReps?.[Math.min(prevWi,(base.targetReps?.length||1)-1)]??reps);
+   const miss=Number(last.reps)-expected;
+   if(miss<=-2) reps=Math.max(e.config.minReps-2,reps-1);
+   else if(miss>=2) reps=Math.min(e.config.maxReps+2,reps+1);
+   if(last.rir!=='' && Number(last.rir)===0) reps=Math.max(e.config.minReps-2,reps-1);
+ }
+ return {weight:roundLoad(weight),reps:Math.max(1,reps)};
+}
+function smartNumberFocus(el){
+ requestAnimationFrame(()=>{try{el.select();}catch(e){}});
+}
+function displaySetWeightValue(value){
+ const n=Number(value);
+ return n>0?n:'';
+}
+function targetBadgeText(target,ex){
+ const wt=Number(target?.weight)||0,reps=Math.max(1,Number(target?.reps)||1);
+ if(wt<=0){
+   return ex?.equipment==='bodyweight'?`Bodyweight · ${reps} reps`:`Choose weight · ${reps} reps`;
+ }
+ return `Target ${wt} × ${reps}`;
+}
+
+function changeSetValue(ei,si,key,delta){
+ const set=state.activeWorkout?.exercises?.[ei]?.sets?.[si];if(!set)return;
+ let v=Number(set[key])||0;
+ v=Math.max(0,roundLoad(v+delta));
+ set[key]=key==='reps'?Math.round(v):v;
+ if(key!=='rir')set.pr='';
+ const card=document.querySelector(`#workoutExercise-${ei} .set-card[data-set-index="${si}"]`);
+ const input=card?.querySelector(`input[aria-label="${key}"]`);
+ if(input)input.value=key==='weight'?displaySetWeightValue(set[key]):set[key];
+ haptic(8);saveActiveWorkout(true);
+ if(key==='weight')scheduleFirstExerciseWeightAutofill(ei,si,120);
+}
+function workoutCounts(){return activeWorkoutCounts()}
+function workoutElapsedMs(w=state.activeWorkout,nowMs=Date.now()){
+ if(!w)return 0;
+ const startMs=new Date(w.startDate).getTime();
+ if(!Number.isFinite(startMs))return 0;
+ let pausedMs=Math.max(0,Number(w.pausedDurationMs)||0);
+ if(w.pausedAt){
+   const currentPauseStart=new Date(w.pausedAt).getTime();
+   if(Number.isFinite(currentPauseStart))pausedMs+=Math.max(0,nowMs-currentPauseStart);
+ }
+ return Math.max(0,nowMs-startMs-pausedMs);
+}
+function workoutElapsed(){
+ const mins=Math.max(0,Math.floor(workoutElapsedMs()/60000));
+ return mins<60?`${mins}m`:`${Math.floor(mins/60)}h ${mins%60}m`;
+}
+function estimated1RM(weight,reps){
+ weight=Number(weight)||0;reps=Number(reps)||0;
+ if(weight<=0||reps<=0)return 0;
+ return weight*(1+Math.min(reps,15)/30);
+}
+function detectPR(exerciseId,set){
+ if(!isProgressionSet(set))return '';
+ const prior=[];
+ state.sessions.forEach(s=>s.exercises.forEach(e=>{
+   if(e.exerciseId===exerciseId)progressionSets(e).forEach(x=>prior.push(x));
+ }));
+ // Include earlier completed working sets from the current active workout, but not the
+ // set currently being evaluated. This prevents duplicate PR badges when
+ // multiple sets tie the same newly achieved record in one session.
+ if(state.activeWorkout){
+   state.activeWorkout.exercises.forEach(e=>{
+     if(e.exerciseId===exerciseId)progressionSets(e).forEach(x=>{if(x!==set)prior.push(x)});
+   });
+ }
+ // A first-ever logged performance establishes the baseline. It is not counted
+ // as a PR until a future performance actually beats it.
+ if(!prior.length)return '';
+ const w=Number(set.weight)||0,r=Number(set.reps)||0;
+ const maxWeight=Math.max(...prior.map(x=>Number(x.weight)||0));
+ const sameWeightMax=Math.max(0,...prior.filter(x=>Number(x.weight)===w).map(x=>Number(x.reps)||0));
+ const priorE1=Math.max(0,...prior.map(x=>estimated1RM(x.weight,x.reps)));
+ const curE1=estimated1RM(w,r);
+ if(w>maxWeight)return `Load PR: ${w} ${state.profile.unit}`;
+ if(r>sameWeightMax)return `Rep PR: ${w} ${state.profile.unit} × ${r}`;
+ if(curE1>priorE1*1.01)return `Estimated strength PR`;
+ return '';
+}
+function plateLoadText(weight,ex){
+ if(!ex || !['barbell','trap bar'].includes(ex.equipment) || Number(weight)<=0)return '';
+ const kg=state.profile.unit==='kg',bar=kg?20:45,plates=kg?[25,20,15,10,5,2.5,1.25]:[45,35,25,10,5,2.5];
+ let side=(Number(weight)-bar)/2;
+ if(side<0)return '';
+ const used=[];
+ for(const plate of plates){
+   const count=Math.floor((side+1e-9)/plate);
+   for(let i=0;i<count;i++){used.push(plate);side-=plate;}
+ }
+ if(side>0.26)return '';
+ return used.length?`Per side: ${used.join(' + ')} ${state.profile.unit}`:`Bar only (${bar} ${state.profile.unit})`;
+}
+function warmupGuide(weight,ex){
+ const compound=['horizontal_press','incline_press','vertical_press','horizontal_pull','squat','hinge','lunge'];
+ if(!ex||!compound.includes(ex.pattern)||Number(weight)<=0)return [];
+ const inc=state.profile.unit==='kg'?2.5:5;
+ const round=x=>Math.max(0,Math.round(x/inc)*inc);
+ const w=Number(weight);
+ return [
+   {weight:round(w*.4),reps:8},
+   {weight:round(w*.6),reps:5},
+   {weight:round(w*.8),reps:3}
+ ].filter((x,i,a)=>x.weight>0 && (i===0||x.weight!==a[i-1].weight) && x.weight<w);
+}
+function openWarmupGuide(ei){
+ const e=state.activeWorkout.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),sets=warmupGuide(t.weight,ex);
+ openModal(`${esc(ex?.name||'Exercise')} warm-up`,sets.length?`
+ <div class="notice">Optional ramp-up sets before your working sets. Adjust or skip them based on how you feel and how heavy the working weight is.</div>
+ <div class="card" style="margin-top:12px">${sets.map((s,i)=>`<div class="list-item"><div class="setnum">${i+1}</div><div class="grow"><b>${s.weight} ${state.profile.unit} × ${s.reps}</b><div class="mini">${plateLoadText(s.weight,ex)}</div></div></div>`).join('')}</div>
+ <div class="actions"><button class="btn" onclick="addSuggestedWarmups(${ei})">Add these warm-up sets</button><button class="btn secondary" onclick="closeModal()">Just view</button></div>`:`<div class="empty">No warm-up ramp is needed from the current target.</div>`);
+}
+
+function setTypeOptions(type){
+ return [['working','Working'],['warmup','Warm-up'],['drop','Drop'],['failure','Failure']].map(([v,label])=>`<option value="${v}" ${setType({type})===v?'selected':''}>${label}</option>`).join('');
+}
+function setDisplayLabel(e,si){
+ const type=setType(e.sets[si]);
+ const peers=e.sets.slice(0,si+1).filter(s=>setType(s)===type).length;
+ return type==='working'?`Set ${peers}${e.sets[si]?.amrap?' · AMRAP':''}`:`${setTypeLabel(type)} ${peers}`;
+}
+function setProgressionNote(type){
+ if(type==='warmup')return 'Warm-up set · saved to history and volume, ignored by progression and PRs.';
+ if(type==='drop')return 'Drop set · saved to history and volume, ignored by progression and PRs.';
+ if(type==='failure')return 'Failure set · saved to history and volume, ignored by progression and PRs.';
+ return '';
+}
+function setWorkoutSetType(ei,si,type){
+ const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];if(!set)return;
+ if(!['working','warmup','drop','failure'].includes(type))type='working';
+ if(isProgressionSet(set)&&type!=='working'&&workingSetIndexes(e).length<=1){
+   showToast('Keep at least one working set');renderWorkout();return;
+ }
+ const oldType=setType(set);
+ set.type=type;
+ set.pr=type==='working'&&set.done?detectPR(e.exerciseId,set):'';
+ if((oldType==='working')!==(type==='working'))markWorkoutStructureDirty();else saveActiveWorkout();
+ renderWorkout();
+}
+function addWorkoutSet(ei,type='working'){
+ const e=state.activeWorkout?.exercises?.[ei];if(!e)return;
+ type=['working','warmup','drop','failure'].includes(type)?type:'working';
+ const working=progressionSets({...e,sets:e.sets.map(s=>({...s,done:true}))});
+ const existingWorking=workingSetIndexes(e);
+ const prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId);
+ let weight=0,reps=e.config.minReps;
+ if(type==='working'){
+   const wi=existingWorking.length;
+   const lastWorking=existingWorking.length?e.sets[existingWorking.at(-1)]:null;
+   weight=Number(rec.weights?.[wi]??rec.weight??lastWorking?.weight??0);
+   reps=Number(rec.targetReps?.[wi]??lastWorking?.reps??e.config.minReps);
+ }else{
+   const source=existingWorking.length?e.sets[existingWorking.at(-1)]:e.sets.at(-1);
+   weight=Number(source?.weight)||0;
+   reps=Number(source?.reps)||e.config.minReps;
+ }
+ const item={weight:roundLoad(weight),reps:Math.max(1,Math.round(reps)),done:false,rir:'',type,pr:''};
+ let at=e.sets.length;
+ if(type==='warmup')at=existingWorking.length?existingWorking[0]:0;
+ else if(type==='working'&&existingWorking.length)at=existingWorking.at(-1)+1;
+ e.sets.splice(at,0,item);
+ e.expanded=true;
+ if(type==='working')markWorkoutStructureDirty();else saveActiveWorkout();
+ renderWorkout();haptic(10);
+ showToast(`${setTypeLabel(type)} added`);
+ setTimeout(()=>document.getElementById(`workoutExercise-${ei}`)?.scrollIntoView({behavior:'smooth',block:'start'}),60);
+}
+function removeWorkoutSet(ei,si){
+ const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];if(!set)return;
+ if(e.sets.length<=1){showToast('Keep at least one set in the exercise');return}
+ if(isProgressionSet(set)&&workingSetIndexes(e).length<=1){showToast('Keep at least one working set');return}
+ const remove=()=>{
+   const wasWorking=isProgressionSet(set);
+   e.sets.splice(si,1);
+   if(wasWorking)markWorkoutStructureDirty();else saveActiveWorkout();
+   renderWorkout();showToast('Set removed');
+ };
+ if(set.done)confirmAction('Remove completed set?','This set is already marked complete. Removing it will delete it from this active workout.',remove);
+ else remove();
+}
+function moveWorkoutSet(ei,si,dir){
+ const e=state.activeWorkout?.exercises?.[ei];if(!e)return;
+ const ni=si+dir;if(ni<0||ni>=e.sets.length)return;
+ [e.sets[si],e.sets[ni]]=[e.sets[ni],e.sets[si]];
+ saveActiveWorkout();renderWorkout();haptic(8);
+}
+function addSuggestedWarmups(ei){
+ const e=state.activeWorkout?.exercises?.[ei],ex=e?exById(e.exerciseId):null;if(!e||!ex)return;
+ const existing=e.sets.filter(s=>setType(s)==='warmup');
+ if(existing.length){closeModal();showToast('Warm-up sets are already in this exercise');return}
+ const prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),suggested=warmupGuide(t.weight,ex);
+ if(!suggested.length){closeModal();showToast('No warm-up ramp available for this target');return}
+ const at=firstWorkingSetIndex(e);
+ e.sets.splice(at,0,...suggested.map(s=>({weight:s.weight,reps:s.reps,done:false,rir:'',type:'warmup',pr:''})));
+ saveActiveWorkout();closeModal();renderWorkout();showToast(`${suggested.length} warm-up sets added`);
+}
+
+function workoutSupersetGroups(){
+ const w=state.activeWorkout;if(!w)return [];
+ return [...new Set(w.exercises.map(e=>e.supersetId).filter(Boolean))];
+}
+function supersetMeta(ei){
+ const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e?.supersetId)return null;
+ const groups=workoutSupersetGroups(),idx=groups.indexOf(e.supersetId);
+ const members=w.exercises.map((x,i)=>x.supersetId===e.supersetId&&!x.skipped?i:-1).filter(i=>i>=0);
+ if(members.length<2)return null;
+ return {id:e.supersetId,label:String.fromCharCode(65+Math.max(0,idx)),members};
+}
+function supersetNames(groupId){
+ const w=state.activeWorkout;if(!w||!groupId)return '';
+ return w.exercises.filter(e=>e.supersetId===groupId&&!e.skipped).map(e=>exById(e.exerciseId)?.name||'Exercise').join(' ↔ ');
+}
+function cleanupActiveSupersets(){
+ const w=state.activeWorkout;if(!w)return;
+ const groups=[...new Set(w.exercises.map(e=>e.supersetId).filter(Boolean))];
+ groups.forEach(g=>{
+   const members=w.exercises.filter(e=>e.supersetId===g);
+   if(members.length<2)members.forEach(e=>e.supersetId=null);
+ });
+}
+function cleanupRoutineSupersets(r){
+ if(!r)return;
+ const groups=[...new Set(r.exercises.map(e=>e.supersetGroup).filter(Boolean))];
+ groups.forEach(g=>{
+   const members=r.exercises.filter(e=>e.supersetGroup===g);
+   if(members.length<2)members.forEach(e=>e.supersetGroup=null);
+ });
+}
+function routineSupersetMeta(r,index){
+ const re=r?.exercises?.[index];if(!re?.supersetGroup)return null;
+ const groups=[...new Set(r.exercises.map(e=>e.supersetGroup).filter(Boolean))],idx=groups.indexOf(re.supersetGroup);
+ const members=r.exercises.map((e,i)=>e.supersetGroup===re.supersetGroup?i:-1).filter(i=>i>=0);
+ return members.length>=2?{id:re.supersetGroup,label:String.fromCharCode(65+Math.max(0,idx)),members}:null;
+}
+function openSupersetPicker(ei){
+ const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e)return;
+ const cur=exById(e.exerciseId),meta=supersetMeta(ei);
+ const rows=w.exercises.map((other,oi)=>{
+   if(oi===ei)return '';
+   const ox=exById(other.exerciseId),same=meta&&other.supersetId===meta.id;
+   const canSave=Number.isInteger(e.routineIndex)&&Number.isInteger(other.routineIndex);
+   return `<div class="picker-result-card">
+    <div class="picker-result-main"><span class="superset-badge">⚡</span><div class="iconbox">${catExerciseThumbnail(ox)}</div><div class="picker-result-copy"><div class="exercise-name">${esc(ox?.name||'Exercise')}</div><div class="mini">${esc(ox?.muscle||'')} · ${esc(patternLabel(ox?.pattern||''))}</div></div></div>
+    <div class="picker-result-actions">
+      <button class="btn small" ${same?'disabled':''} onclick="linkSuperset(${ei},${oi},false)">${same?'Already linked':'Pair Today'}</button>
+      <button class="btn small secondary" ${same||!canSave?'disabled':''} onclick="linkSuperset(${ei},${oi},true)">Pair + Save</button>
+    </div>
+   </div>`;
+ }).join('');
+ openModal(`Superset · ${esc(cur?.name||'Exercise')}`,`
+  <div class="notice">Linked exercises rotate set-to-set. Swole Cat skips the rest timer between exercises in the same round, then starts your rest after the round is complete. Only working sets participate in the rotation.</div>
+  ${meta?`<div class="superset-note"><b>Superset ${meta.label}</b><br>${esc(supersetNames(meta.id))}</div><div class="actions"><button class="btn danger" onclick="unlinkSuperset(${ei},false)">Remove for today</button>${Number.isInteger(e.routineIndex)?`<button class="btn secondary" onclick="unlinkSuperset(${ei},true)">Remove + routine</button>`:''}</div>`:''}
+  <div class="picker-section">Pair with</div><div class="picker-result-list">${rows||'<div class="empty">Add another exercise to this workout first.</div>'}</div>
+ `);
+}
+function linkSuperset(ei,oi,permanent){
+ const w=state.activeWorkout,a=w?.exercises?.[ei],b=w?.exercises?.[oi];if(!a||!b)return;
+ const oldA=a.supersetId,oldB=b.supersetId,group=oldA||oldB||('ss_'+uid());
+ const merge=new Set([oldA,oldB].filter(Boolean));
+ w.exercises.forEach(e=>{if(merge.has(e.supersetId))e.supersetId=group});
+ a.supersetId=group;b.supersetId=group;
+ if(permanent){
+   const r=state.routines.find(x=>x.id===w.routineId);
+   const mapped=w.exercises.filter(e=>e.supersetId===group&&Number.isInteger(e.routineIndex));
+   if(r&&mapped.length>=2){
+     const oldRoutineGroups=new Set(mapped.map(e=>r.exercises[e.routineIndex]?.supersetGroup).filter(Boolean));
+     const persist=[...oldRoutineGroups][0]||group;
+     r.exercises.forEach(re=>{if(oldRoutineGroups.has(re.supersetGroup))re.supersetGroup=persist});
+     mapped.forEach(e=>{if(r.exercises[e.routineIndex])r.exercises[e.routineIndex].supersetGroup=persist});
+     w.exercises.forEach(e=>{if(e.supersetId===group)e.supersetId=persist});
+   }
+ }
+ cleanupActiveSupersets();if(!permanent)markWorkoutStructureDirty();else saveActiveWorkout();closeModal();renderWorkout();haptic([15,25,15]);
+ const m=supersetMeta(ei);showToast(m?`Superset ${m.label} linked`:'Superset linked');
+}
+function unlinkSuperset(ei,permanent){
+ const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e?.supersetId)return;
+ const old=e.supersetId;
+ e.supersetId=null;
+ if(permanent&&Number.isInteger(e.routineIndex)){
+   const r=state.routines.find(x=>x.id===w.routineId);
+   if(r?.exercises?.[e.routineIndex]){
+     const rg=r.exercises[e.routineIndex].supersetGroup;
+     r.exercises[e.routineIndex].supersetGroup=null;
+     cleanupRoutineSupersets(r);
+     if(rg){
+       w.exercises.forEach(x=>{
+         if(Number.isInteger(x.routineIndex)&&r.exercises[x.routineIndex]?.supersetGroup!==rg&&x.supersetId===rg)x.supersetId=null;
+       });
+     }
+   }
+ }
+ cleanupActiveSupersets();if(!permanent)markWorkoutStructureDirty();else saveActiveWorkout();closeModal();renderWorkout();showToast('Superset updated');
+}
+function workingSetIndexAtRound(e,round){
+ const indexes=workingSetIndexes(e);return indexes[round]??-1;
+}
+function advanceSupersetAfterSet(ei,si){
+ const w=state.activeWorkout,e=w?.exercises?.[ei],meta=supersetMeta(ei);
+ if(!w||!e||!meta||!isProgressionSet(e.sets[si]))return false;
+ const round=workingSetOrdinal(e,si),members=meta.members,pos=members.indexOf(ei);
+ const ordered=members.slice(pos+1).concat(members.slice(0,pos));
+ for(const oi of ordered){
+   const oe=w.exercises[oi],targetSi=workingSetIndexAtRound(oe,round);
+   if(targetSi>=0&&!oe.sets[targetSi].done){
+     w.exercises.forEach((x,i)=>x.expanded=i===oi);
+     saveActiveWorkout();renderWorkout();
+     showToast(`Superset ${meta.label}: ${exById(oe.exerciseId)?.name||'next exercise'}`);
+     scrollToWorkoutExercise(oi);
+     return true;
+   }
+ }
+ // Everyone who has this round is finished. Rest once, then start the next round.
+ startRestTimer(e.config.restSeconds||120);
+ let next=members.find(oi=>workingSetIndexes(w.exercises[oi]).some(idx=>!w.exercises[oi].sets[idx].done));
+ if(next==null)next=members.find(oi=>!exerciseSetProgress(w.exercises[oi]).complete);
+ if(next!=null){
+   w.exercises.forEach((x,i)=>x.expanded=i===next);
+   saveActiveWorkout();renderWorkout();
+   showToast(`Superset ${meta.label} round complete · rest`);
+   scrollToWorkoutExercise(next);
+   return true;
+ }
+ // Whole group is complete. Advance outside the group.
+ if(advanceFromCompletedExercise(ei))return true;
+ saveActiveWorkout();renderWorkout();return true;
+}
+function openRoutineSupersetPicker(routineId,index){
+ const r=state.routines.find(x=>x.id===routineId),re=r?.exercises?.[index];if(!re)return;
+ const cur=exById(re.exerciseId),meta=routineSupersetMeta(r,index);
+ const rows=r.exercises.map((other,oi)=>{
+   if(oi===index)return '';
+   const ox=exById(other.exerciseId),same=meta&&other.supersetGroup===meta.id;
+   return `<div class="list-item"><div class="iconbox">${catExerciseThumbnail(ox)}</div><div class="grow"><div class="exercise-name">${esc(ox?.name||'Exercise')}</div><div class="mini">${esc(ox?.muscle||'')} · ${esc(patternLabel(ox?.pattern||''))}</div></div><button class="btn small" ${same?'disabled':''} onclick="linkRoutineSuperset('${routineId}',${index},${oi})">${same?'Linked':'Pair'}</button></div>`;
+ }).join('');
+ openModal(`Routine superset · ${esc(cur?.name||'Exercise')}`,`
+   <div class="notice">Saved supersets will be restored automatically every time you start this routine.</div>
+   ${meta?`<div class="superset-note"><b>Superset ${meta.label}</b><br>${meta.members.map(i=>esc(exById(r.exercises[i].exerciseId)?.name||'Exercise')).join(' ↔ ')}</div><div class="actions"><button class="btn danger" onclick="unlinkRoutineSuperset('${routineId}',${index})">Remove from superset</button></div>`:''}
+   <div class="card" style="margin-top:12px">${rows}</div>
+   <div class="actions"><button class="btn secondary" onclick="editRoutineDetails('${routineId}')">Back</button></div>
+ `);
+}
+function linkRoutineSuperset(routineId,index,otherIndex){
+ const r=state.routines.find(x=>x.id===routineId),a=r?.exercises?.[index],b=r?.exercises?.[otherIndex];if(!a||!b)return;
+ const oldA=a.supersetGroup,oldB=b.supersetGroup,group=oldA||oldB||('ss_'+uid()),merge=new Set([oldA,oldB].filter(Boolean));
+ r.exercises.forEach(re=>{if(merge.has(re.supersetGroup))re.supersetGroup=group});
+ a.supersetGroup=group;b.supersetGroup=group;cleanupRoutineSupersets(r);save();openRoutineSupersetPicker(routineId,index);refreshRoutineEditor(routineId);
+}
+function unlinkRoutineSuperset(routineId,index){
+ const r=state.routines.find(x=>x.id===routineId),re=r?.exercises?.[index];if(!re)return;
+ re.supersetGroup=null;cleanupRoutineSupersets(r);save();editRoutineDetails(routineId);
+}
+
+function routineExerciseFromWorkout(e){
+ const cfg=e.config||{};
+ return {
+   exerciseId:e.exerciseId,
+   sets:Math.max(1,workingSetIndexes(e).length||Number(cfg.sets)||1),
+   minReps:Math.max(1,Number(cfg.minReps)||1),
+   maxReps:Math.max(Math.max(1,Number(cfg.minReps)||1),Number(cfg.maxReps)||12),
+   increment:Math.max(0,Number(cfg.increment)||0),
+   mode:cfg.mode==='range'?'double':(cfg.mode||'double'),
+   trainingGoal:cfg.trainingGoal||'general',
+   resetPercent:Number(cfg.resetPercent)||7.5,
+   restSeconds:Math.max(15,Number(cfg.restSeconds)||120),
+   supersetGroup:e.supersetId||null
+ };
+}
+function syncActiveWorkoutStructureToRoutine(){
+ const w=state.activeWorkout;if(!w)return false;
+ const r=state.routines.find(x=>x.id===w.routineId);if(!r)return false;
+ r.name=w.routineName||r.name;
+ r.exercises=w.exercises.map(routineExerciseFromWorkout);
+ cleanupRoutineSupersets(r);
+ w.exercises.forEach((e,i)=>{
+   e.routineIndex=i;
+   e.config={...e.config,sets:Math.max(1,workingSetIndexes(e).length||Number(e.config?.sets)||1)};
+   e.supersetId=r.exercises[i]?.supersetGroup||null;
+ });
+ w.structureDirty=false;
+ saveActiveWorkout();renderRoutines();renderHome();
+ return true;
+}
+function workoutStructureRowsHtml(){
+ const w=state.activeWorkout;if(!w)return '';
+ return w.exercises.map((e,ei)=>{
+   const ex=exById(e.exerciseId),p=exerciseSetProgress(e);
+   const done=(e.sets||[]).filter(s=>s.done).length;
+   return `<div class="workout-manage-row ${e.skipped?'skipped':''}">
+     <div class="workout-order-controls">
+       <button aria-label="Move exercise earlier" onclick="moveWorkoutExercise(${ei},-1)" ${ei===0?'disabled':''}>↑</button>
+       <button aria-label="Move exercise later" onclick="moveWorkoutExercise(${ei},1)" ${ei===w.exercises.length-1?'disabled':''}>↓</button>
+     </div>
+     <div>
+       <div class="exercise-name">${esc(ex?.name||'Exercise')}</div>
+       <div class="mini">${e.skipped?'Skipped for today':`${done} of ${e.sets.length} sets complete`}${e.supersetId?' · superset':''}</div>
+     </div>
+     <div class="workout-manage-actions">
+       <button class="btn small secondary" onclick="toggleSkipWorkoutExercise(${ei})">${e.skipped?'Unskip':'Skip'}</button>
+       <button class="btn small danger" onclick="removeWorkoutExercise(${ei})">Remove</button>
+     </div>
+   </div>`;
+ }).join('');
+}
+function openWorkoutStructureEditor(){
+ const w=state.activeWorkout;if(!w)return;
+ const r=state.routines.find(x=>x.id===w.routineId);
+ openModal('Manage active workout',`
+   <div class="notice">Reorder, skip, or remove exercises without ending the workout. Skip is always today-only. Reordering, removals, today-only additions, substitutions, supersets, and working-set count changes can be saved back to the routine only when you explicitly choose to.</div>
+   <div id="workoutStructureList" class="workout-manage-list">${workoutStructureRowsHtml()}</div>
+   <div class="actions">
+     ${r?`<button class="btn secondary" onclick="saveWorkoutStructureNow()">Save current structure to routine</button>`:''}
+     <button class="btn" onclick="closeModal()">Done</button>
+   </div>
+ `);
+}
+function refreshWorkoutStructureEditor(){
+ const host=document.getElementById('workoutStructureList');
+ if(host)host.innerHTML=workoutStructureRowsHtml();
+}
+function moveWorkoutExercise(ei,dir){
+ const w=state.activeWorkout;if(!w)return;
+ const ni=ei+dir;if(ni<0||ni>=w.exercises.length)return;
+ [w.exercises[ei],w.exercises[ni]]=[w.exercises[ni],w.exercises[ei]];
+ markWorkoutStructureDirty();renderWorkout();refreshWorkoutStructureEditor();haptic(8);
+}
+function toggleSkipWorkoutExercise(ei){
+ const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e)return;
+ e.skipped=!e.skipped;
+ if(e.skipped){
+   e.expanded=false;
+   let next=-1;
+   for(let i=ei+1;i<w.exercises.length;i++){if(!exerciseSetProgress(w.exercises[i]).complete){next=i;break}}
+   if(next<0){for(let i=0;i<ei;i++){if(!exerciseSetProgress(w.exercises[i]).complete){next=i;break}}}
+   w.exercises.forEach((x,i)=>x.expanded=i===next);
+ }else{
+   w.exercises.forEach((x,i)=>x.expanded=i===ei);
+ }
+ saveActiveWorkout();renderWorkout();refreshWorkoutStructureEditor();
+ showToast(e.skipped?'Exercise skipped for today':'Exercise restored');
+}
+function removeWorkoutExercise(ei){
+ const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e)return;
+ const ex=exById(e.exerciseId),hasLogged=(e.sets||[]).some(s=>s.done);
+ const remove=()=>{
+   w.exercises.splice(ei,1);
+   cleanupActiveSupersets();
+   markWorkoutStructureDirty();
+   const next=w.exercises.findIndex(x=>!exerciseSetProgress(x).complete);
+   w.exercises.forEach((x,i)=>x.expanded=i===(next>=0?next:-1));
+   closeModal();renderWorkout();showToast(`${ex?.name||'Exercise'} removed for today`);
+ };
+ if(hasLogged)confirmAction('Remove logged exercise?',`Remove ${ex?.name||'this exercise'} from today's workout? Completed sets for it will also be removed from this active session.`,remove);
+ else confirmAction('Remove exercise for today?',`Remove ${ex?.name||'this exercise'} from today's workout? Your saved routine stays unchanged unless you later choose to update it.`,remove);
+}
+function saveWorkoutStructureNow(){
+ const w=state.activeWorkout;if(!w)return;
+ const r=state.routines.find(x=>x.id===w.routineId);if(!r){showToast('No saved routine to update');return}
+ confirmAction('Update saved routine?',`Replace ${r.name}'s exercise order and structure with the current workout layout? Skipped exercises remain in the routine.`,()=>{
+   if(syncActiveWorkoutStructureToRoutine()){
+     closeModal();renderWorkout();showToast('Routine updated from active workout');
+   }
+ });
+}
+
+function exerciseSetProgress(e){
+ const done=e.sets.filter(s=>s.done).length,total=e.sets.length;
+ if(e.skipped)return {done,total,pct:100,complete:true,skipped:true};
+ return {done,total,pct:total?Math.round(done/total*100):0,complete:total>0&&done===total,skipped:false};
+}
+function ensureExerciseAccordion(){
+ const w=state.activeWorkout;if(!w)return;
+ const hasDefined=w.exercises.some(e=>typeof e.expanded==='boolean');
+ if(!hasDefined){
+   const current=w.exercises.findIndex(e=>!exerciseSetProgress(e).complete);
+   w.exercises.forEach((e,i)=>e.expanded=i===(current>=0?current:0));
+   save();
+   return;
+ }
+ // Never allow a legacy/edited workout to accidentally have every unfinished movement expanded.
+ const expanded=w.exercises.filter(e=>e.expanded);
+ if(expanded.length>1){
+   let kept=false;
+   w.exercises.forEach(e=>{if(e.expanded&&!kept){kept=true}else if(e.expanded)e.expanded=false});
+   save();
+ }
+}
+function exerciseStatus(e,ei){
+ const p=exerciseSetProgress(e);
+ if(p.skipped)return {label:'Skipped',cls:'skipped'};
+ if(p.complete)return {label:'✓ Complete',cls:'complete'};
+ if(e.expanded)return {label:p.done?`${p.done}/${p.total} sets · Current`:'Current',cls:'current'};
+ if(p.done)return {label:`${p.done}/${p.total} sets`,cls:''};
+ return {label:'Up next',cls:''};
+}
+function compactTargetText(e,ex,prev){
+ const t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
+ if(e.targetOverride)return `Target ${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`;
+ if((Number(t.weight)||0)<=0)return ex?.equipment==='bodyweight'?`${t.reps} reps · bodyweight`:`Choose starting weight · ${t.reps} reps`;
+ return `${t.weight} ${state.profile.unit} × ${t.reps} target`;
+}
+function paintWorkoutAccordion(){
+ const w=state.activeWorkout;if(!w)return;
+ w.exercises.forEach((e,i)=>{
+   const card=document.getElementById(`workoutExercise-${i}`);if(!card)return;
+   card.classList.toggle('collapsed',!e.expanded);
+   const toggle=card.querySelector('.exercise-toggle-btn');
+   if(toggle){
+     toggle.textContent=e.expanded?'⌃':'⌄';
+     toggle.setAttribute('aria-label',e.expanded?'Collapse exercise':'Expand exercise');
+     toggle.setAttribute('aria-expanded',e.expanded?'true':'false');
+   }
+ });
+}
+function toggleExercisePanel(ei){
+ const w=state.activeWorkout;if(!w||!w.exercises[ei])return;
+ if(w.exercises[ei].skipped){showToast('This exercise is skipped for today. Use Manage Workout to restore it.');return}
+ const opening=!w.exercises[ei].expanded;
+ if(opening)w.exercises.forEach((e,i)=>e.expanded=i===ei);
+ else w.exercises[ei].expanded=false;
+ haptic(10);saveActiveWorkout(true);paintWorkoutAccordion();
+ if(opening)scrollToWorkoutExercise(ei);
+}
+function openExercisePanel(ei){
+ const w=state.activeWorkout;if(!w||!w.exercises[ei])return;
+ w.exercises.forEach((e,i)=>e.expanded=i===ei);
+ saveActiveWorkout(true);paintWorkoutAccordion();scrollToWorkoutExercise(ei);
+}
+function advanceFromCompletedExercise(ei){
+ const w=state.activeWorkout;if(!w)return;
+ const e=w.exercises[ei],p=exerciseSetProgress(e);
+ if(!p.complete)return false;
+ e.expanded=false;
+ let next=-1;
+ for(let i=ei+1;i<w.exercises.length;i++){
+   if(!exerciseSetProgress(w.exercises[i]).complete){next=i;break;}
+ }
+ if(next<0){
+   for(let i=0;i<ei;i++){
+     if(!exerciseSetProgress(w.exercises[i]).complete){next=i;break;}
+   }
+ }
+ if(next>=0){
+   w.exercises.forEach((x,i)=>x.expanded=i===next);
+   const ex=exById(w.exercises[next].exerciseId);
+   saveActiveWorkout();renderWorkout();
+   showToast(`Up next: ${ex?.name||'next exercise'}`);
+   scrollToWorkoutExercise(next);
+ }else{
+   saveActiveWorkout();renderWorkout();
+   showToast('All programmed sets complete');
+ }
+ return true;
+}
+
+function renderWorkout(){
+ const w=state.activeWorkout;
+ if(!w){document.getElementById('workoutArea').innerHTML='<div class="empty">No active workout.</div>';return;}
+ ensureExerciseAccordion();
+ const counts=workoutCounts(),pct=counts.total?Math.round(counts.done/counts.total*100):0,workoutCoach=workoutCoachSignal();
+ const html=`<div class="workout-title workout-console-title"><div><div class="workout-console-code"><span class="active-pulse"></span>SESSION // ACTIVE</div><div class="eyebrow">${esc(trainingModeLabel(w.trainingMode))}</div><h1 style="font-size:1.7rem">${esc(w.routineName)}</h1><div class="mini">${counts.activeExercises} active exercise${counts.activeExercises===1?'':'s'}${counts.skipped?` · ${counts.skipped} skipped`:''} · ${counts.total} programmed sets</div><div class="autosave-note">✓ Changes save automatically on this device</div></div><button class="btn small danger" onclick="cancelWorkout()">Cancel</button></div>
+ <div class="workout-overview">
+   <div class="row"><div><b>${counts.done} of ${counts.total} sets complete</b><div class="mini">Tap an exercise to open the full sets and coaching. Use Manage Workout to reorder, skip, or remove movements.</div></div><span class="tag">${pct}%</span></div>
+   <div class="actions" style="margin-top:9px"><button class="btn small secondary" onclick="openWorkoutStructureEditor()">☰ Manage Workout</button></div>
+   ${w.structureDirty?`<div class="workout-structure-note"><b>Today's workout structure changed.</b> Your saved routine is still untouched. When you finish, Swole Cat will ask whether to keep these changes today-only or update the routine.</div>`:''}
+   ${workoutCoach?`<div class="coachbox ${workoutCoach.level}"><div class="coach-title">Workout coach</div><div class="coach-text">${esc(workoutCoach.text)}</div>${workoutCoach.level==='reset'?`<div class="actions" style="margin-top:8px"><button class="btn small secondary" onclick="applyLightSession()">Use a 7.5% lighter session</button></div>`:''}</div>`:''}
+   <div class="progress-bar"><div style="width:${pct}%"></div></div>
+   <div class="workout-stats"><div class="workout-stat"><b>${counts.activeExercises}</b><span>Active moves</span></div><div class="workout-stat"><b>${counts.done}</b><span>Sets done</span></div><div class="workout-stat"><b>${workoutElapsed()}</b><span>Elapsed</span></div></div>
+ </div>
+ ${w.exercises.map((e,ei)=>{
+   const ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId),coach=coachSignal(e.exerciseId,e.config);
+   const firstWorking=firstWorkingSetIndex(e),firstTarget=liveSetTarget(e,firstWorking,prev),plateText=plateLoadText(firstTarget.weight,ex),warmups=warmupGuide(firstTarget.weight,ex);
+   const prog=exerciseSetProgress(e),status=exerciseStatus(e,ei),compactTarget=compactTargetText(e,ex,prev),superset=supersetMeta(ei);
+   return `<div id="workoutExercise-${ei}" class="card live-card exercise-block tone-${ei%4} ${e.expanded?'':'collapsed'} ${prog.complete?'complete-block':''} ${superset?'superset-member':''} ${e.skipped?'skipped-exercise':''}">
+    <div class="live-head exercise-head-click" onclick="toggleExercisePanel(${ei})">
+      <div class="row">
+        <div class="exercise-identity">
+          <div class="exercise-number">${e.skipped?'–':prog.complete?'✓':ei+1}</div>
+          <div>
+            <div class="exercise-kicker">Exercise ${ei+1} of ${w.exercises.length}</div>
+            <div class="exercise-title">${esc(ex?.name||'Exercise')} ${preferenceBadgeHtml(e.exerciseId)}</div>
+            <div class="exercise-meta">${e.skipped?'Skipped for today':`${esc(ex?.muscle||'')} · ${workingSetIndexes(e).length} working sets · ${e.config.minReps}-${e.config.maxReps} reps`}</div>
+            ${superset?`<div style="margin-top:6px"><span class="superset-badge">⚡ Superset ${superset.label}</span></div>`:''}
+          </div>
+        </div>
+        <div class="exercise-header-actions">
+          <span class="goalbadge exercise-goal-mobile">${goalLabel(e.config.trainingGoal||'general')}</span>
+          <span class="exercise-status ${status.cls}">${status.label}</span>
+          <button class="exercise-toggle-btn" aria-label="${e.expanded?'Collapse':'Expand'} exercise" aria-expanded="${e.expanded?'true':'false'}" onclick="event.stopPropagation();toggleExercisePanel(${ei})">${e.expanded?'⌃':'⌄'}</button>
+        </div>
+      </div>
+    </div>
+    <div class="exercise-expanded-content">
+      <div class="targetbox"><div class="eyebrow">SESSION GOAL</div><div class="exercise-name" style="margin-top:5px">${esc(e.targetOverride?`${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`:rec.headline)}</div><div class="mini" style="margin-top:5px">${esc(e.targetOverride?`Session-only ${e.targetOverride.reason||'override'}. Routine progression is unchanged.`:rec.detail)}</div>${plateText?`<div class="plates">🏋 ${esc(plateText)}</div>`:''}${e.targetOverride?`<div class="override-note">Manual/session target active</div>`:''}</div>
+      ${coach?`<div class="coachbox ${coach.level==='info'?'':coach.level}"><div class="coach-title">${esc(coach.title)}</div><div class="coach-text">${esc(coach.text)}</div>${coach.canReset&&!e.targetOverride?`<div class="actions" style="margin-top:8px"><button class="btn small secondary" onclick="applyCoachReset(${ei})">Apply ${coach.resetPercent}% reset for today</button></div>`:''}</div>`:''}
+      <div class="toolrow">${warmups.length?`<button class="toolchip" onclick="openWarmupGuide(${ei})">Warm-up guide</button>`:''}<button class="toolchip" onclick="openTargetOverride(${ei})">Override target</button><button class="toolchip" onclick="openWorkoutSubstitute(${ei})">Substitute</button><button class="toolchip" onclick="openSupersetPicker(${ei})">⚡ ${superset?`Superset ${superset.label}`:'Superset'}</button><span class="toolchip">${e.config.restSeconds||120}s rest</span>${e.config.targetRIR!=null&&Number.isFinite(Number(e.config.targetRIR))?`<span class="toolchip">Target ${e.config.targetRIR} RIR</span>`:''}</div>
+      ${superset?`<div class="superset-note"><b>Superset ${superset.label}</b> · ${esc(supersetNames(superset.id))}<br>Rotate through working sets, then rest after the round.</div>`:''}
+    <div class="live-body">
+     ${e.sets.map((s,si)=>{
+       const type=setType(s),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev),ref=type==='working'?setReference(prev,wi):'Not used for progression',pt=plateLoadText(s.weight||target.weight,ex);
+       return `<div class="set-card type-${type} ${s.done?'completed':''}" data-set-index="${si}">
+        <div class="set-top">
+          <div class="set-title-wrap">
+            <select class="set-type-select" aria-label="Set type" onchange="setWorkoutSetType(${ei},${si},this.value)">${setTypeOptions(type)}</select>
+            <div><b>${esc(setDisplayLabel(e,si))}</b><div class="set-reference">${type==='working'?`Previous: ${esc(ref)}`:'Logged separately from progression'}</div></div>
+          </div>
+          <div class="set-card-actions">
+            <button class="set-icon-btn" aria-label="Move set up" onclick="moveWorkoutSet(${ei},${si},-1)" ${si===0?'disabled':''}>↑</button>
+            <button class="set-icon-btn" aria-label="Move set down" onclick="moveWorkoutSet(${ei},${si},1)" ${si===e.sets.length-1?'disabled':''}>↓</button>
+            <button class="set-icon-btn danger" aria-label="Remove set" onclick="removeWorkoutSet(${ei},${si})">×</button>
+          </div>
+        </div>
+        ${type==='working'?`<div style="display:flex;justify-content:flex-end;margin-top:-2px;margin-bottom:7px"><span class="set-target">${esc(targetBadgeText(target,ex))}</span></div>`:`<div class="set-nonprogress-note">${esc(setProgressionNote(type))}</div>`}
+        <div class="live-entry">
+          <div class="live-input-wrap">
+            <div class="input-label-row">
+              <label>${ex?.equipment==='bodyweight'?'Added weight':'Weight'} (${state.profile.unit})</label>
+              <div class="micro-step">
+                <button aria-label="decrease weight" onclick="changeSetValue(${ei},${si},'weight',-${Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5))})">−</button>
+                <button aria-label="increase weight" onclick="changeSetValue(${ei},${si},'weight',${Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5))})">+</button>
+              </div>
+            </div>
+            <input class="direct-number" type="number" inputmode="decimal" enterkeyhint="done" step=".25" min="0"
+              value="${displaySetWeightValue(s.weight)}" placeholder="${ex?.equipment==='bodyweight'?'0':'Enter'}"
+              onfocus="smartNumberFocus(this)" onclick="smartNumberFocus(this)"
+              oninput="updateSet(${ei},${si},'weight',this.value)" onblur="commitFirstExerciseWeightAutofill(${ei},${si})" aria-label="weight">
+          </div>
+          <div class="live-input-wrap">
+            <div class="input-label-row">
+              <label>Reps</label>
+              <div class="micro-step">
+                <button aria-label="decrease reps" onclick="changeSetValue(${ei},${si},'reps',-1)">−</button>
+                <button aria-label="increase reps" onclick="changeSetValue(${ei},${si},'reps',1)">+</button>
+              </div>
+            </div>
+            <input class="direct-number" type="number" inputmode="numeric" enterkeyhint="done" min="0"
+              value="${s.reps}" placeholder="Reps"
+              onfocus="smartNumberFocus(this)" onclick="smartNumberFocus(this)"
+              oninput="updateSet(${ei},${si},'reps',this.value)" aria-label="reps">
+          </div>
+          <div class="live-input-wrap rir-small">
+            <div class="input-label-row"><label>RIR</label></div>
+            <select onchange="updateSet(${ei},${si},'rir',this.value)"><option value="">—</option>${[0,1,2,3,4,5].map(v=>`<option value="${v}" ${String(s.rir)===String(v)?'selected':''}>${v}</option>`).join('')}</select>
+          </div>
+        </div>
+        ${pt?`<div class="plates">${esc(pt)}</div>`:''}
+        <button class="complete-set ${s.done?'done':''}" onclick="toggleSet(${ei},${si})">${s.done?'✓ Completed':'Complete set'}</button>
+        ${s.pr?`<div class="pr-banner"><span class="inline-pr-mark">PR</span> ${esc(s.pr)}</div>`:''}
+       </div>`;
+     }).join('')}
+     <div class="set-add-row">
+       <button class="set-add-btn working" onclick="addWorkoutSet(${ei},'working')">+ Working</button>
+       <button class="set-add-btn warmup" onclick="addWorkoutSet(${ei},'warmup')">+ Warm-up</button>
+       <button class="set-add-btn drop" onclick="addWorkoutSet(${ei},'drop')">+ Drop</button>
+       <button class="set-add-btn failure" onclick="addWorkoutSet(${ei},'failure')">+ Failure</button>
+     </div>
+     <div class="field" style="margin-top:12px"><label>Exercise notes</label><textarea oninput="updateNotes(${ei},this.value)" placeholder="Seat setting, grip, tempo, machine used...">${esc(e.notes||'')}</textarea></div>
+    </div>
+    </div>
+   </div>`;
+ }).join('')}
+ <button class="btn secondary" style="width:100%;padding:15px;margin:8px 0 12px" onclick="openAddWorkoutExercise()">+ Add Exercise</button>
+ <button class="btn green" style="width:100%;padding:16px" onclick="finishWorkout()">Finish & Save Workout</button>`;
+ document.getElementById('workoutArea').innerHTML=html;
+}
+const firstExerciseWeightSeedTimers=new Map();
+function exerciseHasLoggedWeightHistory(exerciseId){
+ return derivedSessionData().loggedExerciseIds.has(exerciseId);
+}
+function paintWorkoutSetWeight(ei,si){
+ const set=state.activeWorkout?.exercises?.[ei]?.sets?.[si];if(!set)return;
+ const card=document.querySelector(`#workoutExercise-${ei} .set-card[data-set-index="${si}"]`);
+ const input=card?.querySelector('input[aria-label="weight"]');
+ if(input&&document.activeElement!==input)input.value=displaySetWeightValue(set.weight);
+}
+function applyFirstExerciseWeightAutofill(ei,sourceSi){
+ const e=state.activeWorkout?.exercises?.[ei],source=e?.sets?.[sourceSi];
+ if(!e||!source||e.firstWeightAutofillDone)return false;
+ if(exerciseHasLoggedWeightHistory(e.exerciseId))return false;
+ if(!isProgressionSet(source))return false;
+ const weight=Number(source.weight)||0;
+ if(!(weight>0))return false;
+ const targets=[];
+ e.sets.forEach((set,si)=>{
+   if(si===sourceSi||!isProgressionSet(set)||set.done)return;
+   if(!(Number(set.weight)>0)){
+     set.weight=weight;
+     set.pr='';
+     targets.push(si);
+   }
+ });
+ e.firstWeightAutofillDone=true;
+ if(targets.length){
+   targets.forEach(si=>paintWorkoutSetWeight(ei,si));
+   saveActiveWorkoutWithoutExtendingPendingSave();
+ }
+ return targets.length>0;
+}
+function scheduleFirstExerciseWeightAutofill(ei,si,delay=250){
+ const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];
+ if(!e||!set||e.firstWeightAutofillDone||exerciseHasLoggedWeightHistory(e.exerciseId)||!isProgressionSet(set))return;
+ const key=String(ei);
+ clearTimeout(firstExerciseWeightSeedTimers.get(key));
+ firstExerciseWeightSeedTimers.set(key,setTimeout(()=>{
+   firstExerciseWeightSeedTimers.delete(key);
+   const card=document.querySelector(`#workoutExercise-${ei} .set-card[data-set-index="${si}"]`);
+   const input=card?.querySelector('input[aria-label="weight"]');
+   if(input&&document.activeElement===input)return;
+   applyFirstExerciseWeightAutofill(ei,si);
+ },delay));
+}
+function commitFirstExerciseWeightAutofill(ei,si){
+ const key=String(ei);
+ clearTimeout(firstExerciseWeightSeedTimers.get(key));
+ firstExerciseWeightSeedTimers.delete(key);
+ return applyFirstExerciseWeightAutofill(ei,si);
+}
+function updateSet(ei,si,k,v){
+ const s=state.activeWorkout.exercises[ei].sets[si];
+ if(k==='rir')s[k]=(v===''?'':+v);
+ else s[k]=(v===''?0:Math.max(0,+v||0));
+ if(k!=='rir')s.pr='';
+ saveActiveWorkout(true);
+ if(k==='weight')scheduleFirstExerciseWeightAutofill(ei,si);
+}
+function toggleSet(ei,si){
+ const e=state.activeWorkout.exercises[ei],set=e.sets[si];
+ set.done=!set.done;
+ if(set.done){
+   set.pr=isProgressionSet(set)?detectPR(e.exerciseId,set):'';
+   haptic(set.pr?[35,40,70]:25);
+   if(isProgressionSet(set)&&advanceSupersetAfterSet(ei,si))return;
+   startRestTimer(e.config.restSeconds||120);
+   if(advanceFromCompletedExercise(ei))return;
+ } else{
+   set.pr='';
+   // Re-open an exercise if a completed set is unchecked later.
+   if(!e.expanded){state.activeWorkout.exercises.forEach((x,i)=>x.expanded=i===ei);}
+ }
+ saveActiveWorkout();renderWorkout();
+}
+function updateNotes(ei,v){state.activeWorkout.exercises[ei].notes=v;saveActiveWorkout(true);}
+let restInterval=null,restLeft=0;
+function paintRestTimer(){
+ const box=document.getElementById('restTimer'),txt=document.getElementById('restTimerText');if(!box||!txt)return;
+ const m=Math.floor(restLeft/60),s=String(Math.max(0,restLeft%60)).padStart(2,'0');txt.textContent=`${m}:${s}`;
+}
+function startRestTimer(seconds){
+ stopRestTimer();restLeft=Math.max(0,Number(seconds)||120);
+ const box=document.getElementById('restTimer');box?.classList.add('show');paintRestTimer();
+ restInterval=setInterval(()=>{restLeft--;paintRestTimer();if(restLeft<=0){stopRestTimer();haptic([120,80,120]);}},1000);
+}
+function adjustRestTimer(delta){restLeft=Math.max(0,restLeft+delta);paintRestTimer();if(restLeft===0)stopRestTimer();}
+function stopRestTimer(){if(restInterval)clearInterval(restInterval);restInterval=null;restLeft=0;document.getElementById('restTimer')?.classList.remove('show');}
+function cancelWorkout(){confirmAction('Cancel active workout?','This deletes the autosaved active workout draft. Completed workout history is not affected.',()=>{state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();go('home',{resetHistory:true});showToast('Active workout cancelled');});}
+function finishWorkout(){
+ const w=state.activeWorkout;if(!w)return;
+ const completed=w.exercises.some(e=>e.sets.some(s=>s.done));
+ if(!completed && !confirm('No sets are marked complete. Save anyway?'))return;
+ const routine=state.routines.find(x=>x.id===w.routineId);
+ if(w.structureDirty&&routine){
+   openModal('Update your routine?',`
+     <div class="notice">You changed today's workout structure. Choose whether those structural changes stay only in this session or become the new saved version of <b>${esc(routine.name)}</b>.<br><br><b>Skip status is always today-only.</b> Updating the routine saves the current exercise order, today-only additions or removals, substitutions, supersets, and number of working sets.</div>
+     <div class="actions">
+       <button class="btn green" onclick="finalizeWorkout(true)">Finish + Update Routine</button>
+       <button class="btn secondary" onclick="finalizeWorkout(false)">Finish · Today Only</button>
+       <button class="btn secondary" onclick="closeModal()">Keep Working Out</button>
+     </div>
+   `);
+   return;
+ }
+ finalizeWorkout(false);
+}
+function finalizeWorkout(updateRoutine=false){
+ const w=state.activeWorkout;if(!w)return;
+ if(updateRoutine)syncActiveWorkoutStructureToRoutine();
+ closeModal();
+ const end=new Date(),duration=Math.max(0,Math.round(workoutElapsedMs(w,end.getTime())/60000));
+ const session={id:w.id,routineId:w.routineId,routineName:w.routineName,trainingMode:normalizeTrainingMode(w.trainingMode),programId:w.programId||null,status:'finished',date:end.toISOString(),startDate:w.startDate,durationMinutes:duration,exercises:w.exercises};
+ const progressHighlights=sessionProgressHighlights(session,state.sessions);
+ state.sessions.push(session);
+ advanceProgramAfterWorkout(session);
+ state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();haptic([40,45,100]);renderHome();go('home',{resetHistory:true});
+ openModal('Workout complete',workoutRecapHtml(session,{updateRoutine,progressHighlights}));
+}
