@@ -325,6 +325,29 @@
   .workload-current{height:100%;background:linear-gradient(90deg,#8b5cf6,#a78bfa);border-radius:999px}
   .workload-average{height:100%;background:#475569;border-radius:999px}
   .workload-values{text-align:right;font-size:.65rem;color:#aeb8c8;white-space:nowrap}
+  .coverage-period-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .coverage-card{background:#0f1622;border:1px solid #29364b;border-radius:15px;padding:12px;min-width:0}
+  .coverage-card-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-end;margin-bottom:9px}
+  .coverage-card-title{font-size:.82rem;font-weight:950}
+  .coverage-card-meta{font-size:.61rem;color:#8290a5;text-align:right}
+  .coverage-list{display:grid;gap:7px}
+  .coverage-row{display:grid;grid-template-columns:minmax(78px,.9fr) minmax(0,1.35fr) auto;gap:7px;align-items:center}
+  .coverage-name{font-size:.68rem;font-weight:850;color:#d4deeb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .coverage-track{height:7px;border:1px solid #273248;background:#0a0f17;border-radius:999px;overflow:hidden}
+  .coverage-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#22d3ee,#8b5cf6)}
+  .coverage-values{text-align:right;font-size:.58rem;color:#8f9db1;white-space:nowrap}
+  .coverage-values b{color:#dce6f3;font-size:.64rem}
+  .frequency-card{background:#0f1622;border:1px solid #29364b;border-radius:15px;padding:12px;overflow-x:auto}
+  .frequency-head,.frequency-row{display:grid;grid-template-columns:92px repeat(8,minmax(22px,1fr));gap:5px;min-width:430px;align-items:center}
+  .frequency-head{margin-bottom:7px;color:#77869b;font-size:.54rem;text-transform:uppercase;letter-spacing:.06em}
+  .frequency-row{margin-top:5px}
+  .frequency-name{font-size:.65rem;font-weight:850;color:#d0d9e6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .frequency-cell{height:22px;border-radius:6px;border:1px solid #253147;background:#151c27;display:grid;place-items:center;font-size:.56rem;color:#7f8da1}
+  .frequency-cell.freq-1{background:rgba(247,200,61,.18);border-color:rgba(247,200,61,.38);color:#f7d86a}
+  .frequency-cell.freq-2{background:rgba(242,138,45,.22);border-color:rgba(242,138,45,.42);color:#ffad62}
+  .frequency-cell.freq-3{background:rgba(239,63,79,.24);border-color:rgba(239,63,79,.46);color:#ff8390;box-shadow:inset 0 0 12px rgba(239,63,79,.06)}
+  .frequency-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:9px;color:#7f8da1;font-size:.59rem}
+  @media(max-width:520px){.coverage-period-grid{grid-template-columns:1fr}.coverage-row{grid-template-columns:82px minmax(0,1fr) auto}}
   .progress-change-list{display:grid;gap:8px}
   .progress-change{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center;background:#101620;border:1px solid #293449;border-radius:13px;padding:10px}
   .progress-change-value{font-weight:950;font-size:.85rem}
@@ -3936,25 +3959,91 @@ function recentPREvents(limit=8){
  }));
  return events.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,limit);
 }
+function sessionsBetween(start,end,sessions=state.sessions){
+ return sessions.filter(s=>{
+   const d=new Date(s.date);
+   return Number.isFinite(d.getTime())&&d>=start&&d<end;
+ });
+}
+function muscleCoverageSummary(sessions){
+ const byMuscle={};
+ (sessions||[]).forEach(session=>{
+   const scores=sessionMuscleScores(session),day=localDateKey(session.date);
+   Object.entries(scores).forEach(([muscle,setEq])=>{
+     if(!(setEq>0))return;
+     const row=byMuscle[muscle]||(byMuscle[muscle]={muscle,name:MUSCLE_REGION_LABELS[muscle]||muscle,setEq:0,sessions:0,days:new Set(),lastDate:''});
+     row.setEq+=setEq;row.sessions++;if(day)row.days.add(day);
+     if(!row.lastDate||String(session.date)>row.lastDate)row.lastDate=String(session.date);
+   });
+ });
+ return Object.values(byMuscle).map(row=>({...row,days:row.days.size}))
+   .sort((a,b)=>b.setEq-a.setEq||b.sessions-a.sessions||a.name.localeCompare(b.name));
+}
+function muscleCoveragePeriods(reference=new Date()){
+ const ref=new Date(reference),weekStart=startOfWeek(ref),weekEnd=new Date(weekStart);weekEnd.setDate(weekEnd.getDate()+7);
+ const monthStart=new Date(ref.getFullYear(),ref.getMonth(),1);monthStart.setHours(0,0,0,0);
+ const monthEnd=new Date(ref.getFullYear(),ref.getMonth()+1,1);monthEnd.setHours(0,0,0,0);
+ const weekSessions=sessionsBetween(weekStart,weekEnd),monthSessions=sessionsBetween(monthStart,monthEnd);
+ return {
+   week:{start:weekStart,end:weekEnd,sessions:weekSessions,rows:muscleCoverageSummary(weekSessions)},
+   month:{start:monthStart,end:monthEnd,sessions:monthSessions,rows:muscleCoverageSummary(monthSessions)}
+ };
+}
+function muscleFrequencyWeeks(weeks=8,reference=new Date(),sessions=state.sessions){
+ const count=Math.max(1,Math.round(Number(weeks)||8)),current=startOfWeek(reference),periods=[];
+ for(let i=count-1;i>=0;i--){
+   const start=new Date(current);start.setDate(start.getDate()-i*7);
+   const end=new Date(start);end.setDate(end.getDate()+7);
+   const weekSessions=sessionsBetween(start,end,sessions);
+   const hits={};
+   weekSessions.forEach(session=>{
+     Object.entries(sessionMuscleScores(session)).forEach(([muscle,score])=>{
+       if(score>0)hits[muscle]=(hits[muscle]||0)+1;
+     });
+   });
+   periods.push({start,end,label:`${start.getMonth()+1}/${start.getDate()}`,hits});
+ }
+ const muscles=[...new Set(periods.flatMap(p=>Object.keys(p.hits)))];
+ const rows=muscles.map(muscle=>({
+   muscle,name:MUSCLE_REGION_LABELS[muscle]||muscle,
+   counts:periods.map(p=>p.hits[muscle]||0),
+   total:periods.reduce((n,p)=>n+(p.hits[muscle]||0),0)
+ })).sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name));
+ return {periods,rows};
+}
+function frequencyCellLevel(count){return count>=3?3:count===2?2:count===1?1:0}
+function coveragePeriodHtml(period,title){
+ const rows=period.rows,max=Math.max(1,...rows.map(r=>r.setEq));
+ const sessionCount=period.sessions.length,days=new Set(period.sessions.map(s=>localDateKey(s.date)).filter(Boolean)).size;
+ return `<div class="coverage-card">
+   <div class="coverage-card-head"><div><div class="coverage-card-title">${esc(title)}</div><div class="mini">${sessionCount} workout${sessionCount===1?'':'s'} · ${days} training day${days===1?'':'s'}</div></div><div class="coverage-card-meta">${rows.length} muscle region${rows.length===1?'':'s'}</div></div>
+   ${rows.length?`<div class="coverage-list">${rows.slice(0,12).map(row=>`<div class="coverage-row">
+     <div class="coverage-name">${esc(row.name)}</div>
+     <div class="coverage-track"><div class="coverage-fill" style="width:${Math.max(5,Math.round(row.setEq/max*100))}%"></div></div>
+     <div class="coverage-values"><b>${row.sessions}×</b> · ${row.setEq%1?row.setEq.toFixed(1):row.setEq} eq</div>
+   </div>`).join('')}</div>`:'<div class="empty">No completed working sets in this period yet.</div>'}
+ </div>`;
+}
+function muscleFrequencyHtml(data){
+ if(!data.rows.length)return '<div class="empty">Complete workouts across multiple weeks to build training-frequency history.</div>';
+ return `<div class="frequency-card">
+   <div class="frequency-head"><span>Muscle</span>${data.periods.map(p=>`<span>${esc(p.label)}</span>`).join('')}</div>
+   ${data.rows.slice(0,14).map(row=>`<div class="frequency-row"><div class="frequency-name">${esc(row.name)}</div>${row.counts.map(count=>`<div class="frequency-cell freq-${frequencyCellLevel(count)}" title="${count} session${count===1?'':'s'}">${count||''}</div>`).join('')}</div>`).join('')}
+   <div class="frequency-legend"><span>Cells = completed sessions involving that muscle during each week.</span><span>1 = light frequency · 2 = moderate · 3+ = high frequency</span></div>
+ </div>`;
+}
 function muscleWorkloadComparison(){
  const currentStart=startOfWeek(),currentEnd=new Date(currentStart);currentEnd.setDate(currentEnd.getDate()+7);
- const current={},priorTotals={};
- const addSession=(s,target)=>s.exercises.forEach(e=>{
-   const ex=exById(e.exerciseId);if(!ex)return;
-   target[ex.muscle]=(target[ex.muscle]||0)+progressionSets(e).length;
- });
- state.sessions.forEach(s=>{
-   const d=new Date(s.date);
-   if(d>=currentStart&&d<currentEnd)addSession(s,current);
-   else{
-     const priorStart=new Date(currentStart);priorStart.setDate(priorStart.getDate()-28);
-     if(d>=priorStart&&d<currentStart)addSession(s,priorTotals);
-   }
- });
- const names=[...new Set([...Object.keys(current),...Object.keys(priorTotals)])];
- return names.map(name=>({name,current:current[name]||0,average:(priorTotals[name]||0)/4}))
+ const priorStart=new Date(currentStart);priorStart.setDate(priorStart.getDate()-28);
+ const current=muscleCoverageSummary(sessionsBetween(currentStart,currentEnd));
+ const prior=muscleCoverageSummary(sessionsBetween(priorStart,currentStart));
+ const currentMap=Object.fromEntries(current.map(x=>[x.muscle,x.setEq]));
+ const priorMap=Object.fromEntries(prior.map(x=>[x.muscle,x.setEq/4]));
+ const muscles=[...new Set([...Object.keys(currentMap),...Object.keys(priorMap)])];
+ return muscles.map(muscle=>({muscle,name:MUSCLE_REGION_LABELS[muscle]||muscle,current:currentMap[muscle]||0,average:priorMap[muscle]||0}))
    .sort((a,b)=>Math.max(b.current,b.average)-Math.max(a.current,a.average)||a.name.localeCompare(b.name));
 }
+
 function recentStrengthChanges(){
  const ids=[...new Set(state.sessions.flatMap(s=>(s.exercises||[]).map(e=>e.exerciseId)))];
  return ids.map(id=>{
@@ -4170,6 +4259,7 @@ function renderAnalytics(){
  const trainingDays30=new Set(last30.map(s=>localDateKey(s.date))).size;
  const weeks=lastEightWeeks(),maxWeek=Math.max(1,...weeks.map(x=>x.workouts));
  const workloads=muscleWorkloadComparison(),maxWorkload=Math.max(1,...workloads.flatMap(x=>[x.current,x.average]));
+ const coveragePeriods=muscleCoveragePeriods(),frequency=muscleFrequencyWeeks(8);
  const records=lifetimeExerciseRecords();
  const recordCards=[...records].sort((a,b)=>(b.lastPRDate||b.lastDate).localeCompare(a.lastPRDate||a.lastDate)).slice(0,6);
  const prEvents=recentPREvents(6);
@@ -4212,6 +4302,15 @@ function renderAnalytics(){
    </div>`).join('')}</div>`:'<div class="empty">PRs will show here after an exercise has an established baseline to beat.</div>'}
  </div>
 
+ <div class="section-title"><h2>Muscle coverage</h2><span class="mini">Audited primary + secondary involvement</span></div>
+ <div class="coverage-period-grid">
+   ${coveragePeriodHtml(coveragePeriods.week,'This week')}
+   ${coveragePeriodHtml(coveragePeriods.month,'This month to date')}
+ </div>
+
+ <div class="section-title"><h2>Training frequency</h2><span class="mini">Sessions involving each muscle · last 8 weeks</span></div>
+ ${muscleFrequencyHtml(frequency)}
+
  <div class="section-title"><h2>Muscle workload</h2><span class="mini">This week vs prior 4-week average</span></div>
  <div class="chart-card">
    ${workloads.length?`<div class="workload-grid">${workloads.map(x=>`<div class="workload-row">
@@ -4221,7 +4320,7 @@ function renderAnalytics(){
        <div class="workload-track" title="Prior 4-week average"><div class="workload-average" style="width:${Math.round(x.average/maxWorkload*100)}%"></div></div>
      </div>
      <div class="workload-values"><b>${x.current}</b> now<br>${x.average.toFixed(1)} avg</div>
-   </div>`).join('')}</div><div class="mini" style="margin-top:11px">Top bar = working sets this week. Bottom bar = average working sets per week across the previous four full weeks.</div>`:'<div class="empty">Complete working sets to populate muscle workload.</div>'}
+   </div>`).join('')}</div><div class="mini" style="margin-top:11px">Top bar = audited muscle set-equivalents this week. Bottom bar = average set-equivalents per week across the previous four full weeks. Primary involvement contributes 1.0 per working set; secondary contributes 0.5.</div>`:'<div class="empty">Complete working sets to populate muscle workload.</div>'}
  </div>
 
  <div class="section-title"><h2>8-week consistency</h2></div>
