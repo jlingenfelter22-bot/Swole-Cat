@@ -8,7 +8,10 @@ Swole Cat is a local-first web application packaged for Android with Capacitor. 
 index.html                    # Small application shell only
 src/
   styles/
-    app.css                   # Swole Cat design system and view styles
+    00-base.css               # Base layout, typography, core components
+    01-design-system.css      # Retro-future identity and shared controls
+    02-views.css              # Home, routines, exercises, workout, progress, history
+    03-polish.css             # Native/touch polish, selectors, Coach, performance
   js/
     00-runtime.js             # Cross-domain service/event boundary
     01-core-runtime.js        # State, persistence, navigation, native behavior
@@ -75,7 +78,7 @@ The app must remain usable when offline. Cloud sync should be optional infrastru
 
 ## Runtime service boundary
 
-`src/js/00-runtime.js` establishes `window.SwoleCatRuntime` with a small service registry and event target. Existing application behavior remains untouched, while new infrastructure can register isolated services without importing network/account concerns into the workout engine.
+`src/js/00-runtime.js` establishes `window.SwoleCatRuntime` with a small service registry and event target. Device persistence is already routed through the registered `storage` service, and the core exposes a narrow `state` service for snapshot reads/revision/save requests. Existing application behavior remains local-first while new infrastructure can register isolated services without importing network/account concerns into the workout engine. Persisted changes emit `state:saved`, and completed startup emits `app:ready`, giving a future sync queue explicit hooks without coupling it to workout-domain functions.
 
 Expected future services include:
 
