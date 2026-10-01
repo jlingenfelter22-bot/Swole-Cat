@@ -4788,21 +4788,26 @@ function coachParseEquipment(text){
  return {allowed:[...new Set(allowed)],excluded:[...new Set(excluded)]};
 }
 function coachParseTargets(text){
- const lower=String(text||'').toLowerCase(),labels=[],regions=[];
- const composites=['full body','upper body','lower body','push','pull','legs','arms','shoulders'];
- const matchedComposite=composites.find(k=>lower.includes(k));
- if(matchedComposite){
-   const g=COACH_TARGET_GROUPS[matchedComposite];labels.push(g.label);regions.push(...g.regions);
- }
- const specifics=['chest','back','biceps','triceps','quads','hamstrings','glutes','calves','core'];
- specifics.forEach(k=>{
-   if(lower.includes(k)){
-     const g=COACH_TARGET_GROUPS[k];
-     if(!labels.includes(g.label))labels.push(g.label);
-     regions.push(...g.regions);
-   }
- });
- return {labels:[...new Set(labels)],regions:[...new Set(regions)]};
+ const lower=coachNormalizeGymText(text);
+ const work=lower
+   .replace(/\b(?:single|one|straight)\s+arm\b/g,' ')
+   .replace(/\bchest\s+supported\b/g,' ')
+   .replace(/\bback\s+squats?\b/g,' ');
+ const labels=[],regions=[],keys=[];
+ const add=key=>{
+   const g=COACH_TARGET_GROUPS[key];if(!g||keys.includes(key))return;
+   keys.push(key);labels.push(g.label);regions.push(...g.regions);
+ };
+ const terms=[
+   ['full body',/\bfull body\b/],['upper body',/\bupper body\b/],['lower body',/\blower body\b/],
+   ['push',/\bpush(?: day| workout| session)?\b/],['pull',/\bpull(?: day| workout| session)?\b/],
+   ['legs',/\blegs?\b/],['arms',/\barms?\b/],['shoulders',/\bshoulders?\b/],
+   ['chest',/\bchest\b/],['back',/\bback\b/],['biceps',/\bbiceps?\b/],['triceps',/\btriceps?\b/],
+   ['quads',/\bquads?\b/],['hamstrings',/\bhamstrings?\b/],['glutes',/\bglutes?\b/],
+   ['calves',/\bcalves?\b|\bcalf\b/],['core',/\bcore\b|\babs?\b/]
+ ];
+ terms.forEach(([key,re])=>{if(re.test(work))add(key)});
+ return {keys,labels:[...new Set(labels)],regions:[...new Set(regions)]};
 }
 function coachParsePrompt(text,defaultGoal=coachPromptGoal){
  const raw=String(text||'').trim(),lower=raw.toLowerCase();
@@ -4818,7 +4823,7 @@ function coachParsePrompt(text,defaultGoal=coachPromptGoal){
  else if(/\bhypertrophy\b|\bmuscle growth\b|\bbodybuild/.test(lower)||/\bsize\b/.test(lower))goal='hypertrophy';
  else if(/\bgeneral fitness\b|\bgeneral workout\b/.test(lower))goal='general';
  return {
-   prompt:raw,goal,duration,targetLabels:targets.labels,targetRegions:targets.regions,
+   prompt:raw,goal,duration,targetKeys:[...(targets.keys||[])],targetLabels:targets.labels,targetRegions:targets.regions,
    allowedEquipment:equipment.allowed,excludedEquipment:equipment.excluded,
    priorityRegions:[],excludedExerciseIds:[],requiredExerciseIds:[]
  };
@@ -4964,7 +4969,7 @@ function coachWorkoutName(request){
 function coachGenerateWorkout(request){
  const req={
    ...request,duration:request.duration||45,
-   targetLabels:[...(request.targetLabels||[])],targetRegions:[...(request.targetRegions||[])],
+   targetKeys:[...(request.targetKeys||[])],targetLabels:[...(request.targetLabels||[])],targetRegions:[...(request.targetRegions||[])],
    allowedEquipment:[...(request.allowedEquipment||[])],excludedEquipment:[...(request.excludedEquipment||[])],
    priorityRegions:[...(request.priorityRegions||[])],excludedExerciseIds:[...(request.excludedExerciseIds||[])],
    requiredExerciseIds:[...(request.requiredExerciseIds||[])]
@@ -5321,6 +5326,7 @@ function coachRemoveTargetKey(req,key){
  req.targetRegions=(req.targetRegions||[]).filter(x=>!regions.has(x));
  req.priorityRegions=(req.priorityRegions||[]).filter(x=>!regions.has(x));
  req.targetLabels=(req.targetLabels||[]).filter(x=>x!==COACH_TARGET_GROUPS[key]?.label);
+ req.targetKeys=(req.targetKeys||[]).filter(x=>x!==key);
 }
 function coachRecentContextText(request){
  const targets=new Set(request?.targetRegions||[]);if(!targets.size||!state.sessions.length)return '';
@@ -5471,7 +5477,7 @@ function coachRefineDraftText(text){
  const draft=coachBuildDraft,raw=String(text||'').trim();if(!draft||!raw)return {ok:false,message:'Tell Coach what you want changed.'};
  if(draft.explicitPrescription)return coachRefineExplicitDraftText(raw);
  const lower=raw.toLowerCase(),req={...draft.request};
- req.targetLabels=[...(req.targetLabels||[])];req.targetRegions=[...(req.targetRegions||[])];
+ req.targetKeys=[...(req.targetKeys||[])];req.targetLabels=[...(req.targetLabels||[])];req.targetRegions=[...(req.targetRegions||[])];
  req.allowedEquipment=[...(req.allowedEquipment||[])];req.excludedEquipment=[...(req.excludedEquipment||[])];
  req.priorityRegions=[...(req.priorityRegions||[])];req.excludedExerciseIds=[...(req.excludedExerciseIds||[])];req.requiredExerciseIds=[...(req.requiredExerciseIds||[])];
  let changed=false;
@@ -5488,7 +5494,7 @@ function coachRefineDraftText(text){
    req.allowedEquipment=req.allowedEquipment.filter(x=>!equipment.excluded.includes(x));
    changed=true;
  }
- const targetKeys=Object.keys(COACH_TARGET_GROUPS).filter(k=>lower.includes(k));
+ const targetKeys=coachParseTargets(raw).keys||[];
  const negativeTargetKeys=targetKeys.filter(k=>new RegExp('(?:no|without|skip|exclude)\\s+'+k.replace(' ','\\s+'),'i').test(lower));
  negativeTargetKeys.forEach(k=>{coachRemoveTargetKey(req,k);changed=true});
  const positiveTargets=coachParseTargets(raw);
@@ -5501,11 +5507,13 @@ function coachRefineDraftText(text){
      req.priorityRegions=[...new Set([...req.priorityRegions,...positiveRegions])];
      req.targetRegions=[...new Set([...req.targetRegions,...positiveRegions])];
      req.targetLabels=[...new Set([...req.targetLabels,...positiveTargets.labels])];
+     req.targetKeys=[...new Set([...req.targetKeys,...(positiveTargets.keys||[])])];
    }else if(hasAdd){
      req.targetRegions=[...new Set([...req.targetRegions,...positiveRegions])];
      req.targetLabels=[...new Set([...req.targetLabels,...positiveTargets.labels])];
+     req.targetKeys=[...new Set([...req.targetKeys,...(positiveTargets.keys||[])])];
    }else if(hasReplace||positiveTargets.labels.length===1&&raw.split(/\s+/).length<=4){
-     req.targetRegions=[...positiveRegions];req.targetLabels=[...positiveTargets.labels];
+     req.targetRegions=[...positiveRegions];req.targetLabels=[...positiveTargets.labels];req.targetKeys=[...(positiveTargets.keys||[])];
      req.priorityRegions=[];
    }
    changed=true;
@@ -5560,7 +5568,7 @@ function coachProgramName(request,intent){
 function coachCloneRequest(request){
  return {
    ...request,
-   targetLabels:[...(request.targetLabels||[])],targetRegions:[...(request.targetRegions||[])],
+   targetKeys:[...(request.targetKeys||[])],targetLabels:[...(request.targetLabels||[])],targetRegions:[...(request.targetRegions||[])],
    allowedEquipment:[...(request.allowedEquipment||[])],excludedEquipment:[...(request.excludedEquipment||[])],
    priorityRegions:[...(request.priorityRegions||[])],excludedExerciseIds:[...(request.excludedExerciseIds||[])],
    requiredExerciseIds:[...(request.requiredExerciseIds||[])]
@@ -5577,7 +5585,7 @@ function coachGenerateProgram(request,intent,previous=null){
    const group=COACH_TARGET_GROUPS[key],override=dayOverrides[index]||{excludedExerciseIds:[],requiredExerciseIds:[]};
    const targetRegions=[...(group?.regions||[])],targetSet=new Set(targetRegions);
    const dayReq=coachCloneRequest(req);
-   dayReq.targetLabels=[group?.label||'Workout'];dayReq.targetRegions=targetRegions;
+   dayReq.targetKeys=[key];dayReq.targetLabels=[group?.label||'Workout'];dayReq.targetRegions=targetRegions;
    dayReq.priorityRegions=req.programFocusRegions.filter(region=>targetSet.has(region));
    dayReq.excludedExerciseIds=[...new Set([...(req.excludedExerciseIds||[]),...(override.excludedExerciseIds||[])])];
    dayReq.requiredExerciseIds=[...new Set(override.requiredExerciseIds||[])];
@@ -5925,7 +5933,7 @@ function coachContinueRequest(){
 }
 function coachAnswerTarget(key){
  const g=COACH_TARGET_GROUPS[key];if(!g||!coachBuildDraft)return;
- coachBuildDraft.request.targetLabels=[g.label];coachBuildDraft.request.targetRegions=[...g.regions];coachContinueRequest();
+ coachBuildDraft.request.targetKeys=[key];coachBuildDraft.request.targetLabels=[g.label];coachBuildDraft.request.targetRegions=[...g.regions];coachContinueRequest();
 }
 function coachAnswerDuration(minutes){
  if(!coachBuildDraft)return;coachBuildDraft.request.duration=Math.max(15,Math.min(120,Number(minutes)||45));coachContinueRequest();
