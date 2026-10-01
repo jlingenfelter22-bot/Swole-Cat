@@ -4987,43 +4987,71 @@ function coachParseRepTarget(value){
  if(m)return {minReps:Number(m[1]),maxReps:Number(m[1])};
  return null;
 }
-function coachParseExplicitWorkout(text,goal=coachPromptGoal){
- const normalized=coachNumbersToDigits(text),lower=normalized.toLowerCase(),items=[],seen=new Set();
- let globalRep=null;
- const globalMatch=lower.match(/(?:target(?:ing)?|aim(?:ing)?(?:\s+for)?)\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?\s*(?:each|for each|on each|across)/i);
- if(globalMatch)globalRep={minReps:Number(globalMatch[1]),maxReps:Number(globalMatch[2]||globalMatch[1])};
- const segments=normalized
-   .replace(/\band\s+(?=\d+\s*sets?\b)/gi,',')
-   .split(/[,;\n]+/)
-   .map(x=>x.trim()).filter(Boolean);
- segments.forEach(segment=>{
-   let m=segment.match(/^(?:.*?\b)?(\d+)\s*sets?\s*(?:of\s+)?(.+)$/i);
-   let sets=0,body='';
-   if(m){sets=Number(m[1]);body=m[2]}
-   else{
-     m=segment.match(/^(.+?)\s+(\d+)\s*sets?\s*(?:of\s+)?(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?$/i);
-     if(m){
-       body=m[1];sets=Number(m[2]);
-       const ex=coachResolveExercisePhrase(coachCleanExercisePhrase(body));if(!ex||seen.has(ex.id))return;
-       items.push({exerciseId:ex.id,sets,minReps:Number(m[3]),maxReps:Number(m[4]||m[3])});seen.add(ex.id);return;
-     }
-     m=segment.match(/^(\d+)\s*x\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s+(.+)$/i);
-     if(m){
-       sets=Number(m[1]);body=m[4];
-       const ex=coachResolveExercisePhrase(coachCleanExercisePhrase(body));if(!ex||seen.has(ex.id))return;
-       items.push({exerciseId:ex.id,sets,minReps:Number(m[2]),maxReps:Number(m[3]||m[2])});seen.add(ex.id);return;
-     }
-   }
-   if(!sets||!body)return;
-   const reps=coachParseRepTarget(body)||globalRep;
-   body=body.replace(/\s+(?:for|at|x)\s*\d+(?:\s*(?:-|to)\s*\d+)?\s*(?:reps?)?\s*$/i,'');
-   const ex=coachResolveExercisePhrase(coachCleanExercisePhrase(body));if(!ex||seen.has(ex.id))return;
-   const defaults=coachProgrammingDefaults(goal,45);
-   items.push({exerciseId:ex.id,sets:Math.max(1,Math.min(10,sets)),minReps:reps?.minReps||defaults.minReps,maxReps:reps?.maxReps||defaults.maxReps});
-   seen.add(ex.id);
+function coachExerciseMentionCandidates(){
+ const byPhrase=new Map();
+ visibleExercises().forEach(ex=>{
+   const phrase=coachNormalizeWords(ex.name);
+   if(phrase.length>=3&&!byPhrase.has(phrase))byPhrase.set(phrase,ex);
  });
- const signal=items.length>=2||items.some(x=>new RegExp('\\b'+x.sets+'\\s*sets?\\b','i').test(normalized));
- return {signal,items};
+ Object.entries(COACH_EXERCISE_ALIASES).forEach(([alias,name])=>{
+   const ex=visibleExercises().find(x=>coachNormalizeWords(x.name)===coachNormalizeWords(name));
+   const phrase=coachNormalizeWords(alias);
+   if(ex&&phrase.length>=2)byPhrase.set(phrase,ex);
+ });
+ return [...byPhrase.entries()].map(([phrase,ex])=>({phrase,ex})).sort((a,b)=>b.phrase.length-a.phrase.length||a.phrase.localeCompare(b.phrase));
+}
+function coachRegexEscape(value){return String(value||'').replace(/[.*+?^$(){}|[\]\\]/g,'\\$&')}
+function coachFindExerciseMentions(text){
+ const raw=coachNormalizeWords(coachNumbersToDigits(text)),mentions=[],occupied=[];
+ coachExerciseMentionCandidates().forEach(({phrase,ex})=>{
+   const pattern=new RegExp('(?:^|\\s)'+coachRegexEscape(phrase)+'s?(?=\\s|$)','g');
+   let m;
+   while((m=pattern.exec(raw))){
+     const leading=m[0].startsWith(' ')?1:0,start=m.index+leading,end=m.index+m[0].length;
+     if(occupied.some(([a,b])=>start<b&&end>a))continue;
+     mentions.push({exerciseId:ex.id,ex,start,end,phrase:raw.slice(start,end).trim()});
+     occupied.push([start,end]);
+   }
+ });
+ return mentions.sort((a,b)=>a.start-b.start);
+}
+function coachPrescriptionNumbersAround(text,mention,index,mentions,goal,globalRep){
+ const beforeStart=index?mentions[index-1].end:0,nextStart=index<mentions.length-1?mentions[index+1].start:text.length;
+ const before=text.slice(beforeStart,mention.start).trim(),after=text.slice(mention.end,nextStart).trim();
+ let sets=0,minReps=0,maxReps=0,m;
+ m=before.match(/(?:^|\s)(\d+)\s*(?:sets?|set)\s*(?:of\s*)?$/i);
+ if(m)sets=Number(m[1]);
+ if(!sets&&(m=after.match(/^(?:for\s+)?(\d+)\s*(?:sets?|set)\b/i)))sets=Number(m[1]);
+ if(!sets&&(m=before.match(/(?:^|\s)(\d+)\s*x\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*$/i))){sets=Number(m[1]);minReps=Number(m[2]);maxReps=Number(m[3]||m[2])}
+ if(!sets&&(m=after.match(/^(?:for\s+)?(\d+)\s*x\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?/i))){sets=Number(m[1]);minReps=Number(m[2]);maxReps=Number(m[3]||m[2])}
+ if(m=after.match(/^(?:for\s+)?\d+\s*(?:sets?|set)\s*(?:of\s*)?(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*(?:reps?)?/i)){minReps=Number(m[1]);maxReps=Number(m[2]||m[1])}
+ if(!minReps&&(m=after.match(/(?:^|\s)(?:target(?:ing)?|aim(?:ing)?(?:\s+for)?|shoot(?:ing)?(?:\s+for)?)\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*(?:reps?)?/i))){minReps=Number(m[1]);maxReps=Number(m[2]||m[1])}
+ if(!minReps&&(m=after.match(/(?:^|\s)(?:for|at)\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?(?!\s*sets?\b)(?:\s*reps?)?/i))){minReps=Number(m[1]);maxReps=Number(m[2]||m[1])}
+ if(!minReps&&(m=after.match(/(?:^|\s)(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?\b/i))){minReps=Number(m[1]);maxReps=Number(m[2]||m[1])}
+ const defaults=coachProgrammingDefaults(goal,45);
+ return {
+   sets:Math.max(1,Math.min(10,sets||defaults.sets)),
+   minReps:minReps||globalRep?.minReps||defaults.minReps,
+   maxReps:maxReps||globalRep?.maxReps||defaults.maxReps,
+   explicitSets:!!sets,explicitReps:!!minReps||!!globalRep
+ };
+}
+function coachParseExplicitWorkout(text,goal=coachPromptGoal){
+ const normalized=coachNumbersToDigits(text),lower=normalized.toLowerCase(),normalizedWords=coachNormalizeWords(normalized),mentions=coachFindExerciseMentions(normalized),items=[],seen=new Set();
+ let globalRep=null;
+ let globalMatch=lower.match(/(?:target(?:ing)?|aim(?:ing)?(?:\s+for)?|shoot(?:ing)?(?:\s+for)?)\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?\s*(?:each|for each|on each|across|all)?/i);
+ if(!globalMatch)globalMatch=lower.match(/(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?\s*(?:each|for each|on each)/i);
+ if(globalMatch)globalRep={minReps:Number(globalMatch[1]),maxReps:Number(globalMatch[2]||globalMatch[1])};
+ mentions.forEach((mention,index)=>{
+   if(seen.has(mention.exerciseId))return;
+   const cfg=coachPrescriptionNumbersAround(normalizedWords,mention,index,mentions,goal,globalRep);
+   items.push({exerciseId:mention.exerciseId,sets:cfg.sets,minReps:cfg.minReps,maxReps:cfg.maxReps,explicitSets:cfg.explicitSets,explicitReps:cfg.explicitReps});
+   seen.add(mention.exerciseId);
+ });
+ const hasPrescriptionLanguage=/\bsets?\b|\breps?\b|\b\d+\s*x\s*\d+\b/i.test(normalized);
+ const listLanguage=/\b(?:i want|i need|want to do|need to do|do|doing|workout with|routine with|include|add)\b/i.test(lower);
+ const signal=items.length>=2||(items.length===1&&hasPrescriptionLanguage)||(items.length===1&&listLanguage);
+ return {signal,items,mentions:mentions.map(x=>x.exerciseId)};
 }
 function coachGenerateExplicitWorkout(request,prescription){
  if(!prescription?.items?.length)return null;
@@ -5037,7 +5065,7 @@ function coachGenerateExplicitWorkout(request,prescription){
  coachBuildDraft={
    request:req,defaults,selectedIds:prescription.items.map(x=>x.exerciseId),
    explicitPrescription:true,explicitConfigById:Object.fromEntries(prescription.items.map(x=>[x.exerciseId,{...x}])),
-   createdAt:new Date().toISOString(),lastRefinement:''
+   createdAt:new Date().toISOString(),lastRefinement:'',sourcePrompt:request.prompt||''
  };
  return coachBuildDraft;
 }
