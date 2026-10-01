@@ -282,7 +282,7 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 
 ## Phase 6 — Coach Swole Cat / Quick Build
 
-**Status: In progress through v0.53.0**
+**Status: In progress through v0.54.0**
 
 ### Product intent: useful, not bloated
 Coach Swole Cat should reinforce the core product philosophy rather than turn the app into a noisy AI product.
@@ -323,6 +323,8 @@ Goal: let a user create a useful workout or full routine in seconds without manu
 **v0.53.1: Explicit Exercise Routing + Mic Visibility Hotfix** — Named exercises now outrank the generic Coach questionnaire. A request such as “bench press, squat, dumbbell curls” is treated as an explicit workout list even when the user omits sets, reps, target muscles, or session duration; missing prescription values receive normal Coach defaults without asking irrelevant “what are we training?” or “how much time?” questions. More flexible language such as “bench press for three sets” is supported. Coach preserves the named exercise list instead of substituting generated movements. The microphone control is now visually embedded inside every Coach text field with a high-contrast cyan treatment so the voice affordance is obvious on mobile.
 
 **v0.53.2: Surgical Explicit-Workout Refinement Hotfix** — Once a Coach workout is created from an explicit user-authored exercise list, the Refine flow now stays in list-edit mode instead of falling back to the workout generator. Commands such as “can you also add a set of assisted pull-ups?”, “make bench press 4 sets of 6 reps,” and “remove Bulgarian split squats” edit only the named exercise/configuration. Existing exercises, order, and custom set/rep prescriptions remain intact. Explicit refinements never inject unrelated exercises through target-muscle regeneration.
+
+**v0.54.0: Coach Brain + Insights Foundation** — Coach Swolecat now uses a shared gym-language interpretation layer instead of a small exact-alias table. The resolver includes expanded lifting slang, common abbreviations, speech-mistake normalization, fuzzy string/token matching, confidence scoring, and ambiguity detection across the full exercise catalog. High-confidence slang and known speech errors resolve directly; crowded medium-confidence matches trigger a specific exercise clarification instead of silently guessing. Native Android and browser speech flows can score multiple recognition alternatives and prefer the transcript that requires the least repair while matching the strongest gym-language structure. Users can teach local aliases with phrases such as “when I say spider boys I mean spider dumbbell curl,” and those aliases persist only in local Swole Cat state. Coach also gains the first non-chat Insight: when sufficient recent history exists and a major training area has been absent for roughly two weeks while other training continued, Home can surface that descriptive observation with a one-tap Coach build. Insights are suppressed during active workouts and active Programs and never claim recovery, injury, readiness, or a requirement to train a muscle.
 
 ### Locked: Quick workout builder
 The home screen includes Coach Swolecat as the primary build path for new users and a secondary quick-build path for returning users when no workout is active.
@@ -406,7 +408,10 @@ Once the local builder is proven, an optional AI-backed Coach layer can add more
 Potential later capabilities:
 - modify an existing saved routine from natural language
 - deeper history-aware muscle scheduling across multi-day plans
-- more nuanced conversational substitutions and exercise aliases
+- richer Coach Insights covering trends, neglected movement/muscle patterns, stalls, and consistency
+- workout-history questions such as “what did I bench last time?”
+- advanced lifting grammar for warm-ups, top/backoff sets, RPE/RIR, AMRAP, supersets, failure sets, and rest commands
+- conversational references such as “make that four sets,” “move the second one,” and undo
 - optional cloud-language understanding for requests the deterministic parser cannot confidently interpret
 
 Implemented locally through v0.52.0:
