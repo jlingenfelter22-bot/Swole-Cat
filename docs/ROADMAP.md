@@ -282,7 +282,7 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 
 ## Phase 6 — Coach Swole Cat / Quick Build
 
-**Status: In progress through v0.55.1**
+**Status: In progress through v0.56.0**
 
 ### Product intent: useful, not bloated
 Coach Swole Cat should reinforce the core product philosophy rather than turn the app into a noisy AI product.
@@ -329,6 +329,8 @@ Goal: let a user create a useful workout or full routine in seconds without manu
 **v0.55.0: Workout Programming Intelligence + Lifting Grammar Foundation** — Coach now builds generic workouts from explicit coverage roles before filling remaining session time. Semantic targets such as singular “arm” are preserved, requested Arms reserves direct biceps and direct triceps isolation work, and multi-area sessions guarantee primary work for each requested area when compatible exercises exist. Exercise selection uses movement-family caps, stronger redundancy penalties, practical staple bias, session-breadth-aware exercise counts, and role-preserving swaps. Common duplicates such as multiple chest-supported row variants, cable + dumbbell pullovers, or press-style movements filling a direct triceps slot no longer crowd out requested muscles. Focused hypertrophy back sessions prefer normal row/vertical-pull/lat/rear-delt patterns instead of padding the session with rack pulls or Olympic pulls. Generated sessions are ordered with major compounds first and direct isolation work later. Coach also understands a first set of execution grammar: “warm me up first,” explicit rest times in either word order, RPE/RIR / “reps in the tank,” and “last set AMRAP.” Those instructions are carried into previews, saved Coach routines, and active workouts. Top-set/backoff programming remains a separate next step because it requires dedicated progression behavior rather than a cosmetic label.
 
 **v0.55.1: Programming Intelligence Hardening** — Re-audited the v0.55 selector and parser against short multi-muscle sessions, Push/Pull role coverage, singular “arm” program emphasis, and literal punctuation handling in the gym-language resolver. Fixed the Coach regex-escape helper and made program focus use the same singular/plural muscle language as workout requests. Expanded regression coverage so 30-minute chest + arm + back sessions must still retain primary chest/back work plus direct biceps and direct triceps, Push/Pull days must retain their core movement roles, singular arm emphasis must expand to biceps + triceps, and regex punctuation must remain safe.
+
+**v0.56.0: Modular Architecture + Sync-Ready Foundation** — The former all-in-one `index.html` application is reorganized into a small HTML shell, layered CSS source, static data modules, and ordered JavaScript domains for core/runtime, analytics, Programs, Coach, routines/exercises, the workout engine, history editing, exercise tools, and settings/bootstrap. Coach is further split into intent/input, programming, language/refinement, program-building, and UI modules so future intelligence work does not recreate a new monolith. The exercise catalog and anatomy geometry live in dedicated data modules. A deterministic build assembles these sources into the compact production `app.js` + `app.css` consumed by both GitHub Pages and Capacitor, preserving runtime efficiency and offline behavior. Device persistence is routed through a registered storage service, core state exposes a narrow service boundary, and `state:saved` / `app:ready` events create clean future hooks for optional sync, sharing, identity, and group infrastructure without wiring network concerns into workout logic. CI now builds and tests the production bundle itself, and explicitly guards the modular source boundaries.
 
 ### Locked: Quick workout builder
 The home screen includes Coach Swolecat as the primary build path for new users and a secondary quick-build path for returning users when no workout is active.
@@ -418,7 +420,7 @@ Potential later capabilities:
 - conversational references such as “make that four sets,” “move the second one,” and undo
 - optional cloud-language understanding for requests the deterministic parser cannot confidently interpret
 
-Implemented locally through v0.55.1:
+Implemented locally through v0.56.0:
 - generate complete 2–6 day programs from natural-language frequency/split/schedule requests
 - refine a whole generated program's frequency, split, weekdays, session duration, goal, equipment, and muscle emphasis
 - preview approximate weekly primary/secondary set-equivalents
