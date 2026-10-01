@@ -2534,3 +2534,58 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V531 Coach explicit-list routing hotfix
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(90);
+            const w=dom.window;
+
+            const simple='I want to do bench press, a squat, and some dumbbell curls';
+            let parsed=w.coachParseExplicitWorkout(simple,'hypertrophy');
+            assert(parsed.signal,'multiple named exercises should be treated as an explicit workout even without set/rep language');
+            assert.deepEqual(parsed.items.map(x=>w.exById(x.exerciseId).name),['Barbell Bench Press','Back Squat','Dumbbell Curl']);
+            assert(parsed.items.every(x=>x.sets===3),'missing set counts should use Coach defaults instead of triggering a muscle question');
+
+            const detailed='I need to do bench press for three sets, pull ups for three sets, barbell curls for three sets, squats for three sets, targeting nine reps for each one';
+            parsed=w.coachParseExplicitWorkout(detailed,'hypertrophy');
+            assert(parsed.signal,'messy natural exact-workout language should route explicitly');
+            assert.deepEqual(parsed.items.map(x=>w.exById(x.exerciseId).name),['Barbell Bench Press','Pull-Up','Barbell Curl','Back Squat']);
+            assert.deepEqual(parsed.items.map(x=>[x.sets,x.minReps,x.maxReps]),[[3,9,9],[3,9,9],[3,9,9],[3,9,9]]);
+
+            w.openCoachSwolecat(true);
+            await wait(10);
+            const prompt=w.document.getElementById('coachPrompt');
+            prompt.value=simple;
+            w.coachSubmitPrompt();
+            await wait(10);
+            const modalText=w.document.getElementById('modal').textContent;
+            assert(!modalText.includes('ONE QUICK QUESTION'),'explicit named exercise list must skip follow-up questionnaire');
+            assert(!modalText.includes('What are we training?'),'Coach must not ask target muscles after exercises are named');
+            assert(!modalText.includes('How much time do we have?'),'Coach must not ask duration for an explicit exercise list');
+            const draft=w.eval('coachBuildDraft');
+            assert(draft?.explicitPrescription,'explicit list should create an explicit Coach draft');
+            assert.deepEqual(draft.selectedIds.map(id=>w.exById(id).name),['Barbell Bench Press','Back Squat','Dumbbell Curl'],'Coach must preserve the user exercise list instead of substituting generated exercises');
+
+            w.openCoachSwolecat(true);
+            await wait(10);
+            const mic=w.document.querySelector('.coach-voice-field #coachPrompt + .coach-mic-btn');
+            assert(mic,'Coach microphone must render visibly inside the main text field');
+            assert(mic.querySelector('svg'),'Coach microphone should use an actual microphone icon');
+
+            dom.window.close();
+            console.log('Swole Cat V53.1 explicit-list routing hotfix PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
