@@ -4709,7 +4709,11 @@ function coachParsePrompt(text,defaultGoal=coachPromptGoal){
  if(/\bstrength\b|\bstronger\b|\bheavy\b|\bpowerlifting\b/.test(lower))goal='strength';
  else if(/\bhypertrophy\b|\bmuscle growth\b|\bbodybuild/.test(lower)||/\bsize\b/.test(lower))goal='hypertrophy';
  else if(/\bgeneral fitness\b|\bgeneral workout\b/.test(lower))goal='general';
- return {prompt:raw,goal,duration,targetLabels:targets.labels,targetRegions:targets.regions,allowedEquipment:equipment.allowed,excludedEquipment:equipment.excluded};
+ return {
+   prompt:raw,goal,duration,targetLabels:targets.labels,targetRegions:targets.regions,
+   allowedEquipment:equipment.allowed,excludedEquipment:equipment.excluded,
+   priorityRegions:[],excludedExerciseIds:[],requiredExerciseIds:[]
+ };
 }
 function coachGoalLabel(goal){return goal==='strength'?'Strength':goal==='general'?'General training':'Muscle growth'}
 function coachProgrammingDefaults(goal,duration){
@@ -4718,15 +4722,32 @@ function coachProgrammingDefaults(goal,duration){
  if(goal==='general')return {goal,sets:3,minReps:6,maxReps:10,restSeconds:120,trainingMode:'guided',exerciseCount:Math.max(3,Math.min(7,Math.round(duration/8.5)))};
  return {goal,sets:3,minReps:8,maxReps:12,restSeconds:90,trainingMode:'guided',exerciseCount:Math.max(3,Math.min(8,Math.round(duration/7.5)))};
 }
+function coachDaysSince(iso){
+ const ms=Date.now()-new Date(iso||0).getTime();
+ return Number.isFinite(ms)?Math.max(0,ms/86400000):Infinity;
+}
+function coachRecentExercisePenalty(exerciseId){
+ const previous=derivedSessionData().previousByExercise.get(exerciseId);
+ if(!previous?.date)return 0;
+ const days=coachDaysSince(previous.date);
+ if(days<=1)return 16;
+ if(days<=3)return 9;
+ if(days<=7)return 4;
+ return 0;
+}
 function coachCandidateBaseScore(ex,request){
  if(!ex||isHiddenExercise(ex.id))return -Infinity;
+ if((request.excludedExerciseIds||[]).includes(ex.id))return -Infinity;
  if(request.allowedEquipment.length&&!request.allowedEquipment.includes(ex.equipment))return -Infinity;
  if(request.excludedEquipment.includes(ex.equipment))return -Infinity;
- const meta=exerciseMuscleMetadata(ex),targets=new Set(request.targetRegions);
+ const meta=exerciseMuscleMetadata(ex),targets=new Set(request.targetRegions),priority=new Set(request.priorityRegions||[]);
  const primaryHits=meta.primary.filter(m=>targets.has(m)),secondaryHits=meta.secondary.filter(m=>targets.has(m));
  if(!primaryHits.length&&!secondaryHits.length)return -Infinity;
  let score=primaryHits.length*110+secondaryHits.length*42+preferenceRank(ex.id);
+ meta.primary.filter(m=>priority.has(m)).forEach(()=>score+=46);
+ meta.secondary.filter(m=>priority.has(m)).forEach(()=>score+=18);
  if(previousExercise(ex.id))score+=4;
+ score-=coachRecentExercisePenalty(ex.id);
  if(request.goal==='strength'&&COACH_COMPOUND_PATTERNS.has(ex.pattern))score+=28;
  if(request.goal==='hypertrophy'&&COACH_COMPOUND_PATTERNS.has(ex.pattern))score+=9;
  return score;
@@ -4740,17 +4761,25 @@ function coachDynamicCandidateScore(ex,request,coverage,patternCounts){
  return score;
 }
 function coachSelectExercises(request,count){
- const pool=visibleExercises(),selected=[],coverage={},patterns={};
- for(let slot=0;slot<count;slot++){
+ const pool=visibleExercises(),selected=[],coverage={},patterns={},targets=new Set(request.targetRegions);
+ const register=pick=>{
+   if(!pick||selected.some(x=>x.id===pick.id))return;
+   selected.push(pick);patterns[pick.pattern]=(patterns[pick.pattern]||0)+1;
+   const meta=exerciseMuscleMetadata(pick);
+   meta.primary.filter(m=>targets.has(m)).forEach(m=>coverage[m]=(coverage[m]||0)+1);
+   meta.secondary.filter(m=>targets.has(m)).forEach(m=>coverage[m]=(coverage[m]||0)+.5);
+ };
+ (request.requiredExerciseIds||[]).map(exById).filter(Boolean).forEach(ex=>{
+   if(selected.length>=count)return;
+   if(Number.isFinite(coachCandidateBaseScore(ex,request)))register(ex);
+ });
+ while(selected.length<count){
    const ranked=pool.filter(ex=>!selected.some(x=>x.id===ex.id))
      .map(ex=>({ex,score:coachDynamicCandidateScore(ex,request,coverage,patterns)}))
      .filter(x=>Number.isFinite(x.score))
      .sort((a,b)=>b.score-a.score||a.ex.name.localeCompare(b.ex.name));
    const pick=ranked[0]?.ex;if(!pick)break;
-   selected.push(pick);patterns[pick.pattern]=(patterns[pick.pattern]||0)+1;
-   const meta=exerciseMuscleMetadata(pick),targets=new Set(request.targetRegions);
-   meta.primary.filter(m=>targets.has(m)).forEach(m=>coverage[m]=(coverage[m]||0)+1);
-   meta.secondary.filter(m=>targets.has(m)).forEach(m=>coverage[m]=(coverage[m]||0)+.5);
+   register(pick);
  }
  return selected;
 }
@@ -4760,12 +4789,152 @@ function coachWorkoutName(request){
  return `Coach · ${target} · ${suffix}`;
 }
 function coachGenerateWorkout(request){
- const req={...request,duration:request.duration||45};
+ const req={
+   ...request,duration:request.duration||45,
+   targetLabels:[...(request.targetLabels||[])],targetRegions:[...(request.targetRegions||[])],
+   allowedEquipment:[...(request.allowedEquipment||[])],excludedEquipment:[...(request.excludedEquipment||[])],
+   priorityRegions:[...(request.priorityRegions||[])],excludedExerciseIds:[...(request.excludedExerciseIds||[])],
+   requiredExerciseIds:[...(request.requiredExerciseIds||[])]
+ };
  const defaults=coachProgrammingDefaults(req.goal,req.duration);
  const selected=coachSelectExercises(req,defaults.exerciseCount);
  if(!selected.length)return null;
- coachBuildDraft={request:req,defaults,selectedIds:selected.map(x=>x.id),createdAt:new Date().toISOString()};
+ coachBuildDraft={request:req,defaults,selectedIds:selected.map(x=>x.id),createdAt:new Date().toISOString(),lastRefinement:request.lastRefinement||''};
  return coachBuildDraft;
+}
+function coachExplicitGoal(text){
+ const lower=String(text||'').toLowerCase();
+ if(/\bstrength\b|\bstronger\b|\bheavy\b|\bpowerlifting\b/.test(lower))return 'strength';
+ if(/\bhypertrophy\b|\bmuscle growth\b|\bbodybuild/.test(lower)||/\bsize\b/.test(lower))return 'hypertrophy';
+ if(/\bgeneral fitness\b|\bgeneral workout\b|\bgeneral training\b/.test(lower))return 'general';
+ return null;
+}
+function coachNormalizeWords(value){
+ return String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+}
+function coachResolveExercisePhrase(phrase,ids=null){
+ const q=coachNormalizeWords(phrase);if(!q||q.length<3)return null;
+ const pool=(ids?.length?ids.map(exById).filter(Boolean):visibleExercises());
+ const exact=pool.find(ex=>coachNormalizeWords(ex.name)===q);if(exact)return exact;
+ const contains=pool.filter(ex=>{
+   const name=coachNormalizeWords(ex.name);
+   return name.includes(q)||q.includes(name);
+ });
+ if(contains.length)return contains.sort((a,b)=>a.name.length-b.name.length||a.name.localeCompare(b.name))[0];
+ const tokens=q.split(' ').filter(x=>x.length>2);
+ if(!tokens.length)return null;
+ const ranked=pool.map(ex=>{
+   const name=coachNormalizeWords(ex.name),score=tokens.reduce((n,t)=>n+(name.includes(t)?1:0),0);
+   return {ex,score};
+ }).filter(x=>x.score===tokens.length).sort((a,b)=>a.ex.name.length-b.ex.name.length||a.ex.name.localeCompare(b.ex.name));
+ return ranked[0]?.ex||null;
+}
+function coachTargetRegionsForKey(key){return COACH_TARGET_GROUPS[key]?.regions||[]}
+function coachRemoveTargetKey(req,key){
+ const regions=new Set(coachTargetRegionsForKey(key));
+ req.targetRegions=(req.targetRegions||[]).filter(x=>!regions.has(x));
+ req.priorityRegions=(req.priorityRegions||[]).filter(x=>!regions.has(x));
+ req.targetLabels=(req.targetLabels||[]).filter(x=>x!==COACH_TARGET_GROUPS[key]?.label);
+}
+function coachRecentContextText(request){
+ const targets=new Set(request?.targetRegions||[]);if(!targets.size||!state.sessions.length)return '';
+ const found=new Map();
+ state.sessions.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).forEach(session=>{
+   const days=coachDaysSince(session.date);if(days>7)return;
+   const scores=sessionMuscleScores(session);
+   Object.keys(scores).forEach(region=>{
+     if(targets.has(region)&&scores[region]>0&&!found.has(region))found.set(region,days);
+   });
+ });
+ const bits=[...found.entries()].sort((a,b)=>a[1]-b[1]).slice(0,4).map(([region,days])=>{
+   const label=MUSCLE_REGION_LABELS[region]||region;
+   const rounded=Math.floor(days);
+   return `${label} ${rounded===0?'today':rounded===1?'1 day ago':rounded+' days ago'}`;
+ });
+ return bits.length?`Recent log context: ${bits.join(' · ')}. This is training history, not a recovery score.`:'';
+}
+function coachRefineDraftText(text){
+ const draft=coachBuildDraft,raw=String(text||'').trim();if(!draft||!raw)return {ok:false,message:'Tell Coach what you want changed.'};
+ const lower=raw.toLowerCase(),req={...draft.request};
+ req.targetLabels=[...(req.targetLabels||[])];req.targetRegions=[...(req.targetRegions||[])];
+ req.allowedEquipment=[...(req.allowedEquipment||[])];req.excludedEquipment=[...(req.excludedEquipment||[])];
+ req.priorityRegions=[...(req.priorityRegions||[])];req.excludedExerciseIds=[...(req.excludedExerciseIds||[])];req.requiredExerciseIds=[...(req.requiredExerciseIds||[])];
+ let changed=false;
+ const parsed=coachParsePrompt(raw,req.goal),explicitGoal=coachExplicitGoal(raw),equipment=coachParseEquipment(raw);
+ if(parsed.duration){req.duration=parsed.duration;changed=true}
+ if(explicitGoal&&explicitGoal!==req.goal){req.goal=explicitGoal;changed=true}
+ if(equipment.allowed.length){
+   req.allowedEquipment=[...equipment.allowed];
+   req.excludedEquipment=req.excludedEquipment.filter(x=>!equipment.allowed.includes(x));
+   changed=true;
+ }
+ if(equipment.excluded.length){
+   req.excludedEquipment=[...new Set([...req.excludedEquipment,...equipment.excluded])];
+   req.allowedEquipment=req.allowedEquipment.filter(x=>!equipment.excluded.includes(x));
+   changed=true;
+ }
+ const targetKeys=Object.keys(COACH_TARGET_GROUPS).filter(k=>lower.includes(k));
+ const negativeTargetKeys=targetKeys.filter(k=>new RegExp('(?:no|without|skip|exclude)\\s+'+k.replace(' ','\\s+'),'i').test(lower));
+ negativeTargetKeys.forEach(k=>{coachRemoveTargetKey(req,k);changed=true});
+ const positiveTargets=coachParseTargets(raw);
+ const hasMore=/\bmore\b|\bemphas(?:ize|is)\b|\bprioriti[sz]e\b/.test(lower);
+ const hasAdd=/\badd\b|\binclude\b|\balso\b|\bplus\b/.test(lower);
+ const hasReplace=/\binstead\b|\bswitch\b|\bchange\b|\bfocus on\b|\btrain\b/.test(lower);
+ const positiveRegions=positiveTargets.regions.filter(r=>!negativeTargetKeys.some(k=>coachTargetRegionsForKey(k).includes(r)));
+ if(positiveRegions.length){
+   if(hasMore){
+     req.priorityRegions=[...new Set([...req.priorityRegions,...positiveRegions])];
+     req.targetRegions=[...new Set([...req.targetRegions,...positiveRegions])];
+     req.targetLabels=[...new Set([...req.targetLabels,...positiveTargets.labels])];
+   }else if(hasAdd){
+     req.targetRegions=[...new Set([...req.targetRegions,...positiveRegions])];
+     req.targetLabels=[...new Set([...req.targetLabels,...positiveTargets.labels])];
+   }else if(hasReplace||positiveTargets.labels.length===1&&raw.split(/\s+/).length<=4){
+     req.targetRegions=[...positiveRegions];req.targetLabels=[...positiveTargets.labels];
+     req.priorityRegions=[];
+   }
+   changed=true;
+ }
+ const segments=raw.split(/[,;]|\bthen\b/i).map(x=>x.trim()).filter(Boolean);
+ segments.forEach(segment=>{
+   let m=segment.match(/^(?:remove|drop|skip)\s+(.+)$/i);
+   if(m){
+     const ex=coachResolveExercisePhrase(m[1],draft.selectedIds);
+     if(ex){
+       req.excludedExerciseIds=[...new Set([...req.excludedExerciseIds,ex.id])];
+       req.requiredExerciseIds=req.requiredExerciseIds.filter(id=>id!==ex.id);changed=true;
+     }
+     return;
+   }
+   m=segment.match(/^(?:add|include)\s+(.+)$/i);
+   if(m&&!coachParseTargets(m[1]).regions.length){
+     const ex=coachResolveExercisePhrase(m[1]);
+     if(ex){
+       const compatible=Number.isFinite(coachCandidateBaseScore(ex,{...req,excludedExerciseIds:req.excludedExerciseIds.filter(id=>id!==ex.id)}));
+       if(compatible){
+         req.requiredExerciseIds=[...new Set([...req.requiredExerciseIds,ex.id])];
+         req.excludedExerciseIds=req.excludedExerciseIds.filter(id=>id!==ex.id);changed=true;
+       }
+     }
+   }
+ });
+ if(!req.targetRegions.length)return {ok:false,message:'That would remove every target muscle. Tell Coach what you still want to train.'};
+ if(!changed)return {ok:false,message:'I did not find a workout change there. Try “30 minutes,” “no barbells,” “more chest,” “strength focused,” or “remove bench press.”'};
+ req.lastRefinement=raw;
+ const defaults=coachProgrammingDefaults(req.goal,req.duration||45),selected=coachSelectExercises(req,defaults.exerciseCount);
+ if(!selected.length)return {ok:false,message:'Those constraints leave no matching exercises. Broaden the equipment or muscle target.'};
+ coachBuildDraft={...draft,request:req,defaults,selectedIds:selected.map(ex=>ex.id),lastRefinement:raw};
+ return {ok:true,message:'Workout updated.'};
+}
+function coachApplyRefinement(){
+ const input=document.getElementById('coachRefinePrompt'),text=input?.value.trim()||'';
+ if(!text){showToast('Tell Coach what you want changed');return}
+ if(/^start(?: it| workout)?(?: now)?[.!]?$/i.test(text)){coachStartWorkoutNow();return}
+ if(/^save(?: it)?(?: as (?:a )?routine)?[.!]?$/i.test(text)){coachSaveRoutine();return}
+ if(/^add (?:it )?to (?:a )?program[.!]?$/i.test(text)){coachOpenAddToProgram();return}
+ const result=coachRefineDraftText(text);
+ if(!result.ok){showToast(result.message);return}
+ renderCoachPreview();
 }
 function coachExerciseReason(ex,request){
  const meta=exerciseMuscleMetadata(ex),targets=new Set(request.targetRegions);
@@ -4798,7 +4967,8 @@ function renderCoachPreview(){
    <div class="coach-builder">
     <div class="coach-console">
       <div class="eyebrow">QUICK BUILD // LOCAL ENGINE</div>
-      <div class="coach-preview-head"><div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(routine.name)}</div><div class="mini" style="margin-top:5px">Built from audited Swolecat exercise metadata — no cloud AI required.</div></div><span class="tag">${req.duration} min target</span></div>
+      <div class="coach-preview-head"><div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(routine.name)}</div><div class="mini" style="margin-top:5px">Built from audited Swolecat exercise metadata · local and offline.</div></div><span class="tag">${req.duration} min target</span></div>
+      ${draft.lastRefinement?`<div class="mini" style="margin-top:8px"><b>Last change:</b> ${esc(draft.lastRefinement)}</div>`:''}
       <div class="coach-preview-meta"><span class="tag">${esc(coachGoalLabel(req.goal))}</span><span class="tag">${esc(equipment)}</span><span class="tag">${d.sets} × ${d.minReps}–${d.maxReps}</span><span class="tag">${d.restSeconds}s rest</span></div>
     </div>
     <div class="coach-exercise-list">
@@ -4808,15 +4978,20 @@ function renderCoachPreview(){
         <div class="coach-exercise-actions"><button class="btn small secondary" onclick="coachSwapExercise(${i})">Swap</button><button class="btn small secondary" onclick="coachRemoveExercise(${i})">Remove</button></div>
       </div>`}).join('')}
     </div>
-    <div class="coach-rationale"><b>Why this structure:</b> exercise selection is ranked from requested muscles, primary/secondary involvement, equipment, movement-pattern balance, and your Prefer/Avoid/Favorite/Hidden settings. Swolecat does not invent a starting weight; your existing exercise history and normal progression engine handle load recommendations once the workout starts.</div>
-    <div class="notice">Programming presets are practical defaults, not claims that one rep range or exercise is universally best. Muscle-growth mode uses moderate rep targets and manageable rest; strength mode shifts toward heavier, lower-rep work and longer rest.</div>
-    <div class="actions"><button class="btn green" onclick="coachStartWorkoutNow()">Start Workout Now</button><button class="btn" onclick="coachSaveRoutine()">Save as Routine</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
+    <div class="coach-rationale"><b>Why this structure:</b> exercise selection is ranked from requested muscles, primary/secondary involvement, equipment, movement-pattern balance, your Prefer/Avoid/Favorite/Hidden settings, and a light recent-exercise variety signal. Swolecat does not invent a starting weight; your own exercise history and progression engine handle load once the workout starts.</div>
+    ${coachRecentContextText(req)?`<div class="notice">${esc(coachRecentContextText(req))}</div>`:''}
+    <div class="coach-console" style="margin-top:10px"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Change the draft naturally. Try “make it 30 minutes,” “no barbells,” “more chest,” “strength focused,” “remove bench press,” or “add lateral raise.”</div><div class="home-coach-row"><input id="coachRefinePrompt" placeholder="Make it 30 min, no barbells, more chest..." onkeydown="if(event.key==='Enter')coachApplyRefinement()"><button class="btn" onclick="coachApplyRefinement()">Update</button></div></div>
+    <div class="notice">Programming presets are practical defaults, not claims that one rep range or exercise is universally best. Recent logs are used only as context and a small variety signal, never as a recovery or readiness diagnosis.</div>
+    <div class="actions"><button class="btn green" onclick="coachStartWorkoutNow()">Start Workout Now</button><button class="btn" onclick="coachSaveRoutine()">Save as Routine</button><button class="btn secondary" onclick="coachOpenAddToProgram()">Add to Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
    </div>`);
 }
 function coachRemoveExercise(index){
- if(!coachBuildDraft?.selectedIds?.[index])return;
+ const id=coachBuildDraft?.selectedIds?.[index];if(!id)return;
+ if(coachBuildDraft.selectedIds.length<=1){showToast('Keep at least one exercise');return}
+ coachBuildDraft.request.excludedExerciseIds=[...new Set([...(coachBuildDraft.request.excludedExerciseIds||[]),id])];
+ coachBuildDraft.request.requiredExerciseIds=(coachBuildDraft.request.requiredExerciseIds||[]).filter(x=>x!==id);
  coachBuildDraft.selectedIds.splice(index,1);
- if(!coachBuildDraft.selectedIds.length){showToast('Keep at least one exercise');return}
+ coachBuildDraft.lastRefinement=`Removed ${exById(id)?.name||'exercise'}`;
  renderCoachPreview();
 }
 function coachSwapExercise(index){
@@ -4833,12 +5008,56 @@ function coachSwapExercise(index){
    .map(ex=>({ex,score:coachDynamicCandidateScore(ex,draft.request,coverage,patterns)}))
    .filter(x=>Number.isFinite(x.score)).sort((a,b)=>b.score-a.score||a.ex.name.localeCompare(b.ex.name))[0]?.ex;
  if(!replacement){showToast('No suitable replacement found');return}
- draft.selectedIds[index]=replacement.id;renderCoachPreview();
+ draft.request.excludedExerciseIds=[...new Set([...(draft.request.excludedExerciseIds||[]),currentId])];
+ draft.request.requiredExerciseIds=(draft.request.requiredExerciseIds||[]).filter(id=>id!==currentId);
+ draft.selectedIds[index]=replacement.id;
+ draft.lastRefinement=`Swapped ${exById(currentId)?.name||'exercise'} for ${replacement.name}`;
+ renderCoachPreview();
+}
+function coachPersistRoutine(draft=coachBuildDraft){
+ if(!draft)return null;
+ if(draft.savedRoutineId){
+   const existing=state.routines.find(r=>r.id===draft.savedRoutineId);
+   if(existing)return existing;
+ }
+ const routine=coachDraftRoutine(draft);if(!routine)return null;
+ state.routines.push(routine);draft.savedRoutineId=routine.id;
+ return routine;
 }
 function coachSaveRoutine(draft=coachBuildDraft){
- const routine=coachDraftRoutine(draft);if(!routine)return null;
- state.routines.push(routine);save();renderRoutines();renderHome();closeModal();showToast('Coach workout saved as a routine');
+ const routine=coachPersistRoutine(draft);if(!routine)return null;
+ save();renderRoutines();renderHome();closeModal();showToast('Coach workout saved as a routine');
  return routine.id;
+}
+function coachAttachDraftToProgram(programId,draft=coachBuildDraft){
+ const p=programById(programId);if(!p||!draft)return null;
+ const routine=coachPersistRoutine(draft);if(!routine)return null;
+ if(!p.routineIds.includes(routine.id))p.routineIds.push(routine.id);
+ save();renderRoutines();renderPrograms();renderHome();
+ return routine.id;
+}
+function coachCreateProgramFromDraft(draft=coachBuildDraft){
+ if(!draft)return null;
+ const routine=coachPersistRoutine(draft);if(!routine)return null;
+ const p={id:uid(),name:`${routine.name} Program`,routineIds:[routine.id],frequency:3,preferredDays:[],trainingMode:'inherit',nextIndex:0};
+ state.programs.push(p);if(!state.activeProgramId)state.activeProgramId=p.id;
+ save();renderRoutines();renderPrograms();renderHome();closeModal();showToast('Coach workout added to a new program');
+ return p.id;
+}
+function coachAddToProgram(programId){
+ const p=programById(programId);if(!p)return;
+ const routineId=coachAttachDraftToProgram(programId);
+ if(!routineId)return;
+ closeModal();showToast(`Added to ${p.name}`);
+}
+function coachOpenAddToProgram(){
+ if(!coachBuildDraft)return;
+ const programs=state.programs||[];
+ openModal('Add Coach workout to program',`
+   <div class="coach-console"><div class="eyebrow">PROGRAM HANDOFF</div><div class="coach-question">Where should this workout go?</div><div class="mini" style="margin-top:5px">Swolecat will save this generated workout as a normal routine, then add that routine to the selected program.</div></div>
+   ${programs.length?`<div class="card" style="margin-top:10px">${programs.map(p=>`<div class="list-item"><div class="grow"><div class="exercise-name">${esc(p.name)}</div><div class="mini">${p.routineIds.length} workout${p.routineIds.length===1?'':'s'} · ${p.frequency}×/week</div></div><button class="btn small" onclick="coachAddToProgram('${p.id}')">Add</button></div>`).join('')}</div>`:''}
+   <div class="actions"><button class="btn secondary" onclick="coachCreateProgramFromDraft()">Create New Program</button><button class="btn secondary" onclick="renderCoachPreview()">Back</button></div>
+ `);
 }
 function coachActiveWorkoutFromDraft(draft=coachBuildDraft){
  const routine=coachDraftRoutine(draft,null);if(!routine)return null;
