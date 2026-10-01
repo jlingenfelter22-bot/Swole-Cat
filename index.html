@@ -4878,10 +4878,15 @@ function coachParsePrompt(text,defaultGoal=coachPromptGoal){
 }
 
 function coachParseProgramFocus(text){
- const lower=String(text||'').toLowerCase(),labels=[],regions=[];
- ['chest','back','shoulders','arms','biceps','triceps','quads','hamstrings','glutes','calves','core'].forEach(k=>{
-   if(!lower.includes(k))return;
-   const g=COACH_TARGET_GROUPS[k];if(!g)return;
+ const lower=coachNormalizeGymText(text),labels=[],regions=[];
+ const terms=[
+   ['chest',/\bchest\b/],['back',/\bback\b/],['shoulders',/\bshoulders?\b/],['arms',/\barms?\b/],
+   ['biceps',/\bbiceps?\b/],['triceps',/\btriceps?\b/],['quads',/\bquads?\b/],['hamstrings',/\bhamstrings?\b/],
+   ['glutes',/\bglutes?\b/],['calves',/\bcalves?\b|\bcalf\b/],['core',/\bcore\b|\babs?\b/]
+ ];
+ terms.forEach(([key,re])=>{
+   if(!re.test(lower))return;
+   const g=COACH_TARGET_GROUPS[key];if(!g)return;
    labels.push(g.label);regions.push(...g.regions);
  });
  return {labels:[...new Set(labels)],regions:[...new Set(regions)]};
@@ -5313,7 +5318,7 @@ function coachParseRepTarget(value){
  if(m)return {minReps:Number(m[1]),maxReps:Number(m[1])};
  return null;
 }
-function coachRegexEscape(value){return String(value||'').replace(/[.*+?^$(){}|[\]\\]/g,'\\function coachLevenshtein(a,b){')}
+function coachRegexEscape(value){return String(value||'').replace(/[.*+?^$(){}|[\]\\]/g,'\\function coachRegexEscape(value){return String(value||'').replace(/[.*+?^$(){}|[\]\\]/g,'\\function coachLevenshtein(a,b){')}')}
 function coachLevenshtein(a,b){
  a=String(a||'');b=String(b||'');
  if(a===b)return 0;if(!a.length)return b.length;if(!b.length)return a.length;
