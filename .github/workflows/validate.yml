@@ -2941,3 +2941,69 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V570 Coach evidence-backed back programming
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(100);
+            const w=dom.window;
+
+            const lowerReq=w.coachParsePrompt('45 minute lower back workout','hypertrophy');
+            assert.deepEqual(lowerReq.targetKeys,['lower back'],'lower back must be a first-class target, not generic back');
+            assert.deepEqual(lowerReq.targetRegions,['lower_back']);
+            const lowerDraft=w.coachGenerateWorkout(lowerReq);
+            assert(lowerDraft,'lower-back workout should generate');
+            const lowerExercises=lowerDraft.selectedIds.map(id=>w.exById(id));
+            const lowerFamilies=lowerExercises.map(ex=>w.coachMovementFamily(ex));
+            assert(lowerExercises.some(ex=>w.exerciseMuscleMetadata(ex).primary.includes('lower_back')),'lower-back request must include primary spinal-erector work');
+            assert(lowerFamilies.includes('back_extension'),'hypertrophy lower-back request should include a direct back-extension pattern when available');
+            assert(lowerFamilies.includes('hinge'),'lower-back request should complement direct extension with one posterior-chain hinge when available');
+            assert(!lowerExercises.some(ex=>ex.pattern==='olympic_pull'),'lower-back hypertrophy should not be padded with Olympic pulls');
+
+            const fullReq=w.coachParsePrompt('60 minute back workout','hypertrophy');
+            for(const region of ['lats','upper_back','lower_back','traps'])assert(fullReq.targetRegions.includes(region),'full back should include '+region);
+            const fullDraft=w.coachGenerateWorkout(fullReq);
+            assert(fullDraft,'full-back workout should generate');
+            const fullExercises=fullDraft.selectedIds.map(id=>w.exById(id));
+            const fullFamilies=fullExercises.map(ex=>w.coachMovementFamily(ex));
+            assert(fullFamilies.includes('row'),'full back needs a horizontal-pull role');
+            assert(fullFamilies.includes('vertical_pull'),'full back needs a vertical-pull/lat role');
+            assert(fullExercises.some(ex=>w.exerciseMuscleMetadata(ex).primary.includes('lower_back')),'full back needs primary lumbar/spinal-erector work');
+            assert(fullExercises.some(ex=>w.exerciseMuscleMetadata(ex).primary.includes('traps')),'full back should include a trapezius-focused role when session length allows');
+            assert(!fullExercises.some(ex=>ex.pattern==='olympic_pull'),'generic hypertrophy back should not use Olympic pulls as filler');
+
+            const strengthReq=w.coachParsePrompt('60 minute strength back workout','hypertrophy');
+            const strengthDraft=w.coachGenerateWorkout(strengthReq);
+            const strengthNames=strengthDraft.selectedIds.map(id=>w.exById(id).name);
+            assert(strengthNames.includes('Deadlift'),'strength-focused full back should prioritize a conventional deadlift when equipment allows');
+
+            const upperReq=w.coachParsePrompt('45 minute upper back workout','hypertrophy');
+            assert.deepEqual(upperReq.targetKeys,['upper back'],'upper back should not silently expand to lumbar work');
+            assert(!upperReq.targetRegions.includes('lower_back'));
+
+            const pullReq=w.coachParsePrompt('45 minute pull workout','hypertrophy');
+            assert(!pullReq.targetRegions.includes('lower_back'),'PPL pull should remain an upper pulling session, not automatically add lumbar fatigue');
+
+            w.coachGenerateWorkout(fullReq);
+            const refine=w.coachRefineDraftText('more lower back');
+            assert(refine.ok,'Coach refinement should understand “more lower back”');
+
+            console.log('Lower back:',lowerExercises.map(ex=>ex.name).join(' | '));
+            console.log('Full back:',fullExercises.map(ex=>ex.name).join(' | '));
+            console.log('Strength back:',strengthNames.join(' | '));
+            dom.window.close();
+            console.log('Swole Cat V57.0 evidence-backed back programming PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
