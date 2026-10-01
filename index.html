@@ -4735,11 +4735,15 @@ function coachRecentExercisePenalty(exerciseId){
  if(days<=7)return 4;
  return 0;
 }
+function coachExerciseAllowedByConstraints(ex,request){
+ if(!ex||isHiddenExercise(ex.id))return false;
+ if((request.excludedExerciseIds||[]).includes(ex.id))return false;
+ if(request.allowedEquipment.length&&!request.allowedEquipment.includes(ex.equipment))return false;
+ if(request.excludedEquipment.includes(ex.equipment))return false;
+ return true;
+}
 function coachCandidateBaseScore(ex,request){
- if(!ex||isHiddenExercise(ex.id))return -Infinity;
- if((request.excludedExerciseIds||[]).includes(ex.id))return -Infinity;
- if(request.allowedEquipment.length&&!request.allowedEquipment.includes(ex.equipment))return -Infinity;
- if(request.excludedEquipment.includes(ex.equipment))return -Infinity;
+ if(!coachExerciseAllowedByConstraints(ex,request))return -Infinity;
  const meta=exerciseMuscleMetadata(ex),targets=new Set(request.targetRegions),priority=new Set(request.priorityRegions||[]);
  const primaryHits=meta.primary.filter(m=>targets.has(m)),secondaryHits=meta.secondary.filter(m=>targets.has(m));
  if(!primaryHits.length&&!secondaryHits.length)return -Infinity;
@@ -4771,7 +4775,7 @@ function coachSelectExercises(request,count){
  };
  (request.requiredExerciseIds||[]).map(exById).filter(Boolean).forEach(ex=>{
    if(selected.length>=count)return;
-   if(Number.isFinite(coachCandidateBaseScore(ex,request)))register(ex);
+   if(coachExerciseAllowedByConstraints(ex,request))register(ex);
  });
  while(selected.length<count){
    const ranked=pool.filter(ex=>!selected.some(x=>x.id===ex.id))
@@ -4910,8 +4914,8 @@ function coachRefineDraftText(text){
    if(m&&!coachParseTargets(m[1]).regions.length){
      const ex=coachResolveExercisePhrase(m[1]);
      if(ex){
-       const compatible=Number.isFinite(coachCandidateBaseScore(ex,{...req,excludedExerciseIds:req.excludedExerciseIds.filter(id=>id!==ex.id)}));
-       if(compatible){
+       const candidateRequest={...req,excludedExerciseIds:req.excludedExerciseIds.filter(id=>id!==ex.id)};
+       if(coachExerciseAllowedByConstraints(ex,candidateRequest)){
          req.requiredExerciseIds=[...new Set([...req.requiredExerciseIds,ex.id])];
          req.excludedExerciseIds=req.excludedExerciseIds.filter(id=>id!==ex.id);changed=true;
        }
@@ -4941,6 +4945,7 @@ function coachExerciseReason(ex,request){
  const primary=meta.primary.filter(x=>targets.has(x)).map(x=>MUSCLE_REGION_LABELS[x]||x);
  const secondary=meta.secondary.filter(x=>targets.has(x)).map(x=>MUSCLE_REGION_LABELS[x]||x);
  const bits=[];
+ if((request.requiredExerciseIds||[]).includes(ex.id))bits.push('Requested by you');
  if(primary.length)bits.push('Primary: '+primary.join(', '));
  if(secondary.length)bits.push('Secondary: '+secondary.join(', '));
  bits.push(patternLabel(ex.pattern));
