@@ -1361,8 +1361,11 @@
   .home-coach-launcher{margin-top:10px;background:linear-gradient(120deg,rgba(168,85,247,.08),rgba(34,211,238,.04)),#0c131e;border:1px solid rgba(69,93,128,.62);border-radius:5px 17px 5px 17px;padding:13px}
   .home-coach-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}
   .home-coach-title{font-family:var(--display);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase;color:#dceaff}
-  .home-coach-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
-  .home-coach-row input{min-width:0}
+  .home-coach-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:7px}
+  .home-coach-row input,.home-coach-row textarea{min-width:0}
+  .coach-mic-btn{width:44px;min-width:44px;padding:0;display:grid;place-items:center;font-size:1.05rem}
+  .coach-mic-btn.listening{box-shadow:0 0 0 1px rgba(125,249,255,.45),0 0 18px rgba(125,249,255,.26);animation:coachMicPulse 1s ease-in-out infinite}
+  @keyframes coachMicPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
   .home-coach-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
   .home-coach-chip{border:1px solid #34435b;background:#111a27;color:#9eacc0;border-radius:999px;padding:6px 8px;font-size:.61rem;font-weight:800}
   .home-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
@@ -1379,7 +1382,7 @@
   .home-latest-meta{font-size:.66rem;color:#8d9db1;margin-top:4px;line-height:1.35}
   .home-new-user .home-coach-row{margin-top:12px}
   .home-new-user .home-coach-chips{margin-top:9px}
-  @media(max-width:390px){.home-quick-actions{grid-template-columns:1fr}.home-coach-row{grid-template-columns:1fr}.home-coach-row .btn{width:100%}}
+  @media(max-width:390px){.home-quick-actions{grid-template-columns:1fr}.home-coach-row{grid-template-columns:minmax(0,1fr) 44px}.home-coach-row .btn:not(.coach-mic-btn){grid-column:1/-1;width:100%}}
 
   /* ROUTINES // program matrix */
   #routines .routines-banner{
@@ -4635,6 +4638,75 @@ function deleteProgram(id){
 }
 
 let coachBuildDraft=null,coachProgramBuildDraft=null,coachPromptGoal='hypertrophy';
+let coachVoiceSession=null;
+function coachMicIcon(){return '🎙'}
+function coachVoiceButtonHtml(targetId){
+ return `<button class="btn secondary coach-mic-btn" type="button" data-coach-mic-for="${escAttr(targetId)}" onclick="coachStartVoiceInput('${escAttr(targetId)}')" aria-label="Speak to Coach Swolecat" title="Speak to Coach Swolecat">${coachMicIcon()}</button>`;
+}
+function coachSetMicListening(targetId,listening){
+ document.querySelectorAll('[data-coach-mic-for]').forEach(btn=>{
+   if(btn.dataset.coachMicFor!==targetId)return;
+   btn.classList.toggle('listening',!!listening);
+   btn.setAttribute('aria-label',listening?'Coach is listening':'Speak to Coach Swolecat');
+   btn.title=listening?'Listening…':'Speak to Coach Swolecat';
+   btn.textContent=listening?'●':coachMicIcon();
+ });
+}
+function coachInsertTranscript(targetId,transcript){
+ const input=document.getElementById(targetId),text=String(transcript||'').trim();if(!input||!text)return false;
+ const existing=String(input.value||'').trim();
+ input.value=existing?`${existing}${/[,.!?]$/.test(existing)?' ':', '}${text}`:text;
+ input.dispatchEvent(new Event('input',{bubbles:true}));
+ input.focus();return true;
+}
+async function coachNativeVoiceInput(targetId){
+ const speech=capacitorPlugin('SpeechRecognition');if(!speech)return false;
+ try{
+   const available=await speech.available?.();if(available&&available.available===false)return false;
+   const permission=await speech.checkPermissions?.();
+   if(permission&&permission.speechRecognition!=='granted'){
+     const requested=await speech.requestPermissions?.();
+     if(requested&&requested.speechRecognition!=='granted'){
+       showToast('Microphone permission is needed for Coach dictation');return true;
+     }
+   }
+   coachVoiceSession={kind:'native',targetId};coachSetMicListening(targetId,true);showToast('Coach is listening…');
+   const result=await speech.start?.({language:'en-US',maxResults:3,prompt:'Tell Coach Swolecat what you need',partialResults:false,popup:false});
+   const transcript=result?.matches?.find(Boolean)||'';
+   if(transcript){coachInsertTranscript(targetId,transcript);showToast('Got it · edit or Build when ready')}
+   else showToast('I did not catch that. Tap the mic and try again.');
+   return true;
+ }catch(e){
+   console.warn('Native Coach dictation failed',e);
+   showToast('Voice input did not start. You can still type your request.');
+   return true;
+ }finally{
+   coachVoiceSession=null;coachSetMicListening(targetId,false);
+ }
+}
+function coachWebVoiceInput(targetId){
+ const SpeechCtor=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SpeechCtor)return false;
+ try{
+   const recognition=new SpeechCtor();
+   coachVoiceSession={kind:'web',targetId,recognition};
+   recognition.lang='en-US';recognition.interimResults=false;recognition.maxAlternatives=3;recognition.continuous=false;
+   recognition.onstart=()=>{coachSetMicListening(targetId,true);showToast('Coach is listening…')};
+   recognition.onresult=event=>{
+     const transcript=event?.results?.[0]?.[0]?.transcript||'';
+     if(transcript){coachInsertTranscript(targetId,transcript);showToast('Got it · edit or Build when ready')}
+   };
+   recognition.onerror=()=>showToast('Voice input did not catch that. Tap the mic and try again.');
+   recognition.onend=()=>{coachSetMicListening(targetId,false);coachVoiceSession=null};
+   recognition.start();return true;
+ }catch(e){coachVoiceSession=null;coachSetMicListening(targetId,false);return false}
+}
+async function coachStartVoiceInput(targetId){
+ if(coachVoiceSession){showToast('Coach is already listening');return}
+ if(isNativeApp()&&await coachNativeVoiceInput(targetId))return;
+ if(coachWebVoiceInput(targetId))return;
+ showToast('Speech recognition is not available on this device. You can still type your request.');
+}
+
 const COACH_TARGET_GROUPS={
  'full body':{label:'Full Body',regions:['chest','lats','upper_back','front_delts','quads','hamstrings','glutes','core']},
  'upper body':{label:'Upper Body',regions:['chest','lats','upper_back','front_delts','side_delts','rear_delts','biceps','triceps']},
@@ -4886,9 +4958,97 @@ function coachExplicitGoal(text){
 function coachNormalizeWords(value){
  return String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
 }
+
+const COACH_EXERCISE_ALIASES={
+ 'bench':'Barbell Bench Press','bench press':'Barbell Bench Press','barbell bench':'Barbell Bench Press',
+ 'flat bench':'Barbell Bench Press','pull up':'Pull-Up','pull ups':'Pull-Up','pullup':'Pull-Up','pullups':'Pull-Up',
+ 'chin up':'Chin-Up','chin ups':'Chin-Up','chinup':'Chin-Up','chinups':'Chin-Up',
+ 'squat':'Back Squat','squats':'Back Squat','barbell squat':'Back Squat',
+ 'curl':'Barbell Curl','curls':'Barbell Curl','barbell curls':'Barbell Curl',
+ 'deadlift':'Deadlift','deadlifts':'Deadlift','overhead press':'Barbell Overhead Press','ohp':'Barbell Overhead Press'
+};
+const COACH_NUMBER_WORDS={
+ zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,
+ eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20
+};
+function coachNumbersToDigits(text){
+ return String(text||'').replace(/\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b/gi,m=>String(COACH_NUMBER_WORDS[m.toLowerCase()]));
+}
+function coachCleanExercisePhrase(value){
+ return coachNormalizeWords(String(value||'')
+   .replace(/\b(?:please|then|next|also|and then|i want|i need|do|doing|exercise)\b/gi,' ')
+   .replace(/\b(?:for|at)\s+\d+(?:\s*(?:-|to)\s*\d+)?\s*(?:reps?)?\s*$/i,' '));
+}
+function coachParseRepTarget(value){
+ const text=String(value||'');
+ let m=text.match(/(?:for|at|x)\s*(\d+)\s*(?:-|to)\s*(\d+)\s*reps?\b/i);
+ if(m)return {minReps:Number(m[1]),maxReps:Number(m[2])};
+ m=text.match(/(?:for|at|x)\s*(\d+)\s*reps?\b/i)||text.match(/\b(\d+)\s*reps?\b/i);
+ if(m)return {minReps:Number(m[1]),maxReps:Number(m[1])};
+ return null;
+}
+function coachParseExplicitWorkout(text,goal=coachPromptGoal){
+ const normalized=coachNumbersToDigits(text),lower=normalized.toLowerCase(),items=[],seen=new Set();
+ let globalRep=null;
+ const globalMatch=lower.match(/(?:target(?:ing)?|aim(?:ing)?(?:\s+for)?)\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?\s*(?:each|for each|on each|across)/i);
+ if(globalMatch)globalRep={minReps:Number(globalMatch[1]),maxReps:Number(globalMatch[2]||globalMatch[1])};
+ const segments=normalized
+   .replace(/\band\s+(?=\d+\s*sets?\b)/gi,',')
+   .split(/[,;\n]+/)
+   .map(x=>x.trim()).filter(Boolean);
+ segments.forEach(segment=>{
+   let m=segment.match(/^(?:.*?\b)?(\d+)\s*sets?\s*(?:of\s+)?(.+)$/i);
+   let sets=0,body='';
+   if(m){sets=Number(m[1]);body=m[2]}
+   else{
+     m=segment.match(/^(.+?)\s+(\d+)\s*sets?\s*(?:of\s+)?(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?$/i);
+     if(m){
+       body=m[1];sets=Number(m[2]);
+       const ex=coachResolveExercisePhrase(coachCleanExercisePhrase(body));if(!ex||seen.has(ex.id))return;
+       items.push({exerciseId:ex.id,sets,minReps:Number(m[3]),maxReps:Number(m[4]||m[3])});seen.add(ex.id);return;
+     }
+     m=segment.match(/^(\d+)\s*x\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s+(.+)$/i);
+     if(m){
+       sets=Number(m[1]);body=m[4];
+       const ex=coachResolveExercisePhrase(coachCleanExercisePhrase(body));if(!ex||seen.has(ex.id))return;
+       items.push({exerciseId:ex.id,sets,minReps:Number(m[2]),maxReps:Number(m[3]||m[2])});seen.add(ex.id);return;
+     }
+   }
+   if(!sets||!body)return;
+   const reps=coachParseRepTarget(body)||globalRep;
+   body=body.replace(/\s+(?:for|at|x)\s*\d+(?:\s*(?:-|to)\s*\d+)?\s*(?:reps?)?\s*$/i,'');
+   const ex=coachResolveExercisePhrase(coachCleanExercisePhrase(body));if(!ex||seen.has(ex.id))return;
+   const defaults=coachProgrammingDefaults(goal,45);
+   items.push({exerciseId:ex.id,sets:Math.max(1,Math.min(10,sets)),minReps:reps?.minReps||defaults.minReps,maxReps:reps?.maxReps||defaults.maxReps});
+   seen.add(ex.id);
+ });
+ const signal=items.length>=2||items.some(x=>new RegExp('\\b'+x.sets+'\\s*sets?\\b','i').test(normalized));
+ return {signal,items};
+}
+function coachGenerateExplicitWorkout(request,prescription){
+ if(!prescription?.items?.length)return null;
+ const defaults=coachProgrammingDefaults(request.goal,request.duration||45),regions=[],labels=[];
+ prescription.items.forEach(item=>{
+   const ex=exById(item.exerciseId),meta=exerciseMuscleMetadata(ex);regions.push(...meta.primary,...meta.secondary);
+   if(ex?.muscle&&!labels.includes(ex.muscle))labels.push(ex.muscle);
+ });
+ const req=coachCloneRequest({...request,duration:request.duration||45});
+ req.targetLabels=labels.length?labels:['Custom'];req.targetRegions=[...new Set(regions)];
+ coachBuildDraft={
+   request:req,defaults,selectedIds:prescription.items.map(x=>x.exerciseId),
+   explicitPrescription:true,explicitConfigById:Object.fromEntries(prescription.items.map(x=>[x.exerciseId,{...x}])),
+   createdAt:new Date().toISOString(),lastRefinement:''
+ };
+ return coachBuildDraft;
+}
 function coachResolveExercisePhrase(phrase,ids=null){
- const q=coachNormalizeWords(phrase);if(!q||q.length<3)return null;
+ const q=coachNormalizeWords(phrase);if(!q||q.length<2)return null;
  const pool=(ids?.length?ids.map(exById).filter(Boolean):visibleExercises());
+ const aliasName=COACH_EXERCISE_ALIASES[q];
+ if(aliasName){
+   const alias=pool.find(ex=>coachNormalizeWords(ex.name)===coachNormalizeWords(aliasName));
+   if(alias)return alias;
+ }
  const exact=pool.find(ex=>coachNormalizeWords(ex.name)===q);if(exact)return exact;
  const contains=pool.filter(ex=>{
    const name=coachNormalizeWords(ex.name);
@@ -5112,7 +5272,7 @@ function renderCoachProgramPreview(){
     </div>`).join('')}
    </div>
    ${coverage?`<div class="coach-rationale"><b>Planned weekly set-equivalents:</b> ${esc(coverage)}.<br><span class="mini">Primary involvement counts as 1.0 set and secondary involvement as 0.5. This is a planning aid, not a claim about muscle damage or recovery.</span></div>`:''}
-   <div class="coach-console"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Try “make it 4 days,” “upper/lower,” “35 minutes,” “dumbbells only,” “more shoulders,” or “Monday Tuesday Thursday Saturday.”</div><div class="home-coach-row"><input id="coachProgramRefinePrompt" placeholder="4 days, upper/lower, 40 min, more shoulders..." onkeydown="if(event.key==='Enter')coachApplyProgramRefinement()"><button class="btn" onclick="coachApplyProgramRefinement()">Update</button></div></div>
+   <div class="coach-console"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Try “make it 4 days,” “upper/lower,” “35 minutes,” “dumbbells only,” “more shoulders,” or “Monday Tuesday Thursday Saturday.”</div><div class="home-coach-row"><input id="coachProgramRefinePrompt" placeholder="4 days, upper/lower, 40 min, more shoulders..." onkeydown="if(event.key==='Enter')coachApplyProgramRefinement()">${coachVoiceButtonHtml('coachProgramRefinePrompt')}<button class="btn" onclick="coachApplyProgramRefinement()">Update</button></div></div>
    <div class="notice">Coach distributes work across the week using your requested frequency, split, equipment, goal, exercise preferences, and a light recent-exercise variety signal. Weekly volume is balanced pragmatically around the time available. The plan does not estimate recovery or medical readiness.</div>
    <div class="actions"><button class="btn green" onclick="coachStartProgramFirstWorkout()">Save + Start Day 1</button><button class="btn" onclick="coachSaveGeneratedProgram()">Save Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
   </div>`);
@@ -5234,10 +5394,13 @@ function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
    id,name:coachWorkoutName(r),
    description:`Generated locally by Coach Swolecat from: "${r.prompt||r.targetLabels.join(' + ')}". Evidence rules: ACSM 2026 resistance-training position stand + NSCA program-design framework.`,
    trainingMode:d.trainingMode,
-   exercises:draft.selectedIds.map(exerciseId=>({
-     exerciseId,sets:d.sets,minReps:d.minReps,maxReps:d.maxReps,increment:state.settings.defaultIncrement,
-     mode:'double',trainingGoal:d.goal,resetPercent:7.5,restSeconds:d.restSeconds
-   }))
+   exercises:draft.selectedIds.map(exerciseId=>{
+     const explicit=draft.explicitConfigById?.[exerciseId];
+     return {
+       exerciseId,sets:explicit?.sets||d.sets,minReps:explicit?.minReps||d.minReps,maxReps:explicit?.maxReps||d.maxReps,increment:state.settings.defaultIncrement,
+       mode:'double',trainingGoal:d.goal,resetPercent:7.5,restSeconds:d.restSeconds
+     };
+   })
  };
 }
 function renderCoachPreview(){
@@ -5255,13 +5418,13 @@ function renderCoachPreview(){
     <div class="coach-exercise-list">
       ${draft.selectedIds.map((id,i)=>{const ex=exById(id);return `<div class="coach-exercise">
         <div class="coach-exercise-index">${String(i+1).padStart(2,'0')}</div>
-        <div><div class="exercise-name">${esc(ex?.name||'Exercise')} ${preferenceBadgeHtml(id)}</div><div class="mini" style="margin-top:3px">${esc(coachExerciseReason(ex,req))}<br>${d.sets} sets · ${d.minReps}–${d.maxReps} reps · ${d.restSeconds}s rest</div></div>
+        <div><div class="exercise-name">${esc(ex?.name||'Exercise')} ${preferenceBadgeHtml(id)}</div><div class="mini" style="margin-top:3px">${esc(coachExerciseReason(ex,req))}<br>${draft.explicitConfigById?.[id]?.sets||d.sets} sets · ${draft.explicitConfigById?.[id]?.minReps||d.minReps}${(draft.explicitConfigById?.[id]?.maxReps||d.maxReps)!==(draft.explicitConfigById?.[id]?.minReps||d.minReps)?'–'+(draft.explicitConfigById?.[id]?.maxReps||d.maxReps):''} reps · ${d.restSeconds}s rest</div></div>
         <div class="coach-exercise-actions"><button class="btn small secondary" onclick="coachSwapExercise(${i})">Swap</button><button class="btn small secondary" onclick="coachRemoveExercise(${i})">Remove</button></div>
       </div>`}).join('')}
     </div>
     <div class="coach-rationale"><b>Why this structure:</b> exercise selection is ranked from requested muscles, primary/secondary involvement, equipment, movement-pattern balance, your Prefer/Avoid/Favorite/Hidden settings, and a light recent-exercise variety signal. Swolecat does not invent a starting weight; your own exercise history and progression engine handle load once the workout starts.</div>
     ${coachRecentContextText(req)?`<div class="notice">${esc(coachRecentContextText(req))}</div>`:''}
-    <div class="coach-console" style="margin-top:10px"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Change the draft naturally. Try “make it 30 minutes,” “no barbells,” “more chest,” “strength focused,” “remove bench press,” or “add lateral raise.”</div><div class="home-coach-row"><input id="coachRefinePrompt" placeholder="Make it 30 min, no barbells, more chest..." onkeydown="if(event.key==='Enter')coachApplyRefinement()"><button class="btn" onclick="coachApplyRefinement()">Update</button></div></div>
+    <div class="coach-console" style="margin-top:10px"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Change the draft naturally. Try “make it 30 minutes,” “no barbells,” “more chest,” “strength focused,” “remove bench press,” or “add lateral raise.”</div><div class="home-coach-row"><input id="coachRefinePrompt" placeholder="Make it 30 min, no barbells, more chest..." onkeydown="if(event.key==='Enter')coachApplyRefinement()">${coachVoiceButtonHtml('coachRefinePrompt')}<button class="btn" onclick="coachApplyRefinement()">Update</button></div></div>
     <div class="notice">Programming presets are practical defaults, not claims that one rep range or exercise is universally best. Recent logs are used only as context and a small variety signal, never as a recovery or readiness diagnosis.</div>
     <div class="actions"><button class="btn green" onclick="coachStartWorkoutNow()">Start Workout Now</button><button class="btn" onclick="coachSaveRoutine()">Save as Routine</button><button class="btn secondary" onclick="coachOpenAddToProgram()">Add to Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
    </div>`);
@@ -5271,6 +5434,7 @@ function coachRemoveExercise(index){
  if(coachBuildDraft.selectedIds.length<=1){showToast('Keep at least one exercise');return}
  coachBuildDraft.request.excludedExerciseIds=[...new Set([...(coachBuildDraft.request.excludedExerciseIds||[]),id])];
  coachBuildDraft.request.requiredExerciseIds=(coachBuildDraft.request.requiredExerciseIds||[]).filter(x=>x!==id);
+ if(coachBuildDraft.explicitConfigById)delete coachBuildDraft.explicitConfigById[id];
  coachBuildDraft.selectedIds.splice(index,1);
  coachBuildDraft.lastRefinement=`Removed ${exById(id)?.name||'exercise'}`;
  renderCoachPreview();
@@ -5291,6 +5455,10 @@ function coachSwapExercise(index){
  if(!replacement){showToast('No suitable replacement found');return}
  draft.request.excludedExerciseIds=[...new Set([...(draft.request.excludedExerciseIds||[]),currentId])];
  draft.request.requiredExerciseIds=(draft.request.requiredExerciseIds||[]).filter(id=>id!==currentId);
+ if(draft.explicitConfigById){
+   const config=draft.explicitConfigById[currentId];delete draft.explicitConfigById[currentId];
+   if(config)draft.explicitConfigById[replacement.id]={...config,exerciseId:replacement.id};
+ }
  draft.selectedIds[index]=replacement.id;
  draft.lastRefinement=`Swapped ${exById(currentId)?.name||'exercise'} for ${replacement.name}`;
  renderCoachPreview();
@@ -5383,7 +5551,10 @@ function coachAnswerDuration(minutes){
 function coachSubmitPrompt(){
  const input=document.getElementById('coachPrompt'),prompt=input?.value.trim()||'';
  if(!prompt){showToast('Tell Coach Swolecat what you want to train');return}
- const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt);
+ const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt),explicit=coachParseExplicitWorkout(prompt,request.goal);
+ if(explicit.signal&&explicit.items.length){
+   coachProgramBuildDraft=null;coachGenerateExplicitWorkout(request,explicit);renderCoachPreview();return;
+ }
  if(programIntent.isProgram){
    request.programFocusRegions=[...programIntent.focusRegions];request.programFocusLabels=[...programIntent.focusLabels];
    coachBuildDraft=null;
@@ -5402,7 +5573,7 @@ function openCoachSwolecat(reset=false){
     <div class="eyebrow">QUICK BUILD // OFFLINE</div>
     <div class="exercise-name" style="font-size:1.17rem;margin-top:5px">What are we building?</div>
     <div class="mini" style="margin-top:5px">Describe today's workout or a multi-day program naturally. Coach only asks for missing information that materially changes the plan.</div>
-    <textarea id="coachPrompt" class="coach-prompt" style="margin-top:12px" placeholder="3-day program, Mon/Wed/Fri, 45 min, dumbbells and cables..."></textarea>
+    <div class="home-coach-row" style="margin-top:12px"><textarea id="coachPrompt" class="coach-prompt" placeholder="Say or type: 3 sets bench for 8, 3 sets pull-ups for 9..."></textarea>${coachVoiceButtonHtml('coachPrompt')}</div>
     <div class="coach-example-row"><button class="coach-example" onclick="coachFillExample('Chest and back, 45 minutes, dumbbells and cables')">Chest + back</button><button class="coach-example" onclick="coachFillExample('3-day full body program, Monday Wednesday Friday, 45 minutes')">3-day plan</button><button class="coach-example" onclick="coachFillExample('Push pull legs program, 3 days, 60 minutes')">PPL</button></div>
    </div>
    <div><div class="mini" style="margin-bottom:6px">Primary goal</div><div class="picker-chips"><button class="chip active" data-coach-goal="hypertrophy" onclick="coachSetGoal('hypertrophy')">Muscle growth</button><button class="chip" data-coach-goal="strength" onclick="coachSetGoal('strength')">Strength</button><button class="chip" data-coach-goal="general" onclick="coachSetGoal('general')">General</button></div></div>
@@ -5421,7 +5592,10 @@ function homeSuggestedRoutine(){
 function homeCoachBuildPrompt(){
  const input=document.getElementById('homeCoachPrompt'),prompt=input?.value.trim()||'';
  if(!prompt){showToast('Tell Coach Swolecat what you want to build');return}
- const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt);
+ const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt),explicit=coachParseExplicitWorkout(prompt,request.goal);
+ if(explicit.signal&&explicit.items.length){
+   coachProgramBuildDraft=null;coachGenerateExplicitWorkout(request,explicit);renderCoachPreview();return;
+ }
  if(programIntent.isProgram){
    request.programFocusRegions=[...programIntent.focusRegions];request.programFocusLabels=[...programIntent.focusLabels];
    coachBuildDraft=null;
@@ -5438,7 +5612,7 @@ function homeCoachExample(text){
 function homeCoachLauncherHtml({embedded=false}={}){
  return `<div class="${embedded?'home-new-user':''}">
    ${embedded?'':`<div class="home-coach-head"><div><div class="home-coach-title">Coach Swolecat</div><div class="mini">Need something different today?</div></div><span class="tag">QUICK BUILD</span></div>`}
-   <div class="home-coach-row"><input id="homeCoachPrompt" placeholder="45 min chest + back, or build a 3-day plan..." onkeydown="if(event.key==='Enter')homeCoachBuildPrompt()"><button class="btn" onclick="homeCoachBuildPrompt()">Build</button></div>
+   <div class="home-coach-row"><input id="homeCoachPrompt" placeholder="Say or type what you want to train..." onkeydown="if(event.key==='Enter')homeCoachBuildPrompt()">${coachVoiceButtonHtml('homeCoachPrompt')}<button class="btn" onclick="homeCoachBuildPrompt()">Build</button></div>
    <div class="home-coach-chips"><button class="home-coach-chip" onclick="homeCoachExample('30 minute leg workout')">30m legs</button><button class="home-coach-chip" onclick="homeCoachExample('Chest and back, 45 minutes')">Chest + back</button><button class="home-coach-chip" onclick="homeCoachExample('3-day full body program, Monday Wednesday Friday, 45 minutes')">3-day plan</button></div>
  </div>`;
 }
