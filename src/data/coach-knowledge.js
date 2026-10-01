@@ -33,6 +33,30 @@ const COACH_EVIDENCE_MODEL=Object.freeze({
      title:'A review of the specificity of exercises designed for conditioning the lumbar extensors',
      year:2013,
      url:'https://pubmed.ncbi.nlm.nih.gov/24092889/'
+   }),
+   bicepsRegional2025:Object.freeze({
+     id:'biceps-regional-curls-2025',
+     title:'Distinct muscle growth and strength adaptations after preacher and incline biceps curls',
+     year:2025,
+     url:'https://pubmed.ncbi.nlm.nih.gov/39809454/'
+   }),
+   tricepsOverhead2023:Object.freeze({
+     id:'triceps-overhead-2023',
+     title:'Triceps brachii hypertrophy after overhead versus neutral-arm elbow extension training',
+     year:2023,
+     url:'https://pubmed.ncbi.nlm.nih.gov/35819335/'
+   }),
+   lateralRaise2025:Object.freeze({
+     id:'lateral-raise-2025',
+     title:'Dumbbell versus cable lateral raises for lateral deltoid hypertrophy',
+     year:2025,
+     url:'https://pubmed.ncbi.nlm.nih.gov/40692697/'
+   }),
+   muscleLength2025:Object.freeze({
+     id:'muscle-length-regional-hypertrophy-2025',
+     title:'Does Muscle Length Influence Regional Hypertrophy? A Systematic Review and Meta-Analysis',
+     year:2025,
+     url:'https://pubmed.ncbi.nlm.nih.gov/40570881/'
    })
  }),
  principles:Object.freeze({
@@ -73,4 +97,21 @@ const COACH_BACK_KNOWLEDGE=Object.freeze({
    regions:Object.freeze(['traps']),
    description:'Trapezius-focused work. Shrug/elevation work complements, rather than replaces, rows and vertical pulls in a full-back session.'
  })
+});
+
+
+const COACH_SHOULDER_KNOWLEDGE=Object.freeze({
+ regions:Object.freeze(['front_delts','side_delts','rear_delts']),
+ roles:Object.freeze(['press','lateral_raise','rear_delt']),
+ description:'A complete shoulder session covers anterior-deltoid pressing, direct lateral-deltoid abduction, and posterior-deltoid/scapular work instead of allowing pressing alone to stand in for all three regions.'
+});
+
+const COACH_ARM_KNOWLEDGE=Object.freeze({
+ regions:Object.freeze(['biceps','triceps','forearms']),
+ hypertrophyRoles:Object.freeze({
+   biceps:Object.freeze(['supinated_curl','neutral_grip_curl']),
+   triceps:Object.freeze(['overhead_extension','neutral_arm_extension']),
+   forearms:Object.freeze(['direct_forearm_optional'])
+ }),
+ description:'A complete arm session guarantees direct elbow-flexor and elbow-extensor work, uses complementary joint/arm positions when session length permits, and can add direct forearm work without claiming that any single curl or extension is universally superior.'
 });
