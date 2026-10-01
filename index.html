@@ -6000,6 +6000,54 @@ function homeCoachLauncherHtml({embedded=false}={}){
 function homeQuickActionsHtml(){
  return `<button class="home-route-btn" onclick="go('routines')"><b>Saved workouts</b><span>Routines and programs</span></button><button class="home-route-btn" onclick="newRoutine()"><b>Build manually</b><span>Choose every exercise yourself</span></button>`;
 }
+const COACH_INSIGHT_GROUPS=[
+ {key:'lower body',label:'Lower body',regions:['quads','hamstrings','glutes','adductors','calves']},
+ {key:'push',label:'Push muscles',regions:['chest','front_delts','side_delts','triceps']},
+ {key:'pull',label:'Pull muscles',regions:['lats','upper_back','rear_delts','biceps']}
+];
+function coachSessionGroupScore(session,group){
+ const scores=sessionMuscleScores(session);
+ return group.regions.reduce((n,region)=>n+(Number(scores[region])||0),0);
+}
+function coachHistoryInsight(){
+ if(state.activeWorkout||activeProgram()||state.sessions.length<3)return null;
+ const sessions=state.sessions.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+ const now=Date.now(),recent=sessions.filter(s=>{
+   const t=new Date(s.date).getTime();return Number.isFinite(t)&&now-t<=14*86400000;
+ });
+ if(recent.length<3)return null;
+ const candidates=[];
+ COACH_INSIGHT_GROUPS.forEach(group=>{
+   const recentScore=recent.reduce((n,session)=>n+coachSessionGroupScore(session,group),0);
+   if(recentScore>0)return;
+   const last=sessions.find(session=>coachSessionGroupScore(session,group)>0);
+   const lastMs=last?new Date(last.date).getTime():NaN;
+   const oldestMs=new Date(sessions.at(-1)?.date||0).getTime();
+   const days=Number.isFinite(lastMs)?Math.floor((now-lastMs)/86400000):Number.isFinite(oldestMs)?Math.floor((now-oldestMs)/86400000):0;
+   if(days<14)return;
+   const otherWork=recent.reduce((n,session)=>n+COACH_INSIGHT_GROUPS.filter(g=>g.key!==group.key).reduce((x,g)=>x+coachSessionGroupScore(session,g),0),0);
+   if(otherWork<=0)return;
+   candidates.push({
+     group,days,workouts:recent.length,
+     text:last
+       ?`You’ve logged ${recent.length} workouts in the last two weeks, but no ${group.label.toLowerCase()} work in about ${days} days.`
+       :`You’ve logged ${recent.length} workouts in the last two weeks without any ${group.label.toLowerCase()} work yet.`
+   });
+ });
+ return candidates.sort((a,b)=>b.days-a.days)[0]||null;
+}
+function coachBuildFromInsight(targetKey){
+ const group=COACH_TARGET_GROUPS[targetKey];if(!group)return;
+ const request=coachParsePrompt(`${group.label} workout, 45 minutes`,coachPromptGoal);
+ request.duration=45;request.targetLabels=[group.label];request.targetRegions=[...group.regions];
+ coachProgramBuildDraft=null;
+ if(!coachGenerateWorkout(request)){showToast('Coach could not build that workout');return}
+ renderCoachPreview();
+}
+function coachInsightHtml(){
+ const insight=coachHistoryInsight();if(!insight)return '';
+ return `<div class="home-signal-card" style="margin-top:8px"><div class="grow"><div class="eyebrow">COACH INSIGHT</div><div class="signal-copy"><b>${esc(insight.group.label)} hasn’t shown up lately.</b> ${esc(insight.text)} <span class="mini">That’s a log observation, not a recovery warning.</span></div></div><button class="btn small secondary" onclick="coachBuildFromInsight('${escAttr(insight.group.key)}')">Build ${esc(insight.group.label)}</button></div>`;
+}
 function renderHome(){
  const primary=document.getElementById('homePrimary'),coach=document.getElementById('homeCoachLauncher'),quick=document.getElementById('homeQuickActions'),signal=document.getElementById('homeTelemetry'),latest=document.getElementById('homeLatest');
  if(!primary)return;
@@ -6027,7 +6075,7 @@ function renderHome(){
  }else{
    const weekStart=startOfWeek(),weekSessions=state.sessions.filter(s=>new Date(s.date)>=weekStart);
    const weekSets=weekSessions.reduce((n,s)=>n+sessionSetCount(s),0),weekPrs=weekSessions.reduce((n,s)=>n+sessionPRCount(s),0);
-   signal.innerHTML=`<div class="home-signal-card" onclick="go('analytics')"><div><div class="eyebrow">THIS WEEK</div><div class="signal-copy"><b>${weekSessions.length} workout${weekSessions.length===1?'':'s'}</b> · ${weekSets} working sets · ${weekPrs} PR${weekPrs===1?'':'s'}</div></div><span class="tag">PROGRESS ›</span></div>`;
+   signal.innerHTML=`<div class="home-signal-card" onclick="go('analytics')"><div><div class="eyebrow">THIS WEEK</div><div class="signal-copy"><b>${weekSessions.length} workout${weekSessions.length===1?'':'s'}</b> · ${weekSets} working sets · ${weekPrs} PR${weekPrs===1?'':'s'}</div></div><span class="tag">PROGRESS ›</span></div>`+coachInsightHtml();
    const last=state.sessions.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0],sets=sessionSetCount(last),prs=sessionPRCount(last);
    latest.innerHTML=`<div class="home-latest" onclick="openHistoricalWorkoutRecap('${last.id}')"><div class="row"><div><div class="eyebrow">LAST WORKOUT</div><div class="home-latest-title">${esc(last.routineName)}</div><div class="home-latest-meta">${new Date(last.date).toLocaleDateString()} · ${sets} working sets${last.durationMinutes!=null?` · ${last.durationMinutes} min`:''}${prs?` · ${prs} PR${prs===1?'':'s'}`:''}</div></div><span class="tag">RECAP ›</span></div></div>`;
  }
