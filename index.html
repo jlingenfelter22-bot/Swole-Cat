@@ -5438,8 +5438,8 @@ function homeCoachExample(text){
 function homeCoachLauncherHtml({embedded=false}={}){
  return `<div class="${embedded?'home-new-user':''}">
    ${embedded?'':`<div class="home-coach-head"><div><div class="home-coach-title">Coach Swolecat</div><div class="mini">Need something different today?</div></div><span class="tag">QUICK BUILD</span></div>`}
-   <div class="home-coach-row"><input id="homeCoachPrompt" placeholder="45 min chest + back, cables and dumbbells..." onkeydown="if(event.key==='Enter')homeCoachBuildPrompt()"><button class="btn" onclick="homeCoachBuildPrompt()">Build</button></div>
-   <div class="home-coach-chips"><button class="home-coach-chip" onclick="homeCoachExample('30 minute leg workout')">30m legs</button><button class="home-coach-chip" onclick="homeCoachExample('Chest and back, 45 minutes')">Chest + back</button><button class="home-coach-chip" onclick="homeCoachExample('Strength focused push workout, 60 minutes')">Strength push</button></div>
+   <div class="home-coach-row"><input id="homeCoachPrompt" placeholder="45 min chest + back, or build a 3-day plan..." onkeydown="if(event.key==='Enter')homeCoachBuildPrompt()"><button class="btn" onclick="homeCoachBuildPrompt()">Build</button></div>
+   <div class="home-coach-chips"><button class="home-coach-chip" onclick="homeCoachExample('30 minute leg workout')">30m legs</button><button class="home-coach-chip" onclick="homeCoachExample('Chest and back, 45 minutes')">Chest + back</button><button class="home-coach-chip" onclick="homeCoachExample('3-day full body program, Monday Wednesday Friday, 45 minutes')">3-day plan</button></div>
  </div>`;
 }
 function homeQuickActionsHtml(){
