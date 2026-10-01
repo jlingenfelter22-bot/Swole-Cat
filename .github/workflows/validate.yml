@@ -77,7 +77,7 @@ jobs:
 
             w.installRegressionFixturePlan();
             let state=read();
-            assert.equal(state.routines.length,3,'starter routines should install');
+            assert.equal(state.routines.length,3,'regression fixture routines should install');
             const rid=state.routines[0].id;
 
             w.openRoutine(rid);
@@ -508,11 +508,11 @@ jobs:
             assert(w.document.getElementById('exerciseList').innerHTML.includes("openExerciseProgress('"+pushup.id+"')"),'Hidden filter should expose hidden exercises for management');
 
             // Hiding an exercise must not delete it from an existing routine or stop that routine from starting.
-            const routine=state.routines.find(r=>r.name==='Full Body A');
-            assert(routine.exercises.some(e=>e.exerciseId===squat.id),'starter routine should contain Back Squat');
+            const routine=state.routines.find(r=>r.name==='Fixture Full Body A');
+            assert(routine.exercises.some(e=>e.exerciseId===squat.id),'fixture routine should contain Back Squat');
             w.setExercisePreference(squat.id,'hide');
             state=read();
-            assert(state.routines.find(r=>r.name==='Full Body A').exercises.some(e=>e.exerciseId===squat.id),'Hide must not remove exercise from saved routine');
+            assert(state.routines.find(r=>r.name==='Fixture Full Body A').exercises.some(e=>e.exerciseId===squat.id),'Hide must not remove exercise from saved routine');
             w.openRoutine(routine.id);
             state=read();
             assert(state.activeWorkout.exercises.some(e=>e.exerciseId===squat.id),'hidden routine exercise should still load in active workout');
@@ -562,9 +562,9 @@ jobs:
 
             w.installRegressionFixturePlan();
             let state=read();
-            const routine=state.routines.find(r=>r.name==='Full Body A');
+            const routine=state.routines.find(r=>r.name==='Fixture Full Body A');
             const squat=w.allExercises().find(x=>x.name==='Back Squat');
-            assert(routine&&squat,'starter routine and squat should exist');
+            assert(routine&&squat,'fixture routine and squat should exist');
 
             // Establish a baseline workout.
             w.openRoutine(routine.id);
