@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.52.0
+Version: v0.53.0
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -131,3 +131,40 @@ Named weekdays are stored in the Program's existing preferred-days field. If a u
 ### Data architecture
 
 Each generated workout is persisted as a normal Swole Cat Routine. Those routine IDs are then referenced by a normal Swole Cat Program. No Coach-only Program schema is introduced.
+
+
+## v0.53 voice dictation
+
+Voice input is an input convenience layer only. It does not change Coach's deterministic programming rules.
+
+- Packaged Android builds use native speech recognition through the Capacitor community speech-recognition plugin.
+- The app requests microphone/speech permission when needed.
+- Browser/PWA builds use the Web Speech API when the browser exposes SpeechRecognition or webkitSpeechRecognition.
+- The transcript is inserted into the visible Coach field first so the user can verify or edit it before building.
+- Text entry always remains available when speech recognition is unsupported or denied.
+- Speech availability and whether recognition runs fully on-device depend on the operating system/browser speech service. Core Coach workout generation remains local after text has been produced.
+
+The first implementation intentionally uses final-result, one-shot dictation rather than a permanently open streaming microphone. This keeps the interaction simple and avoids treating partial recognition output as finalized workout instructions.
+
+## v0.53 explicit workout prescriptions
+
+Coach can distinguish an exact workout prescription from a general workout-generation request.
+
+Supported forms include examples such as:
+- "3 sets bench press for 8"
+- "three sets of pull ups for nine"
+- "2 sets barbell curls for 12"
+- "3 x 8 squats"
+- "3 sets bench, 3 sets pull ups, targeting 9 reps for each one"
+
+For an explicit prescription:
+1. Exercise order follows the user's request.
+2. Requested set counts are preserved.
+3. Per-exercise rep targets are preserved.
+4. A global "reps each" target fills only exercises that did not already specify reps.
+5. Common gym-language aliases map to canonical Swole Cat library exercises.
+6. Starting the workout uses those exact sets and reps rather than replacing them with the normal Coach preset.
+7. Saving the workout creates a normal Swole Cat Routine, so all normal history and progression infrastructure still applies.
+8. Coach still does not invent the user's working weight.
+
+If Coach cannot confidently resolve an exercise phrase, it should not silently substitute an unrelated movement.
