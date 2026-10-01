@@ -5079,6 +5079,7 @@ function coachParseRepTarget(value){
  if(m)return {minReps:Number(m[1]),maxReps:Number(m[1])};
  return null;
 }
+function coachRegexEscape(value){return String(value||'').replace(/[.*+?^$(){}|[\]\\]/g,'\\function coachLevenshtein(a,b){')}
 function coachLevenshtein(a,b){
  a=String(a||'');b=String(b||'');
  if(a===b)return 0;if(!a.length)return b.length;if(!b.length)return a.length;
