@@ -4937,8 +4937,8 @@ function coachMovementFamily(ex){
 }
 function coachFamilyCap(family,request,count){
  const keys=coachRequestedTargetKeys(request),single=keys.length===1?keys[0]:'';
- if(family==='row')return (single==='back'||single==='pull')&&count>=7?2:1;
- if(family==='vertical_pull')return (single==='back'||single==='pull')&&count>=8?2:1;
+ if(family==='row')return (single==='back'||single==='pull')&&count>=5?2:1;
+ if(family==='vertical_pull')return (single==='back'||single==='pull')&&count>=6?2:1;
  if(family==='biceps_curl')return (single==='arms'||single==='biceps')&&count>=5?2:1;
  if(family==='triceps_extension')return (single==='arms'||single==='triceps')&&count>=5?2:1;
  if(family==='squat')return (single==='legs'||single==='lower body'||single==='quads')&&count>=7?2:1;
@@ -4972,7 +4972,9 @@ function coachSmartExerciseCount(request,baseCount){
 }
 function coachCandidateBaseScore(ex,request){
  if(!coachExerciseAllowedByConstraints(ex,request))return -Infinity;
- const meta=exerciseMuscleMetadata(ex),targets=new Set(request.targetRegions),priority=new Set(request.priorityRegions||[]);
+ const meta=exerciseMuscleMetadata(ex),targets=new Set(request.targetRegions),priority=new Set(request.priorityRegions||[]),keys=coachRequestedTargetKeys(request);
+ const upperBackOnly=keys.includes('back')&&!keys.some(k=>['legs','lower body','hamstrings','glutes','quads','full body'].includes(k));
+ if(upperBackOnly&&request.goal!=='strength'&&['hinge','olympic_pull'].includes(ex.pattern)&&!(request.requiredExerciseIds||[]).includes(ex.id))return -Infinity;
  const primaryHits=meta.primary.filter(m=>targets.has(m)),secondaryHits=meta.secondary.filter(m=>targets.has(m));
  if(!primaryHits.length&&!secondaryHits.length)return -Infinity;
  let score=(primaryHits.length?115+(primaryHits.length-1)*32:0)+secondaryHits.length*28+preferenceRank(ex.id)+coachGenericExerciseBias(ex,request);
@@ -5016,7 +5018,7 @@ function coachCoveragePlan(request,count){
  const backVertical=ex=>ex.pattern==='vertical_pull'&&meta(ex).primary.includes('lats');
  const latIsolation=ex=>['shoulder_extension','pullover'].includes(ex.pattern)&&meta(ex).primary.includes('lats');
  const bicepsDirect=ex=>ex.pattern==='elbow_flexion'&&meta(ex).primary.includes('biceps');
- const tricepsDirect=ex=>coachMovementFamily(ex)==='triceps_extension'&&meta(ex).primary.includes('triceps');
+ const tricepsDirect=ex=>coachMovementFamily(ex)==='triceps_extension'&&meta(ex).primary.includes('triceps')&&!/\b(?:dip|push-?up|bench press|jm press|tate press)\b/i.test(ex.name||'');
  const shoulderPress=ex=>ex.pattern==='vertical_press'&&(meta(ex).primary.includes('front_delts')||meta(ex).primary.includes('side_delts'));
  const shoulderAccessory=ex=>['lateral_raise','rear_delt'].includes(ex.pattern);
  const squatPattern=ex=>['squat','lunge'].includes(ex.pattern)&&meta(ex).primary.includes('quads');
