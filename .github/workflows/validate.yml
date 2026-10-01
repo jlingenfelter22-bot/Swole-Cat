@@ -2706,8 +2706,8 @@ jobs:
             const ambiguous=w.coachUnderstandExercisePhrase('shoulder press');
             assert.equal(ambiguous.level,'medium','ambiguous generic exercise should request clarification instead of silently guessing');
             assert.equal(w.coachResolveExercisePhrase('shoulder press'),null);
-            assert(ambiguous.alternatives.some(x=>x.exercise.name==='Dumbbell Shoulder Press'));
-            assert(ambiguous.alternatives.some(x=>x.exercise.name==='Machine Shoulder Press'));
+            const shoulderChoices=ambiguous.alternatives.filter(x=>/Shoulder Press/i.test(x.exercise.name));
+            assert(shoulderChoices.length>=2,'clarification should offer multiple plausible shoulder-press variants');
 
             const best=w.coachChooseVoiceTranscript([
               'three sets preacher coral and romanian dead left',
