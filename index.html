@@ -4921,7 +4921,8 @@ function coachRequestedTargetKeys(request){
  return [...new Set((request?.targetLabels||[]).map(label=>labelMap[String(label).toLowerCase()]).filter(Boolean))];
 }
 function coachMovementFamily(ex){
- const pattern=ex?.pattern||'other';
+ const pattern=ex?.pattern||'other',name=ex?.name||'';
+ if(/\b(?:assisted |plate loaded |bench )?dip\b/i.test(name))return 'dip_press';
  return ({
    horizontal_press:'flat_press',incline_press:'incline_press',chest_fly:'chest_fly',
    horizontal_pull:'row',vertical_pull:'vertical_pull',shoulder_extension:'lat_isolation',pullover:'lat_isolation',
@@ -4944,12 +4945,37 @@ function coachFamilyCap(family,request,count){
  if(family==='hinge')return (single==='legs'||single==='lower body'||single==='hamstrings'||single==='glutes')&&count>=7?2:1;
  return 1;
 }
+function coachGenericExerciseBias(ex,request){
+ const name=ex?.name||'',keys=coachRequestedTargetKeys(request);
+ let score=0;
+ const staples=new Set([
+   'Barbell Bench Press','Incline Dumbbell Press','Incline Barbell Bench Press','Cable Fly','Pec Deck',
+   'Barbell Row','Seated Cable Row','Chest Supported Row','Lat Pulldown','Pull-Up','Assisted Pull-Up','Chin-Up',
+   'Overhead Press','Dumbbell Shoulder Press','Dumbbell Lateral Raise','Cable Lateral Raise','Rear Delt Fly','Face Pull',
+   'Back Squat','Front Squat','Leg Press','Hack Squat','Bulgarian Split Squat','Romanian Deadlift','Seated Leg Curl','Lying Leg Curl','Leg Extension','Hip Thrust',
+   'Barbell Curl','Dumbbell Curl','Hammer Curl','Preacher Curl','Triceps Pushdown','Rope Triceps Pushdown','Overhead Triceps Extension','Skull Crusher',
+   'Standing Calf Raise','Seated Calf Raise','Cable Crunch','Hanging Leg Raise'
+ ]);
+ if(staples.has(name))score+=18;
+ if(/\b(?:single arm|single leg|alternating|behind-the-neck|anderson|board press|spoto|zercher|meadows|renegade|yates|jm press|tate press|b-stance|snatch grip|deficit|block pull|clean pull|high pull|power clean|power snatch)\b/i.test(name))score-=22;
+ if(ex?.pattern==='olympic_pull'&&request.goal!=='strength')score-=55;
+ if(keys.includes('back')&&request.goal!=='strength'&&['hinge','olympic_pull'].includes(ex?.pattern))score-=46;
+ return score;
+}
+function coachSmartExerciseCount(request,baseCount){
+ const keys=coachRequestedTargetKeys(request),base=Math.max(1,Number(baseCount)||1);
+ if(keys.length!==1)return keys.length===2?Math.min(base,7):base;
+ const key=keys[0];
+ if(['chest','back','shoulders','arms','biceps','triceps','full body'].includes(key))return Math.min(base,6);
+ if(['push','pull','legs','lower body','upper body'].includes(key))return Math.min(base,7);
+ return base;
+}
 function coachCandidateBaseScore(ex,request){
  if(!coachExerciseAllowedByConstraints(ex,request))return -Infinity;
  const meta=exerciseMuscleMetadata(ex),targets=new Set(request.targetRegions),priority=new Set(request.priorityRegions||[]);
  const primaryHits=meta.primary.filter(m=>targets.has(m)),secondaryHits=meta.secondary.filter(m=>targets.has(m));
  if(!primaryHits.length&&!secondaryHits.length)return -Infinity;
- let score=(primaryHits.length?115+(primaryHits.length-1)*32:0)+secondaryHits.length*28+preferenceRank(ex.id);
+ let score=(primaryHits.length?115+(primaryHits.length-1)*32:0)+secondaryHits.length*28+preferenceRank(ex.id)+coachGenericExerciseBias(ex,request);
  const programUses=Number(request.programExerciseUsage?.[ex.id])||0;
  if(programUses)score-=programUses*(request.goal==='strength'?18:34);
  meta.primary.filter(m=>priority.has(m)).forEach(()=>score+=46);
@@ -4983,21 +5009,31 @@ function coachCoveragePlan(request,count){
    if(seen.has(id))return;seen.add(id);bucket.push({id,label,match});
  };
  const meta=ex=>exerciseMuscleMetadata(ex);
- const chestPress=ex=>meta(ex).primary.includes('chest')&&['horizontal_press','incline_press'].includes(ex.pattern);
+ const chestPress=ex=>meta(ex).primary.includes('chest')&&ex.pattern==='horizontal_press'&&coachMovementFamily(ex)!=='dip_press';
+ const chestIncline=ex=>meta(ex).primary.includes('chest')&&ex.pattern==='incline_press';
  const chestFly=ex=>meta(ex).primary.includes('chest')&&ex.pattern==='chest_fly';
  const backRow=ex=>ex.pattern==='horizontal_pull'&&(meta(ex).primary.includes('upper_back')||meta(ex).primary.includes('lats'));
  const backVertical=ex=>ex.pattern==='vertical_pull'&&meta(ex).primary.includes('lats');
  const latIsolation=ex=>['shoulder_extension','pullover'].includes(ex.pattern)&&meta(ex).primary.includes('lats');
  const bicepsDirect=ex=>ex.pattern==='elbow_flexion'&&meta(ex).primary.includes('biceps');
- const tricepsDirect=ex=>ex.pattern==='elbow_extension'&&meta(ex).primary.includes('triceps');
+ const tricepsDirect=ex=>coachMovementFamily(ex)==='triceps_extension'&&meta(ex).primary.includes('triceps');
  const shoulderPress=ex=>ex.pattern==='vertical_press'&&(meta(ex).primary.includes('front_delts')||meta(ex).primary.includes('side_delts'));
  const shoulderAccessory=ex=>['lateral_raise','rear_delt'].includes(ex.pattern);
  const squatPattern=ex=>['squat','lunge'].includes(ex.pattern)&&meta(ex).primary.includes('quads');
  const hamstringPattern=ex=>(ex.pattern==='knee_flexion'||ex.pattern==='hinge')&&meta(ex).primary.includes('hamstrings');
  const calfPattern=ex=>ex.pattern==='calf_raise'&&meta(ex).primary.includes('calves');
  const corePattern=ex=>meta(ex).primary.includes('core')||meta(ex).primary.includes('obliques');
- const addChest=()=>{add(core,'chest_press','Chest press',chestPress);add(optional,'chest_fly','Chest isolation',chestFly)};
- const addBack=()=>{add(core,'back_row','Horizontal back pull',backRow);add(optional,'back_vertical','Vertical back pull',backVertical);add(optional,'lat_isolation','Lat isolation',latIsolation)};
+ const addChest=()=>{
+   add(core,'chest_press','Chest press',chestPress);
+   add(optional,'chest_incline','Incline chest press',chestIncline);
+   add(optional,'chest_fly','Chest isolation',chestFly);
+ };
+ const addBack=()=>{
+   add(core,'back_row','Horizontal back pull',backRow);
+   add(optional,'back_vertical','Vertical back pull',backVertical);
+   add(optional,'lat_isolation','Lat isolation',latIsolation);
+   add(optional,'back_rear_delt','Rear delt / upper-back accessory',ex=>ex.pattern==='rear_delt'&&meta(ex).secondary.includes('upper_back'));
+ };
  const addArms=()=>{add(core,'biceps_direct','Direct biceps',bicepsDirect);add(core,'triceps_direct','Direct triceps',tricepsDirect)};
  const addShoulders=()=>{add(core,'shoulder_press','Shoulder press',shoulderPress);add(optional,'shoulder_accessory','Side / rear delt',shoulderAccessory)};
  const addLegs=()=>{add(core,'leg_knee','Knee-dominant lower body',squatPattern);add(core,'leg_hamstrings','Hamstrings',hamstringPattern);add(optional,'leg_calves','Calves',calfPattern)};
@@ -5040,6 +5076,7 @@ function coachCoveragePlan(request,count){
  return {keys,core,optional};
 }
 function coachSelectExercises(request,count){
+ count=coachSmartExerciseCount(request,count);
  const pool=visibleExercises(),selected=[],coverage={},primaryCoverage={},patterns={},families={},targets=new Set(request.targetRegions);
  let plan=coachCoveragePlan(request,count);
  count=Math.max(count,Math.min(8,plan.core.length));
@@ -5086,7 +5123,17 @@ function coachSelectExercises(request,count){
    const pick=ranked[0]?.ex;if(!pick)break;
    register(pick);
  }
- return selected;
+ const compoundPatterns=new Set(['squat','hinge','horizontal_press','incline_press','vertical_press','horizontal_pull','vertical_pull','lunge']);
+ const orderTier=ex=>{
+   const family=coachMovementFamily(ex);
+   if(compoundPatterns.has(ex.pattern)&&!['biceps_curl','triceps_extension','dip_press'].includes(family))return 0;
+   if(['chest_fly','lat_isolation','lateral_raise','rear_delt','leg_extension','leg_curl','hip_extension'].includes(family))return 1;
+   if(['biceps_curl','triceps_extension','calf_raise','spinal_flexion','hip_flexion_core','anti_extension'].includes(family))return 2;
+   return 1;
+ };
+ return selected.map((ex,index)=>({ex,index,tier:orderTier(ex)}))
+   .sort((a,b)=>a.tier-b.tier||a.index-b.index)
+   .map(x=>x.ex);
 }
 function coachWorkoutName(request){
  const target=request.targetLabels.length?request.targetLabels.join(' + '):'Workout';
