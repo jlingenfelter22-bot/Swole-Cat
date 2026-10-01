@@ -6606,7 +6606,7 @@ function renderWorkout(){
             <input class="direct-number" type="number" inputmode="decimal" enterkeyhint="done" step=".25" min="0"
               value="${displaySetWeightValue(s.weight)}" placeholder="${ex?.equipment==='bodyweight'?'0':'Enter'}"
               onfocus="smartNumberFocus(this)" onclick="smartNumberFocus(this)"
-              oninput="updateSet(${ei},${si},'weight',this.value)" aria-label="weight">
+              oninput="updateSet(${ei},${si},'weight',this.value)" onblur="commitFirstExerciseWeightAutofill(${ei},${si})" aria-label="weight">
           </div>
           <div class="live-input-wrap">
             <div class="input-label-row">
@@ -6686,8 +6686,17 @@ function scheduleFirstExerciseWeightAutofill(ei,si,delay=250){
  clearTimeout(firstExerciseWeightSeedTimers.get(key));
  firstExerciseWeightSeedTimers.set(key,setTimeout(()=>{
    firstExerciseWeightSeedTimers.delete(key);
+   const card=document.querySelector(`#workoutExercise-${ei} .set-card[data-set-index="${si}"]`);
+   const input=card?.querySelector('input[aria-label="weight"]');
+   if(input&&document.activeElement===input)return;
    applyFirstExerciseWeightAutofill(ei,si);
  },delay));
+}
+function commitFirstExerciseWeightAutofill(ei,si){
+ const key=String(ei);
+ clearTimeout(firstExerciseWeightSeedTimers.get(key));
+ firstExerciseWeightSeedTimers.delete(key);
+ return applyFirstExerciseWeightAutofill(ei,si);
 }
 function updateSet(ei,si,k,v){
  const s=state.activeWorkout.exercises[ei].sets[si];
