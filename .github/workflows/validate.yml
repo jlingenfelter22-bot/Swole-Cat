@@ -20,7 +20,11 @@ jobs:
         run: npm run build:web
 
       - name: Check app JavaScript syntax
-        run: node --check www/app.js
+        run: |
+          node --check www/app.js
+          for file in src/data/*.js src/js/*.js; do
+            node --check "$file"
+          done
 
       - name: Check service worker syntax
         run: node --check www/sw.js
