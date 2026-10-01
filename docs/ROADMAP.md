@@ -306,6 +306,8 @@ Goal: let a user create a useful workout or full routine in seconds without manu
 
 **v0.50.1: Adaptive Routines Priority** — The Routines tab now prioritizes actual content: existing Programs render first when present; when no Programs exist, Workout Routines move to the top and the empty Programs state becomes a compact secondary creation prompt below them.
 
+**v0.50.2: Save Completed Workout as Routine** — Completed workout recaps can now create a reusable routine after the fact. This is especially useful for temporary Coach Swolecat Quick Build sessions started without saving first. Exercise order and original programming config are preserved when available, completed-set counts are respected, historical sessions remain unchanged, existing-routine sessions use a clear “Save Copy” action, and duplicate saves from the same completed session are guarded.
+
 ### Locked: Quick workout builder
 The home screen includes Coach Swolecat as the primary build path for new users and a secondary quick-build path for returning users when no workout is active.
 
