@@ -352,7 +352,12 @@ function coachSelectExercises(request,count){
  const prioritySet=new Set(request.priorityRegions||[]);
  const multiTargetPriority=prioritySet.size>0&&coachRequestedTargetKeys(request).length>1;
  const slotPriority=slot=>pool.some(ex=>slot.match(ex)&&exerciseMuscleMetadata(ex).primary.some(region=>prioritySet.has(region)))?1:0;
- const optionalSlots=[...plan.optional].sort((a,b)=>slotPriority(b)-slotPriority(a));
+ const slotNovelty=slot=>pool.some(ex=>{
+   if(selected.some(x=>x.id===ex.id)||!slot.match(ex))return false;
+   const family=coachMovementFamily(ex);
+   return !(families[family]>0)&&Number.isFinite(coachDynamicCandidateScore(ex,request,coverage,patterns,families,primaryCoverage,count));
+ })?1:0;
+ const optionalSlots=[...plan.optional].sort((a,b)=>slotPriority(b)-slotPriority(a)||slotNovelty(b)-slotNovelty(a));
  for(const slot of optionalSlots){
    if(selected.length>=count)break;
    if(multiTargetPriority&&!slotPriority(slot))continue;
