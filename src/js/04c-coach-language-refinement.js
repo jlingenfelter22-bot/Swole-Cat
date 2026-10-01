@@ -343,6 +343,7 @@ function coachRemoveTargetKey(req,key){
  const regions=new Set(coachTargetRegionsForKey(key));
  req.targetRegions=(req.targetRegions||[]).filter(x=>!regions.has(x));
  req.priorityRegions=(req.priorityRegions||[]).filter(x=>!regions.has(x));
+ req.priorityKeys=(req.priorityKeys||[]).filter(x=>x!==key);
  req.targetLabels=(req.targetLabels||[]).filter(x=>x!==COACH_TARGET_GROUPS[key]?.label);
  req.targetKeys=(req.targetKeys||[]).filter(x=>x!==key);
 }
@@ -497,7 +498,8 @@ function coachRefineDraftText(text){
  const lower=raw.toLowerCase(),req={...draft.request};
  req.targetKeys=[...(req.targetKeys||[])];req.targetLabels=[...(req.targetLabels||[])];req.targetRegions=[...(req.targetRegions||[])];
  req.allowedEquipment=[...(req.allowedEquipment||[])];req.excludedEquipment=[...(req.excludedEquipment||[])];
- req.priorityRegions=[...(req.priorityRegions||[])];req.excludedExerciseIds=[...(req.excludedExerciseIds||[])];req.requiredExerciseIds=[...(req.requiredExerciseIds||[])];
+ req.priorityRegions=[...(req.priorityRegions||[])];req.priorityKeys=[...(req.priorityKeys||[])];
+ req.excludedExerciseIds=[...(req.excludedExerciseIds||[])];req.requiredExerciseIds=[...(req.requiredExerciseIds||[])];
  let changed=false;
  const parsed=coachParsePrompt(raw,req.goal),explicitGoal=coachExplicitGoal(raw),equipment=coachParseEquipment(raw);
  if(parsed.duration){req.duration=parsed.duration;changed=true}
@@ -520,13 +522,14 @@ function coachRefineDraftText(text){
  const negativeTargetKeys=targetKeys.filter(k=>new RegExp('(?:no|without|skip|exclude)\\s+'+k.replace(' ','\\s+'),'i').test(lower));
  negativeTargetKeys.forEach(k=>{coachRemoveTargetKey(req,k);changed=true});
  const positiveTargets=coachParseTargets(raw);
- const hasMore=/\bmore\b|\bemphas(?:ize|is)\b|\bprioriti[sz]e\b/.test(lower);
+ const hasMore=/\bmore\b|\bemphas(?:ize|ise|is)\b|\bprioriti[sz]e\b|\bmostly\b|\bmainly\b|\bespecially\b|\bfocused\b|\bbiased\b|\bdominant\b/.test(lower);
  const hasAdd=/\badd\b|\binclude\b|\balso\b|\bplus\b/.test(lower);
  const hasReplace=/\binstead\b|\bswitch\b|\bchange\b|\bfocus on\b|\btrain\b/.test(lower);
  const positiveRegions=positiveTargets.regions.filter(r=>!negativeTargetKeys.some(k=>coachTargetRegionsForKey(k).includes(r)));
  if(positiveRegions.length){
    if(hasMore){
      req.priorityRegions=[...new Set([...req.priorityRegions,...positiveRegions])];
+     req.priorityKeys=[...new Set([...req.priorityKeys,...(positiveTargets.keys||[])])];
      req.targetRegions=[...new Set([...req.targetRegions,...positiveRegions])];
      req.targetLabels=[...new Set([...req.targetLabels,...positiveTargets.labels])];
      req.targetKeys=[...new Set([...req.targetKeys,...(positiveTargets.keys||[])])];
@@ -536,7 +539,7 @@ function coachRefineDraftText(text){
      req.targetKeys=[...new Set([...req.targetKeys,...(positiveTargets.keys||[])])];
    }else if(hasReplace||positiveTargets.labels.length===1&&raw.split(/\s+/).length<=4){
      req.targetRegions=[...positiveRegions];req.targetLabels=[...positiveTargets.labels];req.targetKeys=[...(positiveTargets.keys||[])];
-     req.priorityRegions=[];
+     req.priorityRegions=[];req.priorityKeys=[];
    }
    changed=true;
  }
