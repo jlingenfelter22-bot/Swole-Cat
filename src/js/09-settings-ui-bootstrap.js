@@ -286,6 +286,7 @@ window.addEventListener('orientationchange',()=>setTimeout(syncViewportMetrics,1
 enhanceAppSelects(document);
 verifyDeviceStorageWritable();
 renderNavigationView('home');populateMuscles();updateInstallButton();updateActiveWorkoutChrome();
+SwoleCatRuntime.events.dispatchEvent(new CustomEvent('app:ready',{detail:{version:APP_VERSION}}));
 installNativeBehaviorHandlers();
 configureNativeUi();
 if(startupStorageNotice){
