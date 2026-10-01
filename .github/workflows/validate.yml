@@ -1092,7 +1092,7 @@ jobs:
             assert(html.includes('--motion-base:180ms'),'visual system should use a named motion timing');
 
             dom.window.renderHome();
-            assert(!d.getElementById('homeRoutines').textContent.includes('🏋'),'home empty states should not rely on emoji artwork');
+            assert(!d.getElementById('homePrimary').textContent.includes('🏋'),'adaptive home should not rely on emoji artwork');
             dom.window.renderPrograms();
             assert(!d.getElementById('programList').textContent.includes('▦'),'program empty state should use UI-native glyph');
 
