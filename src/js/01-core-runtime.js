@@ -124,21 +124,21 @@ function normalizeState(saved){
 function writeRecoverySnapshot(raw){
  if(recoverySnapshotWritten||!raw||raw.length>MAX_RECOVERY_SNAPSHOT_CHARS)return false;
  try{
-   localStorage.setItem(RECOVERYKEY,JSON.stringify({savedAt:new Date().toISOString(),raw}));
+   swoleCatStorage.setItem(RECOVERYKEY,JSON.stringify({savedAt:new Date().toISOString(),raw}));
    recoverySnapshotWritten=true;
    return true;
  }catch(e){return false}
 }
 function readRecoverySnapshot(){
  try{
-   const box=JSON.parse(localStorage.getItem(RECOVERYKEY)||'null');
+   const box=JSON.parse(swoleCatStorage.getItem(RECOVERYKEY)||'null');
    if(!box||typeof box.raw!=='string')return null;
    return {savedAt:box.savedAt||null,state:normalizeState(JSON.parse(box.raw))};
  }catch(e){return null}
 }
 function load(){
  let raw='';
- try{raw=localStorage.getItem(LSKEY)||''}
+ try{raw=swoleCatStorage.getItem(LSKEY)||''}
  catch(e){
    storageWriteBlocked=true;
    lastStorageError=e?.message||String(e);
@@ -250,14 +250,14 @@ function save(){
  pendingStateSave=false;
  try{
    if(!recoverySnapshotWritten){
-     const previous=localStorage.getItem(LSKEY);
+     const previous=swoleCatStorage.getItem(LSKEY);
      if(previous)writeRecoverySnapshot(previous);
    }
    state.schemaVersion=DATA_SCHEMA_VERSION;
    state.meta=isPlainObject(state.meta)?state.meta:{};
    state.meta.lastSavedAt=new Date().toISOString();
    const serialized=JSON.stringify(state);
-   localStorage.setItem(LSKEY,serialized);
+   swoleCatStorage.setItem(LSKEY,serialized);
    stateRevision++;
    lastStorageError='';
    return true;
@@ -287,9 +287,9 @@ function createBackupEnvelope(exportedAt=new Date().toISOString()){
 }
 function createPreImportSnapshot(){
  try{
-   const raw=localStorage.getItem(LSKEY);
+   const raw=swoleCatStorage.getItem(LSKEY);
    if(!raw)return true;
-   localStorage.setItem(IMPORTSNAPSHOTKEY,JSON.stringify({savedAt:new Date().toISOString(),raw}));
+   swoleCatStorage.setItem(IMPORTSNAPSHOTKEY,JSON.stringify({savedAt:new Date().toISOString(),raw}));
    return true;
  }catch(e){
    lastStorageError=e?.message||String(e);
@@ -298,7 +298,7 @@ function createPreImportSnapshot(){
 }
 function preImportSnapshotInfo(){
  try{
-   const box=JSON.parse(localStorage.getItem(IMPORTSNAPSHOTKEY)||'null');
+   const box=JSON.parse(swoleCatStorage.getItem(IMPORTSNAPSHOTKEY)||'null');
    return box&&typeof box.raw==='string'?box:null;
  }catch(e){return null}
 }
@@ -323,9 +323,9 @@ function storageHealthText(){
 function clearUnreadableLocalData(){
  confirmAction('Erase unreadable local data?','Only use this if you do not have a backup you want to restore. The unreadable local Swole Cat record will be permanently replaced with a fresh empty state.',()=>{
    try{
-     localStorage.removeItem(LSKEY);
-     localStorage.removeItem(RECOVERYKEY);
-     localStorage.removeItem(IMPORTSNAPSHOTKEY);
+     swoleCatStorage.removeItem(LSKEY);
+     swoleCatStorage.removeItem(RECOVERYKEY);
+     swoleCatStorage.removeItem(IMPORTSNAPSHOTKEY);
    }catch(e){}
    storageWriteBlocked=false;recoveredFromSnapshot=false;startupStorageNotice='';lastStorageError='';recoverySnapshotWritten=false;
    state=freshState();save();renderHome();populateMuscles();updateActiveWorkoutChrome();showToast('Started with fresh local data');setTimeout(onboarding,180);
@@ -422,9 +422,9 @@ function verifyDeviceStorageWritable(){
  if(storageWriteBlocked)return false;
  try{
    const key='__swole_cat_storage_probe__';
-   localStorage.setItem(key,'ok');
-   if(localStorage.getItem(key)!=='ok')throw new Error('Local storage probe could not be verified.');
-   localStorage.removeItem(key);
+   swoleCatStorage.setItem(key,'ok');
+   if(swoleCatStorage.getItem(key)!=='ok')throw new Error('Local storage probe could not be verified.');
+   swoleCatStorage.removeItem(key);
    return true;
  }catch(e){
    storageWriteBlocked=true;
