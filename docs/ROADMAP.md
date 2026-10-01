@@ -322,6 +322,8 @@ Goal: let a user create a useful workout or full routine in seconds without manu
 
 **v0.53.1: Explicit Exercise Routing + Mic Visibility Hotfix** — Named exercises now outrank the generic Coach questionnaire. A request such as “bench press, squat, dumbbell curls” is treated as an explicit workout list even when the user omits sets, reps, target muscles, or session duration; missing prescription values receive normal Coach defaults without asking irrelevant “what are we training?” or “how much time?” questions. More flexible language such as “bench press for three sets” is supported. Coach preserves the named exercise list instead of substituting generated movements. The microphone control is now visually embedded inside every Coach text field with a high-contrast cyan treatment so the voice affordance is obvious on mobile.
 
+**v0.53.2: Surgical Explicit-Workout Refinement Hotfix** — Once a Coach workout is created from an explicit user-authored exercise list, the Refine flow now stays in list-edit mode instead of falling back to the workout generator. Commands such as “can you also add a set of assisted pull-ups?”, “make bench press 4 sets of 6 reps,” and “remove Bulgarian split squats” edit only the named exercise/configuration. Existing exercises, order, and custom set/rep prescriptions remain intact. Explicit refinements never inject unrelated exercises through target-muscle regeneration.
+
 ### Locked: Quick workout builder
 The home screen includes Coach Swolecat as the primary build path for new users and a secondary quick-build path for returning users when no workout is active.
 
