@@ -2754,3 +2754,62 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V550 Coach workout programming intelligence
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(100);
+            const w=dom.window;
+
+            const prompt='I need a good 60 minute chest, arm, and back workout';
+            const req=w.coachParsePrompt(prompt,'hypertrophy');
+            assert.equal(req.duration,60);
+            assert(req.targetKeys.includes('chest'),'chest target should parse');
+            assert(req.targetKeys.includes('arms'),'singular arm should normalize to arms');
+            assert(req.targetKeys.includes('back'),'back target should parse');
+            assert(req.targetRegions.includes('biceps')&&req.targetRegions.includes('triceps'),'arms must expand to both direct arm regions');
+
+            const draft=w.coachGenerateWorkout(req);
+            assert(draft,'Coach should generate the requested workout');
+            const exercises=draft.selectedIds.map(id=>w.exById(id));
+            const names=exercises.map(ex=>ex.name);
+            const metas=exercises.map(ex=>w.exerciseMuscleMetadata(ex));
+            const families=exercises.map(ex=>w.coachMovementFamily(ex));
+            const familyCounts=families.reduce((m,f)=>(m[f]=(m[f]||0)+1,m),{});
+
+            assert(exercises.some((ex,i)=>metas[i].primary.includes('chest')),'chest must receive primary work');
+            assert(exercises.some((ex,i)=>metas[i].primary.includes('upper_back')||metas[i].primary.includes('lats')),'back must receive primary work');
+            assert(exercises.some((ex,i)=>ex.pattern==='elbow_flexion'&&metas[i].primary.includes('biceps')),'explicit arms target must include direct biceps work');
+            assert(exercises.some((ex,i)=>ex.pattern==='elbow_extension'&&metas[i].primary.includes('triceps')),'explicit arms target must include direct triceps work');
+            assert((familyCounts.row||0)<=1,'multi-target workout must not stack multiple row variants');
+            assert((familyCounts.lat_isolation||0)<=1,'multi-target workout must not stack cable and dumbbell pullovers as duplicate lat-isolation work');
+            assert.equal(new Set(families).size,families.length,'multi-target workout should use distinct movement families when enough alternatives exist');
+            assert(exercises.length>=7,'60-minute hypertrophy request should remain a substantial session');
+
+            const redundantRows=names.filter(n=>/Row/i.test(n));
+            assert(redundantRows.length<=1,'user feedback regression: no Barbell Row + Chest Supported DB Row + Chest Supported Row pileup');
+
+            const backReq=w.coachParsePrompt('60 minute back workout','hypertrophy');
+            const backDraft=w.coachGenerateWorkout(backReq);
+            const backFamilies=backDraft.selectedIds.map(id=>w.coachMovementFamily(w.exById(id)));
+            assert(backFamilies.filter(f=>f==='row').length<=2,'even a back-only day should not become a list of row variations');
+            assert(backFamilies.includes('vertical_pull'),'back day should include a vertical-pull pattern when available');
+
+            console.log('Chest + arms + back:',names.join(' | '));
+            console.log('Back only:',backDraft.selectedIds.map(id=>w.exById(id).name).join(' | '));
+            dom.window.close();
+            console.log('Swole Cat V55.0 workout programming intelligence PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
