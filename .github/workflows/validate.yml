@@ -16,37 +16,58 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Extract inline JavaScript
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
-          html = Path("index.html").read_text(encoding="utf-8")
-          match = re.search(r"<script>([\s\S]*)</script>", html)
-          if not match:
-              raise SystemExit("No inline script found")
-          Path("/tmp/swole-cat-app.js").write_text(match.group(1), encoding="utf-8")
-          PY
+      - name: Build modular web app
+        run: npm run build:web
 
       - name: Check app JavaScript syntax
-        run: node --check /tmp/swole-cat-app.js
+        run: node --check www/app.js
 
       - name: Check service worker syntax
-        run: node --check sw.js
+        run: node --check www/sw.js
 
       - name: Check PWA manifest
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          data=json.loads(Path("manifest.webmanifest").read_text(encoding="utf-8"))
+          data=json.loads(Path("www/manifest.webmanifest").read_text(encoding="utf-8"))
           assert data["name"]=="Swole Cat"
           assert data["display"]=="standalone"
           print("PWA manifest OK")
           PY
 
+      - name: Check modular source architecture
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const source=fs.readFileSync('index.html','utf8');
+          assert(!/<style>[\s\S]*<\/style>/.test(source),'index.html should not contain the application stylesheet');
+          assert(!/<script>[\s\S]*<\/script>/.test(source),'index.html should not contain the application runtime');
+          const moduleTags=[...source.matchAll(/<script src="\.\/src\/js\/([^"]+)"><\/script>/g)].map(m=>m[1]);
+          assert(moduleTags.length>=10,'source shell should load modular JavaScript domains');
+          assert(source.includes('./src/styles/app.css'),'source shell should load modular CSS');
+          const built=fs.readFileSync('www/index.html','utf8');
+          assert(built.includes('./app.js'),'production shell should use bundled app.js');
+          assert(built.includes('./app.css'),'production shell should use bundled app.css');
+          assert(!built.includes('./src/js/'),'production shell should not depend on source modules');
+          console.log('Swole Cat modular architecture OK');
+          JS
+
       - name: Install DOM smoke-test dependency
         run: npm install --no-save --package-lock=false jsdom@24
+
+      - name: Prepare bundled DOM smoke-test fixture
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          let html=fs.readFileSync('www/index.html','utf8');
+          const css=fs.readFileSync('www/app.css','utf8').replace(/<\/style/gi,'<\\/style');
+          const js=fs.readFileSync('www/app.js','utf8').replace(/<\/script/gi,'<\\/script');
+          html=html.replace('<link rel="stylesheet" href="./app.css">',`<style>${css}</style>`);
+          html=html.replace('<script src="./app.js"></script>',`<script>${js}</script>`);
+          fs.writeFileSync('/tmp/swole-cat-test.html',html);
+          JS
 
       - name: Smoke test active workouts, set types, progression, and supersets
         run: |
@@ -55,7 +76,7 @@ jobs:
           const assert = require('assert');
           const {JSDOM} = require('jsdom');
 
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom = new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -166,7 +187,7 @@ jobs:
           const assert = require('assert');
           const {JSDOM} = require('jsdom');
 
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom = new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -241,7 +262,7 @@ jobs:
           const assert = require('assert');
           const {JSDOM} = require('jsdom');
 
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom = new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -334,7 +355,7 @@ jobs:
           const assert = require('assert');
           const {JSDOM} = require('jsdom');
 
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom = new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -449,7 +470,7 @@ jobs:
           const assert = require('assert');
           const {JSDOM} = require('jsdom');
 
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom = new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -538,7 +559,7 @@ jobs:
           const assert = require('assert');
           const {JSDOM} = require('jsdom');
 
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom = new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -649,7 +670,7 @@ jobs:
           const assert = require('assert');
           const {JSDOM} = require('jsdom');
 
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom = new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -702,7 +723,7 @@ jobs:
           const fs = require('fs');
           const assert = require('assert');
           const {JSDOM} = require('jsdom');
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
           const makeDom = (seed, recovery=null) => new JSDOM(html,{
             runScripts:'dangerously',
@@ -859,7 +880,7 @@ jobs:
           const assert = require('assert');
           const {JSDOM} = require('jsdom');
 
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom = new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -967,7 +988,7 @@ jobs:
           const assert = require('assert');
           const {JSDOM} = require('jsdom');
 
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom = new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -1059,7 +1080,7 @@ jobs:
           const assert = require('assert');
           const {JSDOM} = require('jsdom');
 
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom = new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -1109,7 +1130,7 @@ jobs:
           const fs = require('fs');
           const assert = require('assert');
 
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const cap = JSON.parse(fs.readFileSync('capacitor.config.json','utf8'));
 
           assert.equal(cap.plugins?.SystemBars?.insetsHandling,'css','Capacitor should inject Android safe-area CSS variables');
@@ -1135,7 +1156,7 @@ jobs:
           const assert = require('assert');
           const {JSDOM} = require('jsdom');
 
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom = new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -1212,7 +1233,7 @@ jobs:
           const assert = require('assert');
           const {JSDOM} = require('jsdom');
 
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom = new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -1285,7 +1306,7 @@ jobs:
           const assert = require('assert');
           const {JSDOM} = require('jsdom');
 
-          const html = fs.readFileSync('index.html','utf8');
+          const html = fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           let lastScroll=null;
           const dom = new JSDOM(html,{
             runScripts:'dangerously',
@@ -1386,7 +1407,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           let backHandler=null,appStateHandler=null,exitCount=0;
           const dom=new JSDOM(html,{
             runScripts:'dangerously',
@@ -1458,7 +1479,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           let keyboardShow=null,keyboardHide=null,shareCalls=0,writeCalls=0,statusCalls=0;
           const dom=new JSDOM(html,{
             runScripts:'dangerously',
@@ -1531,7 +1552,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -1588,7 +1609,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -1649,7 +1670,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{
             runScripts:'dangerously',
             url:'https://swole-cat.test/',
@@ -1709,7 +1730,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
@@ -1740,7 +1761,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
@@ -1822,7 +1843,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
@@ -1884,7 +1905,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
@@ -1942,7 +1963,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
@@ -2014,7 +2035,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           assert(!html.includes('3-Day starter'),'generic starter button/copy must be removed');
           assert(!html.includes('Use 3-day starter'),'starter onboarding choice must be removed');
           assert(!html.includes('function installStarterPlan'),'starter product helper must be retired');
@@ -2114,7 +2135,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
@@ -2151,7 +2172,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
@@ -2227,7 +2248,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
@@ -2331,7 +2352,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
@@ -2403,7 +2424,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
@@ -2470,7 +2491,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           let recognitionInstance=null;
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
@@ -2542,7 +2563,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
@@ -2612,7 +2633,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
@@ -2676,7 +2697,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
@@ -2762,7 +2783,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
@@ -2853,7 +2874,7 @@ jobs:
           const fs=require('fs');
           const assert=require('assert');
           const {JSDOM}=require('jsdom');
-          const html=fs.readFileSync('index.html','utf8');
+          const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
           const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
             window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
             window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
