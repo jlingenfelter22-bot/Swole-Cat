@@ -5117,8 +5117,137 @@ function coachRecentContextText(request){
  });
  return bits.length?`Recent log context: ${bits.join(' · ')}. This is training history, not a recovery score.`:'';
 }
+
+function coachRefreshExplicitDraftTargets(draft=coachBuildDraft){
+ if(!draft?.explicitPrescription)return;
+ const regions=[],labels=[];
+ draft.selectedIds.forEach(id=>{
+   const ex=exById(id),meta=exerciseMuscleMetadata(ex);if(!ex)return;
+   regions.push(...meta.primary,...meta.secondary);
+   if(ex.muscle&&!labels.includes(ex.muscle))labels.push(ex.muscle);
+ });
+ draft.request.targetRegions=[...new Set(regions)];
+ draft.request.targetLabels=labels.length?labels:['Custom'];
+}
+function coachExplicitConfigForExercise(draft,exerciseId,overrides={}){
+ const current=draft.explicitConfigById?.[exerciseId]||{},d=draft.defaults||coachProgrammingDefaults(draft.request.goal,draft.request.duration||45);
+ return {
+   exerciseId,
+   sets:Math.max(1,Math.min(10,Number(overrides.sets??current.sets??d.sets)||d.sets)),
+   minReps:Math.max(1,Number(overrides.minReps??current.minReps??d.minReps)||d.minReps),
+   maxReps:Math.max(1,Number(overrides.maxReps??current.maxReps??d.maxReps)||d.maxReps),
+   explicitSets:overrides.explicitSets??current.explicitSets??false,
+   explicitReps:overrides.explicitReps??current.explicitReps??false
+ };
+}
+function coachResolveExplicitEditExercise(text,draft=coachBuildDraft,{selectedOnly=false}={}){
+ const mentions=coachFindExerciseMentions(text);
+ const pool=selectedOnly?new Set(draft?.selectedIds||[]):null;
+ const mention=mentions.find(m=>!pool||pool.has(m.exerciseId));
+ if(mention)return exById(mention.exerciseId);
+ const cleaned=String(text||'')
+   .replace(/^(?:can\s+you\s+)?(?:please\s+)?(?:also\s+)?(?:add|include|remove|drop|skip|delete|make|change|set|update)\s+/i,'')
+   .replace(/^(?:a|an|one|\d+)\s+sets?\s+(?:of\s+)?/i,'')
+   .replace(/\s+(?:for|at|to)\s+\d+(?:\s*(?:-|to)\s*\d+)?\s*(?:reps?)?.*$/i,'')
+   .replace(/\s+\d+\s+sets?.*$/i,'');
+ return coachResolveExercisePhrase(cleaned,selectedOnly?(draft?.selectedIds||[]):null);
+}
+function coachExplicitEditNumbers(text,draft,exerciseId,{forAdd=false}={}){
+ const normalized=coachNumbersToDigits(text),current=coachExplicitConfigForExercise(draft,exerciseId),out={};
+ let m;
+ if((m=normalized.match(/\b(?:a|an)\s+sets?\b/i)))out.sets=1;
+ if((m=normalized.match(/\b(\d+)\s+sets?\b/i)))out.sets=Number(m[1]);
+ if((m=normalized.match(/\b(\d+)\s*x\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\b/i))){
+   out.sets=Number(m[1]);out.minReps=Number(m[2]);out.maxReps=Number(m[3]||m[2]);
+ }
+ if((m=normalized.match(/(?:for|at|target(?:ing)?|aim(?:ing)?(?:\s+for)?|to)\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?\b/i))){
+   out.minReps=Number(m[1]);out.maxReps=Number(m[2]||m[1]);
+ }else if((m=normalized.match(/\b(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?\b/i))){
+   out.minReps=Number(m[1]);out.maxReps=Number(m[2]||m[1]);
+ }
+ if(forAdd&&out.sets==null){
+   if(/\b(?:a|an)\s+set\b/i.test(normalized))out.sets=1;
+   else out.sets=current.sets;
+ }
+ return {
+   sets:out.sets??current.sets,
+   minReps:out.minReps??current.minReps,
+   maxReps:out.maxReps??current.maxReps,
+   explicitSets:out.sets!=null||current.explicitSets,
+   explicitReps:out.minReps!=null||current.explicitReps
+ };
+}
+function coachRefineExplicitDraftText(text){
+ const draft=coachBuildDraft,raw=String(text||'').trim();if(!draft?.explicitPrescription||!raw)return {ok:false,message:'Tell Coach what you want changed.'};
+ const normalized=coachNumbersToDigits(raw),lower=normalized.toLowerCase();
+ draft.explicitConfigById=draft.explicitConfigById||{};
+ const isAdd=/\b(?:add|include)\b/i.test(lower);
+ const isRemove=/\b(?:remove|drop|skip|delete)\b/i.test(lower);
+ const isModify=/\b(?:make|change|set|update)\b/i.test(lower)||(/\bsets?\b|\breps?\b/i.test(lower)&&!isAdd&&!isRemove);
+
+ if(isAdd){
+   const ex=coachResolveExplicitEditExercise(normalized,draft);
+   if(!ex)return {ok:false,message:'I heard the add request, but I could not match that exercise. Try the exercise name again.'};
+   if(draft.selectedIds.includes(ex.id)){
+     const cfg=coachExplicitEditNumbers(normalized,draft,ex.id,{forAdd:true});
+     draft.explicitConfigById[ex.id]=coachExplicitConfigForExercise(draft,ex.id,cfg);
+     draft.lastRefinement=`Updated ${ex.name}`;
+   }else{
+     const cfg=coachExplicitEditNumbers(normalized,draft,ex.id,{forAdd:true});
+     draft.selectedIds.push(ex.id);
+     draft.explicitConfigById[ex.id]=coachExplicitConfigForExercise(draft,ex.id,cfg);
+     draft.lastRefinement=`Added ${ex.name}`;
+   }
+   coachRefreshExplicitDraftTargets(draft);
+   return {ok:true,message:'Workout updated.'};
+ }
+
+ if(isRemove){
+   const ex=coachResolveExplicitEditExercise(normalized,draft,{selectedOnly:true});
+   if(!ex)return {ok:false,message:'I could not tell which current exercise you want removed.'};
+   if(draft.selectedIds.length<=1)return {ok:false,message:'Keep at least one exercise in the workout.'};
+   draft.selectedIds=draft.selectedIds.filter(id=>id!==ex.id);
+   delete draft.explicitConfigById[ex.id];
+   draft.lastRefinement=`Removed ${ex.name}`;
+   coachRefreshExplicitDraftTargets(draft);
+   return {ok:true,message:'Workout updated.'};
+ }
+
+ if(isModify){
+   const ex=coachResolveExplicitEditExercise(normalized,draft,{selectedOnly:true});
+   if(!ex)return {ok:false,message:'I could not tell which current exercise you want changed.'};
+   const cfg=coachExplicitEditNumbers(normalized,draft,ex.id);
+   draft.explicitConfigById[ex.id]=coachExplicitConfigForExercise(draft,ex.id,cfg);
+   draft.lastRefinement=`Updated ${ex.name}`;
+   return {ok:true,message:'Workout updated.'};
+ }
+
+ const parsed=coachParseExplicitWorkout(normalized,draft.request.goal);
+ if(parsed.signal&&parsed.items.length){
+   parsed.items.forEach(item=>{
+     const existing=draft.selectedIds.includes(item.exerciseId);
+     if(!existing)draft.selectedIds.push(item.exerciseId);
+     draft.explicitConfigById[item.exerciseId]=coachExplicitConfigForExercise(draft,item.exerciseId,item);
+   });
+   draft.lastRefinement='Updated explicit workout';
+   coachRefreshExplicitDraftTargets(draft);
+   return {ok:true,message:'Workout updated.'};
+ }
+
+ const parsedPrompt=coachParsePrompt(normalized,draft.request.goal),goal=coachExplicitGoal(normalized);
+ let metadataChanged=false;
+ if(parsedPrompt.duration){draft.request.duration=parsedPrompt.duration;metadataChanged=true}
+ if(goal&&goal!==draft.request.goal){
+   draft.request.goal=goal;
+   draft.defaults=coachProgrammingDefaults(goal,draft.request.duration||45);
+   metadataChanged=true;
+ }
+ if(metadataChanged){draft.lastRefinement=raw;return {ok:true,message:'Workout updated.'}}
+ return {ok:false,message:'I did not understand that edit. Try “add 1 set of assisted pull-ups,” “make bench 4 sets of 6,” or “remove Bulgarian split squats.”'};
+}
 function coachRefineDraftText(text){
  const draft=coachBuildDraft,raw=String(text||'').trim();if(!draft||!raw)return {ok:false,message:'Tell Coach what you want changed.'};
+ if(draft.explicitPrescription)return coachRefineExplicitDraftText(raw);
  const lower=raw.toLowerCase(),req={...draft.request};
  req.targetLabels=[...(req.targetLabels||[])];req.targetRegions=[...(req.targetRegions||[])];
  req.allowedEquipment=[...(req.allowedEquipment||[])];req.excludedEquipment=[...(req.excludedEquipment||[])];
@@ -5452,9 +5581,9 @@ function renderCoachPreview(){
         <div class="coach-exercise-actions"><button class="btn small secondary" onclick="coachSwapExercise(${i})">Swap</button><button class="btn small secondary" onclick="coachRemoveExercise(${i})">Remove</button></div>
       </div>`}).join('')}
     </div>
-    <div class="coach-rationale"><b>Why this structure:</b> exercise selection is ranked from requested muscles, primary/secondary involvement, equipment, movement-pattern balance, your Prefer/Avoid/Favorite/Hidden settings, and a light recent-exercise variety signal. Swolecat does not invent a starting weight; your own exercise history and progression engine handle load once the workout starts.</div>
+    <div class="coach-rationale"><b>Why this structure:</b> ${draft.explicitPrescription?'This is your exercise list. Coach preserves the exercises you named and only changes the list when you explicitly ask it to add, remove, swap, or modify something.':'exercise selection is ranked from requested muscles, primary/secondary involvement, equipment, movement-pattern balance, your Prefer/Avoid/Favorite/Hidden settings, and a light recent-exercise variety signal.'} Swolecat does not invent a starting weight; your own exercise history and progression engine handle load once the workout starts.</div>
     ${coachRecentContextText(req)?`<div class="notice">${esc(coachRecentContextText(req))}</div>`:''}
-    <div class="coach-console" style="margin-top:10px"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Change the draft naturally. Try “make it 30 minutes,” “no barbells,” “more chest,” “strength focused,” “remove bench press,” or “add lateral raise.”</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachRefinePrompt" placeholder="Make it 30 min, no barbells, more chest..." onkeydown="if(event.key==='Enter')coachApplyRefinement()">${coachVoiceButtonHtml('coachRefinePrompt')}</div><button class="btn" onclick="coachApplyRefinement()">Update</button></div></div>
+    <div class="coach-console" style="margin-top:10px"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">${draft.explicitPrescription?'Edit your exact list. Try “add 1 set of assisted pull-ups,” “make bench 4 sets of 6,” or “remove Bulgarian split squats.”':'Change the draft naturally. Try “make it 30 minutes,” “no barbells,” “more chest,” “strength focused,” “remove bench press,” or “add lateral raise.”'}</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachRefinePrompt" placeholder="${draft.explicitPrescription?'Add 1 set of assisted pull-ups...':'Make it 30 min, no barbells, more chest...'}" onkeydown="if(event.key==='Enter')coachApplyRefinement()">${coachVoiceButtonHtml('coachRefinePrompt')}</div><button class="btn" onclick="coachApplyRefinement()">Update</button></div></div>
     <div class="notice">Programming presets are practical defaults, not claims that one rep range or exercise is universally best. Recent logs are used only as context and a small variety signal, never as a recovery or readiness diagnosis.</div>
     <div class="actions"><button class="btn green" onclick="coachStartWorkoutNow()">Start Workout Now</button><button class="btn" onclick="coachSaveRoutine()">Save as Routine</button><button class="btn secondary" onclick="coachOpenAddToProgram()">Add to Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
    </div>`);
