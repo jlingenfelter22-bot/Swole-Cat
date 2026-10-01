@@ -173,6 +173,11 @@ function load(){
 }
 let state=load();
 let stateRevision=0,pendingStateSave=false,pendingStateSaveTimer=null;
+SwoleCatRuntime.registerService('state',{
+ read(){return cloneData(state)},
+ revision(){return stateRevision},
+ requestSave(){return save()}
+});
 const navigationRenderRevision={home:-1,routines:-1,exercises:-1,history:-1,analytics:-1};
 let derivedSessionCacheRevision=-1,derivedSessionCache=null;
 let exerciseCatalogCacheRevision=-1,exerciseCatalogCache=null;
@@ -260,6 +265,7 @@ function save(){
    swoleCatStorage.setItem(LSKEY,serialized);
    stateRevision++;
    lastStorageError='';
+   SwoleCatRuntime.events.dispatchEvent(new CustomEvent('state:saved',{detail:{revision:stateRevision,savedAt:state.meta.lastSavedAt}}));
    return true;
  }catch(e){
    lastStorageError=e?.message||String(e);
