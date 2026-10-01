@@ -19,7 +19,12 @@ const JS_SOURCES = [
   'src/js/08-exercise-tools.js',
   'src/js/09-settings-ui-bootstrap.js'
 ];
-const CSS_SOURCES = ['src/styles/app.css'];
+const CSS_SOURCES = [
+  'src/styles/00-base.css',
+  'src/styles/01-design-system.css',
+  'src/styles/02-views.css',
+  'src/styles/03-polish.css'
+];
 const STATIC_ASSETS = [
   'manifest.webmanifest',
   'icon-192.svg',
