@@ -272,8 +272,10 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 **v0.47.0:** Historical Workout Recaps reuses the durable completion recap from both History and the Progress calendar, adds exact completed set rows and exercise notes, and computes progression only against sessions that occurred before the historical workout being viewed.
 
 ### Later extension
-- weekly/monthly muscle-group coverage
-- training-frequency visualization
+- [x] weekly/monthly muscle-group coverage
+- [x] training-frequency visualization
+
+**v0.48.0:** Muscle Coverage + Frequency adds this-week and month-to-date muscle coverage using the same audited primary/secondary set-equivalent engine as the session heat map, upgrades the existing workload comparison to that same model, and adds an 8-week per-muscle session-frequency strip.
 - recovery/fatigue features only if they can be presented responsibly and without pretending to know more than the recorded data supports
 
 ---
