@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.54.0
+Version: v0.55.0
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -265,3 +265,78 @@ Guardrails:
 - no claim that a muscle is recovered, under-recovered, overtrained, injured, or physiologically ready
 - no statement that the user must train the absent area
 - the underlying observation comes only from logged Swole Cat history
+
+
+## v0.55 workout-programming intelligence
+
+Generic Coach workout generation now uses a two-stage programming process.
+
+First, Coach creates a semantic coverage plan from what the user actually requested. Examples:
+- Chest reserves a chest-press role and may add incline/fly roles when session length allows.
+- Back reserves horizontal pulling and may add vertical pulling, lat isolation and rear-delt/upper-back work.
+- Arms reserves a true direct biceps isolation and a true direct triceps isolation.
+- Push, Pull, Legs, Upper Body, Lower Body and Full Body have their own coverage roles.
+
+Only after core coverage roles are filled does the normal candidate ranker use the remaining session slots.
+
+The generic ranker now also uses:
+- normalized target keys, including singular "arm" -> Arms
+- separate primary-muscle coverage instead of allowing secondary involvement to masquerade as direct work
+- semantic movement families such as row, vertical pull, lat isolation, flat press, incline press, chest fly, biceps curl and triceps extension
+- family caps that are stricter for multi-target workouts
+- practical staple bias for generic workout generation
+- penalties for unusually specialized variants when the user did not request them
+- session-breadth-aware exercise-count caps so a single-muscle 60-minute session does not require eight near-duplicates
+- upper-body back-day filters that prevent hypertrophy sessions from padding themselves with hinge/Olympic-pull variants when conventional back work is available
+
+The Swap action first searches within the same movement family, then the same primary target role, before considering a broader replacement.
+
+Regression fixture based on direct user feedback:
+"I need a good 60 minute chest, arm, and back workout."
+
+The test requires:
+- Chest primary work
+- Back primary work
+- direct Biceps isolation
+- direct Triceps isolation
+- no stacked row variants
+- no stacked cable/dumbbell pullover family
+- distinct movement families where alternatives exist
+
+A representative deterministic fixture currently produces:
+Barbell Bench Press / Barbell Row / Incline Barbell Bench Press / Assisted Pull-Up / Cable Fly / Cable Pullover / Barbell Curl / Overhead Triceps Extension.
+
+A focused hypertrophy Back fixture currently produces:
+Barbell Row / Assisted Pull-Up / Chest Supported Row / Chin-Up / Cable Pullover / Face Pull.
+
+Exact choices can change with user Prefer/Avoid/Favorite settings, equipment restrictions and training history; the coverage and redundancy rules are the invariant.
+
+## v0.55 lifting-grammar foundation
+
+Coach now parses and persists the first execution-level training instructions that map cleanly to the current workout data model.
+
+Supported workout-level examples:
+- "warm me up first"
+- "include warm-up sets"
+- "2 minutes rest"
+- "rest 90 seconds"
+- "2 RIR"
+- "leave 3 reps in the tank"
+- "RPE 8"
+- "last set AMRAP"
+
+Behavior:
+- warm-up-first automatically adds a ramp to the first compound movement when a known working load exists; when load history is absent, blank editable warm-up rows are created rather than inventing a weight
+- explicit rest time overrides the Coach preset
+- RPE is translated into the equivalent RIR target for display (for example RPE 8 -> 2 RIR)
+- target RIR remains guidance; actual logged RIR stays user-entered
+- last-set-AMRAP marks the final working set without converting it to a non-progression set
+- these settings persist when a Coach workout is saved as a normal Routine and later started
+
+Not yet claimed:
+- top-set/backoff load progression
+- per-exercise RPE/RIR grammar
+- automatic superset parsing from free text
+- failure-set programming that interacts with progression
+
+Those require dedicated set-structure/progression rules and should not be simulated by labels alone.
