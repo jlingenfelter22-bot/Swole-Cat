@@ -7,6 +7,9 @@ Swole Cat is a local-first web application packaged for Android with Capacitor. 
 ```text
 index.html                    # Small application shell only
 src/
+  data/
+    exercises.js              # Canonical exercise catalog
+    anatomy.js                # Front/back muscle-map geometry
   styles/
     00-base.css               # Base layout, typography, core components
     01-design-system.css      # Retro-future identity and shared controls
@@ -17,7 +20,11 @@ src/
     01-core-runtime.js        # State, persistence, navigation, native behavior
     02-muscle-history-analytics.js
     03-programs.js
-    04-coach.js
+    04a-coach-input-intent.js
+    04b-coach-programming.js
+    04c-coach-language-refinement.js
+    04d-coach-program-builder.js
+    04e-coach-ui.js
     05-exercises-routines.js
     06-workout-engine.js
     07-history-editor.js
