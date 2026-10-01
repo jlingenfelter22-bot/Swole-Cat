@@ -91,7 +91,7 @@ function coachSmartExerciseCount(request,baseCount){
  if(key==='lower back')return Math.min(base,4);
  if(['upper back','lats','traps'].includes(key))return Math.min(base,5);
  if(['chest','back','shoulders','arms','biceps','triceps','full body'].includes(key))return Math.min(base,6);
- if(['push','pull','legs','lower body','upper body'].includes(key))return Math.min(base,7);
+ if(['push','pull','legs','lower body','upper body','posterior chain'].includes(key))return Math.min(base,7);
  return base;
 }
 function coachCandidateBaseScore(ex,request){
@@ -244,6 +244,12 @@ function coachCoveragePlan(request,count){
    add(optional,'leg_glutes','Glute emphasis',glutePattern);
    add(optional,'leg_adductors','Adductors',adductorPattern);
  };
+ const addPosteriorChain=()=>{
+   add(core,'posterior_hinge','Hip hinge',hipHinge);
+   add(core,'posterior_curl','Knee-flexion hamstrings',hamstringCurl);
+   add(core,'posterior_erectors','Direct spinal erectors',lowerBackDirect);
+   add(optional,'posterior_glutes','Glute emphasis',glutePattern);
+ };
 
  if(keys.includes('full body')){
    add(core,'full_squat','Lower-body compound',squatPattern);
@@ -272,6 +278,7 @@ function coachCoveragePlan(request,count){
      else if(key==='traps')addTraps();
      else if(key==='arms')addArms();
      else if(key==='shoulders')addShoulders();
+     else if(key==='posterior chain')addPosteriorChain();
      else if(key==='legs')addLegs();
      else if(key==='biceps'){
        add(core,'biceps_supinated','Supinated elbow flexion',bicepsSupinated);
