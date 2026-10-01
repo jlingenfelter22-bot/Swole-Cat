@@ -3484,6 +3484,24 @@ function toggleActiveWorkoutControl(){
  if(shouldPause)pauseActiveWorkout();
  else resumeActiveWorkout();
 }
+function activeSetsFromRoutineExercise(re,rec,ex){
+ const working=Array.from({length:re.sets},(_,i)=>({
+   weight:rec.weights?.[i]??rec.weight??0,
+   reps:rec.targetReps?.[i]??re.minReps,
+   done:false,rir:'',type:'working',pr:'',
+   amrap:!!re.lastSetAmrap&&i===Math.max(0,re.sets-1)
+ }));
+ if(!re.autoWarmup||!ex||!COACH_COMPOUND_PATTERNS.has(ex.pattern))return working;
+ const targetWeight=Number(rec.weights?.[0]??rec.weight??0);
+ let warmups=warmupGuide(targetWeight,ex);
+ if(!warmups.length&&ex.equipment!=='bodyweight'){
+   warmups=[{weight:0,reps:8},{weight:0,reps:5}];
+ }
+ return [
+   ...warmups.map(row=>({weight:row.weight,reps:row.reps,done:false,rir:'',type:'warmup',pr:'',amrap:false})),
+   ...working
+ ];
+}
 function startRoutineFresh(id,programId=null){
  const r=state.routines.find(x=>x.id===id); if(!r)return;
  const program=programId?programById(programId):null;
@@ -3496,9 +3514,7 @@ function startRoutineFresh(id,programId=null){
      const prev=previousExercise(re.exerciseId);
      const mode=effectiveMode,config={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode};
      const rec=buildRecommendation(config,prev,re.exerciseId);
-     return {exerciseId:re.exerciseId,routineIndex,config,targetOverride:null,supersetId:re.supersetGroup||null,skipped:false,expanded:routineIndex===0,sets:Array.from({length:re.sets},(_,i)=>({
-       weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??re.minReps,done:false,rir:'',type:'working'
-     })),notes:''};
+     return {exerciseId:re.exerciseId,routineIndex,config,targetOverride:null,supersetId:re.supersetGroup||null,skipped:false,expanded:routineIndex===0,sets:activeSetsFromRoutineExercise(re,rec,exById(re.exerciseId)),notes:''};
    })
  };
  state.activeWorkout=active;
@@ -5990,7 +6006,10 @@ function coachExerciseReason(ex,request){
 }
 function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
  if(!draft)return null;
- const d=draft.defaults,r=draft.request;
+ const d=draft.defaults,r=draft.request,g=r.liftingGrammar||{};
+ const firstWarmupId=g.warmupMode==='first_compound'
+   ?draft.selectedIds.find(exerciseId=>COACH_COMPOUND_PATTERNS.has(exById(exerciseId)?.pattern))
+   :null;
  return {
    id,name:coachWorkoutName(r),
    description:`Generated locally by Coach Swolecat from: "${r.prompt||r.targetLabels.join(' + ')}". Evidence rules: ACSM 2026 resistance-training position stand + NSCA program-design framework.`,
@@ -5999,7 +6018,11 @@ function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
      const explicit=draft.explicitConfigById?.[exerciseId];
      return {
        exerciseId,sets:explicit?.sets||d.sets,minReps:explicit?.minReps||d.minReps,maxReps:explicit?.maxReps||d.maxReps,increment:state.settings.defaultIncrement,
-       mode:'double',trainingGoal:d.goal,resetPercent:7.5,restSeconds:d.restSeconds
+       mode:'double',trainingGoal:d.goal,resetPercent:7.5,restSeconds:d.restSeconds,
+       autoWarmup:exerciseId===firstWarmupId,
+       targetRIR:Number.isFinite(Number(d.targetRIR))?Number(d.targetRIR):null,
+       targetRPE:Number.isFinite(Number(d.targetRPE))?Number(d.targetRPE):null,
+       lastSetAmrap:!!g.lastSetAmrap
      };
    })
  };
@@ -6014,7 +6037,7 @@ function renderCoachPreview(){
       <div class="eyebrow">QUICK BUILD // LOCAL ENGINE</div>
       <div class="coach-preview-head"><div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(routine.name)}</div><div class="mini" style="margin-top:5px">Built from audited Swolecat exercise metadata · local and offline.</div></div><span class="tag">${req.duration} min target</span></div>
       ${draft.lastRefinement?`<div class="mini" style="margin-top:8px"><b>Last change:</b> ${esc(draft.lastRefinement)}</div>`:''}
-      <div class="coach-preview-meta"><span class="tag">${esc(coachGoalLabel(req.goal))}</span><span class="tag">${esc(equipment)}</span>${draft.explicitPrescription?'<span class="tag">Custom sets / reps</span>':`<span class="tag">${d.sets} × ${d.minReps}–${d.maxReps}</span>`}<span class="tag">${d.restSeconds}s rest</span></div>
+      <div class="coach-preview-meta"><span class="tag">${esc(coachGoalLabel(req.goal))}</span><span class="tag">${esc(equipment)}</span>${draft.explicitPrescription?'<span class="tag">Custom sets / reps</span>':`<span class="tag">${d.sets} × ${d.minReps}–${d.maxReps}</span>`}<span class="tag">${d.restSeconds}s rest</span>${req.liftingGrammar?.warmupMode==='first_compound'?'<span class="tag">Warm-up first</span>':''}${Number.isFinite(Number(d.targetRIR))?`<span class="tag">Target ${d.targetRIR} RIR</span>`:''}${req.liftingGrammar?.lastSetAmrap?'<span class="tag">Last set AMRAP</span>':''}</div>
     </div>
     <div class="coach-exercise-list">
       ${draft.selectedIds.map((id,i)=>{const ex=exById(id);return `<div class="coach-exercise">
@@ -6117,9 +6140,7 @@ function coachActiveWorkoutFromDraft(draft=coachBuildDraft){
    exercises:routine.exercises.map((re,routineIndex)=>{
      const prev=previousExercise(re.exerciseId),config={trainingGoal:'general',resetPercent:7.5,...re,routineMode:effectiveMode,mode:re.mode==='range'?'double':re.mode};
      const rec=buildRecommendation(config,prev,re.exerciseId);
-     return {exerciseId:re.exerciseId,routineIndex,config,targetOverride:null,supersetId:null,skipped:false,expanded:routineIndex===0,sets:Array.from({length:re.sets},(_,i)=>({
-       weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??re.minReps,done:false,rir:'',type:'working'
-     })),notes:''};
+     return {exerciseId:re.exerciseId,routineIndex,config,targetOverride:null,supersetId:null,skipped:false,expanded:routineIndex===0,sets:activeSetsFromRoutineExercise(re,rec,exById(re.exerciseId)),notes:''};
    })
  };
 }
@@ -7445,7 +7466,7 @@ function setTypeOptions(type){
 function setDisplayLabel(e,si){
  const type=setType(e.sets[si]);
  const peers=e.sets.slice(0,si+1).filter(s=>setType(s)===type).length;
- return type==='working'?`Set ${peers}`:`${setTypeLabel(type)} ${peers}`;
+ return type==='working'?`Set ${peers}${e.sets[si]?.amrap?' · AMRAP':''}`:`${setTypeLabel(type)} ${peers}`;
 }
 function setProgressionNote(type){
  if(type==='warmup')return 'Warm-up set · saved to history and volume, ignored by progression and PRs.';
@@ -7921,7 +7942,7 @@ function renderWorkout(){
     <div class="exercise-expanded-content">
       <div class="targetbox"><div class="eyebrow">SESSION GOAL</div><div class="exercise-name" style="margin-top:5px">${esc(e.targetOverride?`${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`:rec.headline)}</div><div class="mini" style="margin-top:5px">${esc(e.targetOverride?`Session-only ${e.targetOverride.reason||'override'}. Routine progression is unchanged.`:rec.detail)}</div>${plateText?`<div class="plates">🏋 ${esc(plateText)}</div>`:''}${e.targetOverride?`<div class="override-note">Manual/session target active</div>`:''}</div>
       ${coach?`<div class="coachbox ${coach.level==='info'?'':coach.level}"><div class="coach-title">${esc(coach.title)}</div><div class="coach-text">${esc(coach.text)}</div>${coach.canReset&&!e.targetOverride?`<div class="actions" style="margin-top:8px"><button class="btn small secondary" onclick="applyCoachReset(${ei})">Apply ${coach.resetPercent}% reset for today</button></div>`:''}</div>`:''}
-      <div class="toolrow">${warmups.length?`<button class="toolchip" onclick="openWarmupGuide(${ei})">Warm-up guide</button>`:''}<button class="toolchip" onclick="openTargetOverride(${ei})">Override target</button><button class="toolchip" onclick="openWorkoutSubstitute(${ei})">Substitute</button><button class="toolchip" onclick="openSupersetPicker(${ei})">⚡ ${superset?`Superset ${superset.label}`:'Superset'}</button><span class="toolchip">${e.config.restSeconds||120}s rest</span></div>
+      <div class="toolrow">${warmups.length?`<button class="toolchip" onclick="openWarmupGuide(${ei})">Warm-up guide</button>`:''}<button class="toolchip" onclick="openTargetOverride(${ei})">Override target</button><button class="toolchip" onclick="openWorkoutSubstitute(${ei})">Substitute</button><button class="toolchip" onclick="openSupersetPicker(${ei})">⚡ ${superset?`Superset ${superset.label}`:'Superset'}</button><span class="toolchip">${e.config.restSeconds||120}s rest</span>${Number.isFinite(Number(e.config.targetRIR))?`<span class="toolchip">Target ${e.config.targetRIR} RIR</span>`:''}</div>
       ${superset?`<div class="superset-note"><b>Superset ${superset.label}</b> · ${esc(supersetNames(superset.id))}<br>Rotate through working sets, then rest after the round.</div>`:''}
     <div class="live-body">
      ${e.sets.map((s,si)=>{
