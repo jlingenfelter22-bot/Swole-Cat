@@ -276,7 +276,7 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 - [x] training-frequency visualization
 
 **v0.48.0:** Muscle Coverage + Frequency adds this-week and month-to-date muscle coverage using the same audited primary/secondary set-equivalent engine as the session heat map, upgrades the existing workload comparison to that same model, and adds an 8-week per-muscle session-frequency strip.
-- recovery/fatigue features only if they can be presented responsibly and without pretending to know more than the recorded data supports
+- recovery/fatigue guidance deferred to a later advanced-guidance phase after the core product is mature; if added, it must remain conservative and based on recorded training rather than pretending to measure readiness
 
 ---
 
@@ -299,6 +299,8 @@ The goal is not to create an endlessly conversational fitness assistant. The goa
 **Priority: Medium-high**
 
 Goal: let a user create a useful workout or full routine in seconds without manually searching through the exercise library.
+
+**v0.49.0: Coach Swolecat Quick Build Foundation** — Initial local deterministic builder: natural-language target/time/equipment parsing, concise missing-info follow-ups, evidence-versioned hypertrophy/strength/general presets, audited muscle matching, preference-aware exercise ranking, movement-pattern balancing, preview/swap/remove controls, temporary Start Now workouts, and explicit Save as Routine.
 
 ### Locked: Quick workout builder
 The home screen should eventually include a fast **Build a Workout** entry point powered by Coach Swole Cat.
@@ -580,10 +582,10 @@ The following product ideas are explicitly retained on the roadmap:
 - [ ] Muscle groups targeted summary
 - [ ] Front/back muscle heat map
 - [ ] Detailed historical workout recap from calendar/history
-- [ ] Coach Swole Cat / Quick Build workout generator
-- [ ] Natural-language workout requests with concise follow-up questions
-- [ ] Generate → preview → edit → start/save workflow
-- [ ] Local deterministic workout-generation engine using muscle/equipment/history/preferences
+- [x] Coach Swole Cat / Quick Build workout generator foundation
+- [x] Natural-language workout requests with concise follow-up questions
+- [x] Generate → preview → edit → start/save workflow
+- [x] Local deterministic workout-generation engine using muscle/equipment/history/preferences
 - [ ] Optional later AI-backed conversational Coach layer
 - [ ] Preserve an ad-free, no-paywall core workout experience
 - [ ] Routine sharing/import
