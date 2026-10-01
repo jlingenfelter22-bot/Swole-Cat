@@ -282,6 +282,8 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 
 ## Phase 6 — Coach Swole Cat / Quick Build
 
+**Status: In progress through v0.51.0**
+
 ### Product intent: useful, not bloated
 Coach Swole Cat should reinforce the core product philosophy rather than turn the app into a noisy AI product.
 
@@ -311,6 +313,8 @@ Goal: let a user create a useful workout or full routine in seconds without manu
 **v0.50.3: First-Time Weight Autofill** — When an exercise has no previously logged history, the first positive working-set weight entered during a workout is copied once into the remaining empty working sets for that exercise. Existing weights, completed sets, warm-up/drop/failure sets, and exercises with prior history are never overwritten. Typed values now commit only after the active weight field is finished, preventing partial multi-digit entries from seeding other sets.
 
 **v0.50.4: Multi-Digit Weight Autofill Hotfix** — First-time weight propagation no longer relies on a short typing debounce. While the source weight field has focus, partial values such as `1` or `10` cannot seed the remaining sets. Leaving the field commits the final value, so entering `100` fills eligible blank working sets with `100`. The increment/decrement controls retain their immediate autofill behavior.
+
+**v0.51.0: Conversational Coach Refinement + Program Handoff** — Coach Swolecat now keeps the generated workout as a live local draft that can be refined in natural language instead of forcing a new request. Users can change session duration, training goal, equipment constraints, muscle emphasis, and named exercises with commands such as “make it 30 minutes,” “no barbells,” “more chest,” “strength focused,” “remove bench press,” or “add lateral raises.” Explicit exercise requests override Coach ranking when they satisfy hard equipment/visibility constraints. Manual Remove/Swap choices persist through later refinements. Recent exercise history is used only as a light variety signal and recent target-muscle context, never as a recovery/readiness diagnosis. Generated workouts can now be saved directly into an existing Program or used to create a new Program.
 
 ### Locked: Quick workout builder
 The home screen includes Coach Swolecat as the primary build path for new users and a secondary quick-build path for returning users when no workout is active.
@@ -394,12 +398,19 @@ Once the local builder is proven, an optional AI-backed Coach layer can add more
 Potential later capabilities:
 - multi-day program generation
 - "build me a 3-day plan" conversations
-- modify an existing routine from natural language
-- adapt a workout to time/equipment changes
-- explain why exercises were selected
-- use recent workout history to avoid unintentionally repeating heavily trained muscles
-- suggest substitutions using the existing preference/history system
+- modify an existing saved routine from natural language
+- deeper history-aware muscle scheduling across multi-day plans
+- more nuanced conversational substitutions and exercise aliases
+- optional cloud-language understanding for requests the deterministic parser cannot confidently interpret
+
+Implemented locally in v0.51.0:
+- adapt a generated workout to time/equipment changes
+- refine goal and muscle emphasis conversationally
+- add/remove named exercises while preserving user control
+- explain broad exercise-selection rationale
+- use recent workout history as a light variety/context signal
 - progressively refine a generated plan through conversation
+- add a generated workout directly to an existing or new Program
 
 ### Product/safety guardrails
 - Recommendations should be framed as training suggestions, not medical advice.
