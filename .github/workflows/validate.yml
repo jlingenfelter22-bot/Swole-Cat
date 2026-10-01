@@ -2221,7 +2221,7 @@ jobs:
           JS
 
 
-      - name: Smoke test V503 first-time weight autofill
+      - name: Smoke test V504 first-time weight autofill
         run: |
           node <<'JS'
           const fs=require('fs');
@@ -2268,11 +2268,15 @@ jobs:
             weightInput.value='100';
             weightInput.dispatchEvent(new w.Event('input',{bubbles:true}));
             weightInput.blur();
-            await wait(140);
+            await wait(20);
 
+            const liveWeights=w.eval('state.activeWorkout.exercises[0].sets.map(s=>Number(s.weight))');
+            assert.deepEqual(liveWeights,[100,100,100],'blur should commit the finished multi-digit weight immediately in live state');
+
+            await wait(260);
             state=JSON.parse(w.localStorage.getItem('overload_v3'));
             weights=state.activeWorkout.exercises[0].sets.map(s=>Number(s.weight));
-            assert.deepEqual(weights,[100,100,100],'first-ever exercise weight should seed all empty working sets only after the finished value is committed');
+            assert.deepEqual(weights,[100,100,100],'first-ever exercise weight should persist across all eligible working sets after commit');
             assert.equal(state.activeWorkout.exercises[0].firstWeightAutofillDone,true,'autofill should be one-time per exercise in the workout');
 
             // Changing the first set afterward must not keep rewriting the others.
