@@ -340,12 +340,12 @@ function coachSelectExercises(request,count){
    const pick=slotPick(slot);if(pick)register(pick);
  }
  const prioritySet=new Set(request.priorityRegions||[]);
- const optionalSlots=[...plan.optional].sort((a,b)=>{
-   const slotPriority=slot=>pool.some(ex=>slot.match(ex)&&exerciseMuscleMetadata(ex).primary.some(region=>prioritySet.has(region)))?1:0;
-   return slotPriority(b)-slotPriority(a);
- });
+ const multiTargetPriority=prioritySet.size>0&&coachRequestedTargetKeys(request).length>1;
+ const slotPriority=slot=>pool.some(ex=>slot.match(ex)&&exerciseMuscleMetadata(ex).primary.some(region=>prioritySet.has(region)))?1:0;
+ const optionalSlots=[...plan.optional].sort((a,b)=>slotPriority(b)-slotPriority(a));
  for(const slot of optionalSlots){
    if(selected.length>=count)break;
+   if(multiTargetPriority&&!slotPriority(slot))continue;
    const pick=slotPick(slot);if(pick)register(pick);
  }
 
