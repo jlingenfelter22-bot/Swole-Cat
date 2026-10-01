@@ -1934,3 +1934,75 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V49 Coach Swolecat quick build
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(70);
+            const w=dom.window;
+
+            let req=w.coachParsePrompt('Chest and back, 45 minutes, dumbbells and cables','hypertrophy');
+            assert.equal(req.duration,45);
+            assert(req.targetRegions.includes('chest')&&req.targetRegions.includes('lats')&&req.targetRegions.includes('upper_back'));
+            assert(req.allowedEquipment.includes('dumbbell')&&req.allowedEquipment.includes('cable'));
+            assert.equal(req.goal,'hypertrophy');
+
+            let draft=w.coachGenerateWorkout(req);
+            assert(draft&&draft.selectedIds.length>=4,'coach should generate a useful chest/back workout');
+            assert.equal(new Set(draft.selectedIds).size,draft.selectedIds.length,'generated exercises should be unique');
+            draft.selectedIds.forEach(id=>{
+              const ex=w.exById(id),meta=w.exerciseMuscleMetadata(ex);
+              assert(['dumbbell','cable'].includes(ex.equipment),'equipment restriction must be respected');
+              assert([...meta.primary,...meta.secondary].some(m=>req.targetRegions.includes(m)),'every selected exercise should match requested muscles');
+            });
+            const patterns=new Set(draft.selectedIds.map(id=>w.exById(id).pattern));
+            assert(patterns.size>=2,'builder should avoid a one-pattern workout when alternatives exist');
+
+            w.setExercisePreference('lib_2','hide');
+            draft=w.coachGenerateWorkout(req);
+            assert(!draft.selectedIds.includes('lib_2'),'hidden exercises must never be generated');
+
+            const strengthReq=w.coachParsePrompt('Strength focused push workout, 60 minutes','hypertrophy');
+            assert.equal(strengthReq.goal,'strength');
+            draft=w.coachGenerateWorkout(strengthReq);
+            assert.equal(draft.defaults.minReps,4);
+            assert.equal(draft.defaults.maxReps,6);
+            assert.equal(draft.defaults.restSeconds,180);
+            assert.equal(draft.defaults.trainingMode,'strength');
+
+            const routine=w.coachDraftRoutine(draft,'coach_test');
+            assert.equal(routine.trainingMode,'strength');
+            assert(routine.exercises.every(e=>e.trainingGoal==='strength'&&e.restSeconds===180),'saved routine config should preserve Coach programming');
+
+            const before=JSON.parse(w.localStorage.getItem('overload_v3')).routines.length;
+            const savedId=w.coachSaveRoutine(draft);
+            assert(savedId,'save as routine should return an id');
+            const after=JSON.parse(w.localStorage.getItem('overload_v3')).routines.length;
+            assert.equal(after,before+1,'save as routine should persist exactly one routine');
+
+            w.closeModal();
+            const tempDraft=w.coachGenerateWorkout(w.coachParsePrompt('30 minute legs','hypertrophy'));
+            assert(w.coachStartWorkoutNow(tempDraft),'start now should launch a workout');
+            await wait(10);
+            const active=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout;
+            assert(active&&active.exercises.length===tempDraft.selectedIds.length,'temporary Coach workout should use generated exercises');
+            assert.equal(active.routineId,null,'Start Workout Now must not silently save/link a routine');
+            assert.equal(active.trainingMode,'guided');
+
+            w.cancelWorkout();
+            dom.window.close();
+            console.log('Swole Cat V49 Coach Swolecat quick build PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
