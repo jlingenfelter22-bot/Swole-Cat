@@ -4809,9 +4809,39 @@ function coachParseTargets(text){
  terms.forEach(([key,re])=>{if(re.test(work))add(key)});
  return {keys,labels:[...new Set(labels)],regions:[...new Set(regions)]};
 }
+function coachParseLiftingGrammar(text){
+ const raw=String(text||''),lower=raw.toLowerCase(),out={};
+ if(/\b(?:no|skip|without)\s+(?:the\s+)?warm[- ]?ups?\b/i.test(lower))out.warmupMode='none';
+ else if(/\b(?:warm me up first|warm up first|start with (?:a )?warm[- ]?up|include warm[- ]?ups?|add warm[- ]?up sets?|ramp me up|ramp up first)\b/i.test(lower))out.warmupMode='first_compound';
+ let m=lower.match(/\b(\d+(?:\.\d+)?)\s*(?:minutes?|mins?|min)\s+(?:of\s+)?rest\b/i);
+ if(m)out.restSeconds=Math.max(15,Math.min(600,Math.round(Number(m[1])*60)));
+ else{
+   m=lower.match(/\b(\d{2,3})\s*(?:seconds?|secs?|sec|s)\s+(?:of\s+)?rest\b/i);
+   if(m)out.restSeconds=Math.max(15,Math.min(600,Number(m[1])||0));
+ }
+ m=lower.match(/\b([0-5])\s*(?:rir|reps?\s+in\s+reserve)\b/i)
+   ||lower.match(/\bleave\s+([0-5])\s+(?:reps?\s+)?(?:in\s+the\s+tank|in\s+reserve)\b/i);
+ if(m)out.targetRIR=Number(m[1]);
+ const rpe=lower.match(/\brpe\s*([5-9]|10)(?:\.([05]))?\b/i);
+ if(rpe){
+   const value=Number(rpe[1]+(rpe[2]?'.'+rpe[2]:''));
+   out.targetRPE=value;out.targetRIR=Math.max(0,Math.min(5,10-value));
+ }
+ if(/\b(?:last set amrap|amrap (?:on )?(?:the )?last set|last set (?:is|to be) amrap)\b/i.test(lower))out.lastSetAmrap=true;
+ if(/\b(?:no amrap|skip amrap)\b/i.test(lower))out.lastSetAmrap=false;
+ out.hasAny=Object.keys(out).some(k=>k!=='hasAny');
+ return out;
+}
+function coachApplyLiftingGrammarToDefaults(defaults,grammar){
+ const out={...defaults},g=grammar||{};
+ if(Number.isFinite(Number(g.restSeconds))&&Number(g.restSeconds)>0)out.restSeconds=Number(g.restSeconds);
+ if(Number.isFinite(Number(g.targetRIR)))out.targetRIR=Number(g.targetRIR);
+ if(Number.isFinite(Number(g.targetRPE)))out.targetRPE=Number(g.targetRPE);
+ return out;
+}
 function coachParsePrompt(text,defaultGoal=coachPromptGoal){
  const raw=String(text||'').trim(),lower=raw.toLowerCase();
- const targets=coachParseTargets(lower),equipment=coachParseEquipment(lower);
+ const targets=coachParseTargets(lower),equipment=coachParseEquipment(lower),liftingGrammar=coachParseLiftingGrammar(raw);
  let duration=0;
  const min=lower.match(/(\d{2,3})\s*(?:min|mins|minute|minutes)\b/);
  const hrs=lower.match(/(\d(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/);
@@ -4825,7 +4855,7 @@ function coachParsePrompt(text,defaultGoal=coachPromptGoal){
  return {
    prompt:raw,goal,duration,targetKeys:[...(targets.keys||[])],targetLabels:targets.labels,targetRegions:targets.regions,
    allowedEquipment:equipment.allowed,excludedEquipment:equipment.excluded,
-   priorityRegions:[],excludedExerciseIds:[],requiredExerciseIds:[]
+   priorityRegions:[],excludedExerciseIds:[],requiredExerciseIds:[],liftingGrammar
  };
 }
 
@@ -5146,11 +5176,12 @@ function coachGenerateWorkout(request){
  const req={
    ...request,duration:request.duration||45,
    targetKeys:[...(request.targetKeys||[])],targetLabels:[...(request.targetLabels||[])],targetRegions:[...(request.targetRegions||[])],
+   liftingGrammar:{...(request.liftingGrammar||{})},
    allowedEquipment:[...(request.allowedEquipment||[])],excludedEquipment:[...(request.excludedEquipment||[])],
    priorityRegions:[...(request.priorityRegions||[])],excludedExerciseIds:[...(request.excludedExerciseIds||[])],
    requiredExerciseIds:[...(request.requiredExerciseIds||[])]
  };
- const defaults=coachProgrammingDefaults(req.goal,req.duration);
+ const defaults=coachApplyLiftingGrammarToDefaults(coachProgrammingDefaults(req.goal,req.duration),req.liftingGrammar);
  const selected=coachSelectExercises(req,defaults.exerciseCount);
  if(!selected.length)return null;
  coachBuildDraft={request:req,defaults,selectedIds:selected.map(x=>x.id),createdAt:new Date().toISOString(),lastRefinement:request.lastRefinement||''};
@@ -5470,7 +5501,7 @@ function coachTryTeachAlias(text){
 }
 function coachGenerateExplicitWorkout(request,prescription){
  if(!prescription?.items?.length)return null;
- const defaults=coachProgrammingDefaults(request.goal,request.duration||45),regions=[],labels=[];
+ const defaults=coachApplyLiftingGrammarToDefaults(coachProgrammingDefaults(request.goal,request.duration||45),request.liftingGrammar),regions=[],labels=[];
  prescription.items.forEach(item=>{
    const ex=exById(item.exerciseId),meta=exerciseMuscleMetadata(ex);regions.push(...meta.primary,...meta.secondary);
    if(ex?.muscle&&!labels.includes(ex.muscle))labels.push(ex.muscle);
@@ -5659,6 +5690,10 @@ function coachRefineDraftText(text){
  let changed=false;
  const parsed=coachParsePrompt(raw,req.goal),explicitGoal=coachExplicitGoal(raw),equipment=coachParseEquipment(raw);
  if(parsed.duration){req.duration=parsed.duration;changed=true}
+ if(parsed.liftingGrammar?.hasAny){
+   req.liftingGrammar={...(req.liftingGrammar||{}),...parsed.liftingGrammar};
+   changed=true;
+ }
  if(explicitGoal&&explicitGoal!==req.goal){req.goal=explicitGoal;changed=true}
  if(equipment.allowed.length){
    req.allowedEquipment=[...equipment.allowed];
