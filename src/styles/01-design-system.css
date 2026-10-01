@@ -1,0 +1,653 @@
+  /* V33 RETRO-FUTURE VISUAL SYSTEM */
+  :root{
+    --bg:#05070d;
+    --panel:#0a1020;
+    --panel2:#10182a;
+    --muted:#8fa3b8;
+    --text:#f4f8ff;
+    --accent:#a855f7;
+    --accent-hi:#c084fc;
+    --cyan:#22d3ee;
+    --pink:#f472b6;
+    --accent2:#35e98a;
+    --danger:#fb7185;
+    --border:#22324d;
+    --input:#080d18;
+    --shadow:0 18px 44px rgba(0,0,0,.42),0 0 0 1px rgba(34,211,238,.025);
+    --glow-purple:0 0 28px rgba(168,85,247,.16);
+    --glow-cyan:0 0 26px rgba(34,211,238,.12);
+  }
+
+  html{background:var(--bg)}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 16% -8%,rgba(34,211,238,.11),transparent 31%),
+      radial-gradient(circle at 88% 4%,rgba(168,85,247,.16),transparent 34%),
+      radial-gradient(circle at 52% 112%,rgba(244,114,182,.055),transparent 36%),
+      linear-gradient(180deg,#05070d 0%,#070b13 46%,#05070d 100%);
+    color:var(--text);
+  }
+  body:before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
+    opacity:.16;
+    background-image:
+      linear-gradient(rgba(34,211,238,.075) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(168,85,247,.065) 1px,transparent 1px);
+    background-size:38px 38px;
+    mask-image:linear-gradient(to bottom,rgba(0,0,0,.62),transparent 76%);
+    -webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,.62),transparent 76%);
+  }
+  .app{position:relative;z-index:1}
+
+  header{
+    background:linear-gradient(180deg,rgba(5,7,13,.97),rgba(7,11,19,.9));
+    border-bottom:1px solid rgba(34,211,238,.12);
+    box-shadow:0 10px 34px rgba(0,0,0,.28);
+  }
+  header:after{
+    content:"";
+    position:absolute;
+    left:18px;
+    right:18px;
+    bottom:-1px;
+    height:1px;
+    background:linear-gradient(90deg,transparent,rgba(34,211,238,.55),rgba(168,85,247,.75),transparent);
+    opacity:.75;
+  }
+  .brand{
+    letter-spacing:.045em;
+    text-shadow:0 0 20px rgba(168,85,247,.16);
+  }
+  .brand span{
+    color:transparent;
+    background:linear-gradient(90deg,var(--cyan),#8b5cf6 52%,var(--pink));
+    -webkit-background-clip:text;
+    background-clip:text;
+    text-shadow:none;
+  }
+
+  .hero,.card,.stat-card,.chart-card,.calendar-card{
+    background:
+      linear-gradient(145deg,rgba(255,255,255,.025),transparent 42%),
+      linear-gradient(180deg,rgba(10,16,32,.98),rgba(8,13,25,.98));
+    border-color:rgba(71,93,130,.48);
+    box-shadow:var(--shadow);
+  }
+  .hero{
+    position:relative;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 92% 0%,rgba(34,211,238,.13),transparent 30%),
+      radial-gradient(circle at 72% 16%,rgba(168,85,247,.2),transparent 34%),
+      linear-gradient(145deg,rgba(255,255,255,.025),transparent 45%),
+      var(--panel);
+  }
+  .hero:after{
+    content:"";
+    position:absolute;
+    top:0;
+    right:18px;
+    width:86px;
+    height:2px;
+    background:linear-gradient(90deg,var(--cyan),var(--accent),var(--pink));
+    box-shadow:0 0 18px rgba(168,85,247,.42);
+  }
+  .card.clickable{
+    transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease;
+  }
+  .card.clickable:hover{
+    border-color:rgba(34,211,238,.34);
+    box-shadow:var(--shadow),0 0 22px rgba(34,211,238,.055);
+  }
+
+  .eyebrow,.picker-section,.workout-stat span,.stat-card .caption,.metric-mini span{
+    color:#9eb3ca;
+    letter-spacing:.14em;
+  }
+
+  .pill,.tag,.toolchip,.chip,.muscle-chip{
+    background:rgba(13,21,38,.86);
+    border-color:rgba(71,93,130,.55);
+    color:#c9d8e8;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+  }
+  .tag{
+    color:#c7d9ee;
+    background:linear-gradient(180deg,rgba(18,29,51,.95),rgba(12,20,36,.95));
+  }
+
+  .btn{
+    background:linear-gradient(135deg,#7c3aed 0%,#a855f7 58%,#7c3aed 100%);
+    border:1px solid rgba(216,180,254,.2);
+    box-shadow:0 8px 22px rgba(124,58,237,.2),inset 0 1px 0 rgba(255,255,255,.13);
+    transition:transform .12s ease,filter .12s ease,box-shadow .12s ease,border-color .12s ease;
+  }
+  .btn:hover{filter:brightness(1.08);box-shadow:0 10px 28px rgba(124,58,237,.26),0 0 18px rgba(34,211,238,.055)}
+  .btn.secondary{
+    background:linear-gradient(180deg,rgba(18,29,51,.9),rgba(11,18,33,.92));
+    border-color:rgba(71,93,130,.58);
+    color:#e6eef8;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+  }
+  .btn.secondary:hover{border-color:rgba(34,211,238,.38);box-shadow:0 0 18px rgba(34,211,238,.07)}
+  .btn.green{
+    background:linear-gradient(135deg,#19c96c,#35e98a);
+    border-color:rgba(134,239,172,.25);
+    color:#03130b;
+    box-shadow:0 8px 22px rgba(53,233,138,.16);
+  }
+  .btn.danger{
+    background:linear-gradient(180deg,rgba(244,63,94,.14),rgba(127,29,29,.09));
+    color:#fecdd3;
+    border-color:rgba(251,113,133,.34);
+    box-shadow:none;
+  }
+
+  input,select,textarea{
+    background:linear-gradient(180deg,rgba(8,13,24,.98),rgba(6,10,19,.98));
+    border-color:rgba(71,93,130,.56);
+    color:var(--text);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.018);
+  }
+  input:focus,select:focus,textarea:focus{
+    outline:none;
+    border-color:rgba(34,211,238,.7);
+    box-shadow:0 0 0 3px rgba(34,211,238,.095),0 0 20px rgba(168,85,247,.07);
+  }
+  button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+    outline:2px solid rgba(34,211,238,.9);
+    outline-offset:2px;
+  }
+
+  nav{
+    background:linear-gradient(180deg,rgba(6,10,18,.9),rgba(5,7,13,.985));
+    border-top-color:rgba(34,211,238,.16);
+    box-shadow:0 -14px 34px rgba(0,0,0,.32);
+  }
+  nav:before{
+    content:"";
+    position:absolute;
+    left:12%;
+    right:12%;
+    top:-1px;
+    height:1px;
+    background:linear-gradient(90deg,transparent,var(--cyan),var(--accent),var(--pink),transparent);
+    opacity:.45;
+  }
+  .navbtn.active{
+    color:#fff;
+    text-shadow:0 0 16px rgba(34,211,238,.28);
+  }
+  .navbtn.active b{color:var(--cyan)}
+
+  .progress-bar,.bartrack{
+    background:#050a12;
+    border-color:rgba(71,93,130,.42);
+  }
+  .progress-bar > div,.barfill{
+    background:linear-gradient(90deg,var(--cyan) 0%,var(--accent) 55%,var(--pink) 100%);
+    box-shadow:0 0 14px rgba(168,85,247,.28);
+  }
+  .weekbar{background:linear-gradient(180deg,var(--cyan),var(--accent) 60%,#5b21b6)}
+
+  .workout-overview{
+    background:
+      radial-gradient(circle at 90% 0%,rgba(34,211,238,.105),transparent 32%),
+      linear-gradient(135deg,rgba(168,85,247,.12),rgba(34,211,238,.045)),
+      var(--panel);
+    border-color:rgba(100,73,180,.44);
+    box-shadow:var(--shadow),var(--glow-purple);
+  }
+  .workout-stat,.metric-mini{
+    background:linear-gradient(180deg,rgba(10,18,33,.94),rgba(6,12,23,.96));
+    border-color:rgba(71,93,130,.46);
+  }
+
+  .routine-edit-card,.picker-result-card,.history-edit-exercise,.workout-manage-row,.program-editor-row{
+    background:linear-gradient(180deg,rgba(12,20,36,.96),rgba(8,14,26,.96));
+    border-color:rgba(71,93,130,.46);
+  }
+  .orderbtn,.set-icon-btn,.micro-step button,.workout-order-controls button,.progress-nav button{
+    background:linear-gradient(180deg,#121d32,#0b1425);
+    border-color:rgba(71,93,130,.58);
+    color:#dce8f5;
+  }
+
+  .set-card{
+    background:linear-gradient(180deg,rgba(7,13,24,.98),rgba(6,11,20,.98));
+    border-color:rgba(71,93,130,.46);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.02);
+  }
+  .set-card.completed{
+    border-color:rgba(53,233,138,.48);
+    background:linear-gradient(180deg,rgba(53,233,138,.07),rgba(6,15,16,.96));
+    box-shadow:inset 0 0 0 1px rgba(53,233,138,.035),0 0 16px rgba(53,233,138,.035);
+  }
+  .direct-number{
+    background:#060b14!important;
+    border-color:rgba(71,93,130,.62)!important;
+    color:#f7fbff!important;
+  }
+  .direct-number:focus{
+    border-color:var(--cyan)!important;
+    box-shadow:0 0 0 3px rgba(34,211,238,.1),0 0 20px rgba(34,211,238,.06)!important;
+  }
+
+  .targetbox{
+    background:linear-gradient(135deg,rgba(168,85,247,.105),rgba(34,211,238,.035));
+    border-color:rgba(168,85,247,.38);
+  }
+  .coachbox,.notice{
+    background:linear-gradient(180deg,rgba(12,21,38,.92),rgba(9,16,29,.94));
+    border-color:rgba(71,93,130,.48);
+  }
+
+  .active-workout-home{
+    background:
+      radial-gradient(circle at 90% 0%,rgba(53,233,138,.10),transparent 34%),
+      linear-gradient(135deg,rgba(53,233,138,.07),rgba(34,211,238,.04)),
+      var(--panel);
+    border-color:rgba(53,233,138,.35);
+    box-shadow:var(--shadow),0 0 26px rgba(53,233,138,.055);
+  }
+  .program-home,.progress-hero{
+    background:
+      radial-gradient(circle at 88% 0%,rgba(34,211,238,.10),transparent 34%),
+      linear-gradient(135deg,rgba(168,85,247,.12),rgba(34,211,238,.045)),
+      var(--panel);
+    border-color:rgba(168,85,247,.4);
+    box-shadow:var(--shadow),var(--glow-purple);
+  }
+  .program-card.active-program{
+    border-color:rgba(34,211,238,.34);
+    box-shadow:var(--shadow),0 0 24px rgba(168,85,247,.07);
+  }
+  .program-step,.day-chip{
+    background:linear-gradient(180deg,#111b2d,#0b1424);
+    border-color:rgba(71,93,130,.52);
+  }
+  .program-step.next,.day-chip.on,.chip.active{
+    border-color:rgba(34,211,238,.48);
+    background:linear-gradient(135deg,rgba(34,211,238,.09),rgba(168,85,247,.12));
+    color:#eefaff;
+    box-shadow:0 0 14px rgba(34,211,238,.05);
+  }
+
+  .onboard-logo{
+    background:linear-gradient(135deg,var(--cyan) -35%,#7c3aed 38%,var(--accent) 68%,var(--pink) 130%);
+    box-shadow:0 18px 42px rgba(124,58,237,.28),0 0 28px rgba(34,211,238,.10);
+  }
+  .toggle.on{
+    background:linear-gradient(90deg,#6d28d9,var(--accent));
+    border-color:rgba(34,211,238,.42);
+    box-shadow:0 0 14px rgba(168,85,247,.14);
+  }
+  .toast{
+    background:linear-gradient(180deg,rgba(15,25,44,.98),rgba(8,14,26,.99));
+    border-color:rgba(34,211,238,.3);
+    box-shadow:var(--shadow),0 0 20px rgba(34,211,238,.08);
+  }
+
+  .exercise-block{
+    border-color:color-mix(in srgb,var(--ex-accent) 40%,#1e2d47)!important;
+    box-shadow:inset 3px 0 0 var(--ex-accent),0 16px 34px rgba(0,0,0,.24),0 0 20px color-mix(in srgb,var(--ex-accent) 5%,transparent);
+  }
+  .exercise-block.tone-0{--ex-accent:#b66cff;--ex-soft:rgba(182,108,255,.105)}
+  .exercise-block.tone-1{--ex-accent:#22d3ee;--ex-soft:rgba(34,211,238,.09)}
+  .exercise-block.tone-2{--ex-accent:#f472b6;--ex-soft:rgba(244,114,182,.085)}
+  .exercise-block.tone-3{--ex-accent:#35e98a;--ex-soft:rgba(53,233,138,.075)}
+  .exercise-title{text-shadow:0 0 20px color-mix(in srgb,var(--ex-accent) 20%,transparent)}
+  .exercise-number{box-shadow:0 0 14px color-mix(in srgb,var(--ex-accent) 9%,transparent)}
+  .superset-badge{
+    border-color:rgba(244,114,182,.4);
+    background:rgba(244,114,182,.09);
+    color:#ffd2eb;
+    box-shadow:0 0 14px rgba(244,114,182,.045);
+  }
+
+  .summary-win{
+    background:linear-gradient(135deg,rgba(53,233,138,.085),rgba(34,211,238,.03));
+    border-color:rgba(53,233,138,.3);
+  }
+  .summary-pr{
+    background:linear-gradient(135deg,rgba(251,191,36,.09),rgba(244,114,182,.035));
+    border-color:rgba(251,191,36,.31);
+  }
+  .empty{
+    background:rgba(8,14,25,.42);
+    border-color:rgba(71,93,130,.48);
+  }
+  .empty strong{color:#e7f0fb}
+
+  @media(prefers-reduced-motion:reduce){
+    *,*:before,*:after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+  }
+
+
+  /* V34 PASS 1: CORE IDENTITY SYSTEM */
+  :root{
+    --surface-0:#05070d;
+    --surface-1:#080e19;
+    --surface-2:#0c1424;
+    --surface-3:#111c30;
+    --line-soft:rgba(81,108,147,.38);
+    --line-mid:rgba(91,121,166,.58);
+    --line-hot:rgba(34,211,238,.58);
+    --violet:#a855f7;
+    --violet-hot:#d946ef;
+    --cyan:#22d3ee;
+    --pink:#ff2e88;
+    --success:#35e98a;
+    --display:"Arial Narrow","Roboto Condensed","Segoe UI",system-ui,sans-serif;
+    --body:Inter,"Segoe UI",Roboto,system-ui,sans-serif;
+    --panel-cut:4px 17px 4px 17px;
+    --panel-cut-soft:6px 15px 6px 15px;
+  }
+
+  body{font-family:var(--body)}
+  .brand,h1,h2,.exercise-name,.exercise-title,.metric,.stat-card .big,.workout-stat b,.program-letter{
+    font-family:var(--display);
+    font-stretch:condensed;
+  }
+  .brand{
+    font-size:1.31rem;
+    font-weight:950;
+    letter-spacing:.115em;
+    text-transform:uppercase;
+    position:relative;
+    padding-left:12px;
+  }
+  .brand:before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:3px;
+    bottom:3px;
+    width:3px;
+    background:linear-gradient(180deg,var(--pink),var(--violet),var(--cyan));
+    box-shadow:0 0 12px rgba(255,46,136,.28);
+    transform:skewY(-18deg);
+  }
+  .brand:after{
+    content:"// 01";
+    display:inline-block;
+    margin-left:8px;
+    color:#61728c;
+    font-size:.48rem;
+    letter-spacing:.12em;
+    transform:translateY(-2px);
+  }
+  h1{letter-spacing:-.025em;font-weight:950}
+  h2{
+    font-weight:950;
+    letter-spacing:.055em;
+    text-transform:uppercase;
+    font-size:1.02rem;
+  }
+  .section-title{
+    position:relative;
+    padding-left:12px;
+  }
+  .section-title:before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:50%;
+    width:5px;
+    height:5px;
+    transform:translateY(-50%) rotate(45deg);
+    background:var(--pink);
+    box-shadow:0 0 10px rgba(255,46,136,.28);
+  }
+  .section-title:after{
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:-8px;
+    height:1px;
+    background:linear-gradient(90deg,rgba(34,211,238,.24),rgba(168,85,247,.12),transparent 72%);
+    pointer-events:none;
+  }
+
+  .hero,.card,.stat-card,.chart-card,.calendar-card,.routine-edit-card,.picker-result-card,.history-edit-exercise,.workout-manage-row,.program-editor-row,.workout-overview,.program-home,.active-workout-home,.progress-hero{
+    border-radius:var(--panel-cut)!important;
+  }
+  .sheet{
+    border-radius:18px 5px 0 0;
+    border-top-color:rgba(34,211,238,.22);
+    box-shadow:0 -24px 70px rgba(0,0,0,.55),0 0 35px rgba(168,85,247,.06);
+  }
+  .card,.hero,.chart-card,.calendar-card,.workout-overview,.program-home,.active-workout-home,.progress-hero{
+    position:relative;
+  }
+  .card:not(.exercise-block):before,.chart-card:before,.calendar-card:before{
+    content:"";
+    position:absolute;
+    left:-1px;
+    top:14px;
+    width:2px;
+    height:26px;
+    background:linear-gradient(180deg,var(--cyan),rgba(34,211,238,0));
+    opacity:.48;
+    pointer-events:none;
+  }
+  .card:not(.exercise-block):after,.chart-card:after,.calendar-card:after{
+    content:"";
+    position:absolute;
+    right:11px;
+    bottom:-1px;
+    width:26px;
+    height:1px;
+    background:linear-gradient(90deg,transparent,var(--pink));
+    opacity:.52;
+    pointer-events:none;
+  }
+
+  .btn{
+    border-radius:5px 13px 5px 13px;
+    letter-spacing:.035em;
+    position:relative;
+    overflow:hidden;
+  }
+  .btn:not(.small):after{
+    content:"";
+    position:absolute;
+    top:0;
+    right:0;
+    width:18px;
+    height:2px;
+    background:rgba(255,255,255,.44);
+    opacity:.5;
+  }
+  .btn.small{border-radius:4px 9px 4px 9px}
+  .pill,.chip,.tag,.toolchip,.muscle-chip,.goalbadge,.preference-badge,.superset-badge{
+    border-radius:4px 10px 4px 10px;
+  }
+  .pill{letter-spacing:.025em}
+  input,select,textarea{
+    border-radius:4px 11px 4px 11px;
+  }
+  .x{
+    border-radius:4px 10px 4px 10px;
+    background:linear-gradient(180deg,#121d31,#09111f);
+    border-color:var(--line-mid);
+  }
+
+  .notice,.targetbox,.coachbox,.form-guide-card{
+    border-radius:4px 13px 4px 13px;
+  }
+
+  .eyebrow,.picker-section,label,.nav-label,.workout-stat span,.stat-card .caption,.metric-mini span{
+    font-family:var(--display);
+    text-transform:uppercase;
+    letter-spacing:.12em;
+  }
+  label{font-size:.72rem}
+  .mini{line-height:1.42}
+
+  /* Signature bottom command rail */
+  .app{padding-bottom:112px}
+  nav{
+    left:10px;
+    right:10px;
+    bottom:max(8px,env(safe-area-inset-bottom));
+    border:1px solid rgba(84,110,152,.48);
+    border-radius:7px 18px 7px 18px;
+    overflow:visible;
+    background:
+      linear-gradient(90deg,rgba(255,46,136,.025),transparent 24%,transparent 76%,rgba(34,211,238,.025)),
+      linear-gradient(180deg,rgba(8,14,25,.96),rgba(4,8,15,.985));
+    box-shadow:0 18px 50px rgba(0,0,0,.5),0 0 24px rgba(168,85,247,.075);
+  }
+  nav:before{
+    left:22px;
+    right:22px;
+    background:linear-gradient(90deg,var(--pink),var(--violet),var(--cyan));
+    opacity:.72;
+    box-shadow:0 0 13px rgba(168,85,247,.28);
+  }
+  nav:after{
+    content:"";
+    position:absolute;
+    left:12px;
+    bottom:-1px;
+    width:42px;
+    height:1px;
+    background:var(--cyan);
+    opacity:.55;
+    box-shadow:0 0 10px rgba(34,211,238,.25);
+  }
+  nav .inner{
+    padding:5px 5px 6px;
+    gap:3px;
+    position:relative;
+  }
+  .navbtn{
+    position:relative;
+    min-width:0;
+    min-height:62px;
+    padding:7px 2px 6px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    color:#71849d;
+    border:1px solid transparent;
+    border-radius:4px 10px 4px 10px;
+    transition:color .16s ease,background .16s ease,border-color .16s ease,box-shadow .16s ease,transform .12s ease;
+    overflow:hidden;
+  }
+  .navbtn:not(:last-child):after{
+    content:"";
+    position:absolute;
+    right:-2px;
+    top:16px;
+    bottom:16px;
+    width:1px;
+    background:linear-gradient(180deg,transparent,rgba(88,112,150,.28),transparent);
+  }
+  .nav-glyph{
+    width:27px;
+    height:27px;
+    display:grid;
+    place-items:center;
+    position:relative;
+  }
+  .nav-glyph svg{
+    width:23px;
+    height:23px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:1.65;
+    stroke-linecap:square;
+    stroke-linejoin:miter;
+    overflow:visible;
+  }
+  .nav-label{
+    font-size:.57rem;
+    font-weight:900;
+    line-height:1;
+    letter-spacing:.075em;
+  }
+  .navbtn.active{
+    color:#f8fbff;
+    background:
+      linear-gradient(135deg,rgba(168,85,247,.20),rgba(34,211,238,.065) 68%,rgba(255,46,136,.07)),
+      rgba(12,20,34,.88);
+    border-color:rgba(168,85,247,.42);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 0 20px rgba(168,85,247,.11);
+    text-shadow:none;
+  }
+  .navbtn.active:before{
+    content:"";
+    position:absolute;
+    top:0;
+    left:20%;
+    right:20%;
+    height:2px;
+    background:linear-gradient(90deg,var(--cyan),var(--violet-hot),var(--pink));
+    box-shadow:0 0 10px rgba(217,70,239,.45);
+  }
+  .navbtn.active .nav-glyph{
+    color:#fff;
+    filter:drop-shadow(0 0 5px rgba(34,211,238,.42)) drop-shadow(0 0 9px rgba(168,85,247,.28));
+  }
+  .navbtn.active .nav-label{color:#dffbff}
+  .navbtn:active{transform:translateY(1px) scale(.98)}
+
+  /* Tech-panel form controls and selectable states */
+  .chip.active,.day-chip.on,.program-step.next{
+    position:relative;
+  }
+  .chip.active:after,.day-chip.on:after,.program-step.next:after{
+    content:"";
+    position:absolute;
+    right:6px;
+    top:-1px;
+    width:12px;
+    height:2px;
+    background:var(--cyan);
+    box-shadow:0 0 8px rgba(34,211,238,.3);
+  }
+  .toggle{border-radius:4px 12px 4px 12px}
+  .toggle:after{border-radius:3px}
+  .progress-bar,.bartrack,.collapsed-progress{
+    border-radius:2px 7px 2px 7px;
+  }
+  .progress-bar>div,.barfill,.collapsed-progress>div{
+    border-radius:1px 6px 1px 6px;
+  }
+
+  .active-pulse{
+    border-radius:2px;
+    transform:rotate(45deg);
+  }
+  .status-dot{
+    border-radius:1px;
+    transform:rotate(45deg);
+  }
+
+  /* Stronger hierarchy without visual overload */
+  .metric,.stat-card .big,.workout-stat b{
+    letter-spacing:-.025em;
+  }
+  .exercise-name{letter-spacing:.01em}
+  .sub{font-size:.78rem;letter-spacing:.015em}
+  .muted{line-height:1.5}
+
+  @media(max-width:390px){
+    nav{left:6px;right:6px}
+    nav .inner{padding-left:3px;padding-right:3px}
+    .navbtn{min-height:59px}
+    .nav-glyph{width:24px;height:24px}
+    .nav-glyph svg{width:21px;height:21px}
+    .nav-label{font-size:.52rem;letter-spacing:.045em}
+  }
+
