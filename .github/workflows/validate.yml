@@ -2375,6 +2375,14 @@ jobs:
             assert(draft.request.requiredExerciseIds.includes(removedId),'added exercise should become a persistent requested exercise');
             assert(draft.selectedIds.includes(removedId),'added exercise should return to the generated draft');
 
+            const lateral=w.allExercises().find(ex=>ex.name==='Dumbbell Lateral Raise');
+            assert(lateral,'explicit off-target test exercise should exist');
+            result=w.coachRefineDraftText('add Dumbbell Lateral Raise');
+            assert(result.ok,'an explicit compatible exercise request should override Coach target ranking');
+            draft=w.eval('coachBuildDraft');
+            assert(draft.request.requiredExerciseIds.includes(lateral.id),'explicit off-target request should be retained');
+            assert(draft.selectedIds.includes(lateral.id),'explicit off-target request should appear in the workout');
+
             w.eval("state.programs=[{id:'coach_p1',name:'Test Program',routineIds:[],frequency:3,preferredDays:[],trainingMode:'inherit',nextIndex:0}];save()");
             const savedRoutineId=w.coachAttachDraftToProgram('coach_p1');
             assert(savedRoutineId,'program handoff should persist the Coach workout as a routine');
