@@ -9,7 +9,9 @@ if (!version) throw new Error('package.json is missing a version');
 
 const JS_SOURCES = [
   'src/js/00-runtime.js',
+  'src/data/exercises.js',
   'src/js/01-core-runtime.js',
+  'src/data/anatomy.js',
   'src/js/02-muscle-history-analytics.js',
   'src/js/03-programs.js',
   'src/js/04-coach.js',
