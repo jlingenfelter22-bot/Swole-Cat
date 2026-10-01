@@ -1,5 +1,5 @@
 const CACHE='swole-cat-__SWOLE_CAT_VERSION__';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.svg','./icon-512.svg'];
+const ASSETS=['./','./index.html','./app.css','./app.js','./manifest.webmanifest','./icon-192.svg','./icon-512.svg'];
 
 self.addEventListener('install',e=>{
   self.skipWaiting();
