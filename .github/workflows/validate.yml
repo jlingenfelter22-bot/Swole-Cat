@@ -2143,3 +2143,79 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V502 save completed workout as routine
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(70);
+            const w=dom.window;
+
+            const req=w.coachParsePrompt('30 minute legs','hypertrophy');
+            const draft=w.coachGenerateWorkout(req);
+            assert(draft&&draft.selectedIds.length>=3,'Coach should build a temporary leg workout');
+            assert(w.coachStartWorkoutNow(draft),'temporary Coach workout should start');
+            await wait(10);
+
+            // Complete the first working set of every generated exercise so the session
+            // represents a real completed workout with preserved Coach config.
+            const saved=JSON.parse(w.localStorage.getItem('overload_v3'));
+            for(let ei=0;ei<saved.activeWorkout.exercises.length;ei++){
+              w.updateSet(ei,0,'weight',String(100+ei*5));
+              w.updateSet(ei,0,'reps','10');
+              w.toggleSet(ei,0);
+            }
+            w.finalizeWorkout(false);
+            await wait(15);
+
+            let state=JSON.parse(w.localStorage.getItem('overload_v3'));
+            assert.equal(state.sessions.length,1,'Coach workout should save to history');
+            const session=state.sessions[0];
+            assert.equal(session.routineId,null,'temporary Coach workout should remain unlinked to a saved routine');
+            const snapshot=JSON.stringify(session);
+
+            const recapText=w.document.getElementById('modal').textContent;
+            assert(recapText.includes('Save as Routine'),'completed temporary workout recap should offer post-workout save');
+
+            w.openSaveSessionAsRoutine(session.id);
+            await wait(10);
+            const name=w.document.getElementById('sessionRoutineName');
+            assert(name,'save-as-routine modal should allow naming');
+            name.value='Leg Day I Actually Liked';
+            const newId=w.saveCompletedSessionAsRoutine(session.id);
+            assert(newId,'saving completed workout should return new routine id');
+
+            state=JSON.parse(w.localStorage.getItem('overload_v3'));
+            const routine=state.routines.find(r=>r.id===newId);
+            assert(routine,'new routine should persist');
+            assert.equal(routine.sourceSessionId,session.id,'routine should remember its source session for duplicate protection');
+            assert.equal(routine.name,'Leg Day I Actually Liked');
+            assert.deepEqual(routine.exercises.map(e=>e.exerciseId),session.exercises.filter(e=>!e.skipped&&w.completedSets(e).length).map(e=>e.exerciseId),'exercise order should match completed session');
+            assert(routine.exercises.every(e=>e.sets===1),'routine should respect completed working-set count');
+            assert(routine.exercises.every(e=>e.minReps===8&&e.maxReps===12&&e.restSeconds===90),'Coach programming config should be preserved');
+            assert.equal(JSON.stringify(state.sessions[0]),snapshot,'saving as routine must not mutate historical session');
+
+            w.openHistoricalWorkoutRecap(session.id);
+            await wait(10);
+            assert(w.document.getElementById('modal').textContent.includes('Routine Saved'),'recap should show saved state after conversion');
+            const beforeCount=state.routines.length;
+            const duplicateId=w.saveCompletedSessionAsRoutine(session.id);
+            state=JSON.parse(w.localStorage.getItem('overload_v3'));
+            assert.equal(state.routines.length,beforeCount,'duplicate save should not create another routine');
+            assert.equal(duplicateId,newId,'duplicate save should resolve to existing routine');
+
+            dom.window.close();
+            console.log('Swole Cat V50.2 save completed workout as routine PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
