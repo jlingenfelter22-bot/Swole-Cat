@@ -1361,11 +1361,13 @@
   .home-coach-launcher{margin-top:10px;background:linear-gradient(120deg,rgba(168,85,247,.08),rgba(34,211,238,.04)),#0c131e;border:1px solid rgba(69,93,128,.62);border-radius:5px 17px 5px 17px;padding:13px}
   .home-coach-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}
   .home-coach-title{font-family:var(--display);font-size:.78rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase;color:#dceaff}
-  .home-coach-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:7px}
-  .home-coach-row input,.home-coach-row textarea{min-width:0}
-  .coach-mic-btn{width:44px;min-width:44px;padding:0;display:grid;place-items:center;font-size:1.05rem}
-  .coach-mic-btn.listening{box-shadow:0 0 0 1px rgba(125,249,255,.45),0 0 18px rgba(125,249,255,.26);animation:coachMicPulse 1s ease-in-out infinite}
-  @keyframes coachMicPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+  .home-coach-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:stretch}
+  .coach-voice-field{position:relative;min-width:0}
+  .coach-voice-field input,.coach-voice-field textarea{width:100%;min-width:0;padding-right:54px}
+  .coach-mic-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);z-index:3;width:38px;min-width:38px;height:38px;padding:0;display:grid;place-items:center;border-radius:11px;background:rgba(15,28,48,.98)!important;border:1px solid rgba(125,249,255,.58)!important;color:#7df9ff!important;box-shadow:0 0 14px rgba(34,211,238,.14)!important}
+  .coach-mic-btn svg{display:block;pointer-events:none}
+  .coach-mic-btn.listening{box-shadow:0 0 0 1px rgba(125,249,255,.78),0 0 22px rgba(125,249,255,.36)!important;animation:coachMicPulse 1s ease-in-out infinite}
+  @keyframes coachMicPulse{0%,100%{transform:translateY(-50%) scale(1)}50%{transform:translateY(-50%) scale(1.06)}}
   .home-coach-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
   .home-coach-chip{border:1px solid #34435b;background:#111a27;color:#9eacc0;border-radius:999px;padding:6px 8px;font-size:.61rem;font-weight:800}
   .home-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
@@ -1382,7 +1384,7 @@
   .home-latest-meta{font-size:.66rem;color:#8d9db1;margin-top:4px;line-height:1.35}
   .home-new-user .home-coach-row{margin-top:12px}
   .home-new-user .home-coach-chips{margin-top:9px}
-  @media(max-width:390px){.home-quick-actions{grid-template-columns:1fr}.home-coach-row{grid-template-columns:minmax(0,1fr) 44px}.home-coach-row .btn:not(.coach-mic-btn){grid-column:1/-1;width:100%}}
+  @media(max-width:390px){.home-quick-actions{grid-template-columns:1fr}.home-coach-row{grid-template-columns:minmax(0,1fr)}.home-coach-row>.btn:not(.coach-mic-btn){width:100%}}
 
   /* ROUTINES // program matrix */
   #routines .routines-banner{
@@ -5300,7 +5302,7 @@ function renderCoachProgramPreview(){
     </div>`).join('')}
    </div>
    ${coverage?`<div class="coach-rationale"><b>Planned weekly set-equivalents:</b> ${esc(coverage)}.<br><span class="mini">Primary involvement counts as 1.0 set and secondary involvement as 0.5. This is a planning aid, not a claim about muscle damage or recovery.</span></div>`:''}
-   <div class="coach-console"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Try “make it 4 days,” “upper/lower,” “35 minutes,” “dumbbells only,” “more shoulders,” or “Monday Tuesday Thursday Saturday.”</div><div class="home-coach-row"><input id="coachProgramRefinePrompt" placeholder="4 days, upper/lower, 40 min, more shoulders..." onkeydown="if(event.key==='Enter')coachApplyProgramRefinement()">${coachVoiceButtonHtml('coachProgramRefinePrompt')}<button class="btn" onclick="coachApplyProgramRefinement()">Update</button></div></div>
+   <div class="coach-console"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Try “make it 4 days,” “upper/lower,” “35 minutes,” “dumbbells only,” “more shoulders,” or “Monday Tuesday Thursday Saturday.”</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachProgramRefinePrompt" placeholder="4 days, upper/lower, 40 min, more shoulders..." onkeydown="if(event.key==='Enter')coachApplyProgramRefinement()">${coachVoiceButtonHtml('coachProgramRefinePrompt')}</div><button class="btn" onclick="coachApplyProgramRefinement()">Update</button></div></div>
    <div class="notice">Coach distributes work across the week using your requested frequency, split, equipment, goal, exercise preferences, and a light recent-exercise variety signal. Weekly volume is balanced pragmatically around the time available. The plan does not estimate recovery or medical readiness.</div>
    <div class="actions"><button class="btn green" onclick="coachStartProgramFirstWorkout()">Save + Start Day 1</button><button class="btn" onclick="coachSaveGeneratedProgram()">Save Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
   </div>`);
@@ -5452,7 +5454,7 @@ function renderCoachPreview(){
     </div>
     <div class="coach-rationale"><b>Why this structure:</b> exercise selection is ranked from requested muscles, primary/secondary involvement, equipment, movement-pattern balance, your Prefer/Avoid/Favorite/Hidden settings, and a light recent-exercise variety signal. Swolecat does not invent a starting weight; your own exercise history and progression engine handle load once the workout starts.</div>
     ${coachRecentContextText(req)?`<div class="notice">${esc(coachRecentContextText(req))}</div>`:''}
-    <div class="coach-console" style="margin-top:10px"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Change the draft naturally. Try “make it 30 minutes,” “no barbells,” “more chest,” “strength focused,” “remove bench press,” or “add lateral raise.”</div><div class="home-coach-row"><input id="coachRefinePrompt" placeholder="Make it 30 min, no barbells, more chest..." onkeydown="if(event.key==='Enter')coachApplyRefinement()">${coachVoiceButtonHtml('coachRefinePrompt')}<button class="btn" onclick="coachApplyRefinement()">Update</button></div></div>
+    <div class="coach-console" style="margin-top:10px"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Change the draft naturally. Try “make it 30 minutes,” “no barbells,” “more chest,” “strength focused,” “remove bench press,” or “add lateral raise.”</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachRefinePrompt" placeholder="Make it 30 min, no barbells, more chest..." onkeydown="if(event.key==='Enter')coachApplyRefinement()">${coachVoiceButtonHtml('coachRefinePrompt')}</div><button class="btn" onclick="coachApplyRefinement()">Update</button></div></div>
     <div class="notice">Programming presets are practical defaults, not claims that one rep range or exercise is universally best. Recent logs are used only as context and a small variety signal, never as a recovery or readiness diagnosis.</div>
     <div class="actions"><button class="btn green" onclick="coachStartWorkoutNow()">Start Workout Now</button><button class="btn" onclick="coachSaveRoutine()">Save as Routine</button><button class="btn secondary" onclick="coachOpenAddToProgram()">Add to Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
    </div>`);
@@ -5601,7 +5603,7 @@ function openCoachSwolecat(reset=false){
     <div class="eyebrow">QUICK BUILD // OFFLINE</div>
     <div class="exercise-name" style="font-size:1.17rem;margin-top:5px">What are we building?</div>
     <div class="mini" style="margin-top:5px">Describe today's workout or a multi-day program naturally. Coach only asks for missing information that materially changes the plan.</div>
-    <div class="home-coach-row" style="margin-top:12px"><textarea id="coachPrompt" class="coach-prompt" placeholder="Say or type: 3 sets bench for 8, 3 sets pull-ups for 9..."></textarea>${coachVoiceButtonHtml('coachPrompt')}</div>
+    <div class="coach-voice-field" style="margin-top:12px"><textarea id="coachPrompt" class="coach-prompt" placeholder="Say or type: bench press, squats, curls... or exact sets/reps"></textarea>${coachVoiceButtonHtml('coachPrompt')}</div>
     <div class="coach-example-row"><button class="coach-example" onclick="coachFillExample('Chest and back, 45 minutes, dumbbells and cables')">Chest + back</button><button class="coach-example" onclick="coachFillExample('3-day full body program, Monday Wednesday Friday, 45 minutes')">3-day plan</button><button class="coach-example" onclick="coachFillExample('Push pull legs program, 3 days, 60 minutes')">PPL</button></div>
    </div>
    <div><div class="mini" style="margin-bottom:6px">Primary goal</div><div class="picker-chips"><button class="chip active" data-coach-goal="hypertrophy" onclick="coachSetGoal('hypertrophy')">Muscle growth</button><button class="chip" data-coach-goal="strength" onclick="coachSetGoal('strength')">Strength</button><button class="chip" data-coach-goal="general" onclick="coachSetGoal('general')">General</button></div></div>
@@ -5640,7 +5642,7 @@ function homeCoachExample(text){
 function homeCoachLauncherHtml({embedded=false}={}){
  return `<div class="${embedded?'home-new-user':''}">
    ${embedded?'':`<div class="home-coach-head"><div><div class="home-coach-title">Coach Swolecat</div><div class="mini">Need something different today?</div></div><span class="tag">QUICK BUILD</span></div>`}
-   <div class="home-coach-row"><input id="homeCoachPrompt" placeholder="Say or type what you want to train..." onkeydown="if(event.key==='Enter')homeCoachBuildPrompt()">${coachVoiceButtonHtml('homeCoachPrompt')}<button class="btn" onclick="homeCoachBuildPrompt()">Build</button></div>
+   <div class="home-coach-row"><div class="coach-voice-field"><input id="homeCoachPrompt" placeholder="Say or type what you want to train..." onkeydown="if(event.key==='Enter')homeCoachBuildPrompt()">${coachVoiceButtonHtml('homeCoachPrompt')}</div><button class="btn" onclick="homeCoachBuildPrompt()">Build</button></div>
    <div class="home-coach-chips"><button class="home-coach-chip" onclick="homeCoachExample('30 minute leg workout')">30m legs</button><button class="home-coach-chip" onclick="homeCoachExample('Chest and back, 45 minutes')">Chest + back</button><button class="home-coach-chip" onclick="homeCoachExample('3-day full body program, Monday Wednesday Friday, 45 minutes')">3-day plan</button></div>
  </div>`;
 }
