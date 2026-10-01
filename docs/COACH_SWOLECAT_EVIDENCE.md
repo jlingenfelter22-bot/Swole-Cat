@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.53.2
+Version: v0.54.0
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -198,3 +198,70 @@ An explicit user-authored workout remains user-authored throughout refinement.
 - Target-muscle metadata is recalculated from the resulting explicit list for reporting only; it is not used to regenerate or fill the list.
 
 Regression coverage includes the exact natural-language request: "can you also add a set of assisted pull-ups?" and asserts that no unrelated exercises are introduced.
+
+
+## v0.54 Coach language brain
+
+Coach now uses one shared exercise-language layer across initial workout creation, explicit-list parsing, refinement, voice transcript scoring, and locally learned aliases.
+
+The language layer includes:
+- canonical exercise names from the full Swole Cat catalog
+- a broad curated gym-slang alias map
+- common abbreviations such as DB, BB, RDL, OHP and CGBP
+- normalization for common speech-recognition errors such as “Romanian dead left,” “preacher coral,” “Bulgarian split squad,” and “lat pull town”
+- compact edit-distance and token-similarity scoring
+- confidence tiers and score-gap checks to prevent a generic phrase from being treated as certain when several variants are plausible
+
+High-confidence exact or repaired language may resolve automatically. Medium-confidence crowded matches are treated as ambiguous. The product rule is: do not silently substitute an unrelated exercise just to keep the conversation moving.
+
+Examples:
+- “Bulgarians” → Bulgarian Split Squat
+- “RDLs” → Romanian Deadlift
+- “rope pushdowns” → Rope Triceps Pushdown
+- “Romanian dead left” → Romanian Deadlift
+- “preacher coral” → Preacher Curl
+- “shoulder press” → clarification when several shoulder-press variants remain plausible
+
+## v0.54 speech-alternative scoring
+
+The native speech-recognition layer requests several final alternatives. Coach scores those alternatives using:
+- recognized exercise mentions
+- ambiguity count
+- workout command language
+- sets/reps and structured lifting syntax
+- target/equipment terms
+- the amount of gym-language repair required
+
+When two transcripts normalize to the same likely workout, the cleaner transcript is preferred.
+
+This ranking improves transcription selection only. Workout programming remains deterministic after the text is selected.
+
+## v0.54 locally learned vocabulary
+
+A user may teach Coach a personal alias with natural wording such as:
+“When I say spider boys I mean spider dumbbell curl.”
+
+Learned aliases:
+- map only to exercises that already exist in the current catalog
+- are stored in local Swole Cat settings
+- participate in the same confidence engine as built-in slang
+- never change the underlying exercise definition
+
+## v0.54 Coach Insights foundation
+
+The first Coach Insight is descriptive training-history awareness on Home.
+
+Current conservative trigger:
+- at least three logged workouts exist in the recent two-week window
+- one major group (lower body, push, or pull) has no logged work in that window
+- other major training work did occur
+- the absent group was last logged roughly 14+ days ago, or the user's available history spans that long without the group
+
+The insight may say that a training area “hasn’t shown up lately” and report the logged pattern. It may offer a one-tap Coach build for that area.
+
+Guardrails:
+- no insight during an active workout
+- no neglect insight while an active structured Program is controlling the user's upcoming training
+- no claim that a muscle is recovered, under-recovered, overtrained, injured, or physiologically ready
+- no statement that the user must train the absent area
+- the underlying observation comes only from logged Swole Cat history
