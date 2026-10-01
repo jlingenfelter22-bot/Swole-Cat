@@ -49,8 +49,8 @@ function coachFamilyCap(family,request,count){
  const keys=coachRequestedTargetKeys(request),single=keys.length===1?keys[0]:'';
  if(family==='row')return (['back','upper back','pull'].includes(single))&&count>=5?2:1;
  if(family==='vertical_pull')return (['back','lats','pull'].includes(single))&&count>=6?2:1;
- if(family==='biceps_curl')return (single==='arms'||single==='biceps')&&count>=4?2:1;
- if(family==='triceps_extension')return (single==='arms'||single==='triceps')&&count>=4?2:1;
+ if(family==='biceps_curl')return single==='biceps'&&count>=2?2:single==='arms'&&count>=4?2:1;
+ if(family==='triceps_extension')return single==='triceps'&&count>=2?2:single==='arms'&&count>=4?2:1;
  if(family==='squat')return (single==='legs'||single==='lower body'||single==='quads')&&count>=7?2:1;
  if(family==='hinge')return (single==='legs'||single==='lower body'||single==='hamstrings'||single==='glutes')&&count>=7?2:1;
  return 1;
