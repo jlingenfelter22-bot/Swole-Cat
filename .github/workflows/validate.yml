@@ -2668,3 +2668,90 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V540 Coach brain and insights
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(100);
+            const w=dom.window;
+
+            let parsed=w.coachParseExplicitWorkout('3 sets Bulgarians for 10, 3 sets RDLs for 8, 2 sets rope pushdowns for 12','hypertrophy');
+            assert(parsed.signal,'gym slang should still produce an explicit workout');
+            assert.deepEqual(parsed.items.map(x=>w.exById(x.exerciseId).name),['Bulgarian Split Squat','Romanian Deadlift','Rope Triceps Pushdown']);
+            assert.deepEqual(parsed.items.map(x=>[x.sets,x.minReps,x.maxReps]),[[3,10,10],[3,8,8],[2,12,12]]);
+
+            const deadLeft=w.coachUnderstandExercisePhrase('romanian dead left');
+            assert.equal(deadLeft.level,'high','common speech error should resolve confidently');
+            assert.equal(deadLeft.exercise.name,'Romanian Deadlift');
+
+            const preacher=w.coachUnderstandExercisePhrase('preacher coral');
+            assert.equal(preacher.level,'high','phonetic-like speech error should resolve confidently');
+            assert.equal(preacher.exercise.name,'Preacher Curl');
+
+            const bulgarian=w.coachUnderstandExercisePhrase('bulgarian split squad');
+            assert.equal(bulgarian.level,'high');
+            assert.equal(bulgarian.exercise.name,'Bulgarian Split Squat');
+
+            const ambiguous=w.coachUnderstandExercisePhrase('shoulder press');
+            assert.equal(ambiguous.level,'medium','ambiguous generic exercise should request clarification instead of silently guessing');
+            assert.equal(w.coachResolveExercisePhrase('shoulder press'),null);
+            assert(ambiguous.alternatives.some(x=>x.exercise.name==='Dumbbell Shoulder Press'));
+            assert(ambiguous.alternatives.some(x=>x.exercise.name==='Machine Shoulder Press'));
+
+            const best=w.coachChooseVoiceTranscript([
+              'three sets preacher coral and romanian dead left',
+              'three sets preacher curl and romanian deadlift'
+            ]);
+            assert.equal(best,'three sets preacher curl and romanian deadlift','voice transcript scoring should prefer gym-language interpretation with stronger exercise matches');
+
+            const spider=w.allExercises().find(ex=>ex.name==='Spider Dumbbell Curl');
+            assert(spider);
+            const taught=w.coachTryTeachAlias('when I say spider boys I mean spider dumbbell curl');
+            assert(taught.handled&&taught.ok,'Coach should learn a local user alias');
+            const learned=w.coachUnderstandExercisePhrase('spider boys');
+            assert.equal(learned.level,'high');
+            assert.equal(learned.exercise.id,spider.id);
+            assert.equal(w.eval("state.settings.coachAliases['spider boys']"),spider.id,'learned alias should persist in local state');
+
+            const bench=w.allExercises().find(ex=>ex.name==='Barbell Bench Press');
+            const row=w.allExercises().find(ex=>ex.name==='Seated Cable Row');
+            const squat=w.allExercises().find(ex=>ex.name==='Back Squat');
+            const mkSession=(days,idA,idB)=>({
+              id:'s'+days,date:new Date(Date.now()-days*86400000).toISOString(),routineName:'Logged Workout',
+              exercises:[idA,idB].filter(Boolean).map(id=>({exerciseId:id,sets:[{type:'working',done:true,weight:100,reps:8}]}))
+            });
+            w.eval('state.activeWorkout=null;state.activeProgramId=null;state.programs=[]');
+            w.eval('state.sessions=[]');
+            w.eval('state.sessions.push('+JSON.stringify(mkSession(20,squat.id,null))+')');
+            w.eval('state.sessions.push('+JSON.stringify(mkSession(10,bench.id,row.id))+')');
+            w.eval('state.sessions.push('+JSON.stringify(mkSession(5,bench.id,row.id))+')');
+            w.eval('state.sessions.push('+JSON.stringify(mkSession(1,bench.id,row.id))+')');
+            w.eval('invalidateDerivedSessionData?.()');
+            const insight=w.coachHistoryInsight();
+            assert(insight,'Coach should surface a history insight when enough evidence exists');
+            assert.equal(insight.group.key,'lower body');
+            assert(insight.days>=14);
+            assert.match(insight.text,/workouts in the last two weeks/i);
+            const htmlInsight=w.coachInsightHtml();
+            assert.match(htmlInsight,/COACH INSIGHT/);
+            assert.match(htmlInsight,/Build Lower body/);
+
+            w.eval("state.programs=[{id:'p1',name:'Plan',routineIds:[],frequency:3,preferredDays:[],trainingMode:'inherit',nextIndex:0}];state.activeProgramId='p1'");
+            assert.equal(w.coachHistoryInsight(),null,'Coach insight should not second-guess an active structured Program');
+
+            dom.window.close();
+            console.log('Swole Cat V54.0 Coach brain + insights PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
