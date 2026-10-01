@@ -4911,7 +4911,7 @@ function coachRefineDraftText(text){
      return;
    }
    m=segment.match(/^(?:add|include)\s+(.+)$/i);
-   if(m&&!coachParseTargets(m[1]).regions.length){
+   if(m&&!COACH_TARGET_GROUPS[coachNormalizeWords(m[1])]){
      const ex=coachResolveExercisePhrase(m[1]);
      if(ex){
        const candidateRequest={...req,excludedExerciseIds:req.excludedExerciseIds.filter(id=>id!==ex.id)};
