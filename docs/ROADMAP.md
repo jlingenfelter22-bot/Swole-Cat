@@ -259,15 +259,17 @@ Each exercise should support structured metadata such as:
 
 ### Locked: Historical workout recap
 From the calendar/history, tapping a completed workout should reopen a durable recap containing:
-- [ ] all exercises performed
-- [ ] actual sets/reps/weight
-- [ ] duration
-- [ ] total volume
-- [ ] PRs
-- [ ] notes
-- [ ] muscle groups
-- [ ] front/back heat map
-- [ ] comparison to prior performance when useful
+- [x] all exercises performed
+- [x] actual sets/reps/weight
+- [x] duration
+- [x] total volume
+- [x] PRs
+- [x] notes
+- [x] muscle groups
+- [x] front/back heat map
+- [x] comparison to prior performance when useful
+
+**v0.47.0:** Historical Workout Recaps reuses the durable completion recap from both History and the Progress calendar, adds exact completed set rows and exercise notes, and computes progression only against sessions that occurred before the historical workout being viewed.
 
 ### Later extension
 - weekly/monthly muscle-group coverage
