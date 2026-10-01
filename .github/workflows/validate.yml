@@ -2245,16 +2245,34 @@ jobs:
             w.startRoutineFresh('seed_r');
             await wait(10);
 
-            w.updateSet(0,0,'weight','1');
-            await wait(80);
-            w.updateSet(0,0,'weight','15');
-            await wait(80);
-            w.updateSet(0,0,'weight','150');
-            await wait(380);
+            // Exercise the real DOM path at a deliberately slow typing cadence.
+            // While the weight box still has focus, autofill must never commit a partial number.
+            const weightInput=w.document.querySelector('#workoutExercise-0 .set-card[data-set-index="0"] input[aria-label="weight"]');
+            assert(weightInput,'first working-set weight input should exist');
+            weightInput.focus();
+            weightInput.value='1';
+            weightInput.dispatchEvent(new w.Event('input',{bubbles:true}));
+            await wait(320);
 
             let state=JSON.parse(w.localStorage.getItem('overload_v3'));
             let weights=state.activeWorkout.exercises[0].sets.map(s=>Number(s.weight));
-            assert.deepEqual(weights,[150,150,150],'first-ever exercise weight should seed all empty working sets with the finished value');
+            assert.deepEqual(weights,[1,0,0],'partial first digit must not seed while the weight field is still being edited');
+
+            weightInput.value='10';
+            weightInput.dispatchEvent(new w.Event('input',{bubbles:true}));
+            await wait(320);
+            state=JSON.parse(w.localStorage.getItem('overload_v3'));
+            weights=state.activeWorkout.exercises[0].sets.map(s=>Number(s.weight));
+            assert.deepEqual(weights,[10,0,0],'partial multi-digit entry must remain isolated while the field has focus');
+
+            weightInput.value='100';
+            weightInput.dispatchEvent(new w.Event('input',{bubbles:true}));
+            weightInput.blur();
+            await wait(140);
+
+            state=JSON.parse(w.localStorage.getItem('overload_v3'));
+            weights=state.activeWorkout.exercises[0].sets.map(s=>Number(s.weight));
+            assert.deepEqual(weights,[100,100,100],'first-ever exercise weight should seed all empty working sets only after the finished value is committed');
             assert.equal(state.activeWorkout.exercises[0].firstWeightAutofillDone,true,'autofill should be one-time per exercise in the workout');
 
             // Changing the first set afterward must not keep rewriting the others.
@@ -2262,7 +2280,7 @@ jobs:
             await wait(380);
             state=JSON.parse(w.localStorage.getItem('overload_v3'));
             weights=state.activeWorkout.exercises[0].sets.map(s=>Number(s.weight));
-            assert.deepEqual(weights,[165,150,150],'later edits should not cascade after the one-time seed');
+            assert.deepEqual(weights,[165,100,100],'later edits should not cascade after the one-time seed');
 
             // Finish one set to create real exercise history.
             w.updateSet(0,0,'reps','8');
