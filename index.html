@@ -4641,6 +4641,7 @@ function deleteProgram(id){
 }
 
 let coachBuildDraft=null,coachProgramBuildDraft=null,coachPromptGoal='hypertrophy';
+let coachClarificationContext=null;
 let coachVoiceSession=null;
 function coachMicIcon(){return '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm5-3a1 1 0 1 1 2 0 7 7 0 0 1-6 6.92V20h3a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h3v-2.08A7 7 0 0 1 5 11a1 1 0 1 1 2 0 5 5 0 0 0 10 0Z"/></svg>'}
 function coachVoiceButtonHtml(targetId){
@@ -4662,6 +4663,23 @@ function coachInsertTranscript(targetId,transcript){
  input.dispatchEvent(new Event('input',{bubbles:true}));
  input.focus();return true;
 }
+function coachVoiceTranscriptScore(text){
+ const raw=String(text||'').trim();if(!raw)return -Infinity;
+ const analysis=coachAnalyzeExerciseMentions(raw),targets=coachParseTargets(raw),equipment=coachParseEquipment(raw);
+ let score=analysis.mentions.length*80+analysis.ambiguities.length*24+targets.regions.length*8+equipment.allowed.length*5+equipment.excluded.length*5;
+ if(/\b(?:sets?|reps?|rir|rpe|amrap|superset|warm ?up|drop set|failure)\b/i.test(raw))score+=18;
+ if(/\b(?:add|remove|drop|swap|change|make|build|workout|routine|program)\b/i.test(raw))score+=10;
+ if(/\b\d+\s*x\s*\d+\b/i.test(raw))score+=12;
+ score+=Math.min(18,raw.length/12);
+ return score;
+}
+function coachChooseVoiceTranscript(matches){
+ const rows=(Array.isArray(matches)?matches:[]).map((text,index)=>({text:String(text||'').trim(),index})).filter(x=>x.text);
+ if(!rows.length)return '';
+ rows.forEach(row=>row.score=coachVoiceTranscriptScore(row.text));
+ rows.sort((a,b)=>b.score-a.score||a.index-b.index);
+ return rows[0].text;
+}
 async function coachNativeVoiceInput(targetId){
  const speech=capacitorPlugin('SpeechRecognition');if(!speech)return false;
  try{
@@ -4674,8 +4692,8 @@ async function coachNativeVoiceInput(targetId){
      }
    }
    coachVoiceSession={kind:'native',targetId};coachSetMicListening(targetId,true);showToast('Coach is listening…');
-   const result=await speech.start?.({language:'en-US',maxResults:3,prompt:'Tell Coach Swolecat what you need',partialResults:false,popup:false});
-   const transcript=result?.matches?.find(Boolean)||'';
+   const result=await speech.start?.({language:'en-US',maxResults:5,prompt:'Tell Coach Swolecat what you need',partialResults:false,popup:false});
+   const transcript=coachChooseVoiceTranscript(result?.matches||[]);
    if(transcript){coachInsertTranscript(targetId,transcript);showToast('Got it · edit or Build when ready')}
    else showToast('I did not catch that. Tap the mic and try again.');
    return true;
@@ -4692,10 +4710,12 @@ function coachWebVoiceInput(targetId){
  try{
    const recognition=new SpeechCtor();
    coachVoiceSession={kind:'web',targetId,recognition};
-   recognition.lang='en-US';recognition.interimResults=false;recognition.maxAlternatives=3;recognition.continuous=false;
+   recognition.lang='en-US';recognition.interimResults=false;recognition.maxAlternatives=5;recognition.continuous=false;
    recognition.onstart=()=>{coachSetMicListening(targetId,true);showToast('Coach is listening…')};
    recognition.onresult=event=>{
-     const transcript=event?.results?.[0]?.[0]?.transcript||'';
+     const result=event?.results?.[0],matches=[];
+     if(result)for(let i=0;i<result.length;i++)matches.push(result[i]?.transcript||'');
+     const transcript=coachChooseVoiceTranscript(matches);
      if(transcript){coachInsertTranscript(targetId,transcript);showToast('Got it · edit or Build when ready')}
    };
    recognition.onerror=()=>showToast('Voice input did not catch that. Tap the mic and try again.');
@@ -5165,15 +5185,21 @@ function coachFindExerciseMentions(text){return coachAnalyzeExerciseMentions(tex
 function coachPrescriptionNumbersAround(text,mention,index,mentions,goal,globalRep){
  const beforeStart=index?mentions[index-1].end:0,nextStart=index<mentions.length-1?mentions[index+1].start:text.length;
  const before=text.slice(beforeStart,mention.start).trim(),after=text.slice(mention.end,nextStart).trim();
+ const local=coachNormalizeGymText(mention.segmentText||'');
  let sets=0,minReps=0,maxReps=0,m;
- m=before.match(/(?:^|\s)(\d+)\s*(?:sets?|set)\s*(?:of\s*)?$/i);
+ m=local.match(/\b(\d+)\s*(?:sets?|set)\b/i);
  if(m)sets=Number(m[1]);
+ if(!sets&&(m=local.match(/\b(\d+)\s*x\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\b/i))){sets=Number(m[1]);minReps=Number(m[2]);maxReps=Number(m[3]||m[2])}
+ m=before.match(/(?:^|\s)(\d+)\s*(?:sets?|set)\s*(?:of\s*)?$/i);
+ if(!sets&&m)sets=Number(m[1]);
  if(!sets&&(m=after.match(/^(?:for\s+)?(\d+)\s*(?:sets?|set)\b/i)))sets=Number(m[1]);
  if(!sets&&(m=before.match(/(?:^|\s)(\d+)\s*x\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*$/i))){sets=Number(m[1]);minReps=Number(m[2]);maxReps=Number(m[3]||m[2])}
  if(!sets&&(m=after.match(/^(?:for\s+)?(\d+)\s*x\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?/i))){sets=Number(m[1]);minReps=Number(m[2]);maxReps=Number(m[3]||m[2])}
  if(m=after.match(/^(?:for\s+)?\d+\s*(?:sets?|set)\s*(?:of\s*)?(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*(?:reps?)?/i)){minReps=Number(m[1]);maxReps=Number(m[2]||m[1])}
  if(!minReps&&(m=after.match(/(?:^|\s)(?:target(?:ing)?|aim(?:ing)?(?:\s+for)?|shoot(?:ing)?(?:\s+for)?)\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*(?:reps?)?/i))){minReps=Number(m[1]);maxReps=Number(m[2]||m[1])}
  if(!minReps&&(m=after.match(/(?:^|\s)(?:for|at)\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?(?!\s*sets?\b)(?:\s*reps?)?/i))){minReps=Number(m[1]);maxReps=Number(m[2]||m[1])}
+ if(!minReps&&(m=local.match(/(?:for|at|target(?:ing)?|aim(?:ing)?(?:\s+for)?)\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*(?:reps?)?\b/i))){minReps=Number(m[1]);maxReps=Number(m[2]||m[1])}
+ if(!minReps&&(m=local.match(/\b(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?\b/i))){minReps=Number(m[1]);maxReps=Number(m[2]||m[1])}
  if(!minReps&&(m=after.match(/(?:^|\s)(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?\b/i))){minReps=Number(m[1]);maxReps=Number(m[2]||m[1])}
  const defaults=coachProgrammingDefaults(goal,45);
  return {
@@ -5184,7 +5210,7 @@ function coachPrescriptionNumbersAround(text,mention,index,mentions,goal,globalR
  };
 }
 function coachParseExplicitWorkout(text,goal=coachPromptGoal){
- const normalized=coachNumbersToDigits(text),lower=normalized.toLowerCase(),normalizedWords=coachNormalizeWords(normalized),mentions=coachFindExerciseMentions(normalized),items=[],seen=new Set();
+ const normalized=coachNumbersToDigits(text),lower=normalized.toLowerCase(),normalizedWords=coachNormalizeGymText(normalized),analysis=coachAnalyzeExerciseMentions(normalized),mentions=analysis.mentions,items=[],seen=new Set();
  let globalRep=null;
  let globalMatch=lower.match(/(?:target(?:ing)?|aim(?:ing)?(?:\s+for)?|shoot(?:ing)?(?:\s+for)?)\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?\s*(?:each|for each|on each|across|all)?/i);
  if(!globalMatch)globalMatch=lower.match(/(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?\s*(?:each|for each|on each)/i);
@@ -5197,8 +5223,62 @@ function coachParseExplicitWorkout(text,goal=coachPromptGoal){
  });
  const hasPrescriptionLanguage=/\bsets?\b|\breps?\b|\b\d+\s*x\s*\d+\b/i.test(normalized);
  const listLanguage=/\b(?:i want|i need|want to do|need to do|do|doing|workout with|routine with|include|add)\b/i.test(lower);
- const signal=items.length>=2||(items.length===1&&hasPrescriptionLanguage)||(items.length===1&&listLanguage);
- return {signal,items,mentions:mentions.map(x=>x.exerciseId)};
+ const ambiguities=analysis.ambiguities.map(a=>{
+   const temp={...a,segmentText:a.segmentText||a.phrase};
+   const cfg=coachPrescriptionNumbersAround(normalizedWords,temp,0,[temp],goal,globalRep);
+   return {...a,config:cfg,options:a.alternatives.slice(0,3).map(x=>({exerciseId:x.exercise.id,name:x.exercise.name,confidence:x.score}))};
+ });
+ const understoodCount=items.length+ambiguities.length;
+ const signal=understoodCount>=2||(understoodCount===1&&hasPrescriptionLanguage)||(understoodCount===1&&listLanguage);
+ return {signal,items,ambiguities,mentions:mentions.map(x=>x.exerciseId)};
+}
+function coachShowExerciseClarification(){
+ const ctx=coachClarificationContext,ambiguity=ctx?.explicit?.ambiguities?.[0];if(!ctx||!ambiguity)return false;
+ const options=ambiguity.options||[];
+ openModal('Coach Swolecat',`
+   <div class="coach-console">
+     <div class="eyebrow">QUICK CLARIFICATION</div>
+     <div class="coach-question">I heard “${esc(ambiguity.phrase)}.” What did you mean?</div>
+     <div class="mini" style="margin-top:5px">I’m not going to guess and put the wrong exercise in your workout.</div>
+     <div class="coach-choice-grid">${options.map(o=>`<button class="btn secondary" onclick="coachResolveExerciseClarification('${escAttr(o.exerciseId)}')">${esc(o.name)}</button>`).join('')}</div>
+     <div class="actions"><button class="btn secondary" onclick="openCoachSwolecat(true)">Start Over</button></div>
+   </div>`);
+ return true;
+}
+function coachBeginExerciseClarification(context){
+ coachClarificationContext=context;return coachShowExerciseClarification();
+}
+function coachResolveExerciseClarification(exerciseId){
+ const ctx=coachClarificationContext,ambiguity=ctx?.explicit?.ambiguities?.shift(),ex=exById(exerciseId);
+ if(!ctx||!ambiguity||!ex)return;
+ const cfg=ambiguity.config||coachProgrammingDefaults(ctx.request.goal,ctx.request.duration||45);
+ ctx.explicit.items.push({
+   exerciseId:ex.id,
+   sets:cfg.sets||ctx.request?.defaults?.sets||state.settings.defaultSets,
+   minReps:cfg.minReps||state.settings.defaultMin,
+   maxReps:cfg.maxReps||state.settings.defaultMax,
+   explicitSets:!!cfg.explicitSets,explicitReps:!!cfg.explicitReps
+ });
+ if(ctx.explicit.ambiguities.length){coachShowExerciseClarification();return}
+ const finished=ctx;coachClarificationContext=null;
+ finished.explicit.items.sort((a,b)=>{
+   const ai=coachAnalyzeExerciseMentions(finished.prompt).mentions.findIndex(m=>m.exerciseId===a.exerciseId);
+   const bi=coachAnalyzeExerciseMentions(finished.prompt).mentions.findIndex(m=>m.exerciseId===b.exerciseId);
+   return (ai<0?999:ai)-(bi<0?999:bi);
+ });
+ coachProgramBuildDraft=null;coachGenerateExplicitWorkout(finished.request,finished.explicit);renderCoachPreview();
+}
+function coachTryTeachAlias(text){
+ const raw=String(text||'').trim();
+ const m=raw.match(/^(?:remember\s+)?(?:when\s+i\s+say\s+)?[“"']?(.+?)[”"']?\s+(?:means|mean|i mean)\s+[“"']?(.+?)[”"']?[.!]?$/i);
+ if(!m)return {handled:false};
+ const alias=m[1].trim(),meaning=m[2].trim(),understood=coachUnderstandExercisePhrase(meaning);
+ if(understood.level==='high'&&understood.exercise){
+   coachLearnAlias(alias,understood.exercise.id);
+   return {handled:true,ok:true,message:`Coach learned “${alias}” = ${understood.exercise.name}`};
+ }
+ const choices=understood.alternatives?.slice(0,2).map(x=>x.exercise.name).join(' or ');
+ return {handled:true,ok:false,message:choices?`I’m not sure what “${meaning}” means. Did you mean ${choices}?`:'I could not match that exercise yet.'};
 }
 function coachGenerateExplicitWorkout(request,prescription){
  if(!prescription?.items?.length)return null;
@@ -5457,6 +5537,7 @@ function coachRefineDraftText(text){
 function coachApplyRefinement(){
  const input=document.getElementById('coachRefinePrompt'),text=input?.value.trim()||'';
  if(!text){showToast('Tell Coach what you want changed');return}
+ const taught=coachTryTeachAlias(text);if(taught.handled){showToast(taught.message);return}
  if(/^start(?: it| workout)?(?: now)?[.!]?$/i.test(text)){coachStartWorkoutNow();return}
  if(/^save(?: it)?(?: as (?:a )?routine)?[.!]?$/i.test(text)){coachSaveRoutine();return}
  if(/^add (?:it )?to (?:a )?program[.!]?$/i.test(text)){coachOpenAddToProgram();return}
@@ -5845,7 +5926,10 @@ function coachAnswerDuration(minutes){
 function coachSubmitPrompt(){
  const input=document.getElementById('coachPrompt'),prompt=input?.value.trim()||'';
  if(!prompt){showToast('Tell Coach Swolecat what you want to train');return}
+ const taught=coachTryTeachAlias(prompt);
+ if(taught.handled){showToast(taught.message);return}
  const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt),explicit=coachParseExplicitWorkout(prompt,request.goal);
+ if(explicit.signal&&explicit.ambiguities?.length){coachBeginExerciseClarification({prompt,request,programIntent,explicit});return}
  if(explicit.signal&&explicit.items.length){
    coachProgramBuildDraft=null;coachGenerateExplicitWorkout(request,explicit);renderCoachPreview();return;
  }
@@ -5886,7 +5970,10 @@ function homeSuggestedRoutine(){
 function homeCoachBuildPrompt(){
  const input=document.getElementById('homeCoachPrompt'),prompt=input?.value.trim()||'';
  if(!prompt){showToast('Tell Coach Swolecat what you want to build');return}
+ const taught=coachTryTeachAlias(prompt);
+ if(taught.handled){showToast(taught.message);return}
  const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt),explicit=coachParseExplicitWorkout(prompt,request.goal);
+ if(explicit.signal&&explicit.ambiguities?.length){coachBeginExerciseClarification({prompt,request,programIntent,explicit});return}
  if(explicit.signal&&explicit.items.length){
    coachProgramBuildDraft=null;coachGenerateExplicitWorkout(request,explicit);renderCoachPreview();return;
  }
