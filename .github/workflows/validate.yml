@@ -2790,8 +2790,10 @@ jobs:
 
             assert(exercises.some((ex,i)=>metas[i].primary.includes('chest')),'chest must receive primary work');
             assert(exercises.some((ex,i)=>metas[i].primary.includes('upper_back')||metas[i].primary.includes('lats')),'back must receive primary work');
-            assert(exercises.some((ex,i)=>ex.pattern==='elbow_flexion'&&metas[i].primary.includes('biceps')),'explicit arms target must include direct biceps work');
-            assert(exercises.some((ex,i)=>ex.pattern==='elbow_extension'&&metas[i].primary.includes('triceps')),'explicit arms target must include direct triceps work');
+            const directBiceps=exercises.filter((ex,i)=>ex.pattern==='elbow_flexion'&&metas[i].primary.includes('biceps'));
+            const directTriceps=exercises.filter((ex,i)=>ex.pattern==='elbow_extension'&&metas[i].primary.includes('triceps')&&!/\\b(?:dip|push-?up|bench press|jm press|tate press)\\b/i.test(ex.name));
+            assert(directBiceps.length>=1,'explicit arms target must include direct biceps work');
+            assert(directTriceps.length>=1,'explicit arms target must include a true direct triceps isolation');
             assert((familyCounts.row||0)<=1,'multi-target workout must not stack multiple row variants');
             assert((familyCounts.lat_isolation||0)<=1,'multi-target workout must not stack cable and dumbbell pullovers as duplicate lat-isolation work');
             assert.equal(new Set(families).size,families.length,'multi-target workout should use distinct movement families when enough alternatives exist');
@@ -2805,6 +2807,8 @@ jobs:
             const backFamilies=backDraft.selectedIds.map(id=>w.coachMovementFamily(w.exById(id)));
             assert(backFamilies.filter(f=>f==='row').length<=2,'even a back-only day should not become a list of row variations');
             assert(backFamilies.includes('vertical_pull'),'back day should include a vertical-pull pattern when available');
+            const backExercises=backDraft.selectedIds.map(id=>w.exById(id));
+            assert(!backExercises.some(ex=>['hinge','olympic_pull'].includes(ex.pattern)),'hypertrophy back day should not pad itself with rack pulls or Olympic pulls when normal back patterns are available');
 
             console.log('Chest + arms + back:',names.join(' | '));
             console.log('Back only:',backDraft.selectedIds.map(id=>w.exById(id).name).join(' | '));
