@@ -2106,3 +2106,40 @@ jobs:
           run().catch(err=>{console.error(err);process.exit(1)});
           JS
 
+
+
+      - name: Smoke test V501 adaptive routines priority
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(70);
+            const w=dom.window,d=w.document;
+            const host=d.getElementById('routinePageSections');
+            w.renderRoutines();
+            assert.equal(host.firstElementChild.id,'workoutRoutinesSection','without programs, routines must be first');
+            assert(d.getElementById('programList').querySelector('.program-empty-compact'),'empty programs should be compact, not a large dead section');
+
+            const ex=w.allExercises().find(x=>x.name==='Barbell Bench Press');
+            w.eval(`state.routines=[{id:'r1',name:'Push',description:'',trainingMode:'guided',exercises:[{exerciseId:'${ex.id}',sets:3,minReps:8,maxReps:12,increment:5,mode:'double'}]}];save();renderRoutines()`);
+            assert.equal(host.firstElementChild.id,'workoutRoutinesSection','routines stay first when routines exist but programs do not');
+            assert(d.getElementById('routineList').textContent.includes('Push'),'saved routine should be immediately visible at top');
+
+            w.eval(`state.programs=[{id:'p1',name:'PPL',routineIds:['r1'],frequency:3,preferredDays:[],trainingMode:'inherit',nextIndex:0}];save();renderRoutines()`);
+            assert.equal(host.firstElementChild.id,'programsSection','programs must take priority once any program exists');
+            assert(d.getElementById('programList').textContent.includes('PPL'),'program should be visible in prioritized section');
+            assert.equal(host.children[1].id,'workoutRoutinesSection','routines should remain directly below programs');
+
+            dom.window.close();
+            console.log('Swole Cat V50.1 adaptive routines priority PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
