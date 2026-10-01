@@ -2219,3 +2219,85 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V503 first-time weight autofill
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(70);
+            const w=dom.window;
+
+            // New exercise: first completed typing sequence should seed the final value,
+            // not the first digit emitted by the input event.
+            const ex=w.allExercises().find(x=>x.name==='Anderson Squat')||w.allExercises().find(x=>x.name==='Back Squat');
+            assert(ex,'test exercise should exist');
+            w.eval(`state.routines=[{id:'seed_r',name:'Seed Test',trainingMode:'guided',description:'',exercises:[{exerciseId:'${ex.id}',sets:3,minReps:6,maxReps:10,increment:5,mode:'double',restSeconds:120}]}];save()`);
+            w.startRoutineFresh('seed_r');
+            await wait(10);
+
+            w.updateSet(0,0,'weight','1');
+            await wait(80);
+            w.updateSet(0,0,'weight','15');
+            await wait(80);
+            w.updateSet(0,0,'weight','150');
+            await wait(380);
+
+            let state=JSON.parse(w.localStorage.getItem('overload_v3'));
+            let weights=state.activeWorkout.exercises[0].sets.map(s=>Number(s.weight));
+            assert.deepEqual(weights,[150,150,150],'first-ever exercise weight should seed all empty working sets with the finished value');
+            assert.equal(state.activeWorkout.exercises[0].firstWeightAutofillDone,true,'autofill should be one-time per exercise in the workout');
+
+            // Changing the first set afterward must not keep rewriting the others.
+            w.updateSet(0,0,'weight','165');
+            await wait(380);
+            state=JSON.parse(w.localStorage.getItem('overload_v3'));
+            weights=state.activeWorkout.exercises[0].sets.map(s=>Number(s.weight));
+            assert.deepEqual(weights,[165,150,150],'later edits should not cascade after the one-time seed');
+
+            // Finish one set to create real exercise history.
+            w.updateSet(0,0,'reps','8');
+            w.toggleSet(0,0);
+            w.finalizeWorkout(false);
+            await wait(15);
+            w.closeModal();
+
+            // Start same exercise again. Existing history/recommendations must win:
+            // editing Set 1 cannot propagate over other set recommendations.
+            w.startRoutineFresh('seed_r');
+            await wait(10);
+            state=JSON.parse(w.localStorage.getItem('overload_v3'));
+            const before=state.activeWorkout.exercises[0].sets.map(s=>Number(s.weight));
+            assert(w.exerciseHasLoggedWeightHistory(ex.id),'completed historical set should disable first-time autofill');
+            w.updateSet(0,0,'weight','175');
+            await wait(380);
+            state=JSON.parse(w.localStorage.getItem('overload_v3'));
+            const after=state.activeWorkout.exercises[0].sets.map(s=>Number(s.weight));
+            assert.equal(after[0],175);
+            assert.deepEqual(after.slice(1),before.slice(1),'historical exercise weights must never be overwritten by autofill');
+
+            // Warm-up input is intentionally excluded from propagation.
+            w.eval(`state.activeWorkout=null;state.sessions=[];save()`);
+            w.startRoutineFresh('seed_r');
+            await wait(10);
+            w.eval(`state.activeWorkout.exercises[0].sets.unshift({weight:0,reps:5,done:false,rir:'',type:'warmup',pr:''});saveActiveWorkout();renderWorkout()`);
+            w.updateSet(0,0,'weight','75');
+            await wait(380);
+            state=JSON.parse(w.localStorage.getItem('overload_v3'));
+            assert.equal(Number(state.activeWorkout.exercises[0].sets[1].weight)||0,0,'warm-up weight must not seed working sets');
+
+            w.stopRestTimer();
+            dom.window.close();
+            console.log('Swole Cat V50.3 first-time weight autofill PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
