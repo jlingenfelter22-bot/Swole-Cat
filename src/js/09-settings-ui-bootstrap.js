@@ -132,7 +132,7 @@ function importBackup(file,input=null){
  r.readAsText(file);
 }
 function resetAll(){closeModal();confirmAction('Erase all local data?','This permanently removes every workout, routine, custom exercise, favorite, bodyweight entry, setting, recovery snapshot, and pre-import snapshot stored by Swole Cat on this device.',()=>{
- try{localStorage.removeItem(LSKEY);localStorage.removeItem(RECOVERYKEY);localStorage.removeItem(IMPORTSNAPSHOTKEY)}catch(e){}
+ try{swoleCatStorage.removeItem(LSKEY);swoleCatStorage.removeItem(RECOVERYKEY);swoleCatStorage.removeItem(IMPORTSNAPSHOTKEY)}catch(e){}
  storageWriteBlocked=false;recoveredFromSnapshot=false;startupStorageNotice='';lastStorageError='';recoverySnapshotWritten=false;
  state=freshState();save();renderHome();showToast('Local data erased');setTimeout(onboarding,250);
 });}
