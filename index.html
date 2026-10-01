@@ -6065,17 +6065,27 @@ function coachRemoveExercise(index){
 }
 function coachSwapExercise(index){
  const draft=coachBuildDraft,currentId=draft?.selectedIds?.[index];if(!currentId)return;
- const selectedOther=draft.selectedIds.filter((_,i)=>i!==index),coverage={},patterns={};
+ const current=exById(currentId),currentFamily=coachMovementFamily(current);
+ const selectedOther=draft.selectedIds.filter((_,i)=>i!==index),coverage={},primaryCoverage={},patterns={},families={},targets=new Set(draft.request.targetRegions);
  selectedOther.forEach(id=>{
    const ex=exById(id);if(!ex)return;
    patterns[ex.pattern]=(patterns[ex.pattern]||0)+1;
-   const meta=exerciseMuscleMetadata(ex),targets=new Set(draft.request.targetRegions);
-   meta.primary.filter(m=>targets.has(m)).forEach(m=>coverage[m]=(coverage[m]||0)+1);
-   meta.secondary.filter(m=>targets.has(m)).forEach(m=>coverage[m]=(coverage[m]||0)+.5);
+   const family=coachMovementFamily(ex);families[family]=(families[family]||0)+1;
+   const meta=exerciseMuscleMetadata(ex);
+   meta.primary.filter(m=>targets.has(m)).forEach(m=>{coverage[m]=(coverage[m]||0)+1;primaryCoverage[m]=(primaryCoverage[m]||0)+1});
+   meta.secondary.filter(m=>targets.has(m)).forEach(m=>coverage[m]=(coverage[m]||0)+.35);
  });
- const replacement=visibleExercises().filter(ex=>ex.id!==currentId&&!selectedOther.includes(ex.id))
-   .map(ex=>({ex,score:coachDynamicCandidateScore(ex,draft.request,coverage,patterns)}))
-   .filter(x=>Number.isFinite(x.score)).sort((a,b)=>b.score-a.score||a.ex.name.localeCompare(b.ex.name))[0]?.ex;
+ const all=visibleExercises().filter(ex=>ex.id!==currentId&&!selectedOther.includes(ex.id));
+ const rank=items=>items
+   .map(ex=>({ex,score:coachDynamicCandidateScore(ex,draft.request,coverage,patterns,families,primaryCoverage,draft.selectedIds.length)}))
+   .filter(x=>Number.isFinite(x.score))
+   .sort((a,b)=>b.score-a.score||a.ex.name.localeCompare(b.ex.name))[0]?.ex;
+ let replacement=rank(all.filter(ex=>coachMovementFamily(ex)===currentFamily));
+ if(!replacement){
+   const curMeta=exerciseMuscleMetadata(current),curPrimary=new Set(curMeta.primary.filter(m=>targets.has(m)));
+   replacement=rank(all.filter(ex=>exerciseMuscleMetadata(ex).primary.some(m=>curPrimary.has(m))));
+ }
+ if(!replacement)replacement=rank(all);
  if(!replacement){showToast('No suitable replacement found');return}
  draft.request.excludedExerciseIds=[...new Set([...(draft.request.excludedExerciseIds||[]),currentId])];
  draft.request.requiredExerciseIds=(draft.request.requiredExerciseIds||[]).filter(id=>id!==currentId);
@@ -6084,7 +6094,7 @@ function coachSwapExercise(index){
    if(config)draft.explicitConfigById[replacement.id]={...config,exerciseId:replacement.id};
  }
  draft.selectedIds[index]=replacement.id;
- draft.lastRefinement=`Swapped ${exById(currentId)?.name||'exercise'} for ${replacement.name}`;
+ draft.lastRefinement=`Swapped ${current?.name||'exercise'} for ${replacement.name}`;
  renderCoachPreview();
 }
 function coachPersistRoutine(draft=coachBuildDraft){
