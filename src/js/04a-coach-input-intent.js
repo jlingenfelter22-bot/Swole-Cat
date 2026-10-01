@@ -102,7 +102,11 @@ const COACH_TARGET_GROUPS={
  'arms':{label:'Arms',regions:['biceps','triceps']},
  'shoulders':{label:'Shoulders',regions:['front_delts','side_delts','rear_delts']},
  'chest':{label:'Chest',regions:['chest']},
- 'back':{label:'Back',regions:['lats','upper_back']},
+ 'back':{label:COACH_BACK_KNOWLEDGE.full.label,regions:[...COACH_BACK_KNOWLEDGE.full.regions]},
+ 'upper back':{label:COACH_BACK_KNOWLEDGE.upper.label,regions:[...COACH_BACK_KNOWLEDGE.upper.regions]},
+ 'lower back':{label:COACH_BACK_KNOWLEDGE.lower.label,regions:[...COACH_BACK_KNOWLEDGE.lower.regions]},
+ 'lats':{label:COACH_BACK_KNOWLEDGE.lats.label,regions:[...COACH_BACK_KNOWLEDGE.lats.regions]},
+ 'traps':{label:COACH_BACK_KNOWLEDGE.traps.label,regions:[...COACH_BACK_KNOWLEDGE.traps.regions]},
  'biceps':{label:'Biceps',regions:['biceps']},
  'triceps':{label:'Triceps',regions:['triceps']},
  'quads':{label:'Quads',regions:['quads']},
@@ -160,11 +164,19 @@ function coachParseTargets(text){
    ['full body',/\bfull body\b/],['upper body',/\bupper body\b/],['lower body',/\blower body\b/],
    ['push',/\bpush(?: day| workout| session)?\b/],['pull',/\bpull(?: day| workout| session)?\b/],
    ['legs',/\blegs?\b/],['arms',/\barms?\b/],['shoulders',/\bshoulders?\b/],
-   ['chest',/\bchest\b/],['back',/\bback\b/],['biceps',/\bbiceps?\b/],['triceps',/\btriceps?\b/],
+   ['upper back',/\bupper back\b|\bmid(?:dle)? back\b/],
+   ['lower back',/\blower back\b|\blumbar(?: spine| extensors?)?\b|\bspinal erectors?\b|\berector spinae\b|\berectors?\b/],
+   ['lats',/\blats\b|\blatissimus(?: dorsi)?\b/],
+   ['traps',/\btraps?\b|\btrapezius\b/],
+   ['chest',/\bchest\b/],['biceps',/\bbiceps?\b/],['triceps',/\btriceps?\b/],
    ['quads',/\bquads?\b/],['hamstrings',/\bhamstrings?\b/],['glutes',/\bglutes?\b/],
    ['calves',/\bcalves?\b|\bcalf\b/],['core',/\bcore\b|\babs?\b/]
  ];
  terms.forEach(([key,re])=>{if(re.test(work))add(key)});
+ const genericBackWork=work
+   .replace(/\b(?:upper|lower|mid(?:dle)?) back\b/g,' ')
+   .replace(/\blumbar(?: spine| extensors?)?\b|\bspinal erectors?\b|\berector spinae\b|\berectors?\b/g,' ');
+ if(/\bback\b/.test(genericBackWork))add('back');
  return {keys,labels:[...new Set(labels)],regions:[...new Set(regions)]};
 }
 function coachParseLiftingGrammar(text){
@@ -221,16 +233,23 @@ function coachParsePrompt(text,defaultGoal=coachPromptGoal){
 
 function coachParseProgramFocus(text){
  const lower=coachNormalizeGymText(text),labels=[],regions=[];
+ const add=key=>{
+   const g=COACH_TARGET_GROUPS[key];if(!g)return;
+   labels.push(g.label);regions.push(...g.regions);
+ };
  const terms=[
-   ['chest',/\bchest\b/],['back',/\bback\b/],['shoulders',/\bshoulders?\b/],['arms',/\barms?\b/],
+   ['upper back',/\bupper back\b|\bmid(?:dle)? back\b/],
+   ['lower back',/\blower back\b|\blumbar(?: spine| extensors?)?\b|\bspinal erectors?\b|\berector spinae\b|\berectors?\b/],
+   ['lats',/\blats\b|\blatissimus(?: dorsi)?\b/],['traps',/\btraps?\b|\btrapezius\b/],
+   ['chest',/\bchest\b/],['shoulders',/\bshoulders?\b/],['arms',/\barms?\b/],
    ['biceps',/\bbiceps?\b/],['triceps',/\btriceps?\b/],['quads',/\bquads?\b/],['hamstrings',/\bhamstrings?\b/],
    ['glutes',/\bglutes?\b/],['calves',/\bcalves?\b|\bcalf\b/],['core',/\bcore\b|\babs?\b/]
  ];
- terms.forEach(([key,re])=>{
-   if(!re.test(lower))return;
-   const g=COACH_TARGET_GROUPS[key];if(!g)return;
-   labels.push(g.label);regions.push(...g.regions);
- });
+ terms.forEach(([key,re])=>{if(re.test(lower))add(key)});
+ const genericBackWork=lower
+   .replace(/\b(?:upper|lower|mid(?:dle)?) back\b/g,' ')
+   .replace(/\blumbar(?: spine| extensors?)?\b|\bspinal erectors?\b|\berector spinae\b|\berectors?\b/g,' ');
+ if(/\bback\b/.test(genericBackWork))add('back');
  return {labels:[...new Set(labels)],regions:[...new Set(regions)]};
 }
 function coachParseProgramIntent(text){
