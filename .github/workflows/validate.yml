@@ -2604,3 +2604,67 @@ jobs:
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
+
+
+      - name: Smoke test V532 explicit Coach surgical refinements
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const assert=require('assert');
+          const {JSDOM}=require('jsdom');
+          const html=fs.readFileSync('index.html','utf8');
+          const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/',pretendToBeVisual:true,beforeParse(window){
+            window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
+            window.alert=()=>{};window.confirm=()=>true;window.scrollTo=()=>{};
+          }});
+          const wait=ms=>new Promise(r=>setTimeout(r,ms));
+          const run=async()=>{
+            await wait(90);
+            const w=dom.window;
+
+            const initial='3 sets bench press, 3 sets dumbbell bench press, 3 sets back squat, 3 sets Bulgarian split squat, 9 reps each';
+            const request=w.coachParsePrompt(initial,'hypertrophy');
+            const parsed=w.coachParseExplicitWorkout(initial,'hypertrophy');
+            assert(parsed.signal,'initial explicit workout should parse');
+            w.coachGenerateExplicitWorkout(request,parsed);
+
+            let draft=w.eval('coachBuildDraft');
+            const beforeIds=[...draft.selectedIds];
+            const beforeNames=beforeIds.map(id=>w.exById(id).name);
+            assert.deepEqual(beforeNames,['Barbell Bench Press','Dumbbell Bench Press','Back Squat','Bulgarian Split Squat']);
+
+            let result=w.coachRefineDraftText('can you also add a set of assisted pull-ups?');
+            assert(result.ok,'exact spoken add request should be understood');
+            draft=w.eval('coachBuildDraft');
+
+            const afterNames=draft.selectedIds.map(id=>w.exById(id).name);
+            assert.equal(draft.selectedIds.length,beforeIds.length+1,'surgical add should add exactly one exercise');
+            assert.deepEqual(afterNames.slice(0,beforeNames.length),beforeNames,'original explicit exercise list and order must remain unchanged');
+            assert.equal(afterNames.at(-1),'Assisted Pull-Up','requested exercise should be appended');
+            const assisted=w.allExercises().find(ex=>ex.name==='Assisted Pull-Up');
+            assert(assisted,'Assisted Pull-Up should exist');
+            assert.equal(draft.explicitConfigById[assisted.id].sets,1,'"a set" should mean exactly one set');
+            assert(!afterNames.includes('Goblet Squat'),'Coach must not inject Goblet Squat');
+            assert(!afterNames.includes('Dumbbell Curl'),'Coach must not inject Dumbbell Curl');
+            assert(!afterNames.includes('Chest Supported Dumbbell Row'),'Coach must not inject Chest Supported Dumbbell Row');
+
+            result=w.coachRefineDraftText('make bench press 4 sets of 6 reps');
+            assert(result.ok,'existing explicit exercise should be editable surgically');
+            draft=w.eval('coachBuildDraft');
+            const bench=w.allExercises().find(ex=>ex.name==='Barbell Bench Press');
+            assert.equal(draft.explicitConfigById[bench.id].sets,4);
+            assert.equal(draft.explicitConfigById[bench.id].minReps,6);
+            assert.equal(draft.explicitConfigById[bench.id].maxReps,6);
+            assert.equal(draft.selectedIds.length,beforeIds.length+1,'changing sets/reps must not regenerate the list');
+
+            result=w.coachRefineDraftText('remove Bulgarian split squats');
+            assert(result.ok,'remove command should edit only the named exercise');
+            draft=w.eval('coachBuildDraft');
+            assert(!draft.selectedIds.some(id=>w.exById(id).name==='Bulgarian Split Squat'));
+            assert(draft.selectedIds.some(id=>w.exById(id).name==='Assisted Pull-Up'),'other explicit additions must remain after removal');
+
+            dom.window.close();
+            console.log('Swole Cat V53.2 explicit Coach surgical refinements PASS');
+          };
+          run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
+          JS
