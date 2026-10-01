@@ -96,6 +96,7 @@ const COACH_TARGET_GROUPS={
  'full body':{label:'Full Body',regions:['chest','lats','upper_back','front_delts','quads','hamstrings','glutes','core']},
  'upper body':{label:'Upper Body',regions:['chest','lats','upper_back','front_delts','side_delts','rear_delts','biceps','triceps']},
  'lower body':{label:'Lower Body',regions:['quads','hamstrings','glutes','adductors','calves']},
+ 'posterior chain':{label:'Posterior Chain',regions:['hamstrings','glutes','lower_back']},
  'push':{label:'Push',regions:['chest','front_delts','side_delts','triceps']},
  'pull':{label:'Pull',regions:['lats','upper_back','rear_delts','biceps']},
  'legs':{label:'Legs',regions:['quads','hamstrings','glutes','adductors','calves']},
@@ -153,12 +154,12 @@ function coachParseEquipment(text){
 
 function coachTargetPriorityRegex(key){
  const map={
-  'full body':'full body','upper body':'upper body','lower body':'lower body',
-  push:'push',pull:'pull',legs:'legs?',arms:'arms?',shoulders:'shoulders?',
-  chest:'chest',back:'back','upper back':'(?:upper|mid(?:dle)?) back',
+  'full body':'full body','upper body':'upper body','lower body':'lower body','posterior chain':'posterior chain',
+  push:'push',pull:'pull',legs:'legs?',arms:'arms?',shoulders:'(?:shoulders?|delts?)',
+  chest:'(?:chest|pecs?)',back:'back','upper back':'(?:upper|mid(?:dle)?) back',
   'lower back':'(?:lower back|lumbar(?: spine| extensors?)?|spinal erectors?|erector spinae|erectors?)',
   lats:'(?:lats|latissimus(?: dorsi)?)',traps:'(?:traps?|trapezius)',forearms:'forearms?',
-  biceps:'biceps?',triceps:'triceps?',quads:'quads?',hamstrings:'hamstrings?',
+  biceps:'(?:biceps?|bis)',triceps:'(?:triceps?|tris)',quads:'quads?',hamstrings:'(?:hamstrings?|hams)',
   glutes:'glutes?',calves:'(?:calves?|calf)',core:'(?:core|abs?)'
  };
  return map[key]||coachRegexEscape(key);
@@ -169,10 +170,11 @@ function coachParsePriorityTargets(text,availableKeys=[]){
  pool.forEach(key=>{
    const term=coachTargetPriorityRegex(key);
    const cues=[
-     new RegExp('\\b(?:more|extra)\\s+(?:focus\\s+on\\s+)?(?:the\\s+)?'+term+'\\b','i'),
+     new RegExp('\\b(?:more|extra|mostly|mainly|especially)\\s+(?:focus\\s+on\\s+)?(?:the\\s+)?'+term+'\\b','i'),
      new RegExp('\\bfocus(?:ed)?\\s+(?:more\\s+)?(?:on\\s+)?(?:the\\s+)?'+term+'\\b','i'),
-     new RegExp('\\b(?:emphas(?:ize|ise)|prioriti[sz]e)\\s+(?:the\\s+)?'+term+'\\b','i'),
-     new RegExp('\\b'+term+'[- ]?(?:focused|focus|emphasis|priority)\\b','i')
+     new RegExp('\\b(?:emphas(?:ize|ise)|prioriti[sz]e|favor|favour)\\s+(?:the\\s+)?'+term+'\\b','i'),
+     new RegExp('\\b(?:bias(?:ed)?\\s+(?:toward|towards|to)\\s+)(?:the\\s+)?'+term+'\\b','i'),
+     new RegExp('\\b'+term+'[- ]?(?:focused|focus|emphasis|priority|biased|dominant)\\b','i')
    ];
    if(!cues.some(re=>re.test(lower)))return;
    keys.push(key);regions.push(...(COACH_TARGET_GROUPS[key]?.regions||[]));
@@ -192,14 +194,16 @@ function coachParseTargets(text){
  };
  const terms=[
    ['full body',/\bfull body\b/],['upper body',/\bupper body\b/],['lower body',/\blower body\b/],
+   ['posterior chain',/\bposterior chain\b/],
    ['push',/\bpush(?: day| workout| session)?\b/],['pull',/\bpull(?: day| workout| session)?\b/],
-   ['legs',/\blegs?\b/],['arms',/\barms?\b/],['shoulders',/\bshoulders?\b/],
+   ['legs',/\blegs?\b/],['arms',/\barms?\b/],['shoulders',/\bshoulders?\b|\bdelts?\b/],
+   ['posterior chain',/\bposterior chain\b/],
    ['upper back',/\bupper back\b|\bmid(?:dle)? back\b/],
    ['lower back',/\blower back\b|\blumbar(?: spine| extensors?)?\b|\bspinal erectors?\b|\berector spinae\b|\berectors?\b/],
    ['lats',/\blats\b|\blatissimus(?: dorsi)?\b/],
    ['traps',/\btraps?\b|\btrapezius\b/],['forearms',/\bforearms?\b/],
-   ['chest',/\bchest\b/],['biceps',/\bbiceps?\b/],['triceps',/\btriceps?\b/],
-   ['quads',/\bquads?\b/],['hamstrings',/\bhamstrings?\b/],['glutes',/\bglutes?\b/],
+   ['chest',/\bchest\b|\bpecs?\b/],['biceps',/\bbiceps?\b|\bbis\b/],['triceps',/\btriceps?\b|\btris\b/],
+   ['quads',/\bquads?\b/],['hamstrings',/\bhamstrings?\b|\bhams\b/],['glutes',/\bglutes?\b/],
    ['calves',/\bcalves?\b|\bcalf\b/],['core',/\bcore\b|\babs?\b/]
  ];
  terms.forEach(([key,re])=>{if(re.test(work))add(key)});
@@ -272,8 +276,8 @@ function coachParseProgramFocus(text){
    ['upper back',/\bupper back\b|\bmid(?:dle)? back\b/],
    ['lower back',/\blower back\b|\blumbar(?: spine| extensors?)?\b|\bspinal erectors?\b|\berector spinae\b|\berectors?\b/],
    ['lats',/\blats\b|\blatissimus(?: dorsi)?\b/],['traps',/\btraps?\b|\btrapezius\b/],['forearms',/\bforearms?\b/],
-   ['chest',/\bchest\b/],['shoulders',/\bshoulders?\b/],['arms',/\barms?\b/],
-   ['biceps',/\bbiceps?\b/],['triceps',/\btriceps?\b/],['quads',/\bquads?\b/],['hamstrings',/\bhamstrings?\b/],
+   ['chest',/\bchest\b|\bpecs?\b/],['shoulders',/\bshoulders?\b|\bdelts?\b/],['arms',/\barms?\b/],
+   ['biceps',/\bbiceps?\b|\bbis\b/],['triceps',/\btriceps?\b|\btris\b/],['quads',/\bquads?\b/],['hamstrings',/\bhamstrings?\b|\bhams\b/],
    ['glutes',/\bglutes?\b/],['calves',/\bcalves?\b|\bcalf\b/],['core',/\bcore\b|\babs?\b/]
  ];
  terms.forEach(([key,re])=>{if(re.test(lower))add(key)});
