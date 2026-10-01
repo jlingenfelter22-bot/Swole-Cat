@@ -3407,6 +3407,17 @@ function saveActiveWorkout(defer=false){
  }
  return defer?scheduleStateSave():save();
 }
+function saveActiveWorkoutWithoutExtendingPendingSave(delay=220){
+ if(state.activeWorkout){
+   state.activeWorkout.status='active';
+   state.activeWorkout.lastSavedAt=new Date().toISOString();
+ }
+ if(pendingStateSaveTimer){
+   pendingStateSave=true;
+   return true;
+ }
+ return scheduleStateSave(delay);
+}
 function workoutHeaderIcon(stateName){
  if(stateName==='pause'){
    return '<svg class="header-control-svg" data-icon="pause" viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="4" width="3.5" height="12" rx="1"/><rect x="11.5" y="4" width="3.5" height="12" rx="1"/></svg>';
@@ -6664,7 +6675,7 @@ function applyFirstExerciseWeightAutofill(ei,sourceSi){
  e.firstWeightAutofillDone=true;
  if(targets.length){
    targets.forEach(si=>paintWorkoutSetWeight(ei,si));
-   saveActiveWorkout(true);
+   saveActiveWorkoutWithoutExtendingPendingSave();
  }
  return targets.length>0;
 }
