@@ -47,8 +47,8 @@ function coachMovementFamily(ex){
 }
 function coachFamilyCap(family,request,count){
  const keys=coachRequestedTargetKeys(request),single=keys.length===1?keys[0]:'';
- if(family==='row')return (single==='back'||single==='pull')&&count>=5?2:1;
- if(family==='vertical_pull')return (single==='back'||single==='pull')&&count>=6?2:1;
+ if(family==='row')return (['back','upper back','pull'].includes(single))&&count>=5?2:1;
+ if(family==='vertical_pull')return (['back','lats','pull'].includes(single))&&count>=6?2:1;
  if(family==='biceps_curl')return (single==='arms'||single==='biceps')&&count>=5?2:1;
  if(family==='triceps_extension')return (single==='arms'||single==='triceps')&&count>=5?2:1;
  if(family==='squat')return (single==='legs'||single==='lower body'||single==='quads')&&count>=7?2:1;
@@ -61,21 +61,32 @@ function coachGenericExerciseBias(ex,request){
  const staples=new Set([
    'Barbell Bench Press','Incline Dumbbell Press','Incline Barbell Bench Press','Cable Fly','Pec Deck',
    'Barbell Row','Seated Cable Row','Chest Supported Row','Lat Pulldown','Pull-Up','Assisted Pull-Up','Chin-Up',
+   'Deadlift','Romanian Deadlift','Roman Chair Back Extension','Seated Back Extension Machine','Barbell Shrug',
    'Overhead Press','Dumbbell Shoulder Press','Dumbbell Lateral Raise','Cable Lateral Raise','Rear Delt Fly','Face Pull',
-   'Back Squat','Front Squat','Leg Press','Hack Squat','Bulgarian Split Squat','Romanian Deadlift','Seated Leg Curl','Lying Leg Curl','Leg Extension','Hip Thrust',
+   'Back Squat','Front Squat','Leg Press','Hack Squat','Bulgarian Split Squat','Seated Leg Curl','Lying Leg Curl','Leg Extension','Hip Thrust',
    'Barbell Curl','Dumbbell Curl','Hammer Curl','Preacher Curl','Triceps Pushdown','Rope Triceps Pushdown','Overhead Triceps Extension','Skull Crusher',
    'Standing Calf Raise','Seated Calf Raise','Cable Crunch','Hanging Leg Raise'
  ]);
  if(staples.has(name))score+=18;
  if(/\b(?:single arm|single leg|alternating|behind-the-neck|anderson|board press|spoto|zercher|meadows|renegade|yates|jm press|tate press|b-stance|snatch grip|deficit|block pull|clean pull|high pull|power clean|power snatch)\b/i.test(name))score-=22;
  if(ex?.pattern==='olympic_pull'&&request.goal!=='strength')score-=55;
- if(keys.includes('back')&&request.goal!=='strength'&&['hinge','olympic_pull'].includes(ex?.pattern))score-=46;
+ const backFocused=keys.includes('back')||keys.includes('lower back');
+ if(backFocused&&request.goal!=='strength'){
+   if(ex?.pattern==='back_extension')score+=30;
+   if(name==='Deadlift')score-=6;
+   if(/\b(?:rack pull|block pull|deficit deadlift)\b/i.test(name))score-=20;
+ }
+ if(backFocused&&request.goal==='strength'&&name==='Deadlift')score+=34;
+ if(keys.includes('traps')&&ex?.pattern==='shrug')score+=30;
+ if(keys.includes('lats')&&['vertical_pull','shoulder_extension','pullover'].includes(ex?.pattern))score+=24;
  return score;
 }
 function coachSmartExerciseCount(request,baseCount){
  const keys=coachRequestedTargetKeys(request),base=Math.max(1,Number(baseCount)||1);
  if(keys.length!==1)return keys.length===2?Math.min(base,7):base;
  const key=keys[0];
+ if(key==='lower back')return Math.min(base,4);
+ if(['upper back','lats','traps'].includes(key))return Math.min(base,5);
  if(['chest','back','shoulders','arms','biceps','triceps','full body'].includes(key))return Math.min(base,6);
  if(['push','pull','legs','lower body','upper body'].includes(key))return Math.min(base,7);
  return base;
@@ -83,8 +94,9 @@ function coachSmartExerciseCount(request,baseCount){
 function coachCandidateBaseScore(ex,request){
  if(!coachExerciseAllowedByConstraints(ex,request))return -Infinity;
  const meta=exerciseMuscleMetadata(ex),targets=new Set(request.targetRegions),priority=new Set(request.priorityRegions||[]),keys=coachRequestedTargetKeys(request);
- const upperBackOnly=keys.includes('back')&&!keys.some(k=>['legs','lower body','hamstrings','glutes','quads','full body'].includes(k));
- if(upperBackOnly&&request.goal!=='strength'&&['hinge','olympic_pull'].includes(ex.pattern)&&!(request.requiredExerciseIds||[]).includes(ex.id))return -Infinity;
+ const isolatedBackRequest=keys.some(k=>['back','upper back','lower back','lats','traps'].includes(k))
+   &&!keys.some(k=>['legs','lower body','hamstrings','glutes','quads','full body'].includes(k));
+ if(isolatedBackRequest&&request.goal!=='strength'&&ex.pattern==='olympic_pull'&&!(request.requiredExerciseIds||[]).includes(ex.id))return -Infinity;
  const primaryHits=meta.primary.filter(m=>targets.has(m)),secondaryHits=meta.secondary.filter(m=>targets.has(m));
  if(!primaryHits.length&&!secondaryHits.length)return -Infinity;
  let score=(primaryHits.length?115+(primaryHits.length-1)*32:0)+secondaryHits.length*28+preferenceRank(ex.id)+coachGenericExerciseBias(ex,request);
@@ -127,6 +139,10 @@ function coachCoveragePlan(request,count){
  const backRow=ex=>ex.pattern==='horizontal_pull'&&(meta(ex).primary.includes('upper_back')||meta(ex).primary.includes('lats'));
  const backVertical=ex=>ex.pattern==='vertical_pull'&&meta(ex).primary.includes('lats');
  const latIsolation=ex=>['shoulder_extension','pullover'].includes(ex.pattern)&&meta(ex).primary.includes('lats');
+ const lowerBackDirect=ex=>meta(ex).primary.includes('lower_back')&&['back_extension','hinge'].includes(ex.pattern);
+ const posteriorChainHinge=ex=>ex.pattern==='hinge'&&(meta(ex).primary.includes('lower_back')||meta(ex).secondary.includes('lower_back'));
+ const trapDirect=ex=>meta(ex).primary.includes('traps')||ex.pattern==='shrug';
+ const upperBackAccessory=ex=>ex.pattern==='rear_delt'&&meta(ex).secondary.includes('upper_back');
  const bicepsDirect=ex=>ex.pattern==='elbow_flexion'&&meta(ex).primary.includes('biceps');
  const tricepsDirect=ex=>coachMovementFamily(ex)==='triceps_extension'&&meta(ex).primary.includes('triceps')&&!/\b(?:dip|push-?up|bench press|jm press|tate press)\b/i.test(ex.name||'');
  const shoulderPress=ex=>ex.pattern==='vertical_press'&&(meta(ex).primary.includes('front_delts')||meta(ex).primary.includes('side_delts'));
@@ -140,11 +156,38 @@ function coachCoveragePlan(request,count){
    add(optional,'chest_incline','Incline chest press',chestIncline);
    add(optional,'chest_fly','Chest isolation',chestFly);
  };
- const addBack=()=>{
+ const addUpperBackPull=()=>{
    add(core,'back_row','Horizontal back pull',backRow);
    add(optional,'back_vertical','Vertical back pull',backVertical);
    add(optional,'lat_isolation','Lat isolation',latIsolation);
-   add(optional,'back_rear_delt','Rear delt / upper-back accessory',ex=>ex.pattern==='rear_delt'&&meta(ex).secondary.includes('upper_back'));
+   add(optional,'back_rear_delt','Rear delt / upper-back accessory',upperBackAccessory);
+ };
+ const addFullBack=()=>{
+   if(request.goal==='strength')add(core,'back_erectors','Spinal erector / hinge',lowerBackDirect);
+   add(core,'back_row','Horizontal pull / upper back',backRow);
+   add(core,'back_vertical','Vertical pull / lats',backVertical);
+   if(request.goal!=='strength')add(core,'back_erectors','Spinal erector / lower back',lowerBackDirect);
+   add(optional,'lat_isolation','Lat isolation',latIsolation);
+   add(optional,'back_traps','Trapezius',trapDirect);
+   add(optional,'back_rear_delt','Rear delt / upper-back accessory',upperBackAccessory);
+ };
+ const addLowerBack=()=>{
+   add(core,'lower_back_direct','Direct lumbar / spinal erector',lowerBackDirect);
+   add(optional,'lower_back_hinge','Posterior-chain hinge',posteriorChainHinge);
+ };
+ const addLats=()=>{
+   add(core,'lats_vertical','Vertical pull / lats',backVertical);
+   add(optional,'lats_isolation','Lat isolation',latIsolation);
+   add(optional,'lats_row','Lat-involving row',ex=>backRow(ex)&&meta(ex).primary.includes('lats'));
+ };
+ const addTraps=()=>{
+   add(core,'traps_direct','Trapezius',trapDirect);
+   add(optional,'traps_row','Upper-back row',backRow);
+ };
+ const addUpperBack=()=>{
+   add(core,'upper_back_row','Upper-back row',backRow);
+   add(optional,'upper_back_traps','Trapezius',trapDirect);
+   add(optional,'upper_back_rear_delt','Rear delt / scapular accessory',upperBackAccessory);
  };
  const addArms=()=>{add(core,'biceps_direct','Direct biceps',bicepsDirect);add(core,'triceps_direct','Direct triceps',tricepsDirect)};
  const addShoulders=()=>{add(core,'shoulder_press','Shoulder press',shoulderPress);add(optional,'shoulder_accessory','Side / rear delt',shoulderAccessory)};
@@ -157,7 +200,7 @@ function coachCoveragePlan(request,count){
    add(core,'full_pull','Upper-body pull',ex=>backRow(ex)||backVertical(ex));
    add(optional,'full_shoulders','Shoulders',shoulderPress);
  }else if(keys.includes('upper body')&&keys.length===1){
-   addChest();addBack();addShoulders();
+   addChest();addUpperBackPull();addShoulders();
    add(optional,'upper_biceps','Direct biceps',bicepsDirect);add(optional,'upper_triceps','Direct triceps',tricepsDirect);
  }else if(keys.includes('lower body')&&keys.length===1){
    addLegs();add(optional,'lower_glutes','Glute emphasis',ex=>meta(ex).primary.includes('glutes')&&['hip_extension','hinge'].includes(ex.pattern));
@@ -170,7 +213,11 @@ function coachCoveragePlan(request,count){
  }else{
    keys.forEach(key=>{
      if(key==='chest')addChest();
-     else if(key==='back')addBack();
+     else if(key==='back')addFullBack();
+     else if(key==='upper back')addUpperBack();
+     else if(key==='lower back')addLowerBack();
+     else if(key==='lats')addLats();
+     else if(key==='traps')addTraps();
      else if(key==='arms')addArms();
      else if(key==='shoulders')addShoulders();
      else if(key==='legs')addLegs();
@@ -182,7 +229,7 @@ function coachCoveragePlan(request,count){
      else if(key==='calves')add(core,'calves_direct','Calves',calfPattern);
      else if(key==='core')add(core,'core_direct','Core',corePattern);
      else if(key==='push'){addChest();addShoulders();add(core,'triceps_direct','Direct triceps',tricepsDirect)}
-     else if(key==='pull'){addBack();add(core,'biceps_direct','Direct biceps',bicepsDirect)}
+     else if(key==='pull'){addUpperBackPull();add(core,'biceps_direct','Direct biceps',bicepsDirect)}
    });
  }
  return {keys,core,optional};
@@ -239,7 +286,7 @@ function coachSelectExercises(request,count){
  const orderTier=ex=>{
    const family=coachMovementFamily(ex);
    if(compoundPatterns.has(ex.pattern)&&!['biceps_curl','triceps_extension','dip_press'].includes(family))return 0;
-   if(['chest_fly','lat_isolation','lateral_raise','rear_delt','leg_extension','leg_curl','hip_extension'].includes(family))return 1;
+   if(['chest_fly','lat_isolation','lateral_raise','rear_delt','leg_extension','leg_curl','hip_extension','back_extension','shrug'].includes(family))return 1;
    if(['biceps_curl','triceps_extension','calf_raise','spinal_flexion','hip_flexion_core','anti_extension'].includes(family))return 2;
    return 1;
  };
