@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.51.0
+Version: v0.52.0
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -85,3 +85,49 @@ Recent muscle logs may be shown as historical context such as "Chest 1 day ago."
 ## Program handoff
 
 A generated workout remains a standard Swole Cat routine data structure. Adding it to a Program first persists that routine, then references its routine ID from the Program. No separate Coach-only program format is introduced.
+
+
+## v0.52 multi-day program rules
+
+Coach can generate 2–6 day weekly Programs. Frequency is primarily a user constraint. The engine does not claim that one split or frequency is universally optimal.
+
+Current default split mapping when the user does not explicitly choose one:
+- 2 days: full body / full body
+- 3 days: full body / full body / full body
+- 4 days: upper / lower / upper / lower
+- 5 days: upper / lower / push / pull / legs
+- 6 days: push / pull / legs repeated twice
+
+If the user explicitly asks for Full Body, Upper/Lower, or Push/Pull/Legs, that preference overrides the default structure. For frequencies that do not map perfectly onto a named split, Coach adds a balancing session rather than pretending the split fits perfectly.
+
+The rationale for these defaults is pragmatic:
+- ACSM's 2026 resistance-training position stand emphasizes consistency, goal-specific loading, and approximately 10 weekly sets per muscle group as a useful hypertrophy volume reference.
+- NSCA program-design guidance treats frequency as dependent on training status, session volume/intensity, muscle groups trained, schedule, and recovery opportunity.
+- NSCA materials describe nonconsecutive full-body training as a common 2–3 day structure and split routines such as upper/lower or push/pull structures as practical ways to distribute higher weekly training frequency.
+- Frequency itself is not treated as a magic hypertrophy variable. Weekly volume, exercise selection, effort, and adherence remain important.
+
+### Weekly distribution behavior
+
+For every generated day:
+1. The day's target regions come from the chosen split.
+2. User-requested focus muscles receive additional ranking weight only on days where those muscles are relevant.
+3. The normal preference system still applies.
+4. The same exact exercise receives a light cross-program repetition penalty when comparable alternatives exist.
+5. Strength-oriented plans use a smaller repetition penalty because exercise specificity and repeated practice may be desirable.
+6. Manual Remove/Swap actions are stored as day-level exclusions so later regeneration does not silently restore rejected exercises.
+
+### Weekly set-equivalent preview
+
+The program preview reports approximate weekly set-equivalents using the same transparent convention as Swole Cat's muscle coverage tools:
+- primary involvement = 1.0 set-equivalent
+- secondary involvement = 0.5 set-equivalent
+
+This is a programming visualization. It is not a physiological dose measurement, recovery score, or guarantee that a user has reached an optimal volume.
+
+### Scheduling
+
+Named weekdays are stored in the Program's existing preferred-days field. If a user changes frequency without supplying a matching number of weekdays, Coach clears the incompatible weekday assignment rather than inventing extra training days.
+
+### Data architecture
+
+Each generated workout is persisted as a normal Swole Cat Routine. Those routine IDs are then referenced by a normal Swole Cat Program. No Coach-only Program schema is introduced.
