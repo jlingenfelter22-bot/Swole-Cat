@@ -139,8 +139,15 @@ function coachCoveragePlan(request,count){
  const backRow=ex=>ex.pattern==='horizontal_pull'&&(meta(ex).primary.includes('upper_back')||meta(ex).primary.includes('lats'));
  const backVertical=ex=>ex.pattern==='vertical_pull'&&meta(ex).primary.includes('lats');
  const latIsolation=ex=>['shoulder_extension','pullover'].includes(ex.pattern)&&meta(ex).primary.includes('lats');
- const lowerBackDirect=ex=>meta(ex).primary.includes('lower_back')&&['back_extension','hinge'].includes(ex.pattern);
- const posteriorChainHinge=ex=>ex.pattern==='hinge'&&(meta(ex).primary.includes('lower_back')||meta(ex).secondary.includes('lower_back'));
+ const lowerBackDirect=ex=>meta(ex).primary.includes('lower_back')&&(
+   request.goal==='strength'?['back_extension','hinge'].includes(ex.pattern):ex.pattern==='back_extension'
+ );
+ const posteriorChainHinge=ex=>{
+   if(ex.pattern!=='hinge')return false;
+   const m=meta(ex);
+   if(request.goal==='strength')return m.primary.includes('lower_back')||m.secondary.includes('lower_back');
+   return m.secondary.includes('lower_back')&&m.primary.some(region=>['hamstrings','glutes'].includes(region));
+ };
  const trapDirect=ex=>meta(ex).primary.includes('traps')||ex.pattern==='shrug';
  const upperBackAccessory=ex=>ex.pattern==='rear_delt'&&meta(ex).secondary.includes('upper_back');
  const bicepsDirect=ex=>ex.pattern==='elbow_flexion'&&meta(ex).primary.includes('biceps');
