@@ -5134,7 +5134,9 @@ function coachUnderstandExercisePhrase(phrase,ids=null){
  const ranked=[...byExercise.values()].sort((a,b)=>b.score-a.score||a.exercise.name.localeCompare(b.exercise.name));
  const top=ranked[0],second=ranked[1],gap=top?(top.score-(second?.score||0)):0;
  const confidence=top?.score||0;
- const level=confidence>=.92||confidence>=.86&&gap>=.055?'high':confidence>=.72?'medium':'low';
+ const exactTop=!!top&&(q===top.matchedPhrase||q.replace(/\s+/g,'')===top.matchedPhrase.replace(/\s+/g,''));
+ const crowded=!!top&&!!second&&!exactTop&&top.score>=.80&&second.score>=.78&&gap<.08;
+ const level=exactTop?'high':crowded?'medium':confidence>=.92||confidence>=.86&&gap>=.055?'high':confidence>=.72?'medium':'low';
  return {exercise:level==='high'?top.exercise:null,confidence,level,gap,query:q,alternatives:ranked.slice(0,3)};
 }
 function coachExerciseMentionCandidates(){
