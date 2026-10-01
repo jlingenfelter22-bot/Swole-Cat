@@ -2584,6 +2584,21 @@ jobs:
             assert(mic,'Coach microphone must render visibly inside the main text field');
             assert(mic.querySelector('svg'),'Coach microphone should use an actual microphone icon');
 
+            w.closeModal();
+            w.renderHome();
+            await wait(10);
+            const homePrompt=w.document.getElementById('homeCoachPrompt');
+            const homeMic=w.document.querySelector('.coach-voice-field #homeCoachPrompt + .coach-mic-btn');
+            assert(homePrompt,'Home Coach input should render');
+            assert(homeMic&&homeMic.querySelector('svg'),'Home Coach input should have an embedded microphone icon');
+            homePrompt.value=simple;
+            w.homeCoachBuildPrompt();
+            await wait(10);
+            const homeModalText=w.document.getElementById('modal').textContent;
+            assert(!homeModalText.includes('ONE QUICK QUESTION'),'Home explicit exercise list must also skip the questionnaire');
+            const homeDraft=w.eval('coachBuildDraft');
+            assert.deepEqual(homeDraft.selectedIds.map(id=>w.exById(id).name),['Barbell Bench Press','Back Squat','Dumbbell Curl'],'Home Coach must preserve the named exercise list');
+
             dom.window.close();
             console.log('Swole Cat V53.1 explicit-list routing hotfix PASS');
           };
