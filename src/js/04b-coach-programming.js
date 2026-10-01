@@ -68,7 +68,7 @@ function coachGenericExerciseBias(ex,request){
    'Standing Calf Raise','Seated Calf Raise','Cable Crunch','Hanging Leg Raise'
  ]);
  if(staples.has(name))score+=18;
- if(/\b(?:single arm|single leg|alternating|behind-the-neck|anderson|board press|spoto|zercher|meadows|renegade|yates|jm press|tate press|b-stance|snatch grip|deficit|block pull|clean pull|high pull|power clean|power snatch)\b/i.test(name))score-=22;
+ if(/\b(?:single arm|single leg|alternating|behind-the-neck|anderson|board press|spoto|zercher|meadows|renegade|yates|jm press|tate press|b-stance|snatch grip|deficit|rack pull|block pull|clean pull|high pull|power clean|power snatch)\b/i.test(name))score-=22;
  if(ex?.pattern==='olympic_pull'&&request.goal!=='strength')score-=55;
  const backFocused=keys.includes('back')||keys.includes('lower back');
  if(backFocused&&request.goal!=='strength'){
@@ -76,7 +76,10 @@ function coachGenericExerciseBias(ex,request){
    if(name==='Deadlift')score-=6;
    if(/\b(?:rack pull|block pull|deficit deadlift)\b/i.test(name))score-=20;
  }
- if(backFocused&&request.goal==='strength'&&name==='Deadlift')score+=34;
+ if(backFocused&&request.goal==='strength'){
+   if(name==='Deadlift')score+=100;
+   if(/\b(?:rack pull|block pull|deficit deadlift)\b/i.test(name))score-=40;
+ }
  if(keys.includes('traps')&&ex?.pattern==='shrug')score+=30;
  if(keys.includes('lats')&&['vertical_pull','shoulder_extension','pullover'].includes(ex?.pattern))score+=24;
  return score;
