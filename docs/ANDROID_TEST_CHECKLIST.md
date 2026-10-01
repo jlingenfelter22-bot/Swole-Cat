@@ -107,3 +107,18 @@ Phase 0 real-device testing passes when:
 - no critical screen is blocked by keyboard or Android system UI
 
 Minor visual issues can be logged for polish. Any data-loss, restore, save, or startup failure is a blocker.
+
+
+## Coach Swolecat voice + prescription checks (v0.53.0)
+
+- [ ] Open Coach from Home and confirm a microphone button appears beside the Coach input.
+- [ ] Tap the microphone for the first time and confirm Android requests microphone/speech permission.
+- [ ] Grant permission and say: "three sets bench press for eight, three sets pull ups for nine".
+- [ ] Confirm the recognized transcript appears in the visible text field before the workout is built.
+- [ ] Build the workout and confirm Bench Press shows 3 × 8 and Pull-Up shows 3 × 9.
+- [ ] Start the workout and confirm the active set rows preserve those exact set counts and rep targets.
+- [ ] Repeat microphone dictation several times in separate Coach prompts to confirm repeated start/use remains reliable.
+- [ ] Deny microphone permission and confirm Coach falls back gracefully to normal typing without blocking the app.
+- [ ] Test a longer request with mixed targets, for example: "3 sets bench for 8, 3 sets pull ups for 9, 2 sets barbell curls for 12, 3 sets squats for 8".
+- [ ] Confirm the explicit exercise order matches the spoken request.
+- [ ] Confirm a mixed prescription shows "Custom sets / reps" in the preview rather than one global rep-range badge.
