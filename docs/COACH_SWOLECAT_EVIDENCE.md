@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.55.0
+Version: v0.57.0
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -13,6 +13,17 @@ Coach Swolecat's first workout builder is deterministic and local. Natural-langu
   https://www.nsca.com/certification/cscs/essentials-of-strength-training-and-conditioning-5th-edition/
 - NSCA program-design material:
   https://www.nsca.com/certification/tsac-f/essentials-of-tactical-strength-training-and-conditioning-2nd-edition/excerpts/program-design-and-sample-training-approaches/
+
+- ACSM 2026 position stand (PubMed record):
+  https://pubmed.ncbi.nlm.nih.gov/41843416/
+- Systematic review on deliberate versus redundant exercise variation:
+  https://pubmed.ncbi.nlm.nih.gov/35438660/
+- Systematic review/meta-analysis on exercise order:
+  https://pubmed.ncbi.nlm.nih.gov/32077380/
+- Systematic review of deadlift-variant muscle activity:
+  https://pubmed.ncbi.nlm.nih.gov/32107499/
+- Review of lumbar-extensor exercise specificity:
+  https://pubmed.ncbi.nlm.nih.gov/24092889/
 
 ## Programming presets
 
@@ -340,3 +351,80 @@ Not yet claimed:
 - failure-set programming that interacts with progression
 
 Those require dedicated set-structure/progression rules and should not be simulated by labels alone.
+
+
+## v0.57 evidence-backed regional programming
+
+Coach now keeps broad exercise-science principles in a dedicated `src/data/coach-knowledge.js` knowledge layer instead of burying every programming assumption inside the selector. The knowledge layer records evidence sources and stable high-level principles that can be audited or revised independently as the literature changes.
+
+The implementation intentionally uses the phrase **evidence-backed**, not “scientifically proven exercise,” because the literature supports programming principles more strongly than it supports one universally best movement.
+
+### Back-region model
+
+“Back” is no longer treated as only lats + upper back.
+
+A generic **Back** request now represents:
+- lats
+- upper/mid-back pulling musculature
+- lumbar/spinal erectors
+- trapezius
+
+Coach also understands these as first-class targets:
+- Upper Back / mid back
+- Lower Back
+- lumbar extensors
+- spinal erectors / erector spinae
+- Lats
+- Traps / trapezius
+
+A full hypertrophy-oriented Back session reserves distinct roles for:
+1. horizontal pulling / upper-back work
+2. vertical pulling / lat work
+3. direct lumbar/spinal-erector work
+4. additional lat isolation when session length allows
+5. trapezius-focused work when session length allows
+6. rear-delt/scapular accessory work when session length allows
+
+This role system prevents one row variation from masquerading as complete back development while still retaining movement-family caps so several nearly identical rows or pullovers do not crowd the session.
+
+### Lower-back versus posterior-chain logic
+
+Coach distinguishes **direct lumbar extension** from **hip-hinge posterior-chain work**.
+
+For hypertrophy/general lower-back requests:
+- a direct back-extension pattern is preferred when compatible equipment exists
+- one complementary posterior-chain hinge may be added
+- Romanian deadlifts are treated primarily as hamstring/glute hip hinges with meaningful erector involvement, not mislabeled as a pure lumbar-isolation exercise
+- squats can involve the spinal extensors but are not used as the default direct lower-back slot
+
+For strength-focused full-back requests:
+- conventional Deadlift is the normal general strength anchor when equipment allows
+- specialized Rack Pull, Block Pull, and Deficit Deadlift variants remain available but are de-prioritized unless the user explicitly requests them
+- the high-priority strength hinge is ordered before accessory back work
+
+Deadlift-variant EMG evidence is used only as anatomical/contextual support. EMG amplitude is not treated as a direct guarantee of hypertrophy or as proof that one lift is universally superior.
+
+### Pull and Upper Body remain distinct
+
+A Push/Pull/Legs **Pull** workout remains an upper pulling session by default. It does not automatically receive lumbar-loading work merely because a generic Back workout now includes the spinal erectors.
+
+Likewise, an **Upper Body** session uses upper-back/lat coverage rather than forcing a deadlift or back-extension slot into every upper-body day.
+
+This distinction keeps weekly programming practical and prevents unnecessary posterior-chain fatigue from being introduced by a semantic expansion.
+
+### Evidence rules retained
+
+The 2026 ACSM position stand remains the primary general prescription anchor:
+- progressive resistance training improves strength, hypertrophy, and physical performance
+- heavier loading (approximately >=80% 1RM) supports maximal-strength development
+- approximately 2–3 sets per exercise is a supported strength prescription
+- higher weekly set volume (approximately >=10 sets per muscle group) supports hypertrophy
+- advanced techniques and training to momentary failure are not mandatory for results
+
+Systematic-review evidence on exercise variation supports deliberate anatomical/biomechanical variation while cautioning against redundant or random exercise rotation. Coach therefore uses different movement roles to broaden coverage but continues to suppress duplicate movement families.
+
+Exercise-order evidence is applied as a priority rule: the movement most important to the requested strength goal should appear early. Hypertrophy does not require compounds to precede isolations for growth, so ordering remains practical rather than dogmatic.
+
+### Safety / scope
+
+These rules program resistance training for healthy adults. They do not diagnose or treat low-back pain, determine injury status, or infer that a user is medically ready for loaded lumbar exercise. User exclusions, equipment constraints, and explicit exercise choices continue to override Coach ranking where appropriate.
