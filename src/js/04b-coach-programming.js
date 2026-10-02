@@ -370,7 +370,17 @@ function coachSelectExercises(request,count){
    const family=coachMovementFamily(ex);
    return !(families[family]>0)&&Number.isFinite(coachDynamicCandidateScore(ex,request,coverage,patterns,families,primaryCoverage,count));
  })?1:0;
- const optionalSlots=[...plan.optional].sort((a,b)=>slotPriority(b)-slotPriority(a)||slotNovelty(b)-slotNovelty(a));
+ const slotHistoryNeed=slot=>{
+   if(typeof coachRegionNeedAdjustment!=='function')return 0;
+   let best=-Infinity;
+   pool.forEach(ex=>{
+     if(selected.some(x=>x.id===ex.id)||!slot.match(ex)||!coachExerciseAllowedByConstraints(ex,request))return;
+     const meta=exerciseMuscleMetadata(ex),regions=meta.primary.filter(r=>targets.has(r));
+     regions.forEach(region=>best=Math.max(best,coachRegionNeedAdjustment(region,request)));
+   });
+   return Number.isFinite(best)?best:0;
+ };
+ const optionalSlots=[...plan.optional].sort((a,b)=>slotPriority(b)-slotPriority(a)||slotHistoryNeed(b)-slotHistoryNeed(a)||slotNovelty(b)-slotNovelty(a));
  for(const slot of optionalSlots){
    if(selected.length>=count)break;
    if(multiTargetPriority&&!slotPriority(slot))continue;
