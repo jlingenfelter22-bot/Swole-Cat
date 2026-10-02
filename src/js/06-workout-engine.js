@@ -557,18 +557,20 @@ function advanceSupersetAfterSet(ei,si){
      return true;
    }
  }
- // Everyone who has this round is finished. Rest once, then start the next round.
- startRestTimer(e.config.restSeconds||120);
+ // Everyone who has this round is finished. Rest once only when more work remains.
  let next=members.find(oi=>workingSetIndexes(w.exercises[oi]).some(idx=>!w.exercises[oi].sets[idx].done));
  if(next==null)next=members.find(oi=>!exerciseSetProgress(w.exercises[oi]).complete);
  if(next!=null){
+   startRestTimer(e.config.restSeconds||120);
    w.exercises.forEach((x,i)=>x.expanded=i===next);
    saveActiveWorkout();renderWorkout();
    showToast(`Superset ${meta.label} round complete · rest`);
    scrollToWorkoutExercise(next);
    return true;
  }
- // Whole group is complete. Advance outside the group.
+ // Whole group is complete. Rest only if another programmed movement remains.
+ if(workoutHasRemainingProgrammedWork())startRestTimer(e.config.restSeconds||120);
+ else stopRestTimer();
  if(advanceFromCompletedExercise(ei))return true;
  saveActiveWorkout();renderWorkout();return true;
 }
@@ -837,6 +839,7 @@ function advanceFromCompletedExercise(ei){
    showToast(`Up next: ${ex?.name||'next exercise'}`);
    scrollToWorkoutExercise(next);
  }else{
+   stopRestTimer();
    saveActiveWorkout();renderWorkout();
    showToast('All programmed sets complete');
  }
@@ -1038,7 +1041,8 @@ function toggleSet(ei,si){
    set.pr=isProgressionSet(set)?detectPR(e.exerciseId,set):'';
    haptic(set.pr?[35,40,70]:25);
    if(isProgressionSet(set)&&advanceSupersetAfterSet(ei,si))return;
-   startRestTimer(e.config.restSeconds||120);
+   if(workoutHasRemainingProgrammedWork())startRestTimer(e.config.restSeconds||120);
+   else stopRestTimer();
    if(advanceFromCompletedExercise(ei))return;
  } else{
    set.pr='';
@@ -1049,18 +1053,31 @@ function toggleSet(ei,si){
 }
 function updateNotes(ei,v){state.activeWorkout.exercises[ei].notes=v;saveActiveWorkout(true);}
 let restInterval=null,restLeft=0;
+function workoutHasRemainingProgrammedWork(w=state.activeWorkout){
+ return !!w?.exercises?.some(e=>!e.skipped&&(e.sets||[]).some(s=>!s.done));
+}
 function paintRestTimer(){
  const box=document.getElementById('restTimer'),txt=document.getElementById('restTimerText');if(!box||!txt)return;
  const m=Math.floor(restLeft/60),s=String(Math.max(0,restLeft%60)).padStart(2,'0');txt.textContent=`${m}:${s}`;
 }
+function toggleRestTimerExpanded(){
+ const box=document.getElementById('restTimer');if(!box?.classList.contains('show'))return;
+ box.classList.toggle('expanded');
+}
 function startRestTimer(seconds){
- stopRestTimer();restLeft=Math.max(0,Number(seconds)||120);
- const box=document.getElementById('restTimer');box?.classList.add('show');paintRestTimer();
+ stopRestTimer();
+ if(!workoutHasRemainingProgrammedWork())return;
+ restLeft=Math.max(0,Number(seconds)||120);
+ const box=document.getElementById('restTimer');
+ box?.classList.remove('expanded');box?.classList.add('show');paintRestTimer();
  restInterval=setInterval(()=>{restLeft--;paintRestTimer();if(restLeft<=0){stopRestTimer();haptic([120,80,120]);}},1000);
 }
 function adjustRestTimer(delta){restLeft=Math.max(0,restLeft+delta);paintRestTimer();if(restLeft===0)stopRestTimer();}
-function stopRestTimer(){if(restInterval)clearInterval(restInterval);restInterval=null;restLeft=0;document.getElementById('restTimer')?.classList.remove('show');}
-function cancelWorkout(){confirmAction('Cancel active workout?','This deletes the autosaved active workout draft. Completed workout history is not affected.',()=>{state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();go('home',{resetHistory:true});showToast('Active workout cancelled');});}
+function stopRestTimer(){
+ if(restInterval)clearInterval(restInterval);restInterval=null;restLeft=0;
+ const box=document.getElementById('restTimer');box?.classList.remove('show','expanded');
+}
+function cancelWorkout(){confirmAction('Cancel active workout?','This deletes the autosaved active workout draft. Completed workout history is not affected.',()=>{stopRestTimer();state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();go('home',{resetHistory:true});showToast('Active workout cancelled');});}
 function finishWorkout(){
  const w=state.activeWorkout;if(!w)return;
  const completed=w.exercises.some(e=>e.sets.some(s=>s.done));
@@ -1081,6 +1098,7 @@ function finishWorkout(){
 }
 function finalizeWorkout(updateRoutine=false){
  const w=state.activeWorkout;if(!w)return;
+ stopRestTimer();
  if(updateRoutine)syncActiveWorkoutStructureToRoutine();
  closeModal();
  const end=new Date(),duration=Math.max(0,Math.round(workoutElapsedMs(w,end.getTime())/60000));

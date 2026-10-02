@@ -1030,3 +1030,65 @@
   }
   #workout .live-input-wrap label{font-size:.62rem;letter-spacing:.045em}
 }
+
+/* TODAY BETA READINESS PASS 2 // STEP 3
+   Compact rest pill with on-demand controls. */
+#restTimer.resttimer{
+  left:auto;
+  right:12px;
+  bottom:82px;
+  transform:none;
+  width:auto;
+  max-width:calc(100vw - 24px);
+  min-height:48px;
+  padding:5px;
+  border-radius:999px;
+  display:none;
+  align-items:center;
+  justify-content:flex-end;
+  gap:5px;
+  background:rgba(14,21,32,.97);
+  border-color:rgba(101,121,153,.62);
+  box-shadow:0 8px 24px rgba(0,0,0,.34);
+}
+#restTimer.resttimer.show{display:flex}
+#restTimer .rest-main{
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+  min-height:40px;
+  padding:7px 9px;
+  border:0;
+  border-radius:999px;
+  background:transparent;
+  color:#f4f7fb;
+  font-weight:900;
+}
+#restTimer .rest-main small{font-size:.58rem;color:#9caac0;letter-spacing:.09em}
+#restTimer .rest-main span#restTimerText{font-size:1.08rem;line-height:1}
+#restTimer .rest-chevron{font-size:.68rem;color:#93a5bf;transition:transform var(--motion-fast) var(--ease-ui)}
+#restTimer.expanded .rest-chevron{transform:rotate(180deg)}
+#restTimer .rest-quick-add{
+  min-width:44px;
+  min-height:38px;
+  padding:6px 8px;
+  border:1px solid rgba(91,112,145,.6);
+  border-radius:999px;
+  background:#1d2838;
+  color:#eef5ff;
+  font-size:.72rem;
+  font-weight:900;
+}
+#restTimer .rest-actions{display:none;gap:5px}
+#restTimer.expanded .rest-actions{display:flex}
+#restTimer.expanded .rest-quick-add{display:none}
+#restTimer .rest-actions button{
+  min-height:38px;
+  padding:6px 8px;
+  border-radius:999px;
+  font-size:.7rem;
+}
+@media(max-width:390px){
+  #restTimer.resttimer{right:8px;bottom:78px;max-width:calc(100vw - 16px)}
+  #restTimer .rest-main{padding-left:8px;padding-right:8px}
+}

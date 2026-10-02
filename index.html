@@ -123,9 +123,12 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true">Saved</div>
 
-<div id="restTimer" class="resttimer">
-  <div class="rest-main"><small>Rest</small><span id="restTimerText">2:00</span></div>
-  <div class="rest-actions">
+<div id="restTimer" class="resttimer" role="timer" aria-live="polite">
+  <button class="rest-main" onclick="toggleRestTimerExpanded()" aria-label="Expand rest timer controls">
+    <small>Rest</small><span id="restTimerText">2:00</span><span class="rest-chevron">⌃</span>
+  </button>
+  <button class="rest-quick-add" onclick="adjustRestTimer(30)" aria-label="Add 30 seconds">+30</button>
+  <div class="rest-actions" aria-label="Rest timer controls">
     <button onclick="adjustRestTimer(-30)">−30</button>
     <button onclick="adjustRestTimer(30)">+30</button>
     <button onclick="stopRestTimer()">Skip</button>
