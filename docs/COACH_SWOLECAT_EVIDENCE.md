@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.58.0
+Version: v0.59.0
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -545,3 +545,139 @@ For generated workouts the harness verifies:
 Targeted assertions separately verify full Arms, complete Shoulders, complete Legs, shoulder-biased Shoulders + Arms, arm-biased Shoulders + Arms, and chest-emphasized Chest + Back behavior.
 
 The stress matrix runs against the same bundled production application that GitHub Pages and Capacitor consume.
+
+
+## v0.59 Swole Cat Intelligence: training-context programming
+
+v0.59 moves Coach beyond isolated workout construction and adds a local training-context layer that reasons about the user's logged training before ranking exercises.
+
+### Weekly muscle context
+
+Coach builds a rolling current-7-day muscle ledger from completed working sets. Primary muscle work contributes one set-equivalent per completed working set and secondary muscle work contributes a fractional 0.5 set-equivalent. This mirrors a useful analytical convention in recent dose-response research that distinguishes direct and indirect resistance-training sets; it is an application model, not a claim that every indirect set is physiologically identical to exactly half of a direct set.
+
+Coach also computes a four-window prior baseline using completed preceding 7-day windows. The current week is deliberately excluded from this baseline so current training is never compared against itself.
+
+The weekly ledger influences discretionary exercise ranking:
+- underrepresented requested regions receive additional priority
+- already-high weekly exposure can reduce the priority of extra redundant work
+- a user's recent historical baseline can inform whether this week is unusually light or unusually dense
+
+The approximate 10-set hypertrophy reference from the 2026 ACSM position stand remains a reference point rather than a hard optimum or maximum. Dose-response evidence supports increasing hypertrophy with increasing weekly set volume on average, while the exact useful dose remains individual and context dependent.
+
+### Exercise continuity and progression context
+
+Coach reads the user's own history for candidate exercises and compares recent estimated 1RM performance. A familiar exercise that is progressing can receive a modest continuity preference when it still fits the requested target and constraints.
+
+This is intentionally a preference, not a rule that exercises must be kept forever. Exact recent repetition is penalized so continuity does not become automatic duplication.
+
+Coach does not infer a user's strength from population norms and does not fabricate a starting weight. The existing workout/progression system and the user's own logged performance remain responsible for working-load behavior.
+
+### Movement demand and recent overlap
+
+Exercises now have an internal programming-demand profile that describes broad systemic demand, axial loading and technical demand. Recent high-demand sets and repeated demanding movement patterns can reduce the ranking of another similarly demanding exercise when lower-cost exercises can satisfy the same requested role.
+
+Examples:
+- recent heavy hinging can make another heavy hinge less attractive than a lower-cost direct lumbar movement
+- supported/machine rows can carry a lower axial/systemic cost than unsupported free-weight rows
+- high-demand stacking can produce an internal audit warning
+
+This is **not** a recovery, soreness, fatigue, injury or readiness diagnosis. Completed logs are programming context only.
+
+### Per-exercise prescriptions
+
+Coach no longer needs every exercise in a generated workout to share one identical rep/rest/effort target.
+
+Unless the user explicitly overrides these values, v0.59 can use different practical prescriptions by goal and exercise role:
+- strength-oriented compound work uses lower repetition ranges and longer rest
+- hypertrophy compounds use moderate repetition ranges with adequate rest
+- smaller hypertrophy isolation work can use higher repetition ranges, shorter rest and closer-to-failure guidance
+- general training remains more conservative
+
+Explicit user language such as “90 seconds rest” or “2 RIR” always overrides automatic per-exercise defaults.
+
+The 2026 ACSM position stand supports goal-specific loading and identifies heavier loading as advantageous for maximal strength. Failure is not treated as mandatory for strength or hypertrophy.
+
+### Time-aware session compression
+
+For short non-strength workouts, Coach can create compatible supersets instead of simply deleting useful movements.
+
+Automatic pairing avoids:
+- pairing two high-systemic-demand movements
+- pairing identical movement families
+- pairing exercises with the same primary target when this would create needless local competition
+
+Antagonistic or relatively noncompeting pairings are preferred when available, such as chest/back or biceps/triceps.
+
+Strength-focused short sessions do not receive automatic time-compression supersets because preserving performance and rest quality takes priority.
+
+### Unilateral and bilateral training
+
+Coach understands requests such as:
+- unilateral
+- each arm separately
+- each leg separately
+- both sides together
+- individually and together
+
+The evidence does not support claiming that unilateral training is inherently superior for hypertrophy. Recent systematic-review/meta-analysis evidence found no significant hypertrophy difference between unilateral and bilateral resistance training, while strength adaptations followed task specificity: bilateral training better improved bilateral strength and unilateral training better improved unilateral strength.
+
+Therefore Coach:
+- uses unilateral/bilateral work when the user explicitly requests it
+- can intentionally mix both when requested
+- does not automatically add one-arm or one-leg movements under the false premise that they produce more muscle growth
+
+### Experience-aware complexity
+
+Explicit beginner/novice language reduces unnecessary exercise count and favors repeatable, understandable programming. Intermediate and advanced language can preserve normal exercise breadth.
+
+Coach does **not** infer that someone is a beginner merely because Swole Cat has little history for them; absence of app history is not evidence of training inexperience.
+
+### Program-level context
+
+When Coach builds a multi-day Program, earlier generated days contribute planned muscle set-equivalents and exercise usage to later days. This lets later sessions account for what the same generated week already contains instead of creating each day in isolation.
+
+Generated Programs still remain editable, and weekly set-equivalent previews are descriptive planning estimates rather than measurements of biological stimulus.
+
+### Internal workout intelligence audit
+
+Before a generated workout is accepted, Coach runs an internal audit that checks:
+- required semantic coverage roles
+- equipment and user constraints
+- movement-family redundancy caps
+- projected weekly muscle set-equivalents
+- recent-session context
+- stacked high-demand movements
+- short-session superset opportunities
+
+A failed required-role/constraint audit prevents that draft from being accepted.
+
+### v0.59 automated validation
+
+The existing 306-prompt language/programming stress matrix remains active. v0.59 adds a second history-aware stress suite covering:
+- current-week muscle ledgers
+- prior-week baseline isolation
+- direct/indirect set-equivalent handling
+- underrepresented-muscle allocation
+- progressing-exercise continuity
+- recent demanding-pattern de-prioritization
+- explicit beginner behavior
+- mixed unilateral/bilateral requests
+- short-workout supersets
+- strength-session superset suppression
+- per-exercise hypertrophy/strength prescriptions
+- explicit rest/RIR overrides
+- program-wide planned muscle context
+- a 90-case history-aware target × goal × duration generation matrix
+
+### Safety and interpretation
+
+Coach uses history to program training, not to diagnose the person.
+
+It must not state or imply from workout logs alone that:
+- a muscle is recovered
+- the user is ready for a particular load
+- soreness or fatigue is absent
+- an injury exists
+- a medical condition explains performance changes
+
+The user retains control over exercise exclusions, preferences, workout edits and working weights.
