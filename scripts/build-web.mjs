@@ -22,6 +22,7 @@ const JS_SOURCES = [
   'src/js/04c-coach-language-refinement.js',
   'src/js/04d-coach-program-builder.js',
   'src/js/04e-coach-ui.js',
+  'src/js/04f-coach-routine-control.js',
   'src/js/05-exercises-routines.js',
   'src/js/06-workout-engine.js',
   'src/js/07-history-editor.js',
