@@ -59,11 +59,34 @@ const COACH_EXERCISE_ALIASES={
 };
 const COACH_GYM_TEXT_REPLACEMENTS=[
  [/\bdumbells?\b/gi,'dumbbell'],[/\bdumb bell\b/gi,'dumbbell'],[/\bbarbel\b/gi,'barbell'],
- [/\bdb\b/gi,'dumbbell'],[/\bbb\b/gi,'barbell'],[/\bo h p\b/gi,'ohp'],
+ [/\bdbs\b/gi,'dumbbells'],[/\bdb\b/gi,'dumbbell'],[/\bbb\b/gi,'barbell'],[/\bo h p\b/gi,'ohp'],
  [/\br d l s?\b/gi,'rdl'],[/\bromanian dead lefts?\b/gi,'romanian deadlift'],
  [/\bdead lefts?\b/gi,'deadlift'],[/\bpull downs?\b/gi,'pulldown'],[/\bpush downs?\b/gi,'pushdown'],
  [/\bpreacher corals?\b/gi,'preacher curl'],[/\bbulgarian split squads?\b/gi,'bulgarian split squat'],
- [/\blat pull towns?\b/gi,'lat pulldown'],[/\bhamer\b/gi,'hammer'],[/\btricept?s?\b/gi,'triceps']
+ [/\blat pull towns?\b/gi,'lat pulldown'],[/\bhamer\b/gi,'hammer'],[/\btricept?s?\b/gi,'triceps'],
+
+ // Body-part slang, common misspellings, and frequent speech-recognition repairs.
+ [/\b(?:bicepts?|biseps?|buy ceps?|bye ceps?)\b/gi,'biceps'],
+ [/\b(?:tricepts?|try ceps?|tri ceps?)\b/gi,'triceps'],
+ [/\b(?:sholders?|shoulderss|deltoids?)\b/gi,'shoulders'],
+ [/\b(?:rear|back) deltoids?\b/gi,'rear delts'],[/\bposterior delts?\b/gi,'rear delts'],
+ [/\b(?:middle|medial|lateral) delts?\b/gi,'side delts'],[/\banterior delts?\b/gi,'front delts'],
+ [/\bpectorals?\b/gi,'chest'],[/\bpecs?\b/gi,'chest'],
+ [/\bham strings?\b/gi,'hamstrings'],[/\b(?:hammies|hammys|hammy)\b/gi,'hamstrings'],
+ [/\bquadriceps?\b/gi,'quads'],[/\bquad muscles?\b/gi,'quads'],
+ [/\b(?:gluteus|glute muscles?|booty|butt)\b/gi,'glutes'],
+ [/\bcalfs\b/gi,'calves'],[/\b(?:calf muscles?)\b/gi,'calves'],
+ [/\b(?:obleeks?|oblicks?)\b/gi,'obliques'],
+ [/\b(?:abdominals?|ab muscles?)\b/gi,'abs'],
+ [/\b(?:erecters?|spine erectors?)\b/gi,'spinal erectors'],
+ [/\b(?:latissimus dorsi|latissimus)\b/gi,'lats'],
+ [/\btrapezius\b/gi,'traps'],
+ [/\b(?:guns|gun show)\b/gi,'arms'],[/\bwheels\b/gi,'legs'],
+ [/\b(?:love handles?)\b/gi,'obliques'],
+
+ // Common goal-language repairs.
+ [/\bhyper trophy\b/gi,'hypertrophy'],[/\bhypertr(?:o|a)phy\b/gi,'hypertrophy'],
+ [/\bbody building\b/gi,'bodybuilding']
 ];
 function coachNormalizeGymText(text){
  let out=String(text||'').toLowerCase().replace(/[’']/g,'');
@@ -90,8 +113,13 @@ const COACH_NUMBER_WORDS={
  zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,
  eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20
 };
+const COACH_NUMBER_TENS={twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
 function coachNumbersToDigits(text){
- return String(text||'').replace(/\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b/gi,m=>String(COACH_NUMBER_WORDS[m.toLowerCase()]));
+ let out=String(text||'');
+ out=out.replace(/\b(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:[- ](one|two|three|four|five|six|seven|eight|nine))?\b/gi,(_,t,u)=>{
+   return String(COACH_NUMBER_TENS[t.toLowerCase()]+(u?COACH_NUMBER_WORDS[u.toLowerCase()]:0));
+ });
+ return out.replace(/\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b/gi,m=>String(COACH_NUMBER_WORDS[m.toLowerCase()]));
 }
 function coachCleanExercisePhrase(value){
  return coachNormalizeWords(String(value||'')
