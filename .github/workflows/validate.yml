@@ -107,6 +107,9 @@ jobs:
       - name: Beta test live-workout orientation and auto-advance
         run: node scripts/beta-live-workout-flow-stress.mjs
 
+      - name: Beta test first-time-user workout clarity
+        run: node scripts/beta-first-user-clarity-stress.mjs
+
       - name: Smoke test active workouts, set types, progression, and supersets
         run: |
           node <<'JS'
