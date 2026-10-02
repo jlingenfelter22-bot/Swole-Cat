@@ -104,6 +104,9 @@ jobs:
       - name: Battle test v0.64 Coach longitudinal intelligence
         run: node scripts/coach-battle-hardening-stress.mjs
 
+      - name: Beta test live-workout orientation and auto-advance
+        run: node scripts/beta-live-workout-flow-stress.mjs
+
       - name: Smoke test active workouts, set types, progression, and supersets
         run: |
           node <<'JS'
