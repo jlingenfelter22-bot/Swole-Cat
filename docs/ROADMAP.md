@@ -600,7 +600,7 @@ Implementation order:
 2. [x] **Replace the vertical exercise stack with an exercise navigator + single active exercise canvas.** Show Exercise X of Y, the current exercise name, concise target context, and a dropdown/list to jump directly to any exercise.
 3. [x] **Render one primary set card at a time.** Completing Set 1 should replace it in place with Set 2, then Set 3, without vertical scrolling; prior/upcoming sets remain accessible through a compact set-progress/history drawer.
 4. [x] **Add gym-first defer / next / substitute controls.** Keep Substitute visible, allow Next Exercise to defer unfinished work without marking it skipped, and preserve explicit Skip as a separate intentional action.
-5. [ ] **Reconcile unfinished work before finishing.** If pending sets/exercises remain, Finish Workout must surface them and offer Do It Now, Skip, or Finish Anyway instead of silently losing them.
+5. [x] **Reconcile unfinished work before finishing.** If pending sets/exercises remain, Finish Workout must surface them and offer Do It Now, Skip, or Finish Anyway instead of silently losing them.
 6. [ ] **Stabilize keyboard/input focus and secondary controls.** Keep the active set anchored when the mobile keyboard opens, move edit/reorder/delete details out of the primary logging surface, and retain existing Coach target/rest behavior without visual duplication.
 7. [ ] **Add Focus Mode regressions and cut a fresh beta build.** Verify multi-set in-place advancement, exercise jumping/defer behavior, pending-work reconciliation, substitute access, data/history integrity, full regression wall, Pages, and Android before release.
 

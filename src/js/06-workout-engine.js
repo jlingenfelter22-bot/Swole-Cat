@@ -1149,20 +1149,55 @@ function stopRestTimer(){
  const box=document.getElementById('restTimer');box?.classList.remove('show','expanded');
 }
 function cancelWorkout(){confirmAction('Cancel active workout?','This deletes the autosaved active workout draft. Completed workout history is not affected.',()=>{stopRestTimer();state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();go('home',{resetHistory:true});showToast('Active workout cancelled');});}
-function finishWorkout(){
+
+function unfinishedWorkoutExercises(w){
+ w=w||state.activeWorkout;if(!w)return [];
+ return w.exercises.map(function(e,ei){
+   const undone=(e.sets||[]).filter(function(s){return !s.done}).length;
+   const done=(e.sets||[]).length-undone;
+   return {e:e,ei:ei,done:done,total:(e.sets||[]).length,undone:undone};
+ }).filter(function(row){return !row.e.skipped&&row.undone>0});
+}
+function focusUnfinishedWorkoutExercise(ei){
+ closeModal();setWorkoutFocus(ei,null,{deferCurrent:false,render:false});saveActiveWorkout();renderWorkout();
+ const ex=exById(state.activeWorkout.exercises[ei].exerciseId);showToast('Back to '+((ex&&ex.name)||'unfinished exercise'));
+}
+function skipUnfinishedWorkoutExercise(ei){
+ const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei];if(!e)return;
+ e.skipped=true;w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==ei});
+ normalizeWorkoutFocusState(w);saveActiveWorkout();renderWorkout();
+ const remaining=unfinishedWorkoutExercises(w);
+ if(remaining.length)openUnfinishedWorkoutReview();else{closeModal();showToast('Unfinished work marked skipped')}
+}
+function openUnfinishedWorkoutReview(){
+ const w=state.activeWorkout,rows=unfinishedWorkoutExercises(w);if(!w)return;
+ if(!rows.length){closeModal();finishWorkout(true);return}
+ const body=rows.map(function(row){
+   const ex=exById(row.e.exerciseId),pending=workoutExerciseDeferred(row.ei,w);
+   return '<div class="unfinished-work-row"><div class="unfinished-work-copy"><b>'+esc(ex&&ex.name||'Exercise')+'</b><span>'+row.done+' of '+row.total+' sets complete'+(pending?' · Pending':'')+'</span></div>'+
+    '<div class="unfinished-work-actions"><button class="btn small" onclick="focusUnfinishedWorkoutExercise('+row.ei+')">Do It Now</button>'+
+    '<button class="btn small secondary" onclick="skipUnfinishedWorkoutExercise('+row.ei+')">Skip Exercise</button></div></div>';
+ }).join('');
+ openModal('Unfinished workout',
+  '<div class="notice"><b>'+rows.length+' exercise'+(rows.length===1?' is':'s are')+' unfinished.</b><br>Swole Cat remembered the work you moved past. Finish it now, explicitly skip it, or save the workout anyway.</div>'+
+  '<div class="unfinished-work-list">'+body+'</div>'+
+  '<div class="actions"><button class="btn secondary" onclick="finishWorkout(true)">Finish Anyway</button><button class="btn secondary" onclick="closeModal()">Keep Working Out</button></div>');
+}
+
+function finishWorkout(allowIncomplete=false){
  const w=state.activeWorkout;if(!w)return;
- const completed=w.exercises.some(e=>e.sets.some(s=>s.done));
- if(!completed && !confirm('No sets are marked complete. Save anyway?'))return;
- const routine=state.routines.find(x=>x.id===w.routineId);
+ const completed=w.exercises.some(function(e){return e.sets.some(function(s){return s.done})});
+ if(!completed&&!allowIncomplete&&!confirm('No sets are marked complete. Save anyway?'))return;
+ const unfinished=unfinishedWorkoutExercises(w);
+ if(unfinished.length&&!allowIncomplete){openUnfinishedWorkoutReview();return}
+ closeModal();
+ const routine=state.routines.find(function(x){return x.id===w.routineId});
  if(w.structureDirty&&routine){
-   openModal('Update your routine?',`
-     <div class="notice">You changed today's workout structure. Choose whether those structural changes stay only in this session or become the new saved version of <b>${esc(routine.name)}</b>.<br><br><b>Skip status is always today-only.</b> Updating the routine saves the current exercise order, today-only additions or removals, substitutions, supersets, and number of working sets.</div>
-     <div class="actions">
-       <button class="btn green" onclick="finalizeWorkout(true)">Finish + Update Routine</button>
-       <button class="btn secondary" onclick="finalizeWorkout(false)">Finish · Today Only</button>
-       <button class="btn secondary" onclick="closeModal()">Keep Working Out</button>
-     </div>
-   `);
+   openModal('Update your routine?',
+    '<div class="notice">You changed today’s workout structure. Choose whether those structural changes stay only in this session or become the new saved version of <b>'+esc(routine.name)+'</b>.<br><br><b>Skip status is always today-only.</b> Updating the routine saves the current exercise order, today-only additions or removals, substitutions, supersets, and number of working sets.</div>'+
+    '<div class="actions"><button class="btn green" onclick="finalizeWorkout(true)">Finish + Update Routine</button>'+
+    '<button class="btn secondary" onclick="finalizeWorkout(false)">Finish · Today Only</button>'+
+    '<button class="btn secondary" onclick="closeModal()">Keep Working Out</button></div>');
    return;
  }
  finalizeWorkout(false);
