@@ -8,6 +8,14 @@ const isoDaysAgo=d=>new Date(now-d*86400000).toISOString();
 const sets=(weight,reps=8,count=3,rir=2)=>Array.from({length:count},()=>({weight,reps,done:true,rir,type:'working',pr:''}));
 const sessions=[
   {
+    id:'hist_chest_prior',routineName:'Chest Prior Week',status:'finished',date:isoDaysAgo(10),durationMinutes:50,
+    exercises:[
+      {exerciseId:'lib_0',sets:sets(95,8,3,2),skipped:false},
+      {exerciseId:'lib_3',sets:sets(37.5,10,3,2),skipped:false},
+      {exerciseId:'lib_5',sets:sets(22.5,12,3,1),skipped:false}
+    ]
+  },
+  {
     id:'hist_chest_1',routineName:'Chest A',status:'finished',date:isoDaysAgo(6),durationMinutes:55,
     exercises:[
       {exerciseId:'lib_0',sets:sets(100,8,3,2),skipped:false},
@@ -61,7 +69,9 @@ req.referenceDate=new Date(now).toISOString();
 let context=w.coachTrainingContext(req);
 assert(context.currentLedger.chest>=18,'seeded recent chest work should populate weekly chest ledger');
 assert.equal(context.currentLedger.biceps||0,0,'seeded fixture should leave biceps untrained');
-assert.equal(context.historyDepth,'emerging','three saved sessions should create emerging history depth');
+assert.equal(context.historyDepth,'emerging','four saved sessions should create emerging history depth');
+assert((context.priorAverage.chest||0)>0,'prior completed weeks should populate the baseline');
+assert((context.priorAverage.chest||0)<context.currentLedger.chest,'current-week chest work must not leak into the prior-week baseline');
 
 let draft=w.coachGenerateWorkout(req);
 assert(draft?.intelligenceAudit?.pass,'history-aware workout should pass internal intelligence audit');
