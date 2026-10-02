@@ -17,6 +17,7 @@ const JS_SOURCES = [
   'src/js/03-programs.js',
   'src/js/04a-coach-input-intent.js',
   'src/js/04b-coach-programming.js',
+  'src/js/04b2-coach-intelligence.js',
   'src/js/04c-coach-language-refinement.js',
   'src/js/04d-coach-program-builder.js',
   'src/js/04e-coach-ui.js',
