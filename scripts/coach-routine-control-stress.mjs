@@ -100,7 +100,7 @@ assert(saved.exercises.some(x=>x.exerciseId==='lib_2'),'saved routine should con
 
 w.openCoachRoutineControl('r1');
 const initial=w.eval('coachRoutineSession.working.exercises.length');
-result=w.coachRoutineApplyCommand('add face pull');
+result=w.coachRoutineApplyCommand('add cable crunch');
 assert(result.ok&&result.changed);
 assert.equal(w.eval('coachRoutineSession.working.exercises.length'),initial+1);
 w.coachRoutineCancel();
