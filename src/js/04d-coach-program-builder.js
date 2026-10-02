@@ -89,7 +89,8 @@ function coachProgramRoutineFromDay(day,draft=coachProgramBuildDraft,id=uid()){
      const ex=exById(exerciseId),p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,day.request,d):d;
      return {
        exerciseId,sets:p.sets,minReps:p.minReps,maxReps:p.maxReps,increment:state.settings.defaultIncrement,
-       mode:'double',trainingGoal:d.goal,resetPercent:7.5,restSeconds:p.restSeconds,
+       mode:'double',progressionStrategy:p.progressionStrategy||'double',setStructure:p.setStructure?cloneData(p.setStructure):null,
+       trainingGoal:d.goal,resetPercent:7.5,restSeconds:p.restSeconds,
        targetRIR:Number.isFinite(Number(p.targetRIR))?Number(p.targetRIR):null,
        supersetGroup:supersetMap[exerciseId]||null
      };
