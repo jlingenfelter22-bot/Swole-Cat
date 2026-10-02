@@ -5,6 +5,8 @@
 - Phase: 8.0
 - Decision date: 2026-10-02
 - Initial provider: **Supabase**
+- Supabase organization: **SWOLE CAT**
+- Supabase project: **Swole Cat** (`tpdmcuhsvmffpycgwhqb`, `us-east-2`)
 - Initial hosting tier: **Free**
 - Initial monthly infrastructure target: **$0**
 - Current field beta: v0.66.1 remains local-only and unaffected
@@ -153,6 +155,23 @@ Expected services:
 Provider-specific source should be isolated in dedicated cloud modules.
 
 The runtime contract should use ordinary Swole Cat data structures so a future backend can replace Supabase without rewriting training behavior.
+
+## 5.1 Live Phase 8.1 project boundary
+
+The lab backend is now provisioned:
+
+- organization: `SWOLE CAT`
+- project: `Swole Cat`
+- project ref: `tpdmcuhsvmffpycgwhqb`
+- region: `us-east-2`
+- API URL: `https://tpdmcuhsvmffpycgwhqb.supabase.co`
+- client credential: modern Supabase publishable key only
+- public application tables at provisioning: **0**
+- security advisor findings at provisioning: **0**
+
+The publishable key is a client credential and may ship in the PWA/APK. Service-role and secret keys must never ship in the client or be committed to the repository.
+
+No Swole Cat application table should be added until a specific Phase 8 capability needs it.
 
 ## 6. Authentication
 

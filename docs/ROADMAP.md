@@ -846,6 +846,7 @@ Core decisions:
 - [x] Avoid creating Swole Cat database rows merely because an Auth account exists.
 - [x] Add production-bundle regression coverage proving local saves never wake the cloud shell.
 - [ ] Connect the actual Supabase Auth provider adapter.
+- [x] Provision the dedicated Supabase Free project and connect the lab build to its public URL/publishable key without adding application-data tables.
 - [ ] Start with Google sign-in for production-facing testing so the project does not depend on Supabase's built-in low-volume email sender.
 - [ ] Add account recovery path and cloud-account deletion.
 - [ ] Store auth tokens separately from workout state using Android Keystore-backed secure storage before public production use.

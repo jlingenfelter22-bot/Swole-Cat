@@ -31,3 +31,15 @@ All future exposed tables must use least-privilege grants and Row Level Security
 The service-role key must never be committed to this repository, bundled into the PWA, or packaged in the APK.
 
 See `docs/CLOUD_ARCHITECTURE.md`.
+
+
+## Live Phase 8.1 project
+
+- Organization: `SWOLE CAT`
+- Project: `Swole Cat`
+- Project ref: `tpdmcuhsvmffpycgwhqb`
+- Region: `us-east-2`
+- Tier: Free
+- Public application tables: 0 at provisioning
+- Client configuration: project URL + modern publishable key
+- Secret/service-role credentials: never client-side

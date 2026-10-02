@@ -1,7 +1,7 @@
 // Phase 8.1 cloud configuration boundary.
 // Empty build values keep Swole Cat fully local-only with zero cloud traffic.
-const SWOLE_CAT_CLOUD_BUILD_URL='__SWOLE_CAT_SUPABASE_URL__';
-const SWOLE_CAT_CLOUD_BUILD_KEY='__SWOLE_CAT_SUPABASE_PUBLISHABLE_KEY__';
+const SWOLE_CAT_CLOUD_BUILD_URL='https://tpdmcuhsvmffpycgwhqb.supabase.co';
+const SWOLE_CAT_CLOUD_BUILD_KEY='sb_publishable_w8TRfiOqkBAHM8lXTBw1tQ_Crfrh8iO';
 const SWOLE_CAT_GOOGLE_BUILD_CLIENT_ID='__SWOLE_CAT_GOOGLE_WEB_CLIENT_ID__';
 
 function normalizeCloudConfigValue(value){
