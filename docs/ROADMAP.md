@@ -564,6 +564,29 @@ Locked behavior:
 
 **Milestone record:** Today’s first outside-user beta-readiness pass is complete. The active-workout Cancel control is no longer squeezed/clipped; a sticky **NOW TRAINING** strip keeps the current exercise and set position visible; auto-advance now scrolls to an explicit offset beneath the app header and sticky exercise identity; Session Goal/Building Baseline guidance is compressed into a tap-to-expand Coach target strip; completed exercises recede while the current exercise is visually dominant; live set controls received larger gym-friendly tap targets; and the existing transient “Up next” message remains secondary confirmation rather than the only orientation cue. A dedicated production-bundle regression now repeatedly finishes multiple exercises and verifies that the next movement becomes the sole expanded/active card, the sticky identity matches it, offset-aware scrolling fires, the compact guidance remains available, and saved Routines/completed History are not mutated. The implementation checkpoint passed the full validation wall, Pages deployment, and Android build before this beta version bump.
 
+## Today — Beta Readiness Pass 2: First-Time User Clarity
+
+**Status: In progress**
+
+Goal: reduce live-workout cognitive load for a first-time outside tester while preserving the intelligence, progression, and history behavior already validated.
+
+Implementation order:
+1. [ ] **Fix the Weight / Reps / RIR row layout.** Give each input its own readable column and prevent the RIR label/control from colliding with adjacent rep controls on narrow phones.
+2. [ ] **Audit and harden rep-ceiling progression.** A movement may legitimately use a high rep range, but Coach must treat the programmed max as a ceiling: once enough programmed sets reach the top of that range at appropriate effort, increase load and return toward the lower end instead of continuing an unbounded rep chase.
+3. [ ] **Redesign the live rest timer.** Replace the oversized persistent tray with a compact rest control that can expand on demand; automatically dismiss it when no programmed work remains and never require the user to hit Skip after the final workout set.
+4. [ ] **Correct front-delt heat-map anatomy.** Verify the semantic mapping and SVG geometry so front delts highlight the anterior shoulder cap, not the upper-trap/neck region.
+5. [ ] **Run a first-time-user density pass, regressions, and fresh beta build.** Quiet secondary controls where sensible, preserve the core logging path, add permanent coverage for the fixes above, run the full regression wall/Pages/Android, then cut a newer beta APK.
+
+Locked behavior:
+- Do not globally cap all exercises at 15 reps. Progression must respect each exercise's programmed rep range.
+- High-rep isolation work remains valid when intentionally programmed.
+- Rest controls stay available, but they must not dominate the workout surface.
+- Completing the final programmed set ends the need for a rest timer immediately.
+- Heat-map labels and anatomy must visually agree.
+- Secondary controls are visually quieter, not removed.
+- No beta-polish change may rewrite completed History, saved Routine programming, or Coach intelligence state unless the specific progression rule requires a deliberate logic fix.
+- Every completed step is checked off here before moving on so a new chat can reconstruct the exact state.
+
 After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
 Implemented locally through v0.64.0:
