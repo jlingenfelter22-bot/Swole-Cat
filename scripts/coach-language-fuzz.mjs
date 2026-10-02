@@ -200,6 +200,20 @@ for(const id of noCalfDraft.selectedIds){
   assert(![...meta.primary,...meta.secondary].includes('calves'),'hard excluded calves leaked into workout');
 }
 
+// Negative exercise language must not route excluded exercises as positive requests.
+let explicit=w.coachParseExplicitWorkout('back workout, no barbell rows','hypertrophy');checks+=3;
+assert(explicit.excludedExerciseIds.includes('lib_26'),'no barbell rows should exclude Barbell Row');
+assert(!explicit.items.some(item=>item.exerciseId==='lib_26'),'excluded Barbell Row must not become a positive explicit item');
+assert(!explicit.signal,'a generic back workout with only a negative exercise mention should stay in generated-workout mode');
+
+explicit=w.coachParseExplicitWorkout("legs workout, don't include back squats",'hypertrophy');checks+=2;
+assert(explicit.excludedExerciseIds.includes('lib_8'),'dont include back squats should exclude Back Squat');
+assert(!w.coachParseTargetExclusions("legs workout, don't include back squats").keys.includes('back'),'Back Squat exclusion must not exclude the Back target');
+
+explicit=w.coachParseExplicitWorkout('back workout, avoid chest supported rows','hypertrophy');checks+=2;
+assert(explicit.excludedExerciseIds.includes('lib_29'),'avoid chest supported rows should exclude Chest Supported Row');
+assert(!w.coachParseTargetExclusions('back workout, avoid chest supported rows').keys.includes('chest'),'Chest Supported Row exclusion must not exclude Chest');
+
 // Experience/laterality natural language.
 [
   ["I'm a newbie",'beginner'],
