@@ -1430,24 +1430,23 @@ jobs:
             const repsAfterDebounce=JSON.parse(w.localStorage.getItem('overload_v3')).activeWorkout.exercises[0].sets[0].reps;
             assert.equal(Number(repsAfterDebounce),11,'pending workout edits should still persist after navigation');
 
-            // Exercise accordion changes should update existing DOM without rebuilding the workout.
+            // Focus Mode micro-steps should update the live field without rebuilding the workout.
             w.resumeActiveWorkout();
             await wait(10);
             let workoutRenders=0;
             const originalRenderWorkout=w.renderWorkout;
             w.renderWorkout=function(){workoutRenders++;return originalRenderWorkout()};
-            w.toggleExercisePanel(0);
-            assert.equal(workoutRenders,0,'accordion toggle should not rerender the entire workout');
-            const firstCard=w.document.getElementById('workoutExercise-0');
-            assert(firstCard.classList.contains('collapsed'),'accordion DOM should update directly');
-
-            // Micro-step buttons should update the input directly without a whole-workout render.
-            w.toggleExercisePanel(0);
-            const weightInput=w.document.querySelector('#workoutExercise-0 .set-card[data-set-index="0"] input[aria-label="weight"]');
+            const weightInput=w.document.querySelector('.focus-set-card[data-set-index="0"] input[aria-label="weight"]');
+            assert(weightInput,'Focus Mode should expose the active set weight field');
             const beforeStep=Number(weightInput.value||0);
             w.changeSetValue(0,0,'weight',5);
             assert.equal(workoutRenders,0,'weight micro-step should not rerender the entire workout');
             assert.equal(Number(weightInput.value),beforeStep+5,'weight micro-step should repaint the affected input immediately');
+
+            // Moving between focused sets should rebuild the one Focus canvas exactly once, not run a legacy accordion repaint path.
+            w.selectWorkoutSet(0,1);
+            assert.equal(workoutRenders,1,'changing focused set should render the Focus canvas exactly once');
+            assert.equal(w.document.querySelector('.focus-set-card')?.dataset.setIndex,'1','Focus Mode should display the selected set');
 
             assert(html.includes('content-visibility:auto'),'long lists should use offscreen rendering containment');
             assert(html.includes('.native-app nav'),'native navigation should have Android-specific paint tuning');
