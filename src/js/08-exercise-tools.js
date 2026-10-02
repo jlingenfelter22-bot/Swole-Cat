@@ -159,11 +159,21 @@ function defaultWorkoutExerciseConfig(){
    restSeconds:120
  };
 }
-function scrollToWorkoutExercise(index){
+function workoutScrollOffset(){
+ const css=Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--workout-scroll-offset'));
+ if(Number.isFinite(css)&&css>0)return css;
+ const header=Math.max(0,Math.round(document.querySelector('header')?.getBoundingClientRect().height||0));
+ const dock=Math.max(0,Math.round(document.getElementById('activeExerciseDock')?.getBoundingClientRect().height||0));
+ return header+dock+12;
+}
+function scrollToWorkoutExercise(index,{behavior='smooth'}={}){
  setTimeout(()=>{
    const el=document.getElementById(`workoutExercise-${index}`);
-   if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
- },90);
+   if(!el)return;
+   if(typeof syncWorkoutStickyOffsets==='function')syncWorkoutStickyOffsets();
+   const top=Math.max(0,window.scrollY+el.getBoundingClientRect().top-workoutScrollOffset());
+   window.scrollTo({top,behavior});
+ },110);
 }
 function addExerciseToWorkout(exerciseId,permanent){
  const w=state.activeWorkout;if(!w)return;
