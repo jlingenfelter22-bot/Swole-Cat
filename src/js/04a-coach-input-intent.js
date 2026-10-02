@@ -167,7 +167,7 @@ function coachParseEquipment(text){
 function coachTargetPriorityRegex(key){
  const map={
   'full body':'full body','upper body':'upper body','lower body':'lower body','posterior chain':'posterior chain',
-  push:'push',pull:'pull',legs:'legs?',arms:'arms?',shoulders:'shoulders?',
+  push:'push',pull:'pull',legs:'legs?',arms:'arms?',shoulders:'(?:shoulders?|delts?)',
   'front delts':'front delts?','side delts':'side delts?','rear delts':'rear delts?',
   chest:'chest',back:'back','upper back':'(?:upper|mid(?:dle)?) back',
   'lower back':'(?:lower back|lumbar(?: spine| extensors?)?|spinal erectors?|erector spinae|erectors?)',
@@ -243,7 +243,7 @@ function coachParseTargets(text){
    ['full body',/\bfull body\b/],['upper body',/\bupper body\b/],['lower body',/\blower body\b/],
    ['posterior chain',/\bposterior chain\b/],
    ['push',/\bpush(?: day| workout| session)?\b/],['pull',/\bpull(?: day| workout| session)?\b/],
-   ['legs',/\blegs?\b/],['arms',/\barms?\b/],['shoulders',/\bshoulders?\b/],
+   ['legs',/\blegs?\b/],['arms',/\barms?\b/],['shoulders',/\bshoulders?\b|\bdelts?\b/],
    ['upper back',/\bupper back\b|\bmid(?:dle)? back\b/],
    ['lower back',/\blower back\b|\blumbar(?: spine| extensors?)?\b|\bspinal erectors?\b|\berector spinae\b|\berectors?\b/],
    ['lats',/\blats\b/],['traps',/\btraps?\b/],['forearms',/\bforearms?\b/],
@@ -359,6 +359,8 @@ function coachParseProgramFocus(text){
    ['glutes',/\bglutes?\b/],['calves',/\bcalves?\b|\bcalf\b/],['abs',/\babs?\b/],['obliques',/\bobliques?\b/],['core',/\bcore\b/]
  ];
  terms.forEach(([key,re])=>{if(re.test(lower))add(key)});
+ const genericDeltWork=lower.replace(/\b(?:front|side|rear) delts?\b/g,' ');
+ if(/\bdelts?\b/.test(genericDeltWork))add('shoulders');
  const genericBackWork=lower
    .replace(/\b(?:upper|lower|mid(?:dle)?) back\b/g,' ')
    .replace(/\blumbar(?: spine| extensors?)?\b|\bspinal erectors?\b|\berector spinae\b|\berectors?\b/g,' ');
