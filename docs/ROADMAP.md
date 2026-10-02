@@ -739,6 +739,22 @@ Sharing a routine or Program never copies workout history, PRs, bodyweight, prof
 
 **Milestone record:** v0.66.0 completes the local sharing foundation for outside beta testing. Routine cards and Program cards expose Share actions that package only training blueprints into a versioned `SWOLECAT1` code. Android uses the native share sheet when available. The Routines screen exposes one universal Import action that can read either a bare code or an entire shared message, identify Routine versus Program automatically, validate the package, and show a full preview before saving. Program packages bundle the exact Routine blueprints they require but deliberately reset the recipient to Day 1. Import remaps Program, Routine, superset, and custom-exercise identifiers, reuses exact matching custom exercise definitions when safe, converts weight increments between lb/kg, and never imports the sender's performance history. The same payload structure can later be stored behind a short cloud code or link without replacing the local import/export model.
 
+### Locked architecture: SWOLECAT1 remains the canonical sharing payload
+
+The current `SWOLECAT1` package is not a temporary beta-only transport. It is the canonical portable blueprint format for shared Routines and Programs unless a future documented migration explicitly replaces it.
+
+When accounts/cloud sharing are added:
+- the cloud layer should store or reference the same canonical payload rather than inventing a second Routine/Program serialization model
+- a short code such as `A7F4K2` should resolve server-side to a stored `SWOLECAT1` package
+- a share URL should resolve to that same stored package and then hand it to the existing importer
+- native/local direct sharing should continue to work without an account or backend
+- the universal importer should remain the single ingestion path after the delivery layer resolves a code/link to a payload
+- payload versioning must remain explicit so older app versions can reject newer incompatible packages safely
+- cloud delivery must not expand the payload to include workout history, PRs, bodyweight, profile data, active-workout state, personal analytics, or another user's progression state unless a separate, explicitly user-selected backup/migration format is introduced
+- Program imports should continue to create independent local Routine copies and start at Day 1 unless a future collaborative/shared-template mode is intentionally selected
+
+The detailed contract and future migration notes live in **`docs/SHARING_ARCHITECTURE.md`** and should be read before implementing short codes, account-based sharing, shared templates, or cloud sync.
+
 ---
 
 ## Phase 8 — Accounts, Cloud Backup, and Multi-Device Sync
@@ -757,6 +773,8 @@ Goal: add identity and cloud infrastructure only when it unlocks meaningful valu
 
 ### Likely implementation direction
 A hosted backend such as Supabase or an equivalent service can provide authentication, relational data, permissions, storage, and real-time features. Final provider should be chosen when this phase begins based on current cost, reliability, and platform needs.
+
+**Sharing integration requirement:** account/cloud infrastructure must treat `SWOLECAT1` as the existing canonical Routine/Program package. Short codes and share links are a delivery/index layer over that payload, not a replacement serialization format. See `docs/SHARING_ARCHITECTURE.md`.
 
 ---
 
