@@ -811,30 +811,88 @@ See `docs/BETA_MILESTONE.md` for the operating contract.
 
 Goal: add identity and cloud infrastructure only when it unlocks meaningful value.
 
+### Phase 8.0 - Cloud architecture specification
+
+**Status: Complete**
+
+The initial cloud architecture is locked in `docs/CLOUD_ARCHITECTURE.md`.
+
+Core decisions:
+- [x] Use **Supabase Free** as the initial hosted backend for the lab/private cloud beta.
+- [x] Keep `overload_v3` local-first and usable without an account or network connection.
+- [x] Put Supabase behind Swole Cat runtime services instead of calling it directly from workout, routine, progression, or Coach domains.
+- [x] Separate full cloud backup from record-level multi-device sync.
+- [x] Reuse the existing `swole-cat-backup` envelope for disaster-recovery snapshots.
+- [x] Keep normal sync record-based, versioned, queueable, retry-safe, and conflict-aware rather than overwriting one giant state blob.
+- [x] Reuse `SWOLECAT1` for cloud short-code/link sharing.
+- [x] Keep collaborative/group data separate from each member's private performance records.
+- [x] Start with no realtime subscriptions and no cloud dependency in the live workout path.
+- [x] Keep service-role credentials and purchase verification off-device.
+- [x] Treat the Supabase provider as replaceable infrastructure, not as Swole Cat's domain model.
+- [x] Keep the cloud lab at **$0/month** until real usage, reliability needs, or free-tier limits justify an upgrade.
+
+### Phase 8.1 - Optional account foundation
+- [ ] Add isolated identity service.
+- [ ] Start with Google sign-in for production-facing testing so the project does not depend on Supabase's built-in low-volume email sender.
+- [ ] Add sign-out, account recovery path, and cloud-account deletion.
+- [ ] Store auth tokens separately from workout state using Android secure storage before public production use.
+- [ ] Keep local-only mode fully supported.
+
+### Phase 8.2 - Cloud backup
+- [ ] Upload a validated cloud copy of the existing Swole Cat backup envelope.
+- [ ] Keep a small bounded number of recovery snapshots per user.
+- [ ] Allow manual Back Up Now and Restore from Cloud.
+- [ ] Never erase or replace local data automatically during restore.
+- [ ] Keep cloud failure non-blocking for workouts.
+
+### Phase 8.3 - Multi-device sync
+- [ ] Add stable per-device identity and separate local sync metadata.
+- [ ] Represent user-owned sync data as individual records with server version, change sequence, tombstones, and source-device metadata.
+- [ ] Diff local state against the last synced manifest so ordinary saves only enqueue changed records.
+- [ ] Batch/debounce network writes rather than syncing each keystroke or set edit.
+- [ ] Pull changes by server change sequence.
+- [ ] Surface true edit conflicts instead of silently discarding one device's changes.
+- [ ] Treat simultaneous active-workout editing conservatively rather than attempting unsafe set-by-set merging.
+
+### Phase 8.4 - Cloud sharing transport
+- [ ] Add short human-friendly codes and share URLs that resolve to stored canonical `SWOLECAT1` payloads.
+- [ ] Keep the current universal importer as the only plan-ingestion path.
+- [ ] Permit recipients to import a shared blueprint without exposing sender workout history or private account data.
+
+### Phase 8.5 - Lifetime Pro entitlement
+- [ ] Target **Swole Cat Pro at $7.99 lifetime**.
+- [ ] Verify Google Play lifetime purchases server-side before writing cloud entitlement state.
+- [ ] Make entitlement rows readable by the owning user but not writable by the client.
+- [ ] Cache entitlement appropriately for offline UI, while cloud-only features naturally require connectivity.
+- [ ] Never convert an existing lifetime buyer into a recurring subscriber.
+
 ### Locked: Optional Swole Cat accounts
 - [ ] Account creation/sign-in
 - [ ] Cloud backup
 - [ ] Multi-device sync
 - [ ] Account recovery
 - [ ] Conflict-safe sync strategy
-- [ ] Local-first/offline behavior remains supported
+- [x] Local-first/offline behavior remains the architectural requirement
 
 ### Locked: Monetization philosophy
-- [ ] Keep the core workout experience genuinely useful for free.
-- [ ] No advertising.
-- [ ] No required recurring subscription for the core Swole Cat product.
-- [ ] Target **Swole Cat Pro at $7.99 lifetime** as the initial paid model.
-- [ ] Use Pro primarily for features that create ongoing infrastructure cost or meaningful premium value, such as cloud backup, multi-device sync, cloud sharing/short codes, and selected connected/advanced features.
-- [ ] A Lifetime Pro purchase remains lifetime. Existing buyers are never converted into recurring subscribers because pricing changes later.
-- [ ] Future customers may have a different one-time purchase price if operating costs or product scope change.
-- [ ] Do not deliberately cripple ordinary workout tracking to force a Pro purchase.
-- [ ] If future cloud AI creates material per-use cost, price that usage separately rather than silently undermining the lifetime promise.
-- [ ] Design infrastructure with lifetime economics in mind: keep recurring server/storage costs lean, preserve local-first operation, and avoid unnecessary cloud dependence.
+- [x] Keep the core workout experience genuinely useful for free.
+- [x] No advertising.
+- [x] No required recurring subscription for the core Swole Cat product.
+- [x] Target **Swole Cat Pro at $7.99 lifetime** as the initial paid model.
+- [x] Use Pro primarily for features that create ongoing infrastructure cost or meaningful premium value, such as cloud backup, multi-device sync, cloud sharing/short codes, and selected connected/advanced features.
+- [x] A Lifetime Pro purchase remains lifetime. Existing buyers are never converted into recurring subscribers because pricing changes later.
+- [x] Future customers may have a different one-time purchase price if operating costs or product scope change.
+- [x] Do not deliberately cripple ordinary workout tracking to force a Pro purchase.
+- [x] If future cloud AI creates material per-use cost, price that usage separately rather than silently undermining the lifetime promise.
+- [x] Design infrastructure with lifetime economics in mind: keep recurring server/storage costs lean, preserve local-first operation, and avoid unnecessary cloud dependence.
 
 **Positioning:** Pro should feel like a voluntary way to unlock connected convenience and support an independent, ad-free, subscription-free product, not a toll booth placed in front of training.
 
-### Likely implementation direction
-A hosted backend such as Supabase or an equivalent service can provide authentication, relational data, permissions, storage, and real-time features. Final provider should be chosen when this phase begins based on current cost, reliability, and platform needs.
+### Locked provider decision
+
+Use **Supabase** for the first Swole Cat cloud implementation. The initial remote environment should remain on the Free plan during lab/private-beta work. Upgrade only when actual usage, uptime expectations, backup requirements, or free-tier limits justify it.
+
+Current official free-plan constraints and the planned upgrade triggers are recorded in `docs/CLOUD_ARCHITECTURE.md` so the decision can be revisited if provider pricing changes.
 
 **Sharing integration requirement:** account/cloud infrastructure must treat `SWOLECAT1` as the existing canonical Routine/Program package. Short codes and share links are a delivery/index layer over that payload, not a replacement serialization format. See `docs/SHARING_ARCHITECTURE.md`.
 

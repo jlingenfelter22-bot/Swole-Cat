@@ -110,6 +110,14 @@ When account and sync phases begin:
 - Authentication state must not be mixed into workout progression logic.
 - Import/export backups remain supported independently of cloud accounts.
 
+## Cloud implementation contract
+
+Phase 8.0 selected Supabase as the first hosted backend while preserving the local-first boundary above.
+
+The provider-specific implementation, sync record model, backup strategy, conflict policy, security rules, zero-cost operating plan, and provider exit strategy are defined in `docs/CLOUD_ARCHITECTURE.md`.
+
+Workout-domain modules must not import or call Supabase directly. Cloud work belongs behind runtime services so the backend can be replaced without rewriting training logic.
+
 ## Testing rule
 
 Architecture changes are not considered complete unless the same production bundle passes the full regression suite.
