@@ -543,34 +543,31 @@ function workingSetIndexAtRound(e,round){
  const indexes=workingSetIndexes(e);return indexes[round]??-1;
 }
 function advanceSupersetAfterSet(ei,si){
- const w=state.activeWorkout,e=w?.exercises?.[ei],meta=supersetMeta(ei);
+ const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],meta=supersetMeta(ei);
  if(!w||!e||!meta||!isProgressionSet(e.sets[si]))return false;
  const round=workingSetOrdinal(e,si),members=meta.members,pos=members.indexOf(ei);
  const ordered=members.slice(pos+1).concat(members.slice(0,pos));
  for(const oi of ordered){
    const oe=w.exercises[oi],targetSi=workingSetIndexAtRound(oe,round);
    if(targetSi>=0&&!oe.sets[targetSi].done){
-     w.exercises.forEach((x,i)=>x.expanded=i===oi);
+     w.focusExerciseIndex=oi;w.focusSetIndex=targetSi;
+     w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==oi});
+     w.exercises.forEach(function(x,i){x.expanded=i===oi});
      saveActiveWorkout();renderWorkout();
-     showToast(`Superset ${meta.label}: ${exById(oe.exerciseId)?.name||'next exercise'}`);
-     scrollToWorkoutExercise(oi);
+     showToast('Superset '+meta.label+': '+((exById(oe.exerciseId)&&exById(oe.exerciseId).name)||'next exercise'));
      return true;
    }
  }
- // Everyone who has this round is finished. Rest once only when more work remains.
- let next=members.find(oi=>workingSetIndexes(w.exercises[oi]).some(idx=>!w.exercises[oi].sets[idx].done));
- if(next==null)next=members.find(oi=>!exerciseSetProgress(w.exercises[oi]).complete);
+ let next=members.find(function(oi){return workingSetIndexes(w.exercises[oi]).some(function(idx){return !w.exercises[oi].sets[idx].done})});
+ if(next==null)next=members.find(function(oi){return !exerciseSetProgress(w.exercises[oi]).complete});
  if(next!=null){
    startRestTimer(e.config.restSeconds||120);
-   w.exercises.forEach((x,i)=>x.expanded=i===next);
-   saveActiveWorkout();renderWorkout();
-   showToast(`Superset ${meta.label} round complete · rest`);
-   scrollToWorkoutExercise(next);
-   return true;
+   w.focusExerciseIndex=next;w.focusSetIndex=workoutFirstIncompleteSetIndex(w.exercises[next]);
+   w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==next});
+   w.exercises.forEach(function(x,i){x.expanded=i===next});
+   saveActiveWorkout();renderWorkout();showToast('Superset '+meta.label+' round complete · rest');return true;
  }
- // Whole group is complete. Rest only if another programmed movement remains.
- if(workoutHasRemainingProgrammedWork())startRestTimer(e.config.restSeconds||120);
- else stopRestTimer();
+ if(workoutHasRemainingProgrammedWork())startRestTimer(e.config.restSeconds||120);else stopRestTimer();
  if(advanceFromCompletedExercise(ei))return true;
  saveActiveWorkout();renderWorkout();return true;
 }
@@ -682,36 +679,40 @@ function moveWorkoutExercise(ei,dir){
  const w=state.activeWorkout;if(!w)return;
  const ni=ei+dir;if(ni<0||ni>=w.exercises.length)return;
  [w.exercises[ei],w.exercises[ni]]=[w.exercises[ni],w.exercises[ei]];
+ if(w.focusExerciseIndex===ei)w.focusExerciseIndex=ni;else if(w.focusExerciseIndex===ni)w.focusExerciseIndex=ei;
+ w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).map(function(i){return i===ei?ni:i===ni?ei:i});
  markWorkoutStructureDirty();renderWorkout();refreshWorkoutStructureEditor();haptic(8);
 }
 function toggleSkipWorkoutExercise(ei){
- const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e)return;
+ const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei];if(!e)return;
  e.skipped=!e.skipped;
+ w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==ei});
  if(e.skipped){
    e.expanded=false;
-   let next=-1;
-   for(let i=ei+1;i<w.exercises.length;i++){if(!exerciseSetProgress(w.exercises[i]).complete){next=i;break}}
-   if(next<0){for(let i=0;i<ei;i++){if(!exerciseSetProgress(w.exercises[i]).complete){next=i;break}}}
-   w.exercises.forEach((x,i)=>x.expanded=i===next);
+   const next=nextWorkoutExerciseIndex(ei,w);
+   w.focusExerciseIndex=next>=0?next:Math.max(0,w.exercises.findIndex(function(x){return !x.skipped}));
+   if(w.focusExerciseIndex>=0)w.focusSetIndex=workoutFirstIncompleteSetIndex(w.exercises[w.focusExerciseIndex]);
  }else{
-   w.exercises.forEach((x,i)=>x.expanded=i===ei);
+   w.focusExerciseIndex=ei;w.focusSetIndex=workoutFirstIncompleteSetIndex(e);
  }
+ w.exercises.forEach(function(x,i){x.expanded=i===w.focusExerciseIndex});
  saveActiveWorkout();renderWorkout();refreshWorkoutStructureEditor();
  showToast(e.skipped?'Exercise skipped for today':'Exercise restored');
 }
 function removeWorkoutExercise(ei){
- const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e)return;
- const ex=exById(e.exerciseId),hasLogged=(e.sets||[]).some(s=>s.done);
- const remove=()=>{
+ const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei];if(!e)return;
+ const ex=exById(e.exerciseId),hasLogged=(e.sets||[]).some(function(s){return s.done});
+ const remove=function(){
    w.exercises.splice(ei,1);
-   cleanupActiveSupersets();
-   markWorkoutStructureDirty();
-   const next=w.exercises.findIndex(x=>!exerciseSetProgress(x).complete);
-   w.exercises.forEach((x,i)=>x.expanded=i===(next>=0?next:-1));
-   closeModal();renderWorkout();showToast(`${ex?.name||'Exercise'} removed for today`);
+   w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==ei}).map(function(i){return i>ei?i-1:i});
+   if(w.focusExerciseIndex===ei)w.focusExerciseIndex=Math.min(ei,w.exercises.length-1);
+   else if(w.focusExerciseIndex>ei)w.focusExerciseIndex--;
+   cleanupActiveSupersets();normalizeWorkoutFocusState(w);markWorkoutStructureDirty();
+   closeModal();renderWorkout();showToast(((ex&&ex.name)||'Exercise')+' removed for today');
  };
- if(hasLogged)confirmAction('Remove logged exercise?',`Remove ${ex?.name||'this exercise'} from today's workout? Completed sets for it will also be removed from this active session.`,remove);
- else confirmAction('Remove exercise for today?',`Remove ${ex?.name||'this exercise'} from today's workout? Your saved routine stays unchanged unless you later choose to update it.`,remove);
+ const name=(ex&&ex.name)||'this exercise';
+ if(hasLogged)confirmAction('Remove logged exercise?','Remove '+name+" from today's workout? Completed sets for it will also be removed from this active session.",remove);
+ else confirmAction('Remove exercise for today?','Remove '+name+" from today's workout? Your saved routine stays unchanged unless you later choose to update it.",remove);
 }
 function saveWorkoutStructureNow(){
  const w=state.activeWorkout;if(!w)return;
@@ -864,29 +865,21 @@ function openExercisePanel(ei){
  saveActiveWorkout(true);paintWorkoutAccordion();scrollToWorkoutExercise(ei);
 }
 function advanceFromCompletedExercise(ei){
- const w=state.activeWorkout;if(!w)return;
+ const w=state.activeWorkout;if(!w)return false;
  const e=w.exercises[ei],p=exerciseSetProgress(e);
  if(!p.complete)return false;
  e.expanded=false;
- let next=-1;
- for(let i=ei+1;i<w.exercises.length;i++){
-   if(!exerciseSetProgress(w.exercises[i]).complete){next=i;break;}
- }
- if(next<0){
-   for(let i=0;i<ei;i++){
-     if(!exerciseSetProgress(w.exercises[i]).complete){next=i;break;}
-   }
- }
+ w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==ei});
+ const next=nextWorkoutExerciseIndex(ei,w);
  if(next>=0){
-   w.exercises.forEach((x,i)=>x.expanded=i===next);
+   w.focusExerciseIndex=next;w.focusSetIndex=workoutFirstIncompleteSetIndex(w.exercises[next]);
+   w.deferredExerciseIndexes=w.deferredExerciseIndexes.filter(function(i){return i!==next});
+   w.exercises.forEach(function(x,i){x.expanded=i===next});
    const ex=exById(w.exercises[next].exerciseId);
-   saveActiveWorkout();renderWorkout();
-   showToast(`Up next: ${ex?.name||'next exercise'}`);
-   scrollToWorkoutExercise(next);
+   saveActiveWorkout();renderWorkout();showToast('Up next: '+((ex&&ex.name)||'next exercise'));
  }else{
-   stopRestTimer();
-   saveActiveWorkout();renderWorkout();
-   showToast('All programmed sets complete');
+   stopRestTimer();w.focusExerciseIndex=ei;w.focusSetIndex=Math.max(0,e.sets.length-1);
+   saveActiveWorkout();renderWorkout();showToast('All programmed sets complete');
  }
  return true;
 }
@@ -1113,19 +1106,19 @@ function updateSet(ei,si,k,v){
  if(k==='weight')scheduleFirstExerciseWeightAutofill(ei,si);
 }
 function toggleSet(ei,si){
- const e=state.activeWorkout.exercises[ei],set=e.sets[si];
- set.done=!set.done;
+ const w=state.activeWorkout,e=w.exercises[ei],set=e.sets[si];
+ set.done=!set.done;w.focusExerciseIndex=ei;
  if(set.done){
    set.pr=isProgressionSet(set)?detectPR(e.exerciseId,set):'';
    haptic(set.pr?[35,40,70]:25);
    if(isProgressionSet(set)&&advanceSupersetAfterSet(ei,si))return;
-   if(workoutHasRemainingProgrammedWork())startRestTimer(e.config.restSeconds||120);
-   else stopRestTimer();
+   if(workoutHasRemainingProgrammedWork())startRestTimer(e.config.restSeconds||120);else stopRestTimer();
    if(advanceFromCompletedExercise(ei))return;
- } else{
-   set.pr='';
-   // Re-open an exercise if a completed set is unchecked later.
-   if(!e.expanded){state.activeWorkout.exercises.forEach((x,i)=>x.expanded=i===ei);}
+   w.focusSetIndex=workoutFirstIncompleteSetIndex(e);
+ }else{
+   set.pr='';w.focusSetIndex=si;
+   w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==ei});
+   w.exercises.forEach(function(x,i){x.expanded=i===ei});
  }
  saveActiveWorkout();renderWorkout();
 }
