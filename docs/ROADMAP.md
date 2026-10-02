@@ -616,6 +616,29 @@ Locked behavior:
 
 **Milestone record:** The live workout has been rebuilt around a gym-first Focus Mode. Swole Cat now foregrounds one exercise and one set instead of rendering a long vertical workout form. A sticky exercise navigator shows Exercise X of Y and lets the user jump directly to any movement; a compact set rail keeps every set reachable while only the current set gets a full Weight / Reps / RIR card. Completing a set advances the focused card in place, and completing the final set advances to the next unfinished exercise without requiring scrolling. **Substitute** and **Next Exercise** remain directly visible, while advanced set type/reorder/delete and exercise-management tools live behind secondary controls. Next Exercise defers unfinished work into a transient **Pending** state rather than marking it skipped; explicit Skip remains separate and session-only. Finish Workout reconciles unfinished work with **Do It Now / Skip Exercise / Finish Anyway** choices. Keyboard/visualViewport handling keeps the active set anchored when mobile input opens. Superset rotation, progression, adaptive Coach targets, compact rest timer, routine structure editing, Programs, recap/history, and saved-routine data continue using the existing Swole Cat data model. Dedicated v0.65 regressions now cover single-canvas rendering, in-place set advancement, defer-vs-skip semantics, exercise navigation, pending-work reconciliation, secondary set controls, history/routine immutability, and legacy compatibility. The implementation checkpoint passed the complete regression wall, GitHub Pages deployment, and Android build before this release was closed.
 
+## v0.65.1 — Focus Mode Mid-Workout QoL
+
+**Status: In progress**
+
+Goal: keep the new one-exercise/one-set Focus Mode intact while making the few mid-workout utilities a lifter may suddenly need immediately discoverable and reachable without leaving the workout.
+
+Implementation order:
+1. [ ] **Dock the rest timer into the bottom navigation edge.** Keep the timer compact and non-blocking, visually attach it to the nav bar, preserve quick +30, allow expanded controls on tap, and animate it into/out of the nav chrome.
+2. [ ] **Add instant How To / form help inside Focus Mode.** Put a clear form-help control in the focused exercise header and open the existing exercise guidance as an overlay/sheet without navigating away or losing workout state.
+3. [ ] **Strengthen exercise-switcher discoverability.** Make the exercise navigator chevron/control larger, higher contrast, and easier to hit while keeping the full header tappable; add a subtle one-time first-use hint if it improves clarity without becoming permanent clutter.
+4. [ ] **Preserve exact workout state through overlays/navigation.** Closing form help or the exercise list must return to the same focused exercise/set and must not mutate set entries, pending state, timers, saved routines, or completed history.
+5. [ ] **Add QoL regressions and cut a fresh beta build.** Permanently test nav-docked timer behavior, in-workout form overlay, exercise-switcher affordance, focus-state preservation, full regression wall, Pages, and Android before release.
+
+Locked behavior:
+- Focus Mode remains one focused exercise and one focused set.
+- Form help never navigates away from the active workout.
+- The timer never covers the primary Weight / Reps / RIR / Complete Set path.
+- Timer controls remain available but secondary to logging.
+- The exercise switcher remains accessible by tapping the header, not only the chevron.
+- Exercise guidance reuses Swole Cat's existing exercise/form content rather than inventing a separate source of truth.
+- No QoL overlay or navigator action may silently change workout data.
+- Every completed step is checked off here before moving on.
+
 After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
 Implemented locally through v0.65.0:
