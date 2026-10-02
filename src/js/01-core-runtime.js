@@ -650,6 +650,7 @@ function activeSetsFromRoutineExercise(re,rec,ex){
    weight:rec.weights?.[i]??rec.weight??0,
    reps:rec.targetReps?.[i]??re.minReps,
    done:false,rir:'',type:'working',pr:'',
+   role:typeof coachAdaptiveSetRole==='function'?coachAdaptiveSetRole(re,i):'working',
    amrap:!!re.lastSetAmrap&&i===Math.max(0,re.sets-1)
  }));
  if(!re.autoWarmup||!ex||!COACH_COMPOUND_PATTERNS.has(ex.pattern))return working;
