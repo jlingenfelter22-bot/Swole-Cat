@@ -48,11 +48,12 @@ assert.match(w.document.getElementById('modalBody').textContent,/PROGRAM AUDIT/i
 
 const plateau=audit.findings.find(x=>x.type==='plateau_high_effort');
 w.coachProgramAuditAction('p',plateau.id);
-assert.equal(w.coachRoutineSession.routineId,plateau.routineId);
-assert.match(w.coachRoutineSession.lastResponse,/Program audit:/i);
+const routineSession=w.eval('coachRoutineSession?{routineId:coachRoutineSession.routineId,lastResponse:coachRoutineSession.lastResponse}:null');
+assert.equal(routineSession.routineId,plateau.routineId);
+assert.match(routineSession.lastResponse,/Program audit:/i);
 assert.equal(JSON.stringify({programs:read().programs,routines:read().routines,sessions:read().sessions}),before);
 
-w.coachRoutineSession=null;w.renderPrograms();
+w.eval('coachRoutineSession=null');w.renderPrograms();
 assert.match(w.document.getElementById('programList').textContent,/Coach Audit/i);
 console.log('Coach Swolecat v0.63 Program auditor PASS');
 dom.window.close();
