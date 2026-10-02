@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.63.0
+Version: v0.64.0
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -1233,3 +1233,123 @@ The dedicated production-bundle stress suite verifies:
 - no mutation of Program, Routine, or completed-session state
 
 The full Swole Cat regression suite continues to run alongside v0.63 coverage.
+
+
+## v0.64 Coach battle-hardening and 12-week longitudinal simulation
+
+v0.64 validates Coach as a connected training-intelligence system over time, not just a collection of isolated feature tests.
+
+### Persona and prompt matrix
+
+The production Coach bundle is exercised with:
+- vague brand-new lifters who do not know what to train
+- beginner dumbbell-only requests
+- slang and casual gym wording
+- intermediate hypertrophy requests
+- equipment exclusions
+- advanced strength prescriptions
+- top-set/backoff grammar
+- shorthand and typo-heavy prompts
+- full-body program requests
+- upper/lower requests
+- push/pull/legs requests
+
+Routing assertions verify that workout creation, Program creation, history Q&A, and Program Audit do not hijack one another.
+
+### Twelve-week longitudinal personas
+
+The battle harness simulates three months of completed training for multiple archetypes.
+
+**Rapid beginner progression**
+- three full-body sessions per week
+- steadily increasing loads
+- checkpoints at weeks 4, 8, and 12
+- expected behavior: continued progression, no false stall
+
+**Slow intermediate progression**
+- four-day upper/lower rotation
+- load increases only every few weeks
+- expected behavior: progress/consolidation rather than false plateau
+
+**Advanced strength stall**
+- top-set/backoff bench structure
+- early multi-week progress followed by a genuine high-effort stall
+- expected behavior: progression early, conservative hold/small-reset behavior once the stall is established
+
+**Temporary dip and rebound**
+- one materially poor exposure after a long progressing block
+- subsequent sessions recover and surpass the dip
+- expected behavior: recognize the dip when current, then clear it once rebound evidence accumulates
+
+**Inconsistent PPL**
+- repeated Push work
+- intermittent Pull
+- repeatedly absent Legs
+- expected behavior: descriptive adherence/slot/coverage findings with no blame, causal diagnosis, or history mutation
+
+**Messy hypertrophy**
+- planned four-day upper/lower training
+- one full missed week plus scattered missed sessions
+- continued gradual progression
+- expected behavior: preserve useful progression continuity without labeling the user lazy, unmotivated, injured, overtrained, or failed
+
+**Comeback block**
+- early progress
+- several weeks away
+- lower re-entry loads
+- renewed climb across several exposures
+- expected behavior: a temporary re-entry dip must not become a permanent stall label
+
+### False-positive traps
+
+The suite explicitly verifies:
+- several flat high-effort exposures inside one week are not enough for a multi-week plateau
+- one bad workout is not enough to justify a persistent stall/reset conclusion
+- older progress does not erase a genuine recent multi-week stall
+- one old dip does not remain active after multiple rebound exposures
+- no-history top/backoff programming may define structure but must not invent a starting weight
+
+### Recommendation stability
+
+Neighboring checkpoints are compared to detect irrational action oscillation.
+
+Examples:
+- a rapidly progressing beginner should not bounce between progress/hold/reset without evidence
+- once an advanced high-effort stall is established, conservative action should remain stable until new evidence changes the pattern
+
+### Cross-system agreement
+
+The same synthetic history is read independently by:
+- v0.60 adaptive progression
+- v0.62 History Q&A
+- v0.62 deeper insights
+- v0.63 Program Audit
+
+For shared evidence, those systems must agree on the underlying training state instead of producing contradictory labels.
+
+Questions and audits are also required to leave completed history immutable.
+
+### Battle-report output
+
+CI emits concise persona/checkpoint rows so a failure can be traced to:
+- lifter archetype
+- simulated week/checkpoint
+- interpreted status/action
+- relevant longitudinal evidence
+
+The battle suite remains adversarial. When a real Coach bug is exposed, the implementation is fixed and the scenario stays in permanent regression coverage.
+
+### v0.64 validation
+
+The production release passed:
+- the standard Coach prompt matrix
+- the full language-resilience/fuzz suite
+- v0.59 training intelligence
+- v0.60 adaptive progression
+- v0.61 saved-routine control
+- v0.62 history Q&A and deeper insights
+- v0.63 Program Audit
+- the expanded v0.64 12-week battle harness
+- the complete legacy Swole Cat regression wall
+- GitHub Pages build/deployment
+- Android debug APK build and artifact upload

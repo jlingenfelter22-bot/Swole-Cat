@@ -282,7 +282,7 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 
 ## Phase 6 — Coach Swole Cat / Quick Build
 
-**Status: In progress through v0.63.0**
+**Status: In progress through v0.64.0**
 
 ### Product intent: useful, not bloated
 Coach Swole Cat should reinforce the core product philosophy rather than turn the app into a noisy AI product.
@@ -506,26 +506,26 @@ Locked behavior:
 
 **Milestone record:** Coach can now audit an entire saved Program against its ordered Routines and completed Program history. The auditor compares saved target frequency with recent completed frequency, checks rotation-slot representation, compares planned versus actual muscle set-equivalents, detects meaningful same-family redundancy without treating repeated staples as automatically bad, evaluates Program distribution from actual adjacent-day history and safe schedule-level evidence, and surfaces existing v0.60 progression stalls, dips, and positive continuity signals inside the Program context. Findings are ranked, explainable, and opt-in, with handoffs into Routine Control, exercise Progress, Program editing, and Analytics. A final semantic audit corrected an important assumption: preferred weekdays are availability preferences only, not positional Routine-to-day assignments, and regression coverage now permanently guards against inventing that mapping.
 
-**v0.64 — Coach Battle-Hardening + 12-Week Longitudinal Simulation**
+**v0.64.0 — Coach Battle-Hardening + 12-Week Longitudinal Simulation**
 
-**Status: In progress**
+**Status: Complete**
 
 Implementation checklist:
-- [ ] Build a deterministic persona matrix spanning beginner, intermediate, advanced, uncertain/vague, highly specific, strength-focused, hypertrophy-focused, and mixed-goal users.
-- [ ] Stress natural-language routing with clean prompts, slang, misspellings, shorthand, contradictory requests, underspecified requests, and expert lifting grammar without allowing history/audit questions to become workout builds or vice versa.
-- [ ] Simulate at least three months of completed training for multiple lifter archetypes instead of testing only isolated snapshots.
-- [ ] Check Coach at weeks 4, 8, and 12 so longitudinal behavior can be evaluated before and after enough evidence accumulates.
-- [ ] Include rapid beginner progression, slow intermediate progression, genuine multi-week stalls, temporary performance dips, inconsistent adherence, missed Program slots, and comeback/rebound patterns.
-- [ ] Exercise full-body, upper/lower, push-pull-legs, strength/top-backoff, and mixed hypertrophy programming across the simulation set.
-- [ ] Verify Coach does not call a short same-week cluster a plateau, does not erase a genuine recent stall because older weeks improved, and does not overreact to one poor session.
-- [ ] Verify adaptive recommendations remain coherent across repeated sessions and do not oscillate irrationally between hold/reset/progress after one contradictory exposure.
-- [ ] Verify history Q&A, deeper insights, Routine Control context, and Program Audit all agree on the same underlying synthetic history.
-- [ ] Verify low adherence and missed sessions remain descriptive completion-pattern findings rather than motivation, recovery, injury, or medical diagnoses.
-- [ ] Verify no battle-test scenario causes Coach to invent starting loads, completed workouts, schedule mappings, exercise history, or reasons for performance changes.
-- [ ] Add permanent regression assertions for every real reasoning/routing bug discovered during the campaign.
-- [ ] Emit a concise per-persona battle report inside CI so failures identify the lifter, week/checkpoint, prompt, expected behavior, and actual Coach output.
-- [ ] Run the full existing regression wall alongside the new battle suite before closing v0.64.
-- [ ] Record all discovered failure classes and fixes in the Coach evidence log before version bump/release.
+- [x] Build a deterministic persona matrix spanning beginner, intermediate, advanced, uncertain/vague, highly specific, strength-focused, hypertrophy-focused, and mixed-goal users.
+- [x] Stress natural-language routing with clean prompts, slang, misspellings, shorthand, contradictory requests, underspecified requests, and expert lifting grammar without allowing history/audit questions to become workout builds or vice versa.
+- [x] Simulate at least three months of completed training for multiple lifter archetypes instead of testing only isolated snapshots.
+- [x] Check Coach at weeks 4, 8, and 12 so longitudinal behavior can be evaluated before and after enough evidence accumulates.
+- [x] Include rapid beginner progression, slow intermediate progression, genuine multi-week stalls, temporary performance dips, inconsistent adherence, missed Program slots, and comeback/rebound patterns.
+- [x] Exercise full-body, upper/lower, push-pull-legs, strength/top-backoff, and mixed hypertrophy programming across the simulation set.
+- [x] Verify Coach does not call a short same-week cluster a plateau, does not erase a genuine recent stall because older weeks improved, and does not overreact to one poor session.
+- [x] Verify adaptive recommendations remain coherent across repeated sessions and do not oscillate irrationally between hold/reset/progress after one contradictory exposure.
+- [x] Verify history Q&A, deeper insights, Routine Control context, and Program Audit all agree on the same underlying synthetic history.
+- [x] Verify low adherence and missed sessions remain descriptive completion-pattern findings rather than motivation, recovery, injury, or medical diagnoses.
+- [x] Verify no battle-test scenario causes Coach to invent starting loads, completed workouts, schedule mappings, exercise history, or reasons for performance changes.
+- [x] Add permanent regression assertions for every real reasoning/routing bug discovered during the campaign.
+- [x] Emit a concise per-persona battle report inside CI so failures identify the lifter, week/checkpoint, prompt, expected behavior, and actual Coach output.
+- [x] Run the full existing regression wall alongside the new battle suite before closing v0.64.
+- [x] Record all discovered failure classes and fixes in the Coach evidence log before version bump/release.
 
 Locked behavior:
 - The battle harness must test the production bundle and production Coach functions, not a mocked replacement brain.
@@ -536,9 +536,12 @@ Locked behavior:
 - Completed history remains immutable during audits and questions.
 - Stress testing may expose product bugs; fixes are allowed, but the test must remain adversarial rather than being weakened to make Coach pass.
 
+
+**Milestone record:** Coach’s production bundle now runs through an adversarial 12-week simulation lab rather than only isolated unit snapshots. The permanent battle harness covers vague beginners, experienced lifters, advanced strength users, slang/typos/shorthand, explicit prescriptions, full-body, upper/lower, PPL, top-set/backoff strength work, rapid beginner progression, slow intermediate progression, genuine high-effort stalls, one-session dips with rebound, messy adherence, skipped Program slots, same-week false-plateau traps, a multi-week comeback after time off, and recommendation-stability checks across neighboring weeks. Weeks 4, 8, and 12 are used as longitudinal checkpoints. Adaptive progression, History Q&A, deeper insights, and Program Audit are cross-checked against the same synthetic history so they cannot quietly disagree. The campaign permanently guards against invented starting loads, fabricated causes, false weekday mappings, history mutation, overreaction to one bad session, and irrational hold/progress oscillation. Every real reasoning bug discovered while building the harness remains encoded as regression coverage rather than being removed to make the suite pass.
+
 After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
-Implemented locally through v0.63.0:
+Implemented locally through v0.64.0:
 - generate complete 2–6 day programs from natural-language frequency/split/schedule requests
 - refine a whole generated program's frequency, split, weekdays, session duration, goal, equipment, and muscle emphasis
 - preview approximate weekly primary/secondary set-equivalents
@@ -571,6 +574,11 @@ Implemented locally through v0.63.0:
 - detect explainable redundancy and distribution issues without inventing weekday-to-Routine mappings
 - surface Program-level stalls, performance dips, and positive progression continuity from the existing adaptive engine
 - hand Program findings into Routine Control, exercise Progress, Program editing, or Analytics without mutating the Program
+- run a production-bundle 12-week Coach battle simulation across beginner, intermediate, advanced, messy, comeback, dip/rebound, and low-adherence lifters
+- check longitudinal Coach behavior at weeks 4, 8, and 12 instead of only isolated snapshots
+- cross-check adaptive progression, History Q&A, Program Audit, and deeper insights against the same synthetic history
+- verify recommendations do not oscillate irrationally after one contradictory exposure
+- permanently regression-test every reasoning/routing failure discovered during battle hardening
 
 ### Product/safety guardrails
 - Recommendations should be framed as training suggestions, not medical advice.
