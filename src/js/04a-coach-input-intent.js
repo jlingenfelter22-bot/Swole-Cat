@@ -313,8 +313,9 @@ function coachParseTrainingExperience(text){
 }
 function coachParseLateralityPreference(text){
  const lower=coachNormalizeGymText(text);
+ if(/\b(?:together and separately|separately and together|individually and together|together and individually|both ways|mix unilateral and bilateral|mix bilateral and unilateral)\b/.test(lower))return 'mixed';
  const unilateral=/\b(?:unilateral|single[- ]arm|single[- ]leg|one arm at a time|one leg at a time|one side at a time|each arm individually|each leg individually|left and right separately|alternate arms|alternating arms|single sided)\b/.test(lower);
- const bilateral=/\b(?:bilateral|both arms together|both legs together|both sides together|both at once|together and separately|individually and together|separately and together)\b/.test(lower);
+ const bilateral=/\b(?:bilateral|both arms together|both legs together|both sides together|both at once)\b/.test(lower);
  if(unilateral&&bilateral)return 'mixed';
  if(unilateral)return 'unilateral';
  if(bilateral)return 'bilateral';
