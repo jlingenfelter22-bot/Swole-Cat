@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.60.1
+Version: v0.61.0
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -950,3 +950,71 @@ The v0.60 follow-up audit tightens implementation behavior without expanding the
 - Top/backoff routine editing uses role-specific fields and keeps top sets, backoff sets, role rep ranges, backoff percentage, and total working-set count coherent.
 - Natural-language tests now include top/backoff variants such as “back down sets,” “lighter sets,” percentage backoffs, and percentage drops.
 - These rules still describe logged training performance only. They do not infer fatigue, readiness, injury, overtraining, or a medical need to deload.
+
+
+## v0.61 saved-routine conversational control
+
+v0.61 applies Coach intelligence to an existing saved routine without regenerating it as a new workout.
+
+### Mutation boundary
+- Coach opens a cloned working copy of the selected routine.
+- Natural-language changes affect that working copy only until **Save Changes** is explicitly chosen.
+- Cancel discards the draft.
+- Coach-local undo and redo operate on routine snapshots and do not touch workout history.
+- Completed sessions are never rewritten when a routine changes.
+
+### Supported routine controls
+Coach can make focused changes such as:
+- add or remove an exercise
+- swap one exercise for another
+- move an exercise before or after another movement
+- change working-set count
+- change rep range
+- change rest time or explicit effort target
+- change training goal/mode where requested
+- fit a routine toward a requested session duration by trimming later/accessory volume conservatively rather than regenerating the workout
+
+Conversational references can resolve ordinal/context language such as:
+- “the second exercise”
+- “the last one”
+- “that one”
+- “move that before curls”
+
+Ambiguous references remain unresolved rather than being silently guessed.
+
+### Routine-aware additions and explanations
+When the user asks for a target rather than a named exercise, Coach ranks additions using the existing programming engine, including:
+- current routine muscle coverage
+- current movement families and redundancy
+- exercise preferences
+- the user’s own training history
+- the active training goal
+
+Coach explanations can describe primary/secondary muscle role, movement-family overlap, progression structure, and recent exercise-history status. These are programming explanations, not recovery or medical diagnoses.
+
+### Progression preservation
+Existing exercise configuration is preserved whenever compatible:
+- adaptive progression opt-in
+- progression strategy
+- top/backoff structure
+- set/rep/rest configuration
+- superset grouping
+- user-authored routine structure
+
+A swap to an incompatible movement may drop a top/backoff structure rather than pretending that the old progression model still fits the replacement.
+
+### v0.61 validation
+The dedicated production-bundle regression suite verifies:
+- draft-copy isolation before save
+- ordinal and conversational references
+- surgical set/rep edits
+- reorder + undo + redo
+- routine-aware explanations
+- compatible top/backoff preservation through swaps
+- target-based exercise additions
+- duration fitting
+- explicit save persistence
+- completed-history immutability
+- cancel/discard behavior
+
+The full legacy Swole Cat regression suite continues to run alongside this v0.61 coverage.

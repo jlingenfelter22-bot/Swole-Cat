@@ -282,7 +282,7 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 
 ## Phase 6 — Coach Swole Cat / Quick Build
 
-**Status: In progress through v0.60.1**
+**Status: In progress through v0.61.0**
 
 ### Product intent: useful, not bloated
 Coach Swole Cat should reinforce the core product philosophy rather than turn the app into a noisy AI product.
@@ -424,21 +424,23 @@ The user must always remain in control of the final workout.
 
 The next Coach Swolecat work proceeds in this order so each layer builds on the prior one instead of fragmenting the training brain.
 
-**v0.61 — Conversational Routine Control + Saved Routine Intelligence**
+**v0.61.0 — Conversational Routine Control + Saved Routine Intelligence**
 
-**Status: In progress**
+**Status: Complete**
 
 Implementation checklist:
-- [ ] Create a saved-routine Coach session that edits a copy first and only persists explicit Coach mutations to the selected routine.
-- [ ] Add routine-context parsing for named exercises plus conversational references such as “that one,” “the second exercise,” “the last one,” and “before/after curls.”
-- [ ] Support surgical add, remove, swap, reorder, set-count, rep-range, rest-time, goal/mode, and routine-duration adjustments without regenerating unrelated exercises.
-- [ ] Add Coach-local undo / redo snapshots for saved-routine mutations.
-- [ ] Add routine-aware explanations for exercise role, muscle coverage, progression structure, redundancy, and why a movement is currently in the routine.
-- [ ] Make additions and substitutions routine-aware using current movement families, muscle coverage, preferences, and training history.
-- [ ] Preserve adaptive progression flags, progression strategies, top/backoff structures, supersets, history continuity, preferences, and user-authored configuration through Coach edits.
-- [ ] Add dedicated v0.61 regression coverage for references, surgical edits, undo/redo, explanations, preservation, and saved-routine persistence.
-- [ ] Run the full production validation, Pages deployment, and Android build before closing v0.61.
-- [ ] Record the completed v0.61 milestone and bump the app/version metadata only after all checks pass.
+- [x] Create a saved-routine Coach session that edits a copy first and only persists explicit Coach mutations to the selected routine.
+- [x] Add routine-context parsing for named exercises plus conversational references such as “that one,” “the second exercise,” “the last one,” and “before/after curls.”
+- [x] Support surgical add, remove, swap, reorder, set-count, rep-range, rest-time, goal/mode, and routine-duration adjustments without regenerating unrelated exercises.
+- [x] Add Coach-local undo / redo snapshots for saved-routine mutations.
+- [x] Add routine-aware explanations for exercise role, muscle coverage, progression structure, redundancy, and why a movement is currently in the routine.
+- [x] Make additions and substitutions routine-aware using current movement families, muscle coverage, preferences, and training history.
+- [x] Preserve adaptive progression flags, progression strategies, top/backoff structures, supersets, history continuity, preferences, and user-authored configuration through Coach edits.
+- [x] Add dedicated v0.61 regression coverage for references, surgical edits, undo/redo, explanations, preservation, and saved-routine persistence.
+- [x] Run the full production validation, Pages deployment, and Android build before closing v0.61.
+- [x] Record the completed v0.61 milestone and bump the app/version metadata only after all checks pass.
+
+**Milestone record:** Saved routines now expose a **Coach Edit** path backed by a dedicated routine-control module. Coach works against a draft copy, understands named and ordinal/conversational references, performs minimal add/remove/swap/reorder/programming edits, can fit a routine toward a requested duration, explains exercise roles using current muscle/progression/history context, and supports local undo/redo before explicit save. Compatible adaptive progression and top/backoff configuration survive edits and substitutions. Completed workout history remains untouched. A dedicated production-bundle stress suite verifies surgical edits, conversational references, undo/redo, explanations, routine-aware target additions, duration fitting, progression preservation, explicit persistence, and cancel/discard behavior.
 
 Locked behavior:
 - Coach edits the existing routine instead of silently rebuilding it.
@@ -462,7 +464,7 @@ Locked behavior:
 
 After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
-Implemented locally through v0.60.1:
+Implemented locally through v0.61.0:
 - generate complete 2–6 day programs from natural-language frequency/split/schedule requests
 - refine a whole generated program's frequency, split, weekdays, session duration, goal, equipment, and muscle emphasis
 - preview approximate weekly primary/secondary set-equivalents
@@ -480,6 +482,11 @@ Implemented locally through v0.60.1:
 - suppress redundant movement-family variants in multi-target workouts
 - interpret warm-up-first, rest-time, RIR/RPE, reps-in-reserve, and last-set-AMRAP grammar
 - preserve programming role when swapping a generated exercise
+- open any saved routine in Coach Edit without converting it into a generated Coach-only format
+- surgically add/remove/swap/reorder exercises and edit sets, reps, rest, goal/mode, or requested duration
+- understand ordinal and conversational routine references and provide undo/redo before save
+- explain exercise role, muscle coverage, progression structure, redundancy, and recent history context inside the current routine
+- preserve compatible adaptive/top-backoff programming while leaving completed workout history unchanged
 
 ### Product/safety guardrails
 - Recommendations should be framed as training suggestions, not medical advice.
