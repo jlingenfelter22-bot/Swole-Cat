@@ -596,7 +596,7 @@ Locked behavior:
 Goal: make live gym use a guided sequence of obvious actions instead of a long scrolling workout form. At any moment, one exercise and one set are foregrounded; everything else stays reachable without demanding attention.
 
 Implementation order:
-1. [ ] **Add a focused live-workout state model.** Track the active exercise and active set explicitly, preserve unfinished exercises as pending rather than silently skipping them, and keep the normal Routine/session data structures as source of truth.
+1. [x] **Add a focused live-workout state model.** Track the active exercise and active set explicitly, preserve unfinished exercises as pending rather than silently skipping them, and keep the normal Routine/session data structures as source of truth.
 2. [ ] **Replace the vertical exercise stack with an exercise navigator + single active exercise canvas.** Show Exercise X of Y, the current exercise name, concise target context, and a dropdown/list to jump directly to any exercise.
 3. [ ] **Render one primary set card at a time.** Completing Set 1 should replace it in place with Set 2, then Set 3, without vertical scrolling; prior/upcoming sets remain accessible through a compact set-progress/history drawer.
 4. [ ] **Add gym-first defer / next / substitute controls.** Keep Substitute visible, allow Next Exercise to defer unfinished work without marking it skipped, and preserve explicit Skip as a separate intentional action.

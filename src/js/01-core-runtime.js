@@ -671,7 +671,7 @@ function startRoutineFresh(id,programId=null){
  const effectiveMode=programMode!=='inherit'?normalizeTrainingMode(programMode):normalizeTrainingMode(r.trainingMode);
  const now=new Date().toISOString();
  const active={
-   id:uid(),routineId:id,routineName:r.name,trainingMode:effectiveMode,programId:programId||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,pausedAt:null,pausedDurationMs:0,
+   id:uid(),routineId:id,routineName:r.name,trainingMode:effectiveMode,programId:programId||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,pausedAt:null,pausedDurationMs:0,focusExerciseIndex:0,focusSetIndex:0,deferredExerciseIndexes:[],
    exercises:r.exercises.map((re,routineIndex)=>{
      const prev=previousExercise(re.exerciseId);
      const mode=effectiveMode,config={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode};

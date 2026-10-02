@@ -728,11 +728,56 @@ function exerciseSetProgress(e){
  if(e.skipped)return {done,total,pct:100,complete:true,skipped:true};
  return {done,total,pct:total?Math.round(done/total*100):0,complete:total>0&&done===total,skipped:false};
 }
+function workoutFirstIncompleteSetIndex(e){
+ if(!e?.sets?.length)return -1;
+ const next=e.sets.findIndex(s=>!s.done);
+ return next>=0?next:Math.max(0,e.sets.length-1);
+}
+function normalizeWorkoutFocusState(w=state.activeWorkout){
+ if(!w?.exercises?.length)return -1;
+ if(!Array.isArray(w.deferredExerciseIndexes))w.deferredExerciseIndexes=[];
+ w.deferredExerciseIndexes=[...new Set(w.deferredExerciseIndexes.map(Number).filter(i=>Number.isInteger(i)&&i>=0&&i<w.exercises.length&&!w.exercises[i].skipped&&!exerciseSetProgress(w.exercises[i]).complete))];
+ let focus=Number(w.focusExerciseIndex);
+ const valid=Number.isInteger(focus)&&focus>=0&&focus<w.exercises.length&&!w.exercises[focus].skipped;
+ if(!valid){
+   focus=w.exercises.findIndex(e=>!e.skipped&&!exerciseSetProgress(e).complete);
+   if(focus<0)focus=w.exercises.findIndex(e=>!e.skipped);
+   if(focus<0)focus=0;
+ }
+ const focused=w.exercises[focus];
+ let setIndex=Number(w.focusSetIndex);
+ if(!Number.isInteger(setIndex)||setIndex<0||setIndex>=Math.max(1,focused?.sets?.length||0)||(focused?.sets?.[setIndex]?.done&&focused?.sets?.some(s=>!s.done))){
+   setIndex=workoutFirstIncompleteSetIndex(focused);
+ }
+ w.focusExerciseIndex=focus;
+ w.focusSetIndex=Math.max(0,setIndex);
+ w.exercises.forEach((e,i)=>e.expanded=i===focus);
+ return focus;
+}
 function workoutActiveExerciseIndex(w=state.activeWorkout){
  if(!w)return -1;
- const expanded=w.exercises.findIndex(e=>e.expanded&&!exerciseSetProgress(e).complete&&!e.skipped);
- if(expanded>=0)return expanded;
- return w.exercises.findIndex(e=>!exerciseSetProgress(e).complete&&!e.skipped);
+ return normalizeWorkoutFocusState(w);
+}
+function workoutFocusedSetIndex(w=state.activeWorkout){
+ const ei=normalizeWorkoutFocusState(w);if(ei<0)return -1;
+ return Math.max(0,Math.min(w.exercises[ei].sets.length-1,Number(w.focusSetIndex)||0));
+}
+function workoutExerciseDeferred(ei,w=state.activeWorkout){
+ return !!w&&Array.isArray(w.deferredExerciseIndexes)&&w.deferredExerciseIndexes.includes(ei);
+}
+function setWorkoutFocus(ei,si=null,{deferCurrent=true,render=true}={}){
+ const w=state.activeWorkout;if(!w?.exercises?.[ei]||w.exercises[ei].skipped)return false;
+ const current=normalizeWorkoutFocusState(w);
+ if(deferCurrent&&current>=0&&current!==ei&&!w.exercises[current].skipped&&!exerciseSetProgress(w.exercises[current]).complete){
+   if(!w.deferredExerciseIndexes.includes(current))w.deferredExerciseIndexes.push(current);
+ }
+ w.deferredExerciseIndexes=w.deferredExerciseIndexes.filter(i=>i!==ei);
+ w.focusExerciseIndex=ei;
+ w.focusSetIndex=si==null?workoutFirstIncompleteSetIndex(w.exercises[ei]):Math.max(0,Math.min(w.exercises[ei].sets.length-1,Number(si)||0));
+ w.exercises.forEach((e,i)=>e.expanded=i===ei);
+ saveActiveWorkout(true);
+ if(render)renderWorkout();
+ return true;
 }
 function workoutActiveSetText(e){
  if(!e)return '';

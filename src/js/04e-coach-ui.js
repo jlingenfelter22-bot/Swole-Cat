@@ -168,7 +168,7 @@ function coachActiveWorkoutFromDraft(draft=coachBuildDraft){
  const routine=coachDraftRoutine(draft,null);if(!routine)return null;
  const effectiveMode=normalizeTrainingMode(routine.trainingMode),now=new Date().toISOString();
  return {
-   id:uid(),routineId:null,routineName:routine.name,trainingMode:effectiveMode,programId:null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,pausedAt:null,pausedDurationMs:0,
+   id:uid(),routineId:null,routineName:routine.name,trainingMode:effectiveMode,programId:null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,pausedAt:null,pausedDurationMs:0,focusExerciseIndex:0,focusSetIndex:0,deferredExerciseIndexes:[],
    exercises:routine.exercises.map((re,routineIndex)=>{
      const prev=previousExercise(re.exerciseId),config={trainingGoal:'general',resetPercent:7.5,...re,routineMode:effectiveMode,mode:re.mode==='range'?'double':re.mode};
      const rec=buildRecommendation(config,prev,re.exerciseId);
