@@ -946,3 +946,21 @@
 #workout .workout-guidance-detail>.mini:first-child{padding-top:9px}
 #workout .guidance-coach-copy{margin-top:7px}
 #workout .compact-guidance-action{margin-top:8px}
+
+/* TODAY BETA READINESS // STEP 5
+   Finished cards recede; the active movement owns the visual hierarchy. */
+#workout .exercise-block.active-exercise{
+ border-color:color-mix(in srgb,var(--ex-accent) 68%,#315175)!important;
+ box-shadow:inset 4px 0 0 var(--ex-accent),0 14px 34px rgba(0,0,0,.28),0 0 0 1px color-mix(in srgb,var(--ex-accent) 16%,transparent)
+}
+#workout .exercise-block.active-exercise .exercise-title{color:#fff}
+#workout .exercise-block.complete-block.collapsed{
+ margin:6px 0 8px!important;
+ opacity:.64;
+ box-shadow:inset 3px 0 0 rgba(53,233,138,.48),0 3px 10px rgba(0,0,0,.10)
+}
+#workout .exercise-block.complete-block.collapsed .live-head{padding-top:9px;padding-bottom:9px}
+#workout .exercise-block.complete-block.collapsed .exercise-title{color:#a7b9c8;font-size:.94rem}
+#workout .exercise-block.complete-block.collapsed .exercise-number{
+ width:29px;height:29px;color:#8ce9a4;border-color:rgba(53,233,138,.34);background:rgba(53,233,138,.06)
+}

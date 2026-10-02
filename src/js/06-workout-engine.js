@@ -844,6 +844,7 @@ function renderWorkout(){
  if(!w){document.getElementById('workoutArea').innerHTML='<div class="empty">No active workout.</div>';return;}
  ensureExerciseAccordion();
  const counts=workoutCounts(),pct=counts.total?Math.round(counts.done/counts.total*100):0,workoutCoach=workoutCoachSignal();
+ const activeExerciseIndex=workoutActiveExerciseIndex(w);
  const html=`<div class="workout-title workout-console-title"><div><div class="workout-console-code"><span class="active-pulse"></span>SESSION // ACTIVE</div><div class="eyebrow">${esc(trainingModeLabel(w.trainingMode))}</div><h1 style="font-size:1.7rem">${esc(w.routineName)}</h1><div class="mini">${counts.activeExercises} active exercise${counts.activeExercises===1?'':'s'}${counts.skipped?` · ${counts.skipped} skipped`:''} · ${counts.total} programmed sets</div><div class="autosave-note">✓ Changes save automatically on this device</div></div><button class="btn small danger workout-cancel-btn" onclick="cancelWorkout()" aria-label="Cancel active workout">Cancel</button></div>
  <div class="workout-overview">
    <div class="row"><div><b>${counts.done} of ${counts.total} sets complete</b><div class="mini">Tap an exercise to open the full sets and coaching. Use Manage Workout to reorder, skip, or remove movements.</div></div><span class="tag">${pct}%</span></div>
@@ -858,7 +859,7 @@ function renderWorkout(){
    const ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId),coach=coachSignal(e.exerciseId,e.config);
    const firstWorking=firstWorkingSetIndex(e),firstTarget=liveSetTarget(e,firstWorking,prev),plateText=plateLoadText(firstTarget.weight,ex),warmups=warmupGuide(firstTarget.weight,ex);
    const prog=exerciseSetProgress(e),status=exerciseStatus(e,ei),compactTarget=compactTargetText(e,ex,prev),superset=supersetMeta(ei);
-   return `<div id="workoutExercise-${ei}" class="card live-card exercise-block tone-${ei%4} ${e.expanded?'':'collapsed'} ${prog.complete?'complete-block':''} ${superset?'superset-member':''} ${e.skipped?'skipped-exercise':''}">
+   return `<div id="workoutExercise-${ei}" class="card live-card exercise-block tone-${ei%4} ${e.expanded?'':'collapsed'} ${prog.complete?'complete-block':''} ${ei===activeExerciseIndex?'active-exercise':''} ${superset?'superset-member':''} ${e.skipped?'skipped-exercise':''}">
     <div class="live-head exercise-head-click" onclick="toggleExercisePanel(${ei})">
       <div class="row">
         <div class="exercise-identity">
