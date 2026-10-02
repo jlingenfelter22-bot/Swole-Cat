@@ -78,6 +78,7 @@ function coachProgramScheduleText(draft=coachProgramBuildDraft){
 }
 function coachProgramRoutineFromDay(day,draft=coachProgramBuildDraft,id=uid()){
  const d=day.defaults,r=draft.request;
+ const supersetMap=typeof coachTimeCompressionPlan==='function'?coachTimeCompressionPlan(day.selectedIds.map(exById).filter(Boolean),day.request):{};
  return {
    id,name:`${coachProgramName(r,draft.intent)} · ${day.label}`,
    description:`Generated locally by Coach Swolecat as part of a ${draft.intent.frequency}-day ${coachProgramSplitLabel(draft.intent.split)} program. Evidence rules: ACSM 2026 resistance-training position stand + NSCA program-design framework.`,
@@ -87,7 +88,8 @@ function coachProgramRoutineFromDay(day,draft=coachProgramBuildDraft,id=uid()){
      return {
        exerciseId,sets:p.sets,minReps:p.minReps,maxReps:p.maxReps,increment:state.settings.defaultIncrement,
        mode:'double',trainingGoal:d.goal,resetPercent:7.5,restSeconds:p.restSeconds,
-       targetRIR:Number.isFinite(Number(p.targetRIR))?Number(p.targetRIR):null
+       targetRIR:Number.isFinite(Number(p.targetRIR))?Number(p.targetRIR):null,
+       supersetGroup:supersetMap[exerciseId]||null
      };
    })
  };
