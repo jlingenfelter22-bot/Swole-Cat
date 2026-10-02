@@ -168,13 +168,18 @@ function coachTokenSimilarity(a,b){
  const oneWay=(from,to)=>from.reduce((sum,token)=>sum+Math.max(...to.map(t=>coachStringSimilarity(token,t))),0)/from.length;
  return (oneWay(aa,bb)+oneWay(bb,aa))/2;
 }
+let COACH_LANGUAGE_PHRASE_CACHE={revision:-1,rows:[]};
 function coachExerciseLanguagePhrases(){
- const rows=[];
- visibleExercises().forEach(ex=>rows.push({phrase:coachNormalizeGymText(ex.name),ex,source:'name'}));
+ const revision=typeof stateRevision==='number'?stateRevision:0;
+ if(COACH_LANGUAGE_PHRASE_CACHE.revision===revision&&COACH_LANGUAGE_PHRASE_CACHE.rows.length)return COACH_LANGUAGE_PHRASE_CACHE.rows;
+ const visible=visibleExercises(),byName=new Map(visible.map(ex=>[coachNormalizeGymText(ex.name),ex])),rows=[];
+ visible.forEach(ex=>rows.push({phrase:coachNormalizeGymText(ex.name),ex,source:'name'}));
+ const learned=coachLearnedAliases();
  Object.entries(coachAllAliases()).forEach(([alias,name])=>{
-   const ex=visibleExercises().find(x=>coachNormalizeGymText(x.name)===coachNormalizeGymText(name));
-   if(ex)rows.push({phrase:coachNormalizeGymText(alias),ex,source:coachLearnedAliases()[coachNormalizeGymText(alias)]?'learned':'alias'});
+   const normalizedAlias=coachNormalizeGymText(alias),ex=byName.get(coachNormalizeGymText(name));
+   if(ex)rows.push({phrase:normalizedAlias,ex,source:learned[normalizedAlias]?'learned':'alias'});
  });
+ COACH_LANGUAGE_PHRASE_CACHE={revision,rows};
  return rows;
 }
 function coachUnderstandExercisePhrase(phrase,ids=null){
