@@ -779,21 +779,6 @@ function setWorkoutFocus(ei,si=null,{deferCurrent=true,render=true}={}){
  if(render)renderWorkout();
  return true;
 }
-={}){
- const w=state.activeWorkout;if(!w?.exercises?.[ei]||w.exercises[ei].skipped)return false;
- const current=normalizeWorkoutFocusState(w);
- if(deferCurrent&&current>=0&&current!==ei&&!w.exercises[current].skipped&&!exerciseSetProgress(w.exercises[current]).complete){
-   if(!w.deferredExerciseIndexes.includes(current))w.deferredExerciseIndexes.push(current);
- }
- w.deferredExerciseIndexes=w.deferredExerciseIndexes.filter(i=>i!==ei);
- w.focusExerciseIndex=ei;
- w.focusSetIndex=si==null?workoutFirstIncompleteSetIndex(w.exercises[ei]):Math.max(0,Math.min(w.exercises[ei].sets.length-1,Number(si)||0));
- w.exercises.forEach((e,i)=>e.expanded=i===ei);
- saveActiveWorkout(true);
- if(render)renderWorkout();
- return true;
-}
-
 function syncWorkoutStickyOffsets(){
  const header=document.querySelector('header');
  const headerHeight=Math.max(0,Math.round(header?.getBoundingClientRect().height||0));
