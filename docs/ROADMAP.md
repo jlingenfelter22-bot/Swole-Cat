@@ -282,7 +282,7 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 
 ## Phase 6 — Coach Swole Cat / Quick Build
 
-**Status: In progress through v0.61.0**
+**Status: In progress through v0.62.0**
 
 ### Product intent: useful, not bloated
 Coach Swole Cat should reinforce the core product philosophy rather than turn the app into a noisy AI product.
@@ -449,23 +449,25 @@ Locked behavior:
 - Workout history remains separate from routine structure. Editing a routine never rewrites completed sessions.
 - Existing progression intelligence remains authoritative unless the user explicitly changes that programming.
 
-**v0.62 — Training History Q&A + Deeper Coach Insights**
+**v0.62.0 — Training History Q&A + Deeper Coach Insights**
 
-**Status: In progress**
+**Status: Complete**
 
 Implementation checklist:
-- [ ] Add a deterministic history-question router before workout/program generation so Coach can distinguish “what did I bench last time?” from “build me a bench workout.”
-- [ ] Answer exercise-specific last-session questions with exact logged date, working-set load/reps, effort when available, and a direct history/progress handoff.
-- [ ] Answer exercise best/PR and progression questions from the user’s own logged history without inventing population standards.
-- [ ] Answer global questions about what is progressing, holding, stalled, or recently down using the v0.60 multi-week progression classifications.
-- [ ] Add consistency summaries across useful recent windows using completed-session history only.
-- [ ] Add muscle/movement recency questions such as “what haven’t I trained lately?” and “when did I last train legs/chest/back?”
-- [ ] Replace the single neglected-area Home insight with a ranked deeper-insight engine covering progression, stalls, neglected areas, and consistency signals.
-- [ ] Give actionable insights a safe handoff into exercise progress, workout generation, or Coach routine control without silently changing the user’s program.
-- [ ] Keep observations and interpretations explicitly separated; never infer soreness, fatigue, injury, recovery state, overtraining, or medical readiness from logs.
-- [ ] Add dedicated v0.62 regression coverage for question routing, exact-history answers, progression summaries, consistency, neglected areas, insights, and action handoffs.
-- [ ] Run the full production validation, Pages deployment, and Android build before closing v0.62.
-- [ ] Record the completed v0.62 milestone and bump app/version metadata only after all checks pass.
+- [x] Add a deterministic history-question router before workout/program generation so Coach can distinguish “what did I bench last time?” from “build me a bench workout.”
+- [x] Answer exercise-specific last-session questions with exact logged date, working-set load/reps, effort when available, and a direct history/progress handoff.
+- [x] Answer exercise best/PR and progression questions from the user’s own logged history without inventing population standards.
+- [x] Answer global questions about what is progressing, holding, stalled, or recently down using the v0.60 multi-week progression classifications.
+- [x] Add consistency summaries across useful recent windows using completed-session history only.
+- [x] Add muscle/movement recency questions such as “what haven’t I trained lately?” and “when did I last train legs/chest/back?”
+- [x] Replace the single neglected-area Home insight with a ranked deeper-insight engine covering progression, stalls, neglected areas, and consistency signals.
+- [x] Give actionable insights a safe handoff into exercise progress, workout generation, or Coach routine control without silently changing the user’s program.
+- [x] Keep observations and interpretations explicitly separated; never infer soreness, fatigue, injury, recovery state, overtraining, or medical readiness from logs.
+- [x] Add dedicated v0.62 regression coverage for question routing, exact-history answers, progression summaries, consistency, neglected areas, insights, and action handoffs.
+- [x] Run the full production validation, Pages deployment, and Android build before closing v0.62.
+- [x] Record the completed v0.62 milestone and bump app/version metadata only after all checks pass.
+
+**Milestone record:** Coach’s main inputs now route clear history questions before workout generation. It can answer exact last-session exercise questions, heaviest logged working sets, exercise-specific multi-week trend/stall questions, global progressing/stalled summaries, recent training consistency, muscle-area recency, and broad neglected-area questions from completed local logs. The Home insight system now ranks high-effort plateaus, meaningful performance dips, neglected push/pull/lower-body areas, progressing exercises, and consistency signals instead of exposing only the original neglected-area rule. Insight actions hand off to exercise progress, Coach routine control, Analytics, or an opt-in generated workout. The implementation reuses the existing history, muscle-scoring, and v0.60 adaptive-progression layers rather than creating parallel analytics. During hardening, the parser was fixed for “stalled/stalling” wording and normalized apostrophe/pronoun forms such as “what haven’t I trained lately?” while preserving the original v0.54 Home insight display/action contract.
 
 Locked behavior:
 - Logged history is authoritative for historical answers.
@@ -483,7 +485,7 @@ Locked behavior:
 
 After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
-Implemented locally through v0.61.0:
+Implemented locally through v0.62.0:
 - generate complete 2–6 day programs from natural-language frequency/split/schedule requests
 - refine a whole generated program's frequency, split, weekdays, session duration, goal, equipment, and muscle emphasis
 - preview approximate weekly primary/secondary set-equivalents
@@ -506,6 +508,10 @@ Implemented locally through v0.61.0:
 - understand ordinal and conversational routine references and provide undo/redo before save
 - explain exercise role, muscle coverage, progression structure, redundancy, and recent history context inside the current routine
 - preserve compatible adaptive/top-backoff programming while leaving completed workout history unchanged
+- route clear training-history questions through Coach without accidentally creating workouts
+- answer exact last-session, best-set, progression, stall, consistency, recency, and neglected-area questions from completed local logs
+- rank deeper Home insights across stalls, performance dips, neglected areas, progressing exercises, and consistency
+- hand history insights into Progress, Analytics, generated workouts, or Coach routine review only when the user chooses the action
 
 ### Product/safety guardrails
 - Recommendations should be framed as training suggestions, not medical advice.

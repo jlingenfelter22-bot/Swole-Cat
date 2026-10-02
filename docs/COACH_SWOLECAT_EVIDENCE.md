@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.61.0
+Version: v0.62.0
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -1018,3 +1018,99 @@ The dedicated production-bundle regression suite verifies:
 - cancel/discard behavior
 
 The full legacy Swole Cat regression suite continues to run alongside this v0.61 coverage.
+
+
+## v0.62 training-history Q&A and deeper insights
+
+v0.62 lets Coach answer questions about the user’s own completed Swole Cat history before falling through to workout/program generation.
+
+### History-question routing
+
+Coach distinguishes clear history questions from creation requests.
+
+Examples handled as history:
+- “what did I bench last time?”
+- “what is my bench PR?”
+- “how is my bench progressing?”
+- “has my squat stalled?”
+- “what exercises are stalled?”
+- “what am I progressing on?”
+- “how consistent have I been the last 4 weeks?”
+- “when did I last train legs?”
+- “what haven’t I trained lately?”
+
+A creation request such as “bench press workout 45 minutes” still routes to workout creation.
+
+### Historical answer sources
+
+Historical answers reuse the same completed-session data structures used by History and Analytics.
+
+Exercise answers can include:
+- exact most-recent completed working sets
+- date and routine name
+- load, reps, and logged RIR where available
+- heaviest logged working set
+- multi-week status from the v0.60 adaptive progression profile
+
+Global trend answers summarize only exercises with sufficient repeated history.
+
+### Deeper Coach Insights
+
+Home’s original neglected-area signal is now backed by a ranked insight engine.
+
+Current candidate order favors:
+1. high-effort multi-week plateaus
+2. meaningful performance dips
+3. broad neglected push/pull/lower-body coverage while other training continued
+4. clearly progressing exercises
+5. recent consistency summaries
+
+The existing v0.54 neglected-area behavior remains compatible, including suppression during active workouts and active Programs.
+
+### User-control handoffs
+
+History answers and insights can offer opt-in actions such as:
+- open exercise progress
+- review a saved routine through v0.61 Coach routine control
+- open Analytics
+- build a workout for a neglected area
+
+No insight silently changes a Routine or Program.
+
+### Interpretation boundary
+
+Coach can describe:
+- progressing
+- consolidating
+- plateau-watch
+- high-effort plateau
+- recent performance dip
+- recent training frequency
+- time since an area last appeared in completed logs
+
+Coach does not infer:
+- soreness
+- fatigue
+- injury
+- recovery state
+- overtraining
+- medical readiness
+- a requirement to train an area today
+
+### v0.62 validation
+
+The dedicated production-bundle regression suite verifies:
+- history-question routing versus workout creation
+- exact last-exercise answers
+- best/heaviest logged working-set answers
+- exercise-specific progression and plateau summaries
+- global progressing and stalled summaries
+- consistency windows
+- muscle-area recency
+- neglected-area detection
+- ranked Home insight priority
+- safe action handoffs
+- compatibility with the original v0.54 Home insight contract
+- normalized phrasing such as stalled/stalling and apostrophe/pronoun variants
+
+The full Swole Cat regression suite continues to run alongside v0.62 coverage.
