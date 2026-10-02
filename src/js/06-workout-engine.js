@@ -384,62 +384,59 @@ function setWorkoutSetType(ei,si,type){
  renderWorkout();
 }
 function addWorkoutSet(ei,type='working'){
- const e=state.activeWorkout?.exercises?.[ei];if(!e)return;
+ const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei];if(!e)return;
  type=['working','warmup','drop','failure'].includes(type)?type:'working';
- const working=progressionSets({...e,sets:e.sets.map(s=>({...s,done:true}))});
  const existingWorking=workingSetIndexes(e);
  const prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId);
  let weight=0,reps=e.config.minReps;
  if(type==='working'){
-   const wi=existingWorking.length;
-   const lastWorking=existingWorking.length?e.sets[existingWorking.at(-1)]:null;
-   weight=Number(rec.weights?.[wi]??rec.weight??lastWorking?.weight??0);
-   reps=Number(rec.targetReps?.[wi]??lastWorking?.reps??e.config.minReps);
+   const wi=existingWorking.length,lastWorking=existingWorking.length?e.sets[existingWorking.at(-1)]:null;
+   weight=Number((rec.weights&&rec.weights[wi])??rec.weight??(lastWorking&&lastWorking.weight)??0);
+   reps=Number((rec.targetReps&&rec.targetReps[wi])??(lastWorking&&lastWorking.reps)??e.config.minReps);
  }else{
    const source=existingWorking.length?e.sets[existingWorking.at(-1)]:e.sets.at(-1);
-   weight=Number(source?.weight)||0;
-   reps=Number(source?.reps)||e.config.minReps;
+   weight=Number(source&&source.weight)||0;reps=Number(source&&source.reps)||e.config.minReps;
  }
- const item={weight:roundLoad(weight),reps:Math.max(1,Math.round(reps)),done:false,rir:'',type,pr:'',
+ const item={weight:roundLoad(weight),reps:Math.max(1,Math.round(reps)),done:false,rir:'',type:type,pr:'',
    role:type==='working'&&typeof coachAdaptiveSetRole==='function'?coachAdaptiveSetRole(e.config,existingWorking.length):undefined};
  let at=e.sets.length;
  if(type==='warmup')at=existingWorking.length?existingWorking[0]:0;
  else if(type==='working'&&existingWorking.length)at=existingWorking.at(-1)+1;
- e.sets.splice(at,0,item);
- e.expanded=true;
+ e.sets.splice(at,0,item);w.focusExerciseIndex=ei;w.focusSetIndex=at;e.expanded=true;
+ w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==ei});
  if(type==='working')markWorkoutStructureDirty();else saveActiveWorkout();
- renderWorkout();haptic(10);
- showToast(`${setTypeLabel(type)} added`);
- setTimeout(()=>document.getElementById(`workoutExercise-${ei}`)?.scrollIntoView({behavior:'smooth',block:'start'}),60);
+ renderWorkout();haptic(10);showToast(setTypeLabel(type)+' added');
 }
 function removeWorkoutSet(ei,si){
- const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];if(!set)return;
+ const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],set=e&&e.sets&&e.sets[si];if(!set)return;
  if(e.sets.length<=1){showToast('Keep at least one set in the exercise');return}
  if(isProgressionSet(set)&&workingSetIndexes(e).length<=1){showToast('Keep at least one working set');return}
- const remove=()=>{
-   const wasWorking=isProgressionSet(set);
-   e.sets.splice(si,1);
+ const remove=function(){
+   const wasWorking=isProgressionSet(set);e.sets.splice(si,1);
+   w.focusExerciseIndex=ei;w.focusSetIndex=Math.max(0,Math.min(si,e.sets.length-1));
    if(wasWorking)markWorkoutStructureDirty();else saveActiveWorkout();
    renderWorkout();showToast('Set removed');
  };
- if(set.done)confirmAction('Remove completed set?','This set is already marked complete. Removing it will delete it from this active workout.',remove);
- else remove();
+ if(set.done)confirmAction('Remove completed set?','This set is already marked complete. Removing it will delete it from this active workout.',remove);else remove();
 }
 function moveWorkoutSet(ei,si,dir){
- const e=state.activeWorkout?.exercises?.[ei];if(!e)return;
+ const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei];if(!e)return;
  const ni=si+dir;if(ni<0||ni>=e.sets.length)return;
  [e.sets[si],e.sets[ni]]=[e.sets[ni],e.sets[si]];
+ if(w.focusExerciseIndex===ei&&w.focusSetIndex===si)w.focusSetIndex=ni;
+ else if(w.focusExerciseIndex===ei&&w.focusSetIndex===ni)w.focusSetIndex=si;
  saveActiveWorkout();renderWorkout();haptic(8);
 }
 function addSuggestedWarmups(ei){
- const e=state.activeWorkout?.exercises?.[ei],ex=e?exById(e.exerciseId):null;if(!e||!ex)return;
- const existing=e.sets.filter(s=>setType(s)==='warmup');
+ const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],ex=e?exById(e.exerciseId):null;if(!e||!ex)return;
+ const existing=e.sets.filter(function(s){return setType(s)==='warmup'});
  if(existing.length){closeModal();showToast('Warm-up sets are already in this exercise');return}
  const prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),suggested=warmupGuide(t.weight,ex);
  if(!suggested.length){closeModal();showToast('No warm-up ramp available for this target');return}
  const at=firstWorkingSetIndex(e);
- e.sets.splice(at,0,...suggested.map(s=>({weight:s.weight,reps:s.reps,done:false,rir:'',type:'warmup',pr:''})));
- saveActiveWorkout();closeModal();renderWorkout();showToast(`${suggested.length} warm-up sets added`);
+ e.sets.splice.apply(e.sets,[at,0].concat(suggested.map(function(s){return {weight:s.weight,reps:s.reps,done:false,rir:'',type:'warmup',pr:''}})));
+ w.focusExerciseIndex=ei;w.focusSetIndex=at;w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==ei});
+ saveActiveWorkout();closeModal();renderWorkout();showToast(suggested.length+' warm-up sets added');
 }
 
 function workoutSupersetGroups(){
@@ -1015,14 +1012,29 @@ function focusedExerciseCanvasHtml(w,ei){
   focusedSetRailHtml(e,ei,si)+focusedSetCardHtml(e,ei,si,ex,prev)+
   '<div class="focus-exercise-footer">'+(prog.complete?'<button class="btn secondary" onclick="deferFocusedExercise()">Go to unfinished exercise</button>':'<span>'+e.sets.filter(function(s){return s.done}).length+' of '+e.sets.length+' sets complete</span>')+'</div></div>';
 }
+
+let workoutKeyboardAnchorBound=false;
+function anchorFocusedWorkoutSet(behavior='auto'){
+ const card=document.querySelector('.focus-set-card');if(!card)return;
+ const header=Math.max(0,Math.round((document.querySelector('header')&&document.querySelector('header').getBoundingClientRect().height)||0));
+ const nav=Math.max(0,Math.round((document.querySelector('.focus-exercise-nav')&&document.querySelector('.focus-exercise-nav').getBoundingClientRect().height)||0));
+ const top=Math.max(0,window.scrollY+card.getBoundingClientRect().top-header-nav-10);
+ window.scrollTo({top:top,behavior:behavior});
+}
+function bindWorkoutKeyboardAnchor(){
+ if(workoutKeyboardAnchorBound||!window.visualViewport)return;
+ workoutKeyboardAnchorBound=true;
+ window.visualViewport.addEventListener('resize',function(){
+   const active=document.activeElement;
+   if(!active||!active.closest||!active.closest('.focus-set-card'))return;
+   setTimeout(function(){anchorFocusedWorkoutSet('auto')},70);
+ });
+}
 function workoutNumberFocus(el){
  smartNumberFocus(el);
- const anchor=document.querySelector('.focus-set-card');
  setTimeout(function(){
-   if(!anchor||document.activeElement!==el)return;
-   const header=Math.max(0,Math.round((document.querySelector('header')&&document.querySelector('header').getBoundingClientRect().height)||0));
-   const top=Math.max(0,window.scrollY+anchor.getBoundingClientRect().top-header-12);
-   window.scrollTo({top:top,behavior:'smooth'});
+   if(document.activeElement!==el)return;
+   anchorFocusedWorkoutSet('smooth');
  },220);
 }
 
@@ -1042,6 +1054,7 @@ function renderWorkout(){
  html+=focus>=0?focusedExerciseCanvasHtml(w,focus):'<div class="empty">No available exercise.</div>';
  html+='<div class="focus-workout-footer"><button class="btn secondary" onclick="openAddWorkoutExercise()">+ Add Exercise</button><button class="btn green" onclick="finishWorkout()">Finish Workout</button></div>';
  document.getElementById('workoutArea').innerHTML=html;
+ bindWorkoutKeyboardAnchor();
  requestAnimationFrame(syncWorkoutStickyOffsets);
 }
 

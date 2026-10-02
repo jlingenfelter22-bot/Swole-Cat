@@ -1187,3 +1187,17 @@
  #workout .focus-exercise-actions .btn{font-size:.66rem;padding-left:6px;padding-right:6px}
  #workout .focus-exercise-canvas{padding:9px}
 }
+
+/* v0.65 Focus Mode unfinished-work and keyboard polish */
+.unfinished-work-list{display:grid;gap:8px;margin-top:12px}
+.unfinished-work-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px;border:1px solid rgba(79,98,127,.48);border-radius:10px;background:rgba(12,19,30,.82)}
+.unfinished-work-copy{min-width:0}
+.unfinished-work-copy b{display:block;color:#eef6ff;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unfinished-work-copy span{display:block;margin-top:3px;color:#8fa1b5;font-size:.68rem}
+.unfinished-work-actions{display:flex;gap:6px}
+.unfinished-work-actions .btn{min-height:38px}
+#workout .focus-set-card input:focus,#workout .focus-set-card select:focus{scroll-margin-top:150px}
+@media(max-width:430px){
+ .unfinished-work-row{grid-template-columns:1fr}
+ .unfinished-work-actions{display:grid;grid-template-columns:1fr 1fr}
+}
