@@ -158,15 +158,6 @@ function defaultWorkoutExerciseConfig(){
    restSeconds:120
  };
 }
-={}){
- setTimeout(()=>{
-   const el=document.getElementById(`workoutExercise-${index}`);
-   if(!el)return;
-   if(typeof syncWorkoutStickyOffsets==='function')syncWorkoutStickyOffsets();
-   const top=Math.max(0,window.scrollY+el.getBoundingClientRect().top-workoutScrollOffset());
-   window.scrollTo({top,behavior});
- },110);
-}
 function addExerciseToWorkout(exerciseId,permanent){
  const w=state.activeWorkout;if(!w)return;
  const ex=exById(exerciseId);if(!ex)return;
