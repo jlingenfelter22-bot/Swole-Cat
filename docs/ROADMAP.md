@@ -618,7 +618,7 @@ Locked behavior:
 
 ## v0.65.1 — Focus Mode Mid-Workout QoL
 
-**Status: In progress**
+**Status: Complete**
 
 Goal: keep the new one-exercise/one-set Focus Mode intact while making the few mid-workout utilities a lifter may suddenly need immediately discoverable and reachable without leaving the workout.
 
@@ -627,7 +627,7 @@ Implementation order:
 2. [x] **Add instant How To / form help inside Focus Mode.** Put a clear form-help control in the focused exercise header and open the existing exercise guidance as an overlay/sheet without navigating away or losing workout state.
 3. [x] **Strengthen exercise-switcher discoverability.** Make the exercise navigator chevron/control larger, higher contrast, and easier to hit while keeping the full header tappable; add a subtle one-time first-use hint if it improves clarity without becoming permanent clutter.
 4. [x] **Preserve exact workout state through overlays/navigation.** Closing form help or the exercise list must return to the same focused exercise/set and must not mutate set entries, pending state, timers, saved routines, or completed history.
-5. [ ] **Add QoL regressions and cut a fresh beta build.** Permanently test nav-docked timer behavior, in-workout form overlay, exercise-switcher affordance, focus-state preservation, full regression wall, Pages, and Android before release.
+5. [x] **Add QoL regressions and cut a fresh beta build.** Permanently test nav-docked timer behavior, in-workout form overlay, exercise-switcher affordance, focus-state preservation, full regression wall, Pages, and Android before release.
 
 Locked behavior:
 - Focus Mode remains one focused exercise and one focused set.
@@ -639,9 +639,11 @@ Locked behavior:
 - No QoL overlay or navigator action may silently change workout data.
 - Every completed step is checked off here before moving on.
 
+**Milestone record:** Focus Mode mid-workout QoL is complete. The rest timer now measures the actual persistent bottom-navigation height and docks into the nav's upper edge with a compact rise/retract treatment instead of floating over workout content; quick +30 and expandable −30/+30/Skip controls remain intact. The focused exercise header now exposes a gym-friendly **How To** information control that opens Swole Cat's existing public-source form guide inside the workout modal sheet, with an explicit Back to workout action and no route change or Focus Mode rerender. Exercise switching is more discoverable through a larger **Switch** affordance and stronger chevron while the full header remains tappable. Opening/closing the exercise list, form overlay, and rest controls preserves the exact focused exercise/set, pending state, saved Routine, and completed History. Dedicated v0.65.1 production-bundle coverage now verifies nav-height timer docking, form-guide overlay reuse, switcher discoverability, state immutability, and legacy Focus Mode/workout compatibility. The implementation checkpoint passed the full validation wall, GitHub Pages deployment, and Android build before this version bump.
+
 After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
-Implemented locally through v0.65.0:
+Implemented locally through v0.65.1:
 - generate complete 2–6 day programs from natural-language frequency/split/schedule requests
 - refine a whole generated program's frequency, split, weekdays, session duration, goal, equipment, and muscle emphasis
 - preview approximate weekly primary/secondary set-equivalents
