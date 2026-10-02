@@ -566,7 +566,7 @@ Locked behavior:
 
 ## Today — Beta Readiness Pass 2: First-Time User Clarity
 
-**Status: In progress**
+**Status: Complete — v0.64.2**
 
 Goal: reduce live-workout cognitive load for a first-time outside tester while preserving the intelligence, progression, and history behavior already validated.
 
@@ -575,7 +575,7 @@ Implementation order:
 2. [x] **Audit and harden rep-ceiling progression.** A movement may legitimately use a high rep range, but Coach must treat the programmed max as a ceiling: once enough programmed sets reach the top of that range at appropriate effort, increase load and return toward the lower end instead of continuing an unbounded rep chase.
 3. [x] **Redesign the live rest timer.** Replace the oversized persistent tray with a compact rest control that can expand on demand; automatically dismiss it when no programmed work remains and never require the user to hit Skip after the final workout set.
 4. [x] **Correct front-delt heat-map anatomy.** Verify the semantic mapping and SVG geometry so front delts highlight the anterior shoulder cap, not the upper-trap/neck region.
-5. [ ] **Run a first-time-user density pass, regressions, and fresh beta build.** Quiet secondary controls where sensible, preserve the core logging path, add permanent coverage for the fixes above, run the full regression wall/Pages/Android, then cut a newer beta APK.
+5. [x] **Run a first-time-user density pass, regressions, and fresh beta build.** Quiet secondary controls where sensible, preserve the core logging path, add permanent coverage for the fixes above, run the full regression wall/Pages/Android, then cut a newer beta APK.
 
 Locked behavior:
 - Do not globally cap all exercises at 15 reps. Progression must respect each exercise's programmed rep range.
@@ -586,6 +586,8 @@ Locked behavior:
 - Secondary controls are visually quieter, not removed.
 - No beta-polish change may rewrite completed History, saved Routine programming, or Coach intelligence state unless the specific progression rule requires a deliberate logic fix.
 - Every completed step is checked off here before moving on so a new chat can reconstruct the exact state.
+
+**Milestone record:** The second first-time-user beta polish pass is complete. The live Weight/Reps/RIR row now reserves a readable RIR column on narrow phones instead of letting the enlarged rep controls collide with it. Rep-first progression now treats each saved movement’s programmed max as a hard Coach ceiling: in-session targets cannot prescribe above that max, and once every required set reaches the ceiling at one stable load, an adaptive hold cannot pin the exercise there instead of allowing the configured load increase and rep reset. The live rest timer is now a compact pill with one-tap +30 and expandable controls; it never starts after the true final programmed set and is defensively cleared on cancel/finish. The front-delt anatomy paths were redrawn onto the anterior shoulder cap while preserving the semantic front_delts mapping. Secondary exercise tools now live behind an Exercise options disclosure row unless an active override/superset makes them immediately relevant. A dedicated production-bundle regression permanently checks the RIR layout contract, rep-ceiling behavior, compact/final-aware timer, progressive disclosure, and bilateral front-delt geometry. The implementation checkpoint passed the full validation wall, Pages deployment, and Android build before this version bump.
 
 After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
