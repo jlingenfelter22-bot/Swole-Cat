@@ -30,6 +30,8 @@ const JS_SOURCES = [
   'src/js/06-workout-engine.js',
   'src/js/07-history-editor.js',
   'src/js/08-exercise-tools.js',
+  'src/js/10a-cloud-config.js',
+  'src/js/10b-cloud-identity.js',
   'src/js/09-settings-ui-bootstrap.js'
 ];
 const CSS_SOURCES = [
@@ -84,6 +86,20 @@ if (!appJs.includes('__SWOLE_CAT_VERSION__')) {
   throw new Error('Modular JavaScript is missing the app version token');
 }
 appJs = appJs.replaceAll('__SWOLE_CAT_VERSION__', version);
+const cloudBuildValues = {
+  '__SWOLE_CAT_SUPABASE_URL__': process.env.SWOLE_CAT_SUPABASE_URL || '',
+  '__SWOLE_CAT_SUPABASE_PUBLISHABLE_KEY__': process.env.SWOLE_CAT_SUPABASE_PUBLISHABLE_KEY || '',
+  '__SWOLE_CAT_GOOGLE_WEB_CLIENT_ID__': process.env.SWOLE_CAT_GOOGLE_WEB_CLIENT_ID || ''
+};
+const escapeJsSingleQuotedValue = value => String(value)
+  .replaceAll('\\', '\\\\')
+  .replaceAll("'", "\\'")
+  .replaceAll('\r', '\\r')
+  .replaceAll('\n', '\\n');
+for (const [token, value] of Object.entries(cloudBuildValues)) {
+  appJs = appJs.replaceAll(token, escapeJsSingleQuotedValue(value));
+}
+
 await writeFile(new URL('app.js', OUT), appJs);
 
 const cssParts = [];

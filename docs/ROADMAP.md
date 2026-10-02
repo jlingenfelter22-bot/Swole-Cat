@@ -832,11 +832,24 @@ Core decisions:
 - [x] Keep the cloud lab at **$0/month** until real usage, reliability needs, or free-tier limits justify an upgrade.
 
 ### Phase 8.1 - Optional account foundation
-- [ ] Add isolated identity service.
+
+**Status: In progress through v0.67.0.**
+
+**v0.67.0 Cloud Shell Foundation** establishes the identity boundary without uploading any workout data.
+
+- [x] Add provider-neutral `identity`, `cloudConfig`, and namespaced `cloudAuthStorage` runtime services.
+- [x] Make cloud configuration disabled by default and injectable at build/runtime without committing backend credentials.
+- [x] Keep local-only startup at zero cloud requests and zero cloud metadata.
+- [x] Add the Settings/Account shell with explicit local-only and signed-in states.
+- [x] Keep sign-in/sign-out isolated from `overload_v3`.
+- [x] Explicitly keep workout sync OFF in the identity phase.
+- [x] Avoid creating Swole Cat database rows merely because an Auth account exists.
+- [x] Add production-bundle regression coverage proving local saves never wake the cloud shell.
+- [ ] Connect the actual Supabase Auth provider adapter.
 - [ ] Start with Google sign-in for production-facing testing so the project does not depend on Supabase's built-in low-volume email sender.
-- [ ] Add sign-out, account recovery path, and cloud-account deletion.
-- [ ] Store auth tokens separately from workout state using Android secure storage before public production use.
-- [ ] Keep local-only mode fully supported.
+- [ ] Add account recovery path and cloud-account deletion.
+- [ ] Store auth tokens separately from workout state using Android Keystore-backed secure storage before public production use.
+- [x] Keep local-only mode fully supported.
 
 ### Phase 8.2 - Cloud backup
 - [ ] Upload a validated cloud copy of the existing Swole Cat backup envelope.

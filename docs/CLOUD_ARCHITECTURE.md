@@ -156,6 +156,21 @@ The runtime contract should use ordinary Swole Cat data structures so a future b
 
 ## 6. Authentication
 
+### Phase 8.1 minimum-data rule
+
+The first account implementation is **Auth-only**.
+
+Creating/signing into a Swole Cat account does not create Swole Cat-owned profile, device, workout, settings, analytics, or sync rows merely for bookkeeping.
+
+Until a real cloud capability needs application data:
+- Supabase Auth is the only remote account record
+- the app stores no cloud sync metadata for signed-out/local-only users
+- the app performs no workout-data upload
+- device identity remains unregistered remotely
+- local workout state remains `overload_v3`
+
+This deliberately avoids shadow data and keeps early cloud cost and privacy surface minimal.
+
 ### Initial production-facing method
 
 Start with **Google sign-in** for early cloud testing.
@@ -345,25 +360,25 @@ This avoids missing updates because of:
 
 Recommended initial tables/services:
 
-### `profiles`
-Minimal account-level app metadata. Keep private by default.
+### Phase 8.1
+No Swole Cat-owned application-data tables. Supabase Auth only.
 
-### `devices`
-Registered installations for sync diagnostics and safe device-aware behavior.
+### `devices` (Phase 8.3)
+Registered installations only when multi-device sync actually needs them.
 
-### `sync_records`
+### `sync_records` (Phase 8.3)
 Private user-owned record stream described above.
 
-### `backup_metadata`
+### `backup_metadata` (Phase 8.2)
 Metadata for bounded cloud recovery snapshots.
 
 ### private backup storage
 Existing full backup envelopes, accessible only to the owner.
 
-### `entitlements`
+### `entitlements` (Phase 8.5)
 Server-written paid entitlement state. Client may read its own entitlement, never grant itself Pro.
 
-### `shared_packages`
+### `shared_packages` (Phase 8.4)
 Cloud delivery records that map a short code/link to a canonical `SWOLECAT1` package.
 
 Future group tables should be normalized separately rather than mixed into `sync_records`.

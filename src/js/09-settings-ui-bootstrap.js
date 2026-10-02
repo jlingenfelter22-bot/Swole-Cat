@@ -35,6 +35,8 @@ function openSettings(){
  <div class="actions"><button class="btn" onclick="saveSettings()">Save settings</button></div>
  <div class="section-title"><h2>Coach behavior</h2></div>
  <div class="notice">The coach uses repeated logged performance, your optional RIR entries, and each exercise's selected goal. Stall and reset flags are intentionally conservative. They are suggestions, and manual session targets always remain available.</div>
+ <div class="section-title"><h2>Cloud account</h2></div>
+ ${cloudSettingsHtml()}
  <div class="section-title"><h2>Data safety</h2></div>
  <div class="notice"><b>Progression rule:</b> Double progression is rep-driven. Add reps first, then one configured load step after every programmed working set reaches the top of its rep range. Optional RIR never blocks that earned load increase.<br><br><b>App:</b> ${isNativeApp()?'Android package':'Web / PWA'}<br><b>Version:</b> ${esc(APP_VERSION)}<br><b>Storage:</b> ${esc(storageHealthText())}<br><b>Data schema:</b> v${DATA_SCHEMA_VERSION}<br><b>Last exported backup:</b> ${state.meta?.lastBackupAt?new Date(state.meta.lastBackupAt).toLocaleString():'Never on this device'}</div>
  <div class="actions"><button class="btn secondary" onclick="exportBackup()">Export backup</button><label class="btn secondary" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0],this)" style="display:none"></label>${preImportSnapshotInfo()?'<button class="btn secondary" onclick="restorePreImportSnapshot()">Restore pre-import snapshot</button>':''}</div>

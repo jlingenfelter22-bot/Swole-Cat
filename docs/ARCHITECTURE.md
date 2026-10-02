@@ -29,6 +29,8 @@ src/
     06-workout-engine.js
     07-history-editor.js
     08-exercise-tools.js
+    10a-cloud-config.js         # Phase 8.1 build/runtime cloud configuration boundary
+    10b-cloud-identity.js       # Provider-neutral optional-account shell
     09-settings-ui-bootstrap.js
 scripts/
   build-web.mjs               # Deterministic source -> production bundle
@@ -87,9 +89,16 @@ The app must remain usable when offline. Cloud sync should be optional infrastru
 
 `src/js/00-runtime.js` establishes `window.SwoleCatRuntime` with a small service registry and event target. Device persistence is already routed through the registered `storage` service, and the core exposes a narrow `state` service for snapshot reads/revision/save requests. Existing application behavior remains local-first while new infrastructure can register isolated services without importing network/account concerns into the workout engine. Persisted changes emit `state:saved`, and completed startup emits `app:ready`, giving a future sync queue explicit hooks without coupling it to workout-domain functions.
 
-Expected future services include:
+Current Phase 8.1 services include:
 
-- identity/account session
+- `cloudConfig`: disabled-by-default provider configuration
+- `cloudAuthStorage`: auth-only namespaced storage, separate from workout state
+- `identity`: provider-neutral account/session state
+
+The identity shell performs no sync and makes no provider network calls by itself. A configured provider adapter must be registered explicitly.
+
+Expected later services include:
+
 - sync queue and conflict resolution
 - routine sharing transport
 - group/program collaboration
