@@ -776,6 +776,32 @@ Goal: freeze the pre-beta product on a leaner, faster, better-audited runtime be
 
 **Optimization principle:** the beta freeze favors measured, low-risk simplification over architectural churn. Large rewrites, speculative lazy-loading, and broad CSS deletion are intentionally deferred when they could destabilize working behavior without a clear runtime win.
 
+### v0.66.1 — Field Beta Milestone
+
+**Status: Frozen baseline**
+
+The first outside beta baseline is commit `99c258f4fc8c0254a533867901f50a8a216f2b28`, Swole Cat v0.66.1, Android versionCode 82.
+
+Branch model:
+- `beta` — stable field-testing branch. Starts at the v0.66.1 milestone. It should only move for deliberate beta hotfixes that are specifically intended for current testers.
+- `beta-v0.66.1` — immutable snapshot of the original v0.66.1 beta milestone. Do not move or repurpose this branch.
+- `main` — active lab/development branch. New experiments, architecture work, features, and risky changes continue here without changing the field beta unless intentionally promoted.
+
+Promotion rule:
+1. Develop and validate new work on `main`.
+2. Do not merge ordinary lab work into `beta`.
+3. If a current tester needs a critical fix, make the smallest safe fix, validate the full regression wall + Android build, then intentionally advance `beta`.
+4. Keep the frozen `beta-v0.66.1` branch unchanged so the original milestone is always recoverable.
+5. A future major beta milestone should get its own frozen snapshot branch before `beta` advances.
+
+Beta purpose:
+- let real users exercise the stable app in normal workouts over time
+- collect field feedback on reliability, progression behavior, usability, sharing, history, and real workout flow
+- separate real-world beta evidence from experimental lab development
+- avoid destabilizing a working tester build merely because new work is underway on `main`
+
+See `docs/BETA_MILESTONE.md` for the operating contract.
+
 ---
 
 ## Phase 8 — Accounts, Cloud Backup, and Multi-Device Sync
