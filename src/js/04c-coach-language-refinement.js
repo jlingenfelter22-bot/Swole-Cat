@@ -1,8 +1,8 @@
 function coachExplicitGoal(text){
- const lower=String(text||'').toLowerCase();
- if(/\bstrength\b|\bstronger\b|\bheavy\b|\bpowerlifting\b/.test(lower))return 'strength';
- if(/\bhypertrophy\b|\bmuscle growth\b|\bbodybuild/.test(lower)||/\bsize\b/.test(lower))return 'hypertrophy';
- if(/\bgeneral fitness\b|\bgeneral workout\b|\bgeneral training\b/.test(lower))return 'general';
+ const lower=coachNormalizeGymText(coachNumbersToDigits(String(text||'')));
+ if(/\bstrength\b|\bstronger\b|\bget strong\b|\bheavy\b|\bpowerlifting\b|\bbuild strength\b/.test(lower))return 'strength';
+ if(/\bhypertrophy\b|\bmuscle growth\b|\bbuild muscle\b|\bgain muscle\b|\bget bigger\b|\badd size\b|\bbodybuild/.test(lower)||/\bsize\b/.test(lower))return 'hypertrophy';
+ if(/\bgeneral fitness\b|\bgeneral workout\b|\bgeneral training\b|\bjust exercise\b|\bstay active\b/.test(lower))return 'general';
  return null;
 }
 function coachNormalizeWords(value){
@@ -527,6 +527,7 @@ function coachRefineDraftText(text){
  req.targetKeys=[...(req.targetKeys||[])];req.targetLabels=[...(req.targetLabels||[])];req.targetRegions=[...(req.targetRegions||[])];
  req.allowedEquipment=[...(req.allowedEquipment||[])];req.excludedEquipment=[...(req.excludedEquipment||[])];
  req.priorityRegions=[...(req.priorityRegions||[])];req.priorityKeys=[...(req.priorityKeys||[])];
+ req.excludedTargetKeys=[...(req.excludedTargetKeys||[])];req.excludedTargetRegions=[...(req.excludedTargetRegions||[])];
  req.excludedExerciseIds=[...(req.excludedExerciseIds||[])];req.requiredExerciseIds=[...(req.requiredExerciseIds||[])];
  let changed=false;
  const parsed=coachParsePrompt(raw,req.goal),explicitGoal=coachExplicitGoal(raw),equipment=coachParseEquipment(raw);
@@ -548,14 +549,23 @@ function coachRefineDraftText(text){
    req.allowedEquipment=req.allowedEquipment.filter(x=>!equipment.excluded.includes(x));
    changed=true;
  }
- const targetKeys=coachParseTargets(raw).keys||[];
- const negativeTargetKeys=targetKeys.filter(k=>new RegExp('(?:no|without|skip|exclude)\\s+'+k.replace(' ','\\s+'),'i').test(lower));
- negativeTargetKeys.forEach(k=>{coachRemoveTargetKey(req,k);changed=true});
+ const targetExclusions=coachParseTargetExclusions(raw);
+ targetExclusions.keys.forEach(k=>{coachRemoveTargetKey(req,k);changed=true});
+ if(targetExclusions.keys.length){
+   req.excludedTargetKeys=[...new Set([...req.excludedTargetKeys,...targetExclusions.keys])];
+   req.excludedTargetRegions=[...new Set([...req.excludedTargetRegions,...targetExclusions.regions])];
+   req.targetRegions=req.targetRegions.filter(region=>!req.excludedTargetRegions.includes(region));
+ }
  const positiveTargets=coachParseTargets(raw);
  const hasMore=/\bmore\b|\bemphas(?:ize|ise|is)\b|\bprioriti[sz]e\b|\bmostly\b|\bmainly\b|\bespecially\b|\bfocused\b|\bbiased\b|\bdominant\b/.test(lower);
  const hasAdd=/\badd\b|\binclude\b|\balso\b|\bplus\b/.test(lower);
  const hasReplace=/\binstead\b|\bswitch\b|\bchange\b|\bfocus on\b|\btrain\b/.test(lower);
- const positiveRegions=positiveTargets.regions.filter(r=>!negativeTargetKeys.some(k=>coachTargetRegionsForKey(k).includes(r)));
+ const positiveRegions=positiveTargets.regions.filter(r=>!targetExclusions.regions.includes(r));
+ if(positiveTargets.keys.length&&!targetExclusions.keys.length){
+   const restoringRegions=new Set(positiveTargets.regions);
+   req.excludedTargetRegions=req.excludedTargetRegions.filter(r=>!restoringRegions.has(r));
+   req.excludedTargetKeys=req.excludedTargetKeys.filter(k=>!positiveTargets.keys.includes(k));
+ }
  if(positiveRegions.length){
    if(hasMore){
      req.priorityRegions=[...new Set([...req.priorityRegions,...positiveRegions])];
