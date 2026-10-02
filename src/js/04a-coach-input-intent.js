@@ -117,13 +117,14 @@ const COACH_TARGET_GROUPS={
  'quads':{label:'Quads',regions:['quads']},
  'hamstrings':{label:'Hamstrings',regions:['hamstrings']},
  'glutes':{label:'Glutes',regions:['glutes']},
+ 'adductors':{label:'Adductors',regions:['adductors']},
  'calves':{label:'Calves',regions:['calves']},
  'abs':{label:'Abs',regions:['core']},
  'obliques':{label:'Obliques',regions:['obliques']},
  'core':{label:'Core',regions:['core','obliques']}
 };
 const COACH_EQUIPMENT_TERMS=[
- ['smith machine','smith machine'],['trap bar','trap bar'],['cable machine','cable'],
+ ['smith machine','smith machine'],['smith','smith machine'],['trap bar','trap bar'],['cable machine','cable'],
  ['dumbbells','dumbbell'],['dumbbell','dumbbell'],['barbells','barbell'],['barbell','barbell'],
  ['cables','cable'],['cable','cable'],['machines','machine'],['machine','machine'],
  ['bodyweight','bodyweight'],['no equipment','bodyweight'],['kettlebells','kettlebell'],['kettlebell','kettlebell'],
@@ -173,7 +174,7 @@ function coachTargetPriorityRegex(key){
   'lower back':'(?:lower back|lumbar(?: spine| extensors?)?|spinal erectors?|erector spinae|erectors?)',
   lats:'(?:lats|latissimus(?: dorsi)?)',traps:'(?:traps?|trapezius)',forearms:'forearms?',
   biceps:'(?:biceps?|bis)',triceps:'(?:triceps?|tris)',quads:'quads?',hamstrings:'(?:hamstrings?|hams)',
-  glutes:'glutes?',calves:'(?:calves?|calf)',abs:'abs?',obliques:'obliques?',core:'core'
+  glutes:'glutes?',adductors:'adductors?',calves:'(?:calves?|calf)',abs:'abs?',obliques:'obliques?',core:'core'
  };
  return map[key]||coachRegexEscape(key);
 }
@@ -187,7 +188,8 @@ function coachParsePriorityTargets(text,availableKeys=[]){
      new RegExp('\\bfocus(?:ed)?\\s+(?:more\\s+)?(?:on\\s+)?(?:the\\s+)?'+term+'\\b','i'),
      new RegExp('\\b(?:emphas(?:ize|ise)|prioriti[sz]e|favor|favour)\\s+(?:the\\s+)?'+term+'\\b','i'),
      new RegExp('\\b(?:bias(?:ed)?\\s+(?:toward|towards|to)\\s+)(?:the\\s+)?'+term+'\\b','i'),
-     new RegExp('\\b'+term+'[- ]?(?:focused|focus|emphasis|priority|biased|dominant)\\b','i')
+     new RegExp('\\b'+term+'[- ]?(?:focused|focus|emphasis|priority|biased|dominant|heavy)\\b','i'),
+     new RegExp('\\b(?:main focus|emphasis|priority)\\s+(?:is|on)?\\s*(?:the\\s+)?'+term+'\\b','i')
    ];
    if(!cues.some(re=>re.test(lower)))return;
    keys.push(key);regions.push(...(COACH_TARGET_GROUPS[key]?.regions||[]));
@@ -249,7 +251,7 @@ function coachParseTargets(text){
    ['lats',/\blats\b/],['traps',/\btraps?\b/],['forearms',/\bforearms?\b/],
    ['chest',/\bchest\b/],['biceps',/\bbiceps?\b|\bbis\b/],['triceps',/\btriceps?\b|\btris\b/],
    ['quads',/\bquads?\b/],['hamstrings',/\bhamstrings?\b|\bhams\b/],['glutes',/\bglutes?\b/],
-   ['calves',/\bcalves?\b|\bcalf\b/],['core',/\bcore\b/]
+   ['adductors',/\badductors?\b/],['calves',/\bcalves?\b|\bcalf\b/],['core',/\bcore\b/]
  ];
  terms.forEach(([key,re])=>{if(re.test(work))add(key)});
  const genericBackWork=work
@@ -321,7 +323,7 @@ function coachParsePrompt(text,defaultGoal=coachPromptGoal){
  const priority=coachParsePriorityTargets(lower,targets.keys||[]);
  const experienceLevel=coachParseTrainingExperience(lower),lateralityPreference=coachParseLateralityPreference(lower);
  let duration=0;
- const min=lower.match(/(\d{1,3})\s*(?:min|mins|minute|minutes)\b/);
+ const min=lower.match(/(\d{1,3})\s*(?:ish\s*)?(?:m|min|mins|minute|minutes)\b/);
  const hrs=lower.match(/(\d(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/);
  if(/\b(?:an?|one|1) hour and a half\b/.test(lower))duration=90;
  else if(/\bhalf (?:an )?hour\b|\bhalf hour\b/.test(lower))duration=30;
@@ -330,7 +332,7 @@ function coachParsePrompt(text,defaultGoal=coachPromptGoal){
  else if(hrs)duration=Math.max(15,Math.min(120,Math.round((Number(hrs[1])||0)*60)));
  else if(/\bquick\b|\bshort\b|\bin a rush\b|\bnot much time\b/.test(lower))duration=30;
  let goal=defaultGoal;
- if(/\bstrength\b|\bstronger\b|\bget strong\b|\bheavy\b|\bpowerlifting\b|\bbuild strength\b/.test(lower))goal='strength';
+ if(/\bstrength\b|\bstronger\b|\bget strong\b|\bpowerlifting\b|\bbuild strength\b|\bgo heavy\b|\bheavy (?:weights?|lifting|sets?)\b/.test(lower))goal='strength';
  else if(/\bhypertrophy\b|\bmuscle growth\b|\bbuild muscle\b|\bgain muscle\b|\bget bigger\b|\badd size\b|\bbodybuild/.test(lower)||/\bsize\b/.test(lower))goal='hypertrophy';
  else if(/\bgeneral fitness\b|\bgeneral workout\b|\bgeneral training\b|\bjust exercise\b|\bstay active\b/.test(lower))goal='general';
  return {
@@ -356,7 +358,7 @@ function coachParseProgramFocus(text){
    ['front delts',/\bfront delts?\b/],['side delts',/\bside delts?\b/],['rear delts',/\brear delts?\b/],
    ['chest',/\bchest\b/],['shoulders',/\bshoulders?\b/],['arms',/\barms?\b/],
    ['biceps',/\bbiceps?\b|\bbis\b/],['triceps',/\btriceps?\b|\btris\b/],['quads',/\bquads?\b/],['hamstrings',/\bhamstrings?\b|\bhams\b/],
-   ['glutes',/\bglutes?\b/],['calves',/\bcalves?\b|\bcalf\b/],['abs',/\babs?\b/],['obliques',/\bobliques?\b/],['core',/\bcore\b/]
+   ['glutes',/\bglutes?\b/],['adductors',/\badductors?\b/],['calves',/\bcalves?\b|\bcalf\b/],['abs',/\babs?\b/],['obliques',/\bobliques?\b/],['core',/\bcore\b/]
  ];
  terms.forEach(([key,re])=>{if(re.test(lower))add(key)});
  const genericDeltWork=lower.replace(/\b(?:front|side|rear) delts?\b/g,' ');
