@@ -736,9 +736,9 @@ function workoutActiveSetText(e){
 }
 function activeExerciseDockHtml(w){
  const index=workoutActiveExerciseIndex(w);
- if(index<0)return '<div id="activeExerciseDock" class="active-exercise-dock complete"><div><div class="active-exercise-kicker">SESSION STATUS</div><div class="active-exercise-name">All programmed sets complete</div></div></div>';
+ if(index<0)return '<div id="activeExerciseDock" class="active-exercise-dock complete" role="status" aria-live="polite"><div><div class="active-exercise-kicker">SESSION STATUS</div><div class="active-exercise-name">All programmed sets complete</div></div></div>';
  const e=w.exercises[index],ex=exById(e.exerciseId),progress=exerciseSetProgress(e);
- return `<div id="activeExerciseDock" class="active-exercise-dock" data-exercise-index="${index}">
+ return `<div id="activeExerciseDock" class="active-exercise-dock" data-exercise-index="${index}" role="status" aria-live="polite" aria-atomic="true">
   <div class="active-exercise-signal"><span></span>NOW TRAINING</div>
   <div class="active-exercise-copy">
     <div class="active-exercise-name">${esc(ex?.name||'Exercise')}</div>

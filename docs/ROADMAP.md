@@ -551,7 +551,7 @@ Implementation order:
 3. [x] **Make auto-advance land predictably.** Completing the final set of Exercise A must advance to Exercise B with Exercise B’s identity immediately visible, never into an ambiguous middle-of-card scroll position.
 4. [x] **Compress Session Goal / Building Baseline guidance.** Preserve Coach intelligence while reducing the vertical space it consumes during live logging; detailed explanation remains available on demand.
 5. [x] **Tighten completed/active exercise card state.** Completed exercises should get out of the way and the newly active exercise should be expanded and visually dominant without deleting access to prior logged sets.
-6. [ ] **Polish the transition and live-workout ergonomics.** Keep “Up next” as secondary confirmation, review spacing/tap targets around the live set controls, and remove any remaining orientation friction without adding extra confirmation steps.
+6. [x] **Polish the transition and live-workout ergonomics.** Keep “Up next” as secondary confirmation, review spacing/tap targets around the live set controls, and remove any remaining orientation friction without adding extra confirmation steps.
 7. [ ] **Regression-test the full workout flow and cut a fresh beta build.** Test multi-exercise auto-advance repeatedly, preserve workout/session data, run the full regression wall, Pages, and Android build, then provide the exact fresh APK for real-world beta use.
 
 Locked behavior:

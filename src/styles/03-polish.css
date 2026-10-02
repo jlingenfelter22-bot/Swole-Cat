@@ -964,3 +964,21 @@
 #workout .exercise-block.complete-block.collapsed .exercise-number{
  width:29px;height:29px;color:#8ce9a4;border-color:rgba(53,233,138,.34);background:rgba(53,233,138,.06)
 }
+
+/* TODAY BETA READINESS // STEP 6
+   Gym-first tap targets and clearer live transition feedback. */
+#workout .set-icon-btn{min-width:42px!important;min-height:42px!important;width:42px;height:42px}
+#workout .micro-step button{min-width:36px;min-height:36px;width:36px;height:36px;border-radius:9px}
+#workout .set-type-select{min-height:40px}
+#workout .complete-set{min-height:48px;padding-top:12px;padding-bottom:12px}
+#workout .active-exercise-dock{
+  transition:border-color var(--motion-base) var(--ease-ui),box-shadow var(--motion-base) var(--ease-ui),background var(--motion-base) var(--ease-ui)
+}
+#workout .active-exercise-dock:focus-within{
+  border-color:rgba(34,211,238,.72);
+  box-shadow:0 10px 26px rgba(0,0,0,.34),0 0 0 2px rgba(34,211,238,.08)
+}
+@media(max-width:390px){
+  #workout .micro-step button{min-width:34px;min-height:34px;width:34px;height:34px}
+  #workout .set-icon-btn{min-width:40px!important;min-height:40px!important;width:40px;height:40px}
+}
