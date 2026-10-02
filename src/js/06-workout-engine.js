@@ -373,6 +373,8 @@ function setWorkoutSetType(ei,si,type){
  }
  const oldType=setType(set);
  set.type=type;
+ if(type==='working'&&typeof coachAdaptiveSetRole==='function')set.role=coachAdaptiveSetRole(e.config,workingSetOrdinal(e,si));
+ else if(type!=='working')delete set.role;
  set.pr=type==='working'&&set.done?detectPR(e.exerciseId,set):'';
  if((oldType==='working')!==(type==='working'))markWorkoutStructureDirty();else saveActiveWorkout();
  renderWorkout();
@@ -394,7 +396,8 @@ function addWorkoutSet(ei,type='working'){
    weight=Number(source?.weight)||0;
    reps=Number(source?.reps)||e.config.minReps;
  }
- const item={weight:roundLoad(weight),reps:Math.max(1,Math.round(reps)),done:false,rir:'',type,pr:''};
+ const item={weight:roundLoad(weight),reps:Math.max(1,Math.round(reps)),done:false,rir:'',type,pr:'',
+   role:type==='working'&&typeof coachAdaptiveSetRole==='function'?coachAdaptiveSetRole(e.config,existingWorking.length):undefined};
  let at=e.sets.length;
  if(type==='warmup')at=existingWorking.length?existingWorking[0]:0;
  else if(type==='working'&&existingWorking.length)at=existingWorking.at(-1)+1;
@@ -592,17 +595,24 @@ function unlinkRoutineSuperset(routineId,index){
 }
 
 function routineExerciseFromWorkout(e){
- const cfg=e.config||{};
+ const cfg=e.config||{},workingCount=Math.max(1,workingSetIndexes(e).length||Number(cfg.sets)||1);
+ let savedStructure=cfg.setStructure?cloneData(cfg.setStructure):null;
+ if(savedStructure?.type==='top_backoff'){
+   const topCount=Math.max(1,(e.sets||[]).filter(s=>isProgressionSet(s)&&s.role==='top').length||Number(savedStructure.topSets)||1);
+   savedStructure.topSets=Math.min(topCount,workingCount);
+   savedStructure.backoffSets=Math.max(0,workingCount-savedStructure.topSets);
+   if(savedStructure.backoffSets<1)savedStructure=null;
+ }
  return {
    exerciseId:e.exerciseId,
-   sets:Math.max(1,workingSetIndexes(e).length||Number(cfg.sets)||1),
+   sets:workingCount,
    minReps:Math.max(1,Number(cfg.minReps)||1),
    maxReps:Math.max(Math.max(1,Number(cfg.minReps)||1),Number(cfg.maxReps)||12),
    increment:Math.max(0,Number(cfg.increment)||0),
    mode:cfg.mode==='range'?'double':(cfg.mode||'double'),
    progressionStrategy:cfg.progressionStrategy||'double',
    adaptiveProgression:!!cfg.adaptiveProgression,
-   setStructure:cfg.setStructure?cloneData(cfg.setStructure):null,
+   setStructure:savedStructure,
    trainingGoal:cfg.trainingGoal||'general',
    resetPercent:Number(cfg.resetPercent)||7.5,
    restSeconds:Math.max(15,Number(cfg.restSeconds)||120),
