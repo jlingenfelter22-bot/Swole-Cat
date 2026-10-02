@@ -84,7 +84,7 @@ const promptCases=[
  {name:'beginner-slang',prompt:"newbie here wanna get bigger guns n shoulders, like 30 mins",goal:'hypertrophy',level:'beginner',target:'arms',maxExercises:5},
  {name:'intermediate-normal',prompt:"i have some lifting experience, 45 minute chest and back hypertrophy workout",goal:'hypertrophy',level:'intermediate',target:'chest'},
  {name:'intermediate-no-barbell',prompt:"some lifting experience, 45 min upper body, no barbells, mostly back",goal:'hypertrophy',level:'intermediate',target:'upper body'},
- {name:'advanced-strength',prompt:"seasoned lifter, heavy bench strength session, top set 3-5 @8 then 3 backoffs 6-8 at 90%, 3 min rest",goal:'strength',level:'advanced',target:'chest',topBackoff:true},
+ {name:'advanced-strength',prompt:"seasoned lifter, heavy bench strength session, top set 3-5 @8 then 3 backoffs 6-8 at 90%, 3 min rest",goal:'strength',level:'advanced',explicitExercise:'Barbell Bench Press',topBackoff:true},
  {name:'advanced-shorthand',prompt:"advanced pull day. dl top single-ish? actually 3-5 reps @8, 3x6-8 backdowns 85%, 180s",goal:'strength',level:'advanced',target:'pull',topBackoff:true},
  {name:'typo-ppl',prompt:"6 day ppl prgram 45 mins hypertrofy no barbels",program:true,frequency:6,split:'ppl'},
  {name:'upper-lower',prompt:"4x a week upper/lower, intermediate, 50 minute sessions",program:true,frequency:4,split:'upper_lower'},
@@ -105,6 +105,12 @@ for(const c of promptCases){
  assert.equal(req.goal,c.goal,c.name+' goal');
  if(c.level)assert.equal(req.experienceLevel,c.level,c.name+' experience');
  if(c.target)assert(req.targetKeys.includes(c.target),c.name+' target '+c.target+' missing: '+req.targetKeys.join(','));
+ if(c.explicitExercise){
+  const explicit=w.coachParseExplicitWorkout(c.prompt,req.goal);
+  const ex=w.allExercises().find(x=>x.name===c.explicitExercise);
+  assert(ex,'battle explicit fixture missing '+c.explicitExercise);
+  assert(explicit.items.some(item=>item.exerciseId===ex.id),c.name+' explicit exercise was not understood');
+ }
  if(c.equipment)assert(w.coachParseEquipment(c.prompt).allowed.includes(c.equipment),c.name+' equipment');
  if(c.topBackoff)assert.equal(w.coachParseLiftingGrammar(c.prompt).topBackoff?.enabled,true,c.name+' top/backoff grammar');
  const draft=w.coachGenerateWorkout(req);
