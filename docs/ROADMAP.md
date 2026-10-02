@@ -425,13 +425,27 @@ The user must always remain in control of the final workout.
 The next Coach Swolecat work proceeds in this order so each layer builds on the prior one instead of fragmenting the training brain.
 
 **v0.61 — Conversational Routine Control + Saved Routine Intelligence**
-- modify an existing saved routine from natural language
-- understand conversational references such as “that one,” “the second exercise,” “make that four sets,” and “move it before curls”
-- support explicit undo / redo for Coach-applied routine mutations
-- explain why an exercise or structure exists inside the current routine
-- make routine-aware additions, removals, swaps, reordering, set/rep/rest changes, and duration changes
-- default to surgical edits instead of regenerating the whole routine
-- preserve adaptive progression, top/backoff structures, history continuity, manual preferences, and user-authored choices through Coach edits
+
+**Status: In progress**
+
+Implementation checklist:
+- [ ] Create a saved-routine Coach session that edits a copy first and only persists explicit Coach mutations to the selected routine.
+- [ ] Add routine-context parsing for named exercises plus conversational references such as “that one,” “the second exercise,” “the last one,” and “before/after curls.”
+- [ ] Support surgical add, remove, swap, reorder, set-count, rep-range, rest-time, goal/mode, and routine-duration adjustments without regenerating unrelated exercises.
+- [ ] Add Coach-local undo / redo snapshots for saved-routine mutations.
+- [ ] Add routine-aware explanations for exercise role, muscle coverage, progression structure, redundancy, and why a movement is currently in the routine.
+- [ ] Make additions and substitutions routine-aware using current movement families, muscle coverage, preferences, and training history.
+- [ ] Preserve adaptive progression flags, progression strategies, top/backoff structures, supersets, history continuity, preferences, and user-authored configuration through Coach edits.
+- [ ] Add dedicated v0.61 regression coverage for references, surgical edits, undo/redo, explanations, preservation, and saved-routine persistence.
+- [ ] Run the full production validation, Pages deployment, and Android build before closing v0.61.
+- [ ] Record the completed v0.61 milestone and bump the app/version metadata only after all checks pass.
+
+Locked behavior:
+- Coach edits the existing routine instead of silently rebuilding it.
+- The smallest sensible change wins unless the user explicitly asks for a rewrite or rebuild.
+- Ambiguous references ask for clarification rather than guessing.
+- Workout history remains separate from routine structure. Editing a routine never rewrites completed sessions.
+- Existing progression intelligence remains authoritative unless the user explicitly changes that programming.
 
 **v0.62 — Training History Q&A + Deeper Coach Insights**
 - answer workout-history questions such as “what did I bench last time?”
