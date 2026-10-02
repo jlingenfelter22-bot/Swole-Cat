@@ -13,12 +13,15 @@ function coachProgressionExposureRows(exerciseId,referenceMs=Date.now(),limit=8)
    const sets=(row.sets||[]).filter(s=>Number(s.weight)>=0&&Number(s.reps)>0);
    const e1s=sets.map(s=>estimated1RM(s.weight,s.reps));
    const rir=sets.map(s=>s.rir).filter(v=>v!==''&&v!=null&&Number.isFinite(Number(v))).map(Number);
+   const topRir=sets.filter(s=>s.role==='top').map(s=>s.rir).filter(v=>v!==''&&v!=null&&Number.isFinite(Number(v))).map(Number);
+   const avgRIR=rir.length?rir.reduce((a,b)=>a+b,0)/rir.length:null;
+   const topRIR=topRir.length?topRir.reduce((a,b)=>a+b,0)/topRir.length:null;
    return {
      ...row,
      bestE1:e1s.length?Math.max(...e1s):0,
      maxWeight:sets.length?Math.max(...sets.map(s=>Number(s.weight)||0)):0,
      totalReps:sets.reduce((n,s)=>n+(Number(s.reps)||0),0),
-     avgRIR:rir.length?rir.reduce((a,b)=>a+b,0)/rir.length:null,
+     avgRIR,topRIR,effortRIR:topRIR??avgRIR,
      setCount:sets.length
    };
  });
@@ -38,7 +41,7 @@ function coachMultiWeekExerciseProfile(exerciseId,referenceMs=Date.now()){
  const recentSpreadPct=recentBest>0?(recentBest-recentLow)/recentBest:0;
  const recentFirst=recentRows[0]?.bestE1||0;
  const recentDirectionalPct=recentFirst>0?(latest.bestE1-recentFirst)/recentFirst:0;
- const recentRIR=rows.slice(-3).map(x=>x.avgRIR).filter(v=>v!=null);
+ const recentRIR=rows.slice(-3).map(x=>x.effortRIR??x.avgRIR).filter(v=>v!=null);
  const highEffort=recentRIR.length>=2&&recentRIR.reduce((a,b)=>a+b,0)/recentRIR.length<=1.5;
  const dates=rows.map(r=>new Date(r.date).getTime()).filter(Number.isFinite);
  const recentDates=recentRows.map(r=>new Date(r.date).getTime()).filter(Number.isFinite);
