@@ -106,7 +106,7 @@ function coachSmartExerciseCount(request,baseCount){
  if(request?.experienceLevel==='beginner')base=Math.min(base,5);
  if(keys.length!==1)return keys.length===2?Math.min(base,7):base;
  const key=keys[0];
- if(['front delts','side delts','rear delts','abs','obliques'].includes(key))return Math.min(base,4);
+ if(['front delts','side delts','rear delts','abs','obliques','adductors'].includes(key))return Math.min(base,4);
  if(key==='lower back')return Math.min(base,4);
  if(['upper back','lats','traps'].includes(key))return Math.min(base,5);
  if(['chest','back','shoulders','arms','biceps','triceps','full body'].includes(key))return Math.min(base,6);
@@ -194,6 +194,7 @@ function coachCoveragePlan(request,count){
  const glutePattern=ex=>meta(ex).primary.includes('glutes')&&['hip_extension','hinge'].includes(ex.pattern);
  const adductorPattern=ex=>meta(ex).primary.includes('adductors')||ex.pattern==='hip_adduction';
  const calfPattern=ex=>ex.pattern==='calf_raise'&&meta(ex).primary.includes('calves');
+ const adductorDirect=ex=>meta(ex).primary.includes('adductors')||ex.pattern==='hip_adduction';
  const absPattern=ex=>meta(ex).primary.includes('core')&&!meta(ex).primary.includes('obliques');
  const obliquePattern=ex=>meta(ex).primary.includes('obliques');
  const corePattern=ex=>meta(ex).primary.includes('core')||meta(ex).primary.includes('obliques');
@@ -273,6 +274,7 @@ function coachCoveragePlan(request,count){
  const addRearDelts=()=>{add(core,'rear_delts_direct','Rear delts',shoulderRear)};
  const addAbs=()=>{add(core,'abs_direct','Abs',absPattern)};
  const addObliques=()=>{add(core,'obliques_direct','Obliques',obliquePattern)};
+ const addAdductors=()=>{add(core,'adductors_direct','Adductors',adductorDirect)};
  const addLegs=()=>{
    add(core,'leg_knee','Knee-dominant quads',squatPattern);
    add(core,'leg_hinge','Hip hinge / posterior chain',hipHinge);
@@ -320,6 +322,7 @@ function coachCoveragePlan(request,count){
      else if(key==='rear delts')addRearDelts();
      else if(key==='abs')addAbs();
      else if(key==='obliques')addObliques();
+     else if(key==='adductors')addAdductors();
      else if(key==='posterior chain')addPosteriorChain();
      else if(key==='legs')addLegs();
      else if(key==='biceps'){
