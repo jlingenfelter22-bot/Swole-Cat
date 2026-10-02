@@ -591,7 +591,7 @@ function routineEditorHtml(r){
           <span class="tag">${re.sets} sets</span>
           <span class="tag">${re.minReps}-${re.maxReps} reps</span>
           <span class="tag">+${re.increment} ${state.profile.unit}</span>
-          <span class="tag">${(re.mode==='range'||re.mode==='double')?'Double progression · +1/set':re.mode==='total'?'Beat total reps':'Manual'}</span>
+          <span class="tag">${re.setStructure?.type==='top_backoff'?`Top + ${re.setStructure.backoffSets||0} backoff @ ${re.setStructure.backoffPercent||90}%`:(re.mode==='range'||re.mode==='double')?'Double progression · +1/set':re.mode==='total'?'Beat total reps':'Manual'}</span>
           <span class="tag">${goalLabel(re.trainingGoal||'general')}</span>
           ${routineSupersetMeta(r,i)?`<span class="superset-badge">⚡ Superset ${routineSupersetMeta(r,i).label}</span>`:''}
         </div>
@@ -631,21 +631,34 @@ function removeRoutineExercise(id,index){
 }
 function editRoutineExerciseSettings(id,index){
  const r=state.routines.find(x=>x.id===id),re=r?.exercises[index]; if(!re)return;
- const ex=exById(re.exerciseId);
- openModal(`${esc(ex?.name||'Exercise')} progression`,`
+ const ex=exById(re.exerciseId),topBackoff=re.setStructure?.type==='top_backoff',structure=re.setStructure||{};
+ const structureFields=topBackoff?`
+ <div class="notice">This exercise uses real top-set + backoff progression. Edit the two roles separately so saved set counts and live targets stay aligned.</div>
+ <div class="form-grid three">
+   <div><label>Top sets</label><input type="number" min="1" max="2" id="reTopSets" value="${Math.max(1,Number(structure.topSets)||1)}"></div>
+   <div><label>Top min reps</label><input type="number" min="1" id="reTopMin" value="${Math.max(1,Number(structure.topMinReps)||re.minReps||3)}"></div>
+   <div><label>Top max reps</label><input type="number" min="1" id="reTopMax" value="${Math.max(1,Number(structure.topMaxReps)||re.maxReps||5)}"></div>
+ </div>
+ <div class="form-grid three">
+   <div><label>Backoff sets</label><input type="number" min="1" max="5" id="reBackoffSets" value="${Math.max(1,Number(structure.backoffSets)||2)}"></div>
+   <div><label>Backoff min reps</label><input type="number" min="1" id="reBackoffMin" value="${Math.max(1,Number(structure.backoffMinReps)||re.minReps||5)}"></div>
+   <div><label>Backoff max reps</label><input type="number" min="1" id="reBackoffMax" value="${Math.max(1,Number(structure.backoffMaxReps)||re.maxReps||8)}"></div>
+ </div>
+ <div class="field"><label>Backoff load (% of top set)</label><input type="number" min="70" max="97.5" step=".5" id="reBackoffPercent" value="${Math.max(70,Math.min(97.5,Number(structure.backoffPercent)||90))}"></div>
+ `:`
  <div class="form-grid three">
    <div><label>Sets</label><input type="number" min="1" max="10" id="reSets" value="${re.sets}"></div>
    <div><label>Min reps</label><input type="number" id="reMin" value="${re.minReps}"></div>
    <div><label>Max reps</label><input type="number" id="reMax" value="${re.maxReps}"></div>
  </div>
- <div class="form-grid">
-   <div><label>Weight jump (${state.profile.unit})</label><input type="number" step=".5" id="reInc" value="${re.increment}"></div>
-   <div><label>Progression</label><select id="reMode">
-    <option value="double" ${(re.mode==='range'||re.mode==='double')?'selected':''}>Double progression (+1 rep each set)</option>
-    <option value="total" ${re.mode==='total'?'selected':''}>Beat total reps</option>
-    <option value="manual" ${re.mode==='manual'?'selected':''}>Manual</option>
-   </select></div>
- </div>
+ <div class="field"><label>Progression</label><select id="reMode">
+   <option value="double" ${(re.mode==='range'||re.mode==='double')?'selected':''}>Double progression (+1 rep each set)</option>
+   <option value="total" ${re.mode==='total'?'selected':''}>Beat total reps</option>
+   <option value="manual" ${re.mode==='manual'?'selected':''}>Manual</option>
+ </select></div>`;
+ openModal(`${esc(ex?.name||'Exercise')} progression`,`
+ ${structureFields}
+ <div class="field"><label>Weight jump (${state.profile.unit})</label><input type="number" step=".5" id="reInc" value="${re.increment}"></div>
  <div class="form-grid">
    <div><label>Training goal</label><select id="reGoal">
     <option value="general" ${(re.trainingGoal||'general')==='general'?'selected':''}>General progression</option>
@@ -659,16 +672,33 @@ function editRoutineExerciseSettings(id,index){
    </select></div>
  </div>
  <div class="field"><label>Rest seconds</label><input type="number" id="reRest" value="${re.restSeconds||120}"></div>
- <div class="notice">Goal changes how the coach interprets effort and stalls. It does not silently change your rep range or weights.</div>
+ <div class="notice">Goal changes how Coach interprets effort and stalls. It does not silently invent working weights.</div>
  <div class="actions"><button class="btn" onclick="saveRoutineExerciseSettings('${id}',${index})">Save</button><button class="btn secondary" onclick="editRoutineDetails('${id}')">Back</button></div>`);
 }
 function saveRoutineExerciseSettings(id,index){
  const r=state.routines.find(x=>x.id===id),re=r?.exercises[index]; if(!re)return;
- re.sets=Math.max(1,+document.getElementById('reSets').value||3);
- re.minReps=Math.max(1,+document.getElementById('reMin').value||8);
- re.maxReps=Math.max(re.minReps,+document.getElementById('reMax').value||12);
+ const topBackoff=re.setStructure?.type==='top_backoff'&&document.getElementById('reTopSets');
+ if(topBackoff){
+   const topSets=Math.max(1,Math.min(2,+document.getElementById('reTopSets').value||1));
+   const topMin=Math.max(1,+document.getElementById('reTopMin').value||3);
+   const topMax=Math.max(topMin,+document.getElementById('reTopMax').value||topMin);
+   const backoffSets=Math.max(1,Math.min(5,+document.getElementById('reBackoffSets').value||2));
+   const backoffMin=Math.max(1,+document.getElementById('reBackoffMin').value||5);
+   const backoffMax=Math.max(backoffMin,+document.getElementById('reBackoffMax').value||backoffMin);
+   const backoffPercent=Math.max(70,Math.min(97.5,+document.getElementById('reBackoffPercent').value||90));
+   re.sets=topSets+backoffSets;
+   re.minReps=Math.min(topMin,backoffMin);
+   re.maxReps=Math.max(topMax,backoffMax);
+   re.mode='double';
+   re.progressionStrategy='top_backoff';
+   re.setStructure={...re.setStructure,type:'top_backoff',topSets,backoffSets,backoffPercent,topMinReps:topMin,topMaxReps:topMax,backoffMinReps:backoffMin,backoffMaxReps:backoffMax};
+ }else{
+   re.sets=Math.max(1,+document.getElementById('reSets').value||3);
+   re.minReps=Math.max(1,+document.getElementById('reMin').value||8);
+   re.maxReps=Math.max(re.minReps,+document.getElementById('reMax').value||12);
+   re.mode=document.getElementById('reMode').value;
+ }
  re.increment=Math.max(0,+document.getElementById('reInc').value||0);
- re.mode=document.getElementById('reMode').value;
  re.trainingGoal=document.getElementById('reGoal').value;
  re.resetPercent=+document.getElementById('reReset').value||7.5;
  re.restSeconds=Math.max(15,+document.getElementById('reRest').value||120);

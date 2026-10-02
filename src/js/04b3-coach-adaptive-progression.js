@@ -25,28 +25,37 @@ function coachProgressionExposureRows(exerciseId,referenceMs=Date.now(),limit=8)
 }
 function coachMultiWeekExerciseProfile(exerciseId,referenceMs=Date.now()){
  const rows=coachProgressionExposureRows(exerciseId,referenceMs,8),n=rows.length;
- if(!n)return {exerciseId,exposures:0,status:'new',changePct:0,recentChangePct:0,highEffort:false,rows};
+ if(!n)return {exerciseId,exposures:0,status:'new',changePct:0,recentChangePct:0,recentSpreadPct:0,highEffort:false,spanDays:0,recentSpanDays:0,rows};
  const best=Math.max(...rows.map(x=>x.bestE1||0)),latest=rows.at(-1),previous=rows.at(-2);
  const firstWindow=rows.slice(0,Math.min(3,n)).map(x=>x.bestE1||0).filter(Boolean);
- const recentWindow=rows.slice(-Math.min(3,n)).map(x=>x.bestE1||0).filter(Boolean);
+ const recentRows=rows.slice(-Math.min(4,n));
+ const recentWindow=recentRows.map(x=>x.bestE1||0).filter(Boolean);
  const firstBest=firstWindow.length?Math.max(...firstWindow):latest.bestE1||1;
  const recentBest=recentWindow.length?Math.max(...recentWindow):latest.bestE1||0;
+ const recentLow=recentWindow.length?Math.min(...recentWindow):recentBest;
  const changePct=firstBest>0?(recentBest-firstBest)/firstBest:0;
  const recentChangePct=previous?.bestE1>0?(latest.bestE1-previous.bestE1)/previous.bestE1:0;
+ const recentSpreadPct=recentBest>0?(recentBest-recentLow)/recentBest:0;
  const recentRIR=rows.slice(-3).map(x=>x.avgRIR).filter(v=>v!=null);
  const highEffort=recentRIR.length>=2&&recentRIR.reduce((a,b)=>a+b,0)/recentRIR.length<=1.5;
- const stableWindow=n>=4&&Math.abs(changePct)<.015;
- const performanceDip=n>=3&&latest.bestE1>0&&best>0&&latest.bestE1<best*.94;
+ const dates=rows.map(r=>new Date(r.date).getTime()).filter(Number.isFinite);
+ const recentDates=recentRows.map(r=>new Date(r.date).getTime()).filter(Number.isFinite);
+ const spanDays=dates.length>1?(Math.max(...dates)-Math.min(...dates))/86400000:0;
+ const recentSpanDays=recentDates.length>1?(Math.max(...recentDates)-Math.min(...recentDates))/86400000:0;
+ // A stall is a recent pattern, not the absence of progress across an entire block.
+ // Require the recent four-exposure window to span at least 10 days so several
+ // clustered sessions in one week are not mislabeled as a multi-week plateau.
+ const stableWindow=n>=4&&recentSpanDays>=10&&recentSpreadPct<.02;
+ const priorBest=n>=2?Math.max(...rows.slice(0,-1).map(x=>x.bestE1||0)):0;
+ const performanceDip=n>=3&&spanDays>=7&&latest.bestE1>0&&priorBest>0&&latest.bestE1<priorBest*.94;
  let status='building';
  if(n===1)status='baseline';
- else if(recentChangePct>.015||changePct>.025)status='progressing';
  else if(performanceDip)status='performance_dip';
  else if(stableWindow&&highEffort)status='plateau_high_effort';
  else if(stableWindow)status='plateau_watch';
+ else if(recentChangePct>.015||changePct>.025)status='progressing';
  else status='consolidating';
- const dates=rows.map(r=>new Date(r.date).getTime()).filter(Number.isFinite);
- const spanDays=dates.length>1?(Math.max(...dates)-Math.min(...dates))/86400000:0;
- return {exerciseId,exposures:n,status,changePct,recentChangePct,highEffort,bestE1:best,latestE1:latest.bestE1||0,spanDays,rows};
+ return {exerciseId,exposures:n,status,changePct,recentChangePct,recentSpreadPct,highEffort,bestE1:best,latestE1:latest.bestE1||0,spanDays,recentSpanDays,rows};
 }
 function coachIsAdaptiveCompound(ex){
  if(!ex)return false;
@@ -156,11 +165,13 @@ function coachAdaptiveRecommendation(config,prev,exerciseId){
  const previousTop=done.find(s=>s.role==='top')||done[0],topWeight=Math.max(0,Number(previousTop?.weight)||0),topReps=Math.max(0,Number(previousTop?.reps)||0);
  const topRIR=previousTop?.rir!==''&&previousTop?.rir!=null&&Number.isFinite(Number(previousTop.rir))?Number(previousTop.rir):null;
  const targetRIR=Number.isFinite(Number(config.targetRIR))?Number(config.targetRIR):2;
- let nextTopWeight=topWeight,nextTopReps=Math.max(topMin,Math.min(topMax,topReps||topMin)),status='hold';
- const earnedLoad=topReps>=topMax&&(topRIR==null||topRIR>=Math.max(0,targetRIR-1));
+ const profile=exerciseId?coachMultiWeekExerciseProfile(exerciseId,Date.now()):null;
+ const adaptiveHold=!!config?.adaptiveProgression&&['plateau_high_effort','performance_dip'].includes(profile?.status);
+ let nextTopWeight=topWeight,nextTopReps=Math.max(topMin,Math.min(topMax,topReps||topMin)),status=adaptiveHold?'adaptive_hold':'hold';
+ const earnedLoad=!adaptiveHold&&topReps>=topMax&&(topRIR==null||topRIR>=Math.max(0,targetRIR-1));
  if(earnedLoad&&inc>0){
    nextTopWeight=roundLoad(topWeight+inc);nextTopReps=topMin;status='load';
- }else if(topReps<topMax){
+ }else if(!adaptiveHold&&topReps<topMax){
    nextTopReps=Math.min(topMax,Math.max(topMin,topReps+1));status='reps';
  }
  const backWeight=nextTopWeight>0?roundLoad(nextTopWeight*pct):0;
@@ -169,10 +180,16 @@ function coachAdaptiveRecommendation(config,prev,exerciseId){
  const headline=status==='load'
    ?`Top set: increase to ${nextTopWeight} ${state.profile.unit}`
    :status==='reps'?`Top set: aim for ${nextTopReps} reps at ${nextTopWeight} ${state.profile.unit}`
+   :status==='adaptive_hold'?`Hold the top set at ${nextTopWeight} ${state.profile.unit}`
    :`Repeat the top set at ${nextTopWeight} ${state.profile.unit}`;
+ const adaptiveDetail=status==='adaptive_hold'
+   ?(profile?.status==='plateau_high_effort'
+     ?' Recent multi-week performance is flat with high logged effort, so Coach is holding the top set instead of forcing a load or rep increase.'
+     :' Recent performance is meaningfully below this block’s prior best, so Coach is holding the top set for another exposure.')
+   :' Progress the top set first; backoff work follows the programmed percentage.';
  return {
    status,weight:nextTopWeight,weights,targetReps:reps,headline,
-   detail:`${headline}. Backoff target: about ${Math.round(pct*100)}% (${backWeight} ${state.profile.unit}) for ${backMin}–${backMax} reps. Progress the top set first; backoff work follows the programmed percentage.`
+   detail:`${headline}. Backoff target: about ${Math.round(pct*100)}% (${backWeight} ${state.profile.unit}) for ${backMin}–${backMax} reps.${adaptiveDetail}`
  };
 }
 function coachAdaptiveSetRole(config,workingIndex){

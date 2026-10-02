@@ -245,6 +245,25 @@ assert.equal(grammar.targetRIR,2);
 grammar=w.coachParseLiftingGrammar('one minute rest');checks++;
 assert.equal(grammar.restSeconds,60);
 
+// v0.60 top/backoff phrasing resilience.
+grammar=w.coachParseLiftingGrammar('one top set for three to five, then two back down sets for six to eight, drop ten percent');checks+=6;
+assert.equal(grammar.topBackoff?.enabled,true);
+assert.equal(grammar.topBackoff.topMinReps,3);
+assert.equal(grammar.topBackoff.topMaxReps,5);
+assert.equal(grammar.topBackoff.backoffSets,2);
+assert.equal(grammar.topBackoff.backoffMinReps,6);
+assert.equal(grammar.topBackoff.backoffPercent,90);
+
+grammar=w.coachParseLiftingGrammar('top set five reps then three lighter sets eight reps, eighty five percent backoffs');checks+=5;
+assert.equal(grammar.topBackoff?.enabled,true);
+assert.equal(grammar.topBackoff.topMinReps,5);
+assert.equal(grammar.topBackoff.backoffSets,3);
+assert.equal(grammar.topBackoff.backoffMinReps,8);
+assert.equal(grammar.topBackoff.backoffPercent,85);
+
+grammar=w.coachParseLiftingGrammar('no backoff sets');checks++;
+assert.equal(grammar.topBackoff?.enabled,false);
+
 // Exercise-name ASR/typo repair.
 [
   ['romanian dead left','Romanian Deadlift'],

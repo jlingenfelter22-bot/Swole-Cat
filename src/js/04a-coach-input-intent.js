@@ -271,7 +271,7 @@ function coachParseTargets(text){
  };
 }
 function coachParseLiftingGrammar(text){
- const raw=coachNumbersToDigits(String(text||'')),lower=coachNormalizeGymText(raw),out={};
+ const raw=coachNumbersToDigits(String(text||'')),lower=coachNormalizeGymText(raw).replace(/\bback down\b/g,'backoff'),out={};
  if(/\b(?:no|skip|without)\s+(?:the\s+)?warm[- ]?ups?\b/i.test(lower))out.warmupMode='none';
  else if(/\b(?:warm me up first|warm up first|start with (?:a )?warm[- ]?up|include warm[- ]?ups?|add warm[- ]?up sets?|ramp me up|ramp up first)\b/i.test(lower))out.warmupMode='first_compound';
  let m=lower.match(/\b(\d+(?:\.\d+)?)\s*(?:minutes?|mins?|min)\s+(?:of\s+)?rest\b/i)
@@ -295,12 +295,12 @@ function coachParseLiftingGrammar(text){
  if(/\b(?:last set amrap|amrap (?:on )?(?:the )?last set|last set (?:is|to be) amrap)\b/i.test(lower))out.lastSetAmrap=true;
  if(/\b(?:no amrap|skip amrap)\b/i.test(lower))out.lastSetAmrap=false;
 
- const mentionsTopBackoff=/\btop set\b|\bback[- ]?off sets?\b/.test(lower);
+ const mentionsTopBackoff=/\btop set\b|\bback[- ]?off sets?\b|\btop set\b.{0,80}\b(?:lighter|drop) sets?\b/.test(lower);
  if(mentionsTopBackoff){
    const topBackoff={enabled:true};
    let tb=lower.match(/\b(\d+)\s+top sets?\b/i);
    if(tb)topBackoff.topSets=Math.max(1,Math.min(2,Number(tb[1])||1));
-   tb=lower.match(/\b(\d+)\s+back[- ]?off sets?\b/i);
+   tb=lower.match(/\b(\d+)\s+(?:back[- ]?off|lighter) sets?\b/i);
    if(tb)topBackoff.backoffSets=Math.max(1,Math.min(5,Number(tb[1])||1));
    tb=lower.match(/\btop set(?:s)?(?:\s+(?:for|of|at))?\s+(\d+)\s+(\d+)\s*reps?\b/i)
      ||lower.match(/\btop set(?:s)?(?:\s+(?:for|of|at))?\s+(\d+)(?:\s*(?:to|[-–])\s*(\d+))?\s*(?:reps?)?\b/i);
@@ -308,15 +308,19 @@ function coachParseLiftingGrammar(text){
      topBackoff.topMinReps=Math.max(1,Number(tb[1])||1);
      topBackoff.topMaxReps=Math.max(topBackoff.topMinReps,Number(tb[2])||topBackoff.topMinReps);
    }
-   tb=lower.match(/\bback[- ]?off sets?(?:\s+(?:for|of|at))?\s+(\d+)\s+(\d+)\s*reps?\b/i)
-     ||lower.match(/\bback[- ]?off sets?(?:\s+(?:for|of|at))?\s+(\d+)(?:\s*(?:to|[-–])\s*(\d+))?\s*(?:reps?)?\b/i);
+   tb=lower.match(/\b(?:back[- ]?off|lighter) sets?(?:\s+(?:for|of|at))?\s+(\d+)\s+(\d+)\s*reps?\b/i)
+     ||lower.match(/\b(?:back[- ]?off|lighter) sets?(?:\s+(?:for|of|at))?\s+(\d+)(?:\s*(?:to|[-–])\s*(\d+))?\s*(?:reps?)?\b/i);
    if(tb){
      topBackoff.backoffMinReps=Math.max(1,Number(tb[1])||1);
      topBackoff.backoffMaxReps=Math.max(topBackoff.backoffMinReps,Number(tb[2])||topBackoff.backoffMinReps);
    }
    tb=lower.match(/\bback[- ]?off(?: sets?)?\s+at\s+(\d{2})(?:\s*percent)?\b/i)
-     ||lower.match(/\bback[- ]?off(?: sets?)?\s+(\d{2})\s+percent\b/i);
+     ||lower.match(/\bback[- ]?off(?: sets?)?\s+(\d{2})\s+percent\b/i)
+     ||lower.match(/\b(\d{2})\s+percent\s+back[- ]?offs?\b/i);
    if(tb)topBackoff.backoffPercent=Math.max(70,Math.min(97.5,Number(tb[1])||90));
+   const lighter=lower.match(/\bback[- ]?offs?(?: sets?)?\s+(\d{1,2})\s+percent\s+(?:lighter|lower)\b/i)
+     ||lower.match(/\bdrop\s+(\d{1,2})\s+percent(?:\s+(?:for|on)\s+(?:the\s+)?back[- ]?offs?)?\b/i);
+   if(lighter)topBackoff.backoffPercent=Math.max(70,Math.min(97.5,100-(Number(lighter[1])||10)));
    out.topBackoff=topBackoff;
  }
  if(/\b(?:no|skip|without)\s+top set(?:s)?\b|\b(?:no|skip|without)\s+back[- ]?off sets?\b/i.test(lower))out.topBackoff={enabled:false};

@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.60.0
+Version: v0.60.1
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -938,3 +938,15 @@ It must not infer from logs alone that:
 - the user is overtrained
 - an injury explains performance
 - a deload is medically necessary
+
+
+## v0.60.1 adaptive progression audit hardening
+
+The v0.60 follow-up audit tightens implementation behavior without expanding the product into recovery diagnosis or automatic deloading.
+
+- Plateau classification is based on a recent four-exposure window, not the full training block, so earlier progress cannot hide a current stall.
+- A plateau window must span at least 10 days. Several flat sessions clustered inside one week remain insufficient evidence for a multi-week plateau label.
+- High-effort plateau and meaningful performance-dip holds apply to adaptive top-set/backoff progression as well as adaptive straight-set progression.
+- Top/backoff routine editing uses role-specific fields and keeps top sets, backoff sets, role rep ranges, backoff percentage, and total working-set count coherent.
+- Natural-language tests now include top/backoff variants such as “back down sets,” “lighter sets,” percentage backoffs, and percentage drops.
+- These rules still describe logged training performance only. They do not infer fatigue, readiness, injury, overtraining, or a medical need to deload.
