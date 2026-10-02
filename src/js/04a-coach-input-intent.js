@@ -302,12 +302,14 @@ function coachParseLiftingGrammar(text){
    if(tb)topBackoff.topSets=Math.max(1,Math.min(2,Number(tb[1])||1));
    tb=lower.match(/\b(\d+)\s+back[- ]?off sets?\b/i);
    if(tb)topBackoff.backoffSets=Math.max(1,Math.min(5,Number(tb[1])||1));
-   tb=lower.match(/\btop set(?:s)?(?:\s+(?:for|of|at))?\s+(\d+)(?:\s*[-–]\s*(\d+))?\s*(?:reps?)?\b/i);
+   tb=lower.match(/\btop set(?:s)?(?:\s+(?:for|of|at))?\s+(\d+)\s+(\d+)\s*reps?\b/i)
+     ||lower.match(/\btop set(?:s)?(?:\s+(?:for|of|at))?\s+(\d+)(?:\s*(?:to|[-–])\s*(\d+))?\s*(?:reps?)?\b/i);
    if(tb){
      topBackoff.topMinReps=Math.max(1,Number(tb[1])||1);
      topBackoff.topMaxReps=Math.max(topBackoff.topMinReps,Number(tb[2])||topBackoff.topMinReps);
    }
-   tb=lower.match(/\bback[- ]?off sets?(?:\s+(?:for|of|at))?\s+(\d+)(?:\s*[-–]\s*(\d+))?\s*(?:reps?)?\b/i);
+   tb=lower.match(/\bback[- ]?off sets?(?:\s+(?:for|of|at))?\s+(\d+)\s+(\d+)\s*reps?\b/i)
+     ||lower.match(/\bback[- ]?off sets?(?:\s+(?:for|of|at))?\s+(\d+)(?:\s*(?:to|[-–])\s*(\d+))?\s*(?:reps?)?\b/i);
    if(tb){
      topBackoff.backoffMinReps=Math.max(1,Number(tb[1])||1);
      topBackoff.backoffMaxReps=Math.max(topBackoff.backoffMinReps,Number(tb[2])||topBackoff.backoffMinReps);
