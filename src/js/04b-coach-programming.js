@@ -24,6 +24,11 @@ function coachExerciseAllowedByConstraints(ex,request){
  if((request.excludedExerciseIds||[]).includes(ex.id))return false;
  if(request.allowedEquipment.length&&!request.allowedEquipment.includes(ex.equipment))return false;
  if(request.excludedEquipment.includes(ex.equipment))return false;
+ const excludedRegions=new Set(request.excludedTargetRegions||[]);
+ if(excludedRegions.size){
+   const meta=exerciseMuscleMetadata(ex);
+   if([...meta.primary,...meta.secondary].some(region=>excludedRegions.has(region)))return false;
+ }
  return true;
 }
 function coachRequestedTargetKeys(request){
@@ -101,6 +106,7 @@ function coachSmartExerciseCount(request,baseCount){
  if(request?.experienceLevel==='beginner')base=Math.min(base,5);
  if(keys.length!==1)return keys.length===2?Math.min(base,7):base;
  const key=keys[0];
+ if(['front delts','side delts','rear delts','abs','obliques'].includes(key))return Math.min(base,4);
  if(key==='lower back')return Math.min(base,4);
  if(['upper back','lats','traps'].includes(key))return Math.min(base,5);
  if(['chest','back','shoulders','arms','biceps','triceps','full body'].includes(key))return Math.min(base,6);
@@ -179,6 +185,7 @@ function coachCoveragePlan(request,count){
  const forearmFlexion=ex=>forearmDirect(ex)&&ex.pattern==='wrist_flexion';
  const forearmExtension=ex=>forearmDirect(ex)&&ex.pattern==='wrist_extension';
  const shoulderPress=ex=>ex.pattern==='vertical_press'&&(meta(ex).primary.includes('front_delts')||meta(ex).primary.includes('side_delts'));
+ const shoulderFront=ex=>meta(ex).primary.includes('front_delts')&&['vertical_press','front_raise'].includes(ex.pattern);
  const shoulderLateral=ex=>ex.pattern==='lateral_raise'&&meta(ex).primary.includes('side_delts');
  const shoulderRear=ex=>ex.pattern==='rear_delt'&&meta(ex).primary.includes('rear_delts');
  const squatPattern=ex=>['squat','lunge'].includes(ex.pattern)&&meta(ex).primary.includes('quads');
@@ -187,6 +194,8 @@ function coachCoveragePlan(request,count){
  const glutePattern=ex=>meta(ex).primary.includes('glutes')&&['hip_extension','hinge'].includes(ex.pattern);
  const adductorPattern=ex=>meta(ex).primary.includes('adductors')||ex.pattern==='hip_adduction';
  const calfPattern=ex=>ex.pattern==='calf_raise'&&meta(ex).primary.includes('calves');
+ const absPattern=ex=>meta(ex).primary.includes('core')&&!meta(ex).primary.includes('obliques');
+ const obliquePattern=ex=>meta(ex).primary.includes('obliques');
  const corePattern=ex=>meta(ex).primary.includes('core')||meta(ex).primary.includes('obliques');
  const addChest=()=>{
    add(core,'chest_press','Chest press',chestPress);
@@ -259,6 +268,11 @@ function coachCoveragePlan(request,count){
    add(core,'shoulder_lateral','Lateral delts',shoulderLateral);
    add(core,'shoulder_rear','Rear delts',shoulderRear);
  };
+ const addFrontDelts=()=>{add(core,'front_delts_direct','Front delts',shoulderFront)};
+ const addSideDelts=()=>{add(core,'side_delts_direct','Side delts',shoulderLateral)};
+ const addRearDelts=()=>{add(core,'rear_delts_direct','Rear delts',shoulderRear)};
+ const addAbs=()=>{add(core,'abs_direct','Abs',absPattern)};
+ const addObliques=()=>{add(core,'obliques_direct','Obliques',obliquePattern)};
  const addLegs=()=>{
    add(core,'leg_knee','Knee-dominant quads',squatPattern);
    add(core,'leg_hinge','Hip hinge / posterior chain',hipHinge);
@@ -301,6 +315,11 @@ function coachCoveragePlan(request,count){
      else if(key==='traps')addTraps();
      else if(key==='arms')addArms();
      else if(key==='shoulders')addShoulders();
+     else if(key==='front delts')addFrontDelts();
+     else if(key==='side delts')addSideDelts();
+     else if(key==='rear delts')addRearDelts();
+     else if(key==='abs')addAbs();
+     else if(key==='obliques')addObliques();
      else if(key==='posterior chain')addPosteriorChain();
      else if(key==='legs')addLegs();
      else if(key==='biceps'){
