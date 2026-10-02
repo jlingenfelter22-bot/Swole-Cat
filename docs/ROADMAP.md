@@ -767,6 +767,8 @@ Goal: freeze the pre-beta product on a leaner, faster, better-audited runtime be
 - [x] Reuse cached Program and History ordering instead of repeatedly filtering/sorting the entire session list during rendering.
 - [x] Make session/custom-exercise structural changes invalidate their caches deliberately while preserving cache correctness through lb/kg conversion.
 - [x] Remove proven-unreachable pre-Focus-Mode workout accordion/sticky-dock helpers, duplicate routine/session card helpers, unused artwork helpers, and retired custom PWA install-prompt wiring.
+- [x] Move deterministic regression-fixture and muscle-audit helpers out of the production bundle and inject them only into the validation fixture.
+- [x] Remove dead Coach parsing helpers and the unreachable legacy saved-Routine substitution branch while preserving the current Routine editor substitute flow and live-workout substitute flow.
 - [x] Remove the stale pre-Focus Add Exercise scroll target and make Add Exercise focus the newly added movement directly in the current Focus Mode canvas while preserving unfinished work as Pending.
 - [x] Prune CSS belonging exclusively to the retired pre-Focus sticky exercise dock/toggle.
 - [x] Add a production-bundle optimization regression that verifies cache identity across ordinary workout saves, invalidation after real history/catalog changes, current Focus Mode add-exercise behavior, and absence of retired globals.

@@ -132,19 +132,6 @@ function coachNumbersToDigits(text){
  });
  return out.replace(/\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b/gi,m=>String(COACH_NUMBER_WORDS[m.toLowerCase()]));
 }
-function coachCleanExercisePhrase(value){
- return coachNormalizeWords(String(value||'')
-   .replace(/\b(?:please|then|next|also|and then|i want|i need|do|doing|exercise)\b/gi,' ')
-   .replace(/\b(?:for|at)\s+\d+(?:\s*(?:-|to)\s*\d+)?\s*(?:reps?)?\s*$/i,' '));
-}
-function coachParseRepTarget(value){
- const text=String(value||'');
- let m=text.match(/(?:for|at|x)\s*(\d+)\s*(?:-|to)\s*(\d+)\s*reps?\b/i);
- if(m)return {minReps:Number(m[1]),maxReps:Number(m[2])};
- m=text.match(/(?:for|at|x)\s*(\d+)(?:\s*reps?)?\b/i)||text.match(/\b(\d+)\s*reps?\b/i);
- if(m)return {minReps:Number(m[1]),maxReps:Number(m[1])};
- return null;
-}
 function coachRegexEscape(value){return String(value||'').replace(/[.*+?^$(){}|[\]\\]/g,'\\$&')}
 function coachLevenshtein(a,b){
  a=String(a||'');b=String(b||'');
@@ -387,14 +374,6 @@ function coachGenerateExplicitWorkout(request,prescription){
 function coachResolveExercisePhrase(phrase,ids=null){
  const understood=coachUnderstandExercisePhrase(phrase,ids);
  return understood.exercise||null;
-}
-function coachExerciseClarification(phrase,ids=null){
- const understood=coachUnderstandExercisePhrase(phrase,ids);
- if(understood.level!=='medium')return null;
- return {
-   phrase:understood.query,
-   options:understood.alternatives.slice(0,3).map(x=>({exerciseId:x.exercise.id,name:x.exercise.name,confidence:x.score}))
- };
 }
 function coachTargetRegionsForKey(key){return COACH_TARGET_GROUPS[key]?.regions||[]}
 function coachRemoveTargetKey(req,key){

@@ -54,27 +54,26 @@ function recommendedSubs(exerciseId,query=''){
  if(query){const q=query.toLowerCase();arr=arr.filter(x=>x.name.toLowerCase().includes(q)||x.muscle.toLowerCase().includes(q)||patternLabel(x.pattern).toLowerCase().includes(q));}
  return arr.map(x=>({x,score:subScore(cur,x)})).filter(row=>row.score>-900).sort((a,b)=>b.score-a.score||a.x.name.localeCompare(b.x.name));
 }
-function subRowsHtml(currentId,context,index,query=''){
+function subRowsHtml(currentId,index,query=''){
  const cur=exById(currentId);
  const rows=recommendedSubs(currentId,query).slice(0,query?60:14);
- return rows.map(({x,score})=>`<div class="picker-result-card">
+ return rows.map(({x})=>`<div class="picker-result-card">
    <div class="picker-result-main">
-     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}');${context==='workout'?`refreshWorkoutSubs(${index})`:`refreshRoutineSubs('${context}',${index})`}" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
+     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}');refreshWorkoutSubs(${index})" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
      <div class="iconbox">${catExerciseThumbnail(x)}</div>
      <div class="picker-result-copy"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini">${esc(x.muscle)} · ${esc(x.equipment)}<br>${esc(substitutionReason(cur,x))}</div></div>
    </div>
-   <div class="picker-result-actions ${context==='workout'?'':'one'}">
-     ${context==='workout'
-       ?`<button class="btn small" onclick="swapWorkoutExercise(${index},'${x.id}',false)">Use Today</button><button class="btn small secondary" onclick="swapWorkoutExercise(${index},'${x.id}',true)">Use + Save to Routine</button>`
-       :`<button class="btn small" onclick="swapRoutineExercise('${context}',${index},'${x.id}')">Use This Exercise</button>`}
+   <div class="picker-result-actions">
+     <button class="btn small" onclick="swapWorkoutExercise(${index},'${x.id}',false)">Use Today</button>
+     <button class="btn small secondary" onclick="swapWorkoutExercise(${index},'${x.id}',true)">Use + Save to Routine</button>
    </div>
  </div>`).join('')||'<div class="empty">No matching visible exercises.</div>';
 }
 function openWorkoutSubstitute(ei){
  const e=state.activeWorkout?.exercises?.[ei];if(!e)return;const cur=exById(e.exerciseId);
- openModal(`Substitute ${esc(cur?.name||'exercise')}`,`<div class="notice">Recommended swaps prioritize movement and muscle match, then use your Favorite / Prefer / Avoid choices to break ties. Hidden exercises are excluded. <b>Today</b> changes only this session. <b>Routine</b> also replaces the exercise in your saved routine. Progress history stays separate for each exercise.</div><div style="margin:12px 0"><input id="subSearch" placeholder="Search any exercise..." oninput="refreshWorkoutSubs(${ei})"></div><div id="subList" class="picker-result-list">${subRowsHtml(e.exerciseId,'workout',ei)}</div>`);
+ openModal(`Substitute ${esc(cur?.name||'exercise')}`,`<div class="notice">Recommended swaps prioritize movement and muscle match, then use your Favorite / Prefer / Avoid choices to break ties. Hidden exercises are excluded. <b>Today</b> changes only this session. <b>Routine</b> also replaces the exercise in your saved routine. Progress history stays separate for each exercise.</div><div style="margin:12px 0"><input id="subSearch" placeholder="Search any exercise..." oninput="refreshWorkoutSubs(${ei})"></div><div id="subList" class="picker-result-list">${subRowsHtml(e.exerciseId,ei)}</div>`);
 }
-function refreshWorkoutSubs(ei){const e=state.activeWorkout.exercises[ei];document.getElementById('subList').innerHTML=subRowsHtml(e.exerciseId,'workout',ei,document.getElementById('subSearch').value)}
+function refreshWorkoutSubs(ei){const e=state.activeWorkout.exercises[ei];document.getElementById('subList').innerHTML=subRowsHtml(e.exerciseId,ei,document.getElementById('subSearch').value)}
 function swapWorkoutExercise(ei,newId,permanent){
  const e=state.activeWorkout.exercises[ei], old=e.exerciseId;
  if(permanent){const r=state.routines.find(x=>x.id===state.activeWorkout.routineId);if(r&&Number.isInteger(e.routineIndex)&&r.exercises[e.routineIndex])r.exercises[e.routineIndex].exerciseId=newId;}
@@ -83,13 +82,6 @@ function swapWorkoutExercise(ei,newId,permanent){
  e.sets=Array.from({length:e.config.sets},(_,i)=>({weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??e.config.minReps,done:false,rir:'',type:'working'}));e.notes='';
  if(!permanent)markWorkoutStructureDirty();else saveActiveWorkout();closeModal();renderWorkout();
 }
-function openRoutineSubstitute(routineId,index){
- const r=state.routines.find(x=>x.id===routineId);if(!r||!r.exercises[index])return;const cur=r.exercises[index];
- openModal(`Replace ${esc(exById(cur.exerciseId)?.name||'exercise')}`,`<div class="notice">This permanently changes the movement in this routine but does not delete old workout history. Preferred and favorite exercises rank higher, Avoid ranks lower, and Hidden exercises are excluded.</div><div style="margin:12px 0"><input id="subSearch" placeholder="Search any exercise..." oninput="refreshRoutineSubs('${routineId}',${index})"></div><div id="subList" class="picker-result-list">${subRowsHtml(cur.exerciseId,routineId,index)}</div>`);
-}
-function refreshRoutineSubs(routineId,index){const r=state.routines.find(x=>x.id===routineId),cur=r.exercises[index];document.getElementById('subList').innerHTML=subRowsHtml(cur.exerciseId,routineId,index,document.getElementById('subSearch').value)}
-function swapRoutineExercise(routineId,index,newId){const r=state.routines.find(x=>x.id===routineId);if(!r)return;r.exercises[index].exerciseId=newId;save();closeModal();editRoutineDetails(routineId);renderRoutines();renderHome();}
-
 let addPickerCategory='home',addPickerMovement='';
 
 function openAddWorkoutExercise(){

@@ -163,15 +163,6 @@ function anatomyScoreRegion(id){
 function availableHeatMapMuscleRegions(){
  return [...new Set([...SWOLECAT_ANATOMY_FRONT,...SWOLECAT_ANATOMY_BACK].map(x=>anatomyScoreRegion(x.id)).filter(Boolean))];
 }
-function auditExerciseMuscleCoverage(){
- const drawable=new Set(availableHeatMapMuscleRegions());
- return LIBRARY.map(ex=>{
-   const meta=exerciseMuscleMetadata(ex);
-   const missing=[...meta.primary,...meta.secondary].filter(m=>!drawable.has(m));
-   return {id:ex.id,name:ex.name,primary:meta.primary,secondary:meta.secondary,missing};
- });
-}
-
 function anatomyPathClass(part,scores){
  const region=anatomyScoreRegion(part.id);
  if(!region)return 'anatomy-neutral';

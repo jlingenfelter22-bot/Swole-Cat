@@ -29,7 +29,6 @@ function coachRoutineEstimateMinutes(routine){
  });
  return Math.max(1,Math.round(minutes));
 }
-function coachRoutineSessionCurrent(){return coachRoutineSession?.working||null}
 function coachRoutineBeginMutation(label){
  if(!coachRoutineSession)return null;
  return {label,routine:coachRoutineClone(coachRoutineSession.working),lastReference:coachRoutineSession.lastReference?{...coachRoutineSession.lastReference}:null};

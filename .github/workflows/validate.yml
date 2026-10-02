@@ -76,8 +76,9 @@ jobs:
           let html=fs.readFileSync('www/index.html','utf8');
           const css=fs.readFileSync('www/app.css','utf8').replace(/<\/style/gi,'<\\/style');
           const js=fs.readFileSync('www/app.js','utf8').replace(/<\/script/gi,'<\\/script');
+          const testRuntime=fs.readFileSync('scripts/test-runtime-fixture.js','utf8').replace(/<\/script/gi,'<\\/script');
           html=html.replace('<link rel="stylesheet" href="./app.css">',()=>`<style>${css}</style>`);
-          html=html.replace('<script src="./app.js"></script>',()=>`<script>${js}</script>`);
+          html=html.replace('<script src="./app.js"></script>',()=>`<script>${js}</script><script>${testRuntime}</script>`);
           fs.writeFileSync('/tmp/swole-cat-test.html',html);
           JS
 
