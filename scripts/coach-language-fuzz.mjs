@@ -158,7 +158,7 @@ for(const [prompt,frequency,split,days] of programCases){
   const intent=w.coachParseProgramIntent(prompt);
   assert.equal(intent.frequency,frequency,`program frequency failed: ${prompt}`);
   assert.equal(intent.split,split,`program split failed: ${prompt}`);
-  if(days.length)assert.deepEqual(intent.preferredDays,days,`program weekdays failed: ${prompt}`);
+  if(days.length)assert.equal(JSON.stringify(Array.from(intent.preferredDays)),JSON.stringify(days),`program weekdays failed: ${prompt}`);
 }
 
 // Equipment language.
