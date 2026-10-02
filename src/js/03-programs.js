@@ -33,6 +33,7 @@ function programCard(p){
    <div class="actions">
      ${next?`<button class="btn small ${isActive?'green':''}" onclick="startProgramWorkout('${p.id}')">${state.activeWorkout?.programId===p.id?'Resume Program Workout':'Start Next'}</button>`:''}
      ${!isActive?`<button class="btn small secondary" onclick="activateProgram('${p.id}')">Set Active</button>`:''}
+      <button class="btn small secondary" onclick="openCoachProgramAudit('${p.id}')">Coach Audit</button>
      <button class="btn small secondary" onclick="newProgram('${p.id}')">Edit</button>
      <button class="btn small danger" onclick="deleteProgram('${p.id}')">Delete</button>
    </div>
@@ -54,7 +55,7 @@ function renderActiveProgramHome(){
    </div>
    ${programRouteHtml(p)}
    <div class="row" style="margin-top:10px"><div><div class="mini">NEXT WORKOUT</div><b>${esc(next?.name||'No routine selected')}</b>${last?`<div class="mini" style="margin-top:3px">Last: ${esc(last.routineName)} · ${new Date(last.date).toLocaleDateString()}</div>`:''}</div>
-   ${next?`<button class="btn small green" onclick="startProgramWorkout('${p.id}')">${state.activeWorkout?.programId===p.id?'Resume':'Start Next'}</button>`:''}</div>
+   <div class="actions" style="margin:0">${next?`<button class="btn small green" onclick="startProgramWorkout('${p.id}')">${state.activeWorkout?.programId===p.id?'Resume':'Start Next'}</button>`:``}<button class="btn small secondary" onclick="openCoachProgramAudit('${p.id}')">Audit</button></div></div>
  </div>`;
 }
 function activateProgram(id){

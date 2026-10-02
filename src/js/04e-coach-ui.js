@@ -207,6 +207,7 @@ function coachSubmitPrompt(){
  if(!prompt){showToast('Tell Coach Swolecat what you want to train');return}
  const taught=coachTryTeachAlias(prompt);
  if(taught.handled){showToast(taught.message);return}
+ if(typeof coachTryProgramAuditQuestion==='function'&&coachTryProgramAuditQuestion(prompt,{render:true}))return;
  if(typeof coachTryHistoryQuestion==='function'&&coachTryHistoryQuestion(prompt,{render:true}))return;
  const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt),explicit=coachParseExplicitWorkout(prompt,request.goal);
  request.excludedExerciseIds=[...new Set([...(request.excludedExerciseIds||[]),...(explicit.excludedExerciseIds||[])])];
@@ -253,6 +254,7 @@ function homeCoachBuildPrompt(){
  if(!prompt){showToast('Ask Coach something or tell it what you want to build');return}
  const taught=coachTryTeachAlias(prompt);
  if(taught.handled){showToast(taught.message);return}
+ if(typeof coachTryProgramAuditQuestion==='function'&&coachTryProgramAuditQuestion(prompt,{render:true}))return;
  if(typeof coachTryHistoryQuestion==='function'&&coachTryHistoryQuestion(prompt,{render:true}))return;
  const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt),explicit=coachParseExplicitWorkout(prompt,request.goal);
  request.excludedExerciseIds=[...new Set([...(request.excludedExerciseIds||[]),...(explicit.excludedExerciseIds||[])])];
@@ -277,7 +279,7 @@ function homeCoachLauncherHtml({embedded=false}={}){
  return `<div class="${embedded?'home-new-user':''}">
    ${embedded?'':`<div class="home-coach-head"><div><div class="home-coach-title">Coach Swolecat</div><div class="mini">Need something different today?</div></div><span class="tag">QUICK BUILD</span></div>`}
    <div class="home-coach-row"><div class="coach-voice-field"><input id="homeCoachPrompt" placeholder="Build something or ask about your training..." onkeydown="if(event.key==='Enter')homeCoachBuildPrompt()">${coachVoiceButtonHtml('homeCoachPrompt')}</div><button class="btn" onclick="homeCoachBuildPrompt()">Go</button></div>
-    <div class="home-coach-chips"><button class="home-coach-chip" onclick="homeCoachExample('30 minute leg workout')">30m legs</button><button class="home-coach-chip" onclick="homeCoachExample('What did I bench last time?')">Last bench?</button><button class="home-coach-chip" onclick="homeCoachExample('What am I progressing on?')">My trends</button></div>
+    <div class="home-coach-chips"><button class="home-coach-chip" onclick="homeCoachExample('30 minute leg workout')">30m legs</button><button class="home-coach-chip" onclick="homeCoachExample('What did I bench last time?')">Last bench?</button><button class="home-coach-chip" onclick="homeCoachExample('What am I progressing on?')">My trends</button><button class="home-coach-chip" onclick="homeCoachExample('Audit my program')">Audit program</button></div>
  </div>`;
 }
 function homeQuickActionsHtml(){

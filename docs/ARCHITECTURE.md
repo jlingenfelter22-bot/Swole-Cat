@@ -130,3 +130,5 @@ This prevents the modular source tree and the shipped app from drifting apart.
 Swole Cat remains vanilla HTML/CSS/JavaScript for now. A framework migration is not required to gain modularity. A bundler/framework should only be introduced later if it solves a concrete product or engineering need that the current deterministic build cannot handle cleanly.
 
 - `src/js/04g-coach-history-insights.js` owns v0.62 local training-history Q&A, trend summaries, consistency/recency analysis, and ranked Coach insights.
+
+- `src/js/04h-coach-program-auditor.js` owns v0.63 whole-Program auditing, planned-vs-actual analysis, long-term findings, and opt-in review handoffs.
