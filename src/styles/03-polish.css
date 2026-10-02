@@ -1092,3 +1092,45 @@
   #restTimer.resttimer{right:8px;bottom:78px;max-width:calc(100vw - 16px)}
   #restTimer .rest-main{padding-left:8px;padding-right:8px}
 }
+
+/* TODAY BETA READINESS PASS 2 // STEP 5
+   Secondary exercise tools stay available without competing with logging. */
+#workout .exercise-options{
+  margin:7px 0 1px;
+  border-top:1px solid rgba(74,92,121,.22);
+}
+#workout .exercise-options>summary{
+  list-style:none;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:8px;
+  min-height:38px;
+  padding:8px 2px 5px;
+  color:#9cacbf;
+  cursor:pointer;
+  user-select:none;
+  font-size:.7rem;
+  font-weight:850;
+}
+#workout .exercise-options>summary::-webkit-details-marker{display:none}
+#workout .exercise-options>summary>span:first-child{color:#c4ceda;letter-spacing:.02em}
+#workout .exercise-options-meta{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:#78889d;font-size:.64rem;font-weight:760;text-align:right
+}
+#workout .exercise-options>summary:after{content:"⌄";color:#7d8ca1;font-size:.72rem}
+#workout .exercise-options[open]>summary:after{content:"⌃"}
+#workout .exercise-options .toolrow{margin-top:2px;padding:3px 0 7px}
+#workout .exercise-options:not([open]) .toolrow{display:none}
+#workout .exercise-options .toolchip{
+  border-color:rgba(72,88,116,.58);
+  background:rgba(20,29,42,.72);
+  color:#aeb9c8
+}
+#workout .set-card-actions .set-icon-btn{
+  opacity:.64;
+  border-color:rgba(66,79,105,.68)
+}
+#workout .set-card-actions .set-icon-btn:focus,
+#workout .set-card-actions .set-icon-btn:active{opacity:1}

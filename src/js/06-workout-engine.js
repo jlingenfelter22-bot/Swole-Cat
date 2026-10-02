@@ -903,7 +903,13 @@ function renderWorkout(){
         ${coach?.canReset&&!e.targetOverride?`<div class="actions compact-guidance-action"><button class="btn small secondary" onclick="applyCoachReset(${ei})">Apply ${coach.resetPercent}% reset for today</button></div>`:''}
        </div>
       </details>
-      <div class="toolrow">${warmups.length?`<button class="toolchip" onclick="openWarmupGuide(${ei})">Warm-up guide</button>`:''}<button class="toolchip" onclick="openTargetOverride(${ei})">Override target</button><button class="toolchip" onclick="openWorkoutSubstitute(${ei})">Substitute</button><button class="toolchip" onclick="openSupersetPicker(${ei})">⚡ ${superset?`Superset ${superset.label}`:'Superset'}</button><span class="toolchip">${e.config.restSeconds||120}s rest</span>${e.config.targetRIR!=null&&Number.isFinite(Number(e.config.targetRIR))?`<span class="toolchip">Target ${e.config.targetRIR} RIR</span>`:''}</div>
+      <details class="exercise-options" ${e.targetOverride||superset?'open':''}>
+       <summary>
+        <span>Exercise options</span>
+        <span class="exercise-options-meta">${e.targetOverride?'Override active':superset?`Superset ${superset.label}`:'Warm-up · substitute · more'}</span>
+       </summary>
+       <div class="toolrow">${warmups.length?`<button class="toolchip" onclick="openWarmupGuide(${ei})">Warm-up guide</button>`:''}<button class="toolchip" onclick="openTargetOverride(${ei})">Override target</button><button class="toolchip" onclick="openWorkoutSubstitute(${ei})">Substitute</button><button class="toolchip" onclick="openSupersetPicker(${ei})">⚡ ${superset?`Superset ${superset.label}`:'Superset'}</button><span class="toolchip">${e.config.restSeconds||120}s rest</span>${e.config.targetRIR!=null&&Number.isFinite(Number(e.config.targetRIR))?`<span class="toolchip">Target ${e.config.targetRIR} RIR</span>`:''}</div>
+      </details>
       ${superset?`<div class="superset-note"><b>Superset ${superset.label}</b> · ${esc(supersetNames(superset.id))}<br>Rotate through working sets, then rest after the round.</div>`:''}
     <div class="live-body">
      ${e.sets.map((s,si)=>{
