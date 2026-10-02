@@ -24,6 +24,7 @@ async function localOnlyCase(){
     url:'https://swole-cat.test/',
     pretendToBeVisual:true,
     beforeParse(window){
+      window.SWOLE_CAT_CLOUD_CONFIG={disabled:true};
       window.localStorage.setItem('overload_v3',JSON.stringify({
         ui:{onboardingDone:true,haptics:false,keepAwake:false},
         routines:[],
@@ -41,7 +42,7 @@ async function localOnlyCase(){
   const config=w.SwoleCatRuntime.getService('cloudConfig');
   assert(identity,'identity service must exist');
   assert(config,'cloud config service must exist');
-  assert.equal(config.configured(),false,'default build must remain cloud-disabled without explicit config');
+  assert.equal(config.configured(),false,'explicit local-only override must disable the configured lab backend');
   assert.equal(identity.snapshot().status,'local_only');
   assert.equal(identity.canUseCloud(),false);
   assert.deepEqual(cloudKeys(w),[],'local-only startup must not create cloud metadata');

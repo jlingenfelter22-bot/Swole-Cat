@@ -11,9 +11,10 @@ function normalizeCloudConfigValue(value){
 }
 function resolveSwoleCatCloudConfig(){
   const runtime=isPlainObject(window.SWOLE_CAT_CLOUD_CONFIG)?window.SWOLE_CAT_CLOUD_CONFIG:{};
-  const supabaseUrl=normalizeCloudConfigValue(runtime.supabaseUrl||SWOLE_CAT_CLOUD_BUILD_URL);
-  const supabasePublishableKey=normalizeCloudConfigValue(runtime.supabasePublishableKey||SWOLE_CAT_CLOUD_BUILD_KEY);
-  const googleWebClientId=normalizeCloudConfigValue(runtime.googleWebClientId||SWOLE_CAT_GOOGLE_BUILD_CLIENT_ID);
+  const disabled=runtime.disabled===true;
+  const supabaseUrl=disabled?'':normalizeCloudConfigValue(runtime.supabaseUrl||SWOLE_CAT_CLOUD_BUILD_URL);
+  const supabasePublishableKey=disabled?'':normalizeCloudConfigValue(runtime.supabasePublishableKey||SWOLE_CAT_CLOUD_BUILD_KEY);
+  const googleWebClientId=disabled?'':normalizeCloudConfigValue(runtime.googleWebClientId||SWOLE_CAT_GOOGLE_BUILD_CLIENT_ID);
   return Object.freeze({
     provider:'supabase',
     supabaseUrl,
