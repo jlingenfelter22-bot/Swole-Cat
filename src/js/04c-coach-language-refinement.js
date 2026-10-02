@@ -1,6 +1,6 @@
 function coachExplicitGoal(text){
  const lower=coachNormalizeGymText(coachNumbersToDigits(String(text||'')));
- if(/\bstrength\b|\bstronger\b|\bget strong\b|\bpowerlifting\b|\bbuild strength\b|\bgo heavy\b|\bheavy (?:weights?|lifting|sets?)\b/.test(lower))return 'strength';
+ if(/\bstrength\b|\bstronger\b|\bget strong\b|\bpowerlifting\b|\bbuild strength\b|\bgo heavy\b|\bheavy (?:weights?|lifting|sets?)\b|\bheavy (?:push|pull|legs?|chest|back|shoulders?|arms?|upper body|lower body|full body)\b/.test(lower))return 'strength';
  if(/\bhypertrophy\b|\bmuscle growth\b|\bbuild muscle\b|\bgain muscle\b|\bget bigger\b|\badd size\b|\bbodybuild/.test(lower)||/\bsize\b/.test(lower))return 'hypertrophy';
  if(/\bgeneral fitness\b|\bgeneral workout\b|\bgeneral training\b|\bjust exercise\b|\bstay active\b/.test(lower))return 'general';
  return null;
