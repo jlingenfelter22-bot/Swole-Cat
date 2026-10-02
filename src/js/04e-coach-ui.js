@@ -29,7 +29,7 @@ function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
      const p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,r,d):d;
      return {
        exerciseId,sets:explicit?.sets||p.sets,minReps:explicit?.minReps||p.minReps,maxReps:explicit?.maxReps||p.maxReps,increment:state.settings.defaultIncrement,
-       mode:'double',progressionStrategy:p.progressionStrategy||'double',setStructure:p.setStructure?cloneData(p.setStructure):null,
+       mode:'double',progressionStrategy:p.progressionStrategy||'double',adaptiveProgression:!!p.adaptiveProgression,setStructure:p.setStructure?cloneData(p.setStructure):null,
        trainingGoal:d.goal,resetPercent:7.5,restSeconds:p.restSeconds,
        autoWarmup:exerciseId===firstWarmupId,
        targetRIR:Number.isFinite(Number(p.targetRIR))?Number(p.targetRIR):null,
