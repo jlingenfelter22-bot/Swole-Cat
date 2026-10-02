@@ -80,6 +80,9 @@ jobs:
       - name: Stress test Coach Swolecat prompt matrix
         run: node scripts/coach-stress.mjs
 
+      - name: Stress test v0.59 Coach training intelligence
+        run: node scripts/coach-intelligence-stress.mjs
+
       - name: Smoke test active workouts, set types, progression, and supersets
         run: |
           node <<'JS'
