@@ -41,7 +41,7 @@ function coachHistoryQuestionIntent(text){
  const raw=String(text||'').trim(),lower=coachNormalizeGymText(coachNumbersToDigits(raw));
  if(!raw)return {handled:false,type:''};
  const build=/\b(?:build|make me|give me|create|generate|start)\b.{0,35}\b(?:workout|routine|program|session)\b/i.test(lower);
- const historySignal=/\b(?:last time|last session|last workout|previous time|history|progress(?:ing|ion)?|trend(?:ing)?|stall(?:ed|ing)?|plateau|best|pr|record|heaviest|strongest|consistent|consistency|how many workouts|haven't trained|havent trained|have not trained|not trained lately|neglect(?:ed|ing)?|when did i last|recently trained|trained lately)\b/i.test(lower);
+ const historySignal=/\b(?:last time|last session|last workout|previous time|history|progress(?:ing|ion)?|trend(?:ing)?|stall(?:ed|ing)?|plateau|best|pr|record|heaviest|strongest|consistent|consistency|how many workouts|haven(?:'|’|\s)?t trained|havent trained|have not trained|not trained lately|neglect(?:ed|ing)?|when did i last|recently trained|trained lately)\b/i.test(lower);
  const question=/^(?:what|when|how|which|have i|has my|did i|am i)\b/i.test(lower)||raw.includes('?');
  if(build&&!question)return {handled:false,type:''};
  if(!historySignal&&!question)return {handled:false,type:''};
@@ -49,7 +49,7 @@ function coachHistoryQuestionIntent(text){
  const resolved=coachHistoryResolveExercise(raw),hasExercise=!!resolved.exercise||resolved.ambiguous;
  const target=typeof coachParseTargets==='function'?coachParseTargets(raw):{keys:[],labels:[],regions:[]};
  if(/\b(?:consistent|consistency|how many workouts|training frequency|how often)\b/i.test(lower))return {handled:true,type:'consistency',raw,lower,resolved,target};
- if(/\b(?:haven't trained|havent trained|have not trained|not trained lately|neglect(?:ed|ing)?|what.*not.*train)\b/i.test(lower))return {handled:true,type:'neglected',raw,lower,resolved,target};
+ if(/\b(?:haven(?:'|’|\s)?t trained|havent trained|have not trained|not trained lately|neglect(?:ed|ing)?|what.*not.*train)\b/i.test(lower))return {handled:true,type:'neglected',raw,lower,resolved,target};
  if(!hasExercise&&/\b(?:what|which).{0,25}\b(?:progressing|stalled|stalling|plateau|trending|going up|going down)\b/i.test(lower))return {handled:true,type:'global_progress',raw,lower,resolved,target};
  if(hasExercise&&/\b(?:best|pr|record|heaviest|strongest)\b/i.test(lower))return {handled:true,type:'exercise_best',raw,lower,resolved,target};
  if(hasExercise&&/\b(?:progress(?:ing|ion)?|trend(?:ing)?|stall(?:ed|ing)?|plateau)\b/i.test(lower))return {handled:true,type:'exercise_progress',raw,lower,resolved,target};
