@@ -223,15 +223,18 @@ function liveSetTarget(e,si,prev){
  if(normalizeTrainingMode(e.config.routineMode)==='track')return {weight:roundLoad(Number(current?.weight??base.weights?.[wi]??base.weight??0)),reps:Math.max(1,Number(current?.reps??base.targetReps?.[wi]??e.config.minReps))};
  let weight=Number(base.weights?.[wi]??base.weight??current?.weight??0);
  let reps=Number(base.targetReps?.[wi]??e.config.minReps);
+ const roleRange=typeof coachAdaptiveSetRepRange==='function'
+   ?coachAdaptiveSetRepRange(e.config,wi)
+   :{min:e.config.minReps,max:e.config.maxReps};
  const earlier=e.sets.slice(0,si).filter(s=>s.done&&isProgressionSet(s));
  if(earlier.length){
    const last=earlier[earlier.length-1];
    const prevWi=Math.max(0,wi-1);
    const expected=Number(base.targetReps?.[Math.min(prevWi,(base.targetReps?.length||1)-1)]??reps);
    const miss=Number(last.reps)-expected;
-   if(miss<=-2) reps=Math.max(e.config.minReps-2,reps-1);
-   else if(miss>=2) reps=Math.min(e.config.maxReps+2,reps+1);
-   if(last.rir!=='' && Number(last.rir)===0) reps=Math.max(e.config.minReps-2,reps-1);
+   if(miss<=-2) reps=Math.max(Math.max(1,roleRange.min-2),reps-1);
+   else if(miss>=2) reps=Math.min(roleRange.max+2,reps+1);
+   if(last.rir!=='' && Number(last.rir)===0) reps=Math.max(Math.max(1,roleRange.min-2),reps-1);
  }
  return {weight:roundLoad(weight),reps:Math.max(1,reps)};
 }
