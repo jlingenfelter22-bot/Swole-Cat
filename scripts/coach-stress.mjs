@@ -76,7 +76,8 @@ const targetAliases=[
   ['spinal erectors','lower back'],['lats','lats'],['traps','traps'],['shoulders','shoulders'],['delts','shoulders'],
   ['arms','arms'],['biceps','biceps'],['bis','biceps'],['triceps','triceps'],['tris','triceps'],['forearms','forearms'],
   ['legs','legs'],['quads','quads'],['hamstrings','hamstrings'],['hams','hamstrings'],['glutes','glutes'],
-  ['calves','calves'],['posterior chain','posterior chain'],['push','push'],['pull','pull'],['upper body','upper body'],
+  ['calves','calves'],['adductors','adductors'],['front delts','front delts'],['side delts','side delts'],['rear delts','rear delts'],
+  ['abs','abs'],['obliques','obliques'],['posterior chain','posterior chain'],['push','push'],['pull','pull'],['upper body','upper body'],
   ['lower body','lower body'],['full body','full body'],['core','core']
 ];
 const goalWords=[['hypertrophy','hypertrophy'],['strength','strength'],['general fitness','general']];
