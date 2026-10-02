@@ -68,9 +68,9 @@ const COACH_GYM_TEXT_REPLACEMENTS=[
  // Body-part slang, common misspellings, and frequent speech-recognition repairs.
  [/\b(?:bicepts?|biseps?|buy ceps?|bye ceps?)\b/gi,'biceps'],
  [/\b(?:tricepts?|try ceps?|tri ceps?)\b/gi,'triceps'],
+ [/\b(?:rear|back) deltoids?\b/gi,'rear delts'],[/\bposterior deltoids?\b/gi,'rear delts'],
+ [/\b(?:middle|medial|lateral) deltoids?\b/gi,'side delts'],[/\banterior deltoids?\b/gi,'front delts'],
  [/\b(?:sholders?|shoulderss|deltoids?)\b/gi,'shoulders'],
- [/\b(?:rear|back) deltoids?\b/gi,'rear delts'],[/\bposterior delts?\b/gi,'rear delts'],
- [/\b(?:middle|medial|lateral) delts?\b/gi,'side delts'],[/\banterior delts?\b/gi,'front delts'],
  [/\bpectorals?\b/gi,'chest'],[/\bpecs?\b/gi,'chest'],
  [/\bham strings?\b/gi,'hamstrings'],[/\b(?:hammies|hammys|hammy)\b/gi,'hamstrings'],
  [/\bquadriceps?\b/gi,'quads'],[/\bquad muscles?\b/gi,'quads'],
