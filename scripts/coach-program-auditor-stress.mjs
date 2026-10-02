@@ -11,6 +11,7 @@ const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/'
 }});
 await new Promise(r=>setTimeout(r,160));
 const w=dom.window;if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
+const read=()=>JSON.parse(w.localStorage.getItem('overload_v3'));
 const get=name=>w.allExercises().find(x=>x.name===name);
 const bench=get('Barbell Bench Press'),incline=get('Incline Dumbbell Press'),machine=get('Dumbbell Bench Press'),row=get('Seated Cable Row')||get('Cable Row'),squat=get('Back Squat');
 assert(bench&&incline&&machine&&row&&squat);
@@ -31,13 +32,13 @@ sessions.push({id:'x5',programId:'p',routineId:'b',routineName:'Push B',status:'
 w.eval('state.sessions='+JSON.stringify(sessions)+';save()');
 
 assert.equal(w.eval('COACH_PROGRAM_AUDIT_VERSION'),'0.63.0');
-const before=JSON.stringify({programs:w.state.programs,routines:w.state.routines,sessions:w.state.sessions});
+const before=JSON.stringify({programs:read().programs,routines:read().routines,sessions:read().sessions});
 const audit=w.coachProgramAudit('p');
 assert(audit);assert.equal(audit.routines.length,3);
 assert(audit.coverageRows.find(x=>x.key==='lower body').plannedSets>0);
 assert.equal(audit.coverageRows.find(x=>x.key==='lower body').actualSets,0);
 for(const type of ['adherence','slot_gap','actual_coverage_gap','redundancy','distribution','plateau_high_effort','progressing'])assert(audit.findings.some(x=>x.type===type),'missing '+type);
-assert.equal(JSON.stringify({programs:w.state.programs,routines:w.state.routines,sessions:w.state.sessions}),before);
+assert.equal(JSON.stringify({programs:read().programs,routines:read().routines,sessions:read().sessions}),before);
 
 assert.equal(w.coachProgramAuditIntent('audit my program').handled,true);
 assert.equal(w.coachProgramAuditIntent('build me a 3 day program').handled,false);
@@ -49,7 +50,7 @@ const plateau=audit.findings.find(x=>x.type==='plateau_high_effort');
 w.coachProgramAuditAction('p',plateau.id);
 assert.equal(w.coachRoutineSession.routineId,plateau.routineId);
 assert.match(w.coachRoutineSession.lastResponse,/Program audit:/i);
-assert.equal(JSON.stringify({programs:w.state.programs,routines:w.state.routines,sessions:w.state.sessions}),before);
+assert.equal(JSON.stringify({programs:read().programs,routines:read().routines,sessions:read().sessions}),before);
 
 w.coachRoutineSession=null;w.renderPrograms();
 assert.match(w.document.getElementById('programList').textContent,/Coach Audit/i);
