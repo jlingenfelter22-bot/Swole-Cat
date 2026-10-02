@@ -257,6 +257,17 @@ assert.equal(grammar.topBackoff.backoffSets,2);
 assert.equal(grammar.topBackoff.backoffMinReps,6);
 assert.equal(grammar.topBackoff.backoffPercent,90);
 
+grammar=w.coachParseLiftingGrammar('advanced pull day, dl top single-ish actually 3-5 reps @8, 3x6-8 backdowns 85%, 180s');checks+=9;
+assert.equal(grammar.topBackoff?.enabled,true);
+assert.equal(grammar.topBackoff.topMinReps,3);
+assert.equal(grammar.topBackoff.topMaxReps,5);
+assert.equal(grammar.topBackoff.backoffSets,3);
+assert.equal(grammar.topBackoff.backoffMinReps,6);
+assert.equal(grammar.topBackoff.backoffMaxReps,8);
+assert.equal(grammar.topBackoff.backoffPercent,85);
+assert.equal(grammar.restSeconds,180);
+assert.equal(grammar.targetRIR,2);
+
 grammar=w.coachParseLiftingGrammar('top set five reps then three lighter sets eight reps, eighty five percent backoffs');checks+=5;
 assert.equal(grammar.topBackoff?.enabled,true);
 assert.equal(grammar.topBackoff.topMinReps,5);
