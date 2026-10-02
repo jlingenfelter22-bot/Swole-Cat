@@ -105,7 +105,7 @@ function coachHistoryGlobalProgressAnswer(text){
  const lower=String(text||'').toLowerCase(),rows=coachHistoryProfiles();
  if(!rows.length)return {handled:true,type:'global_progress',title:'Training trends',answer:'You do not have enough repeated exercise history yet for Coach to compare multi-week trends.'};
  let mode='progressing';
- if(/\b(?:stall|plateau|flat)\b/.test(lower))mode='stalled';
+ if(/\b(?:stall|stalled|stalling|plateau|flat)\b/.test(lower))mode='stalled';
  else if(/\b(?:down|dip)\b/.test(lower))mode='down';
  const progressing=rows.filter(x=>x.profile.status==='progressing').sort((a,b)=>b.profile.changePct-a.profile.changePct);
  const stalled=rows.filter(x=>['plateau_high_effort','plateau_watch'].includes(x.profile.status));
