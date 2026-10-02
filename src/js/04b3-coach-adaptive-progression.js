@@ -91,6 +91,7 @@ function coachTopBackoffStructure(ex,request,base){
 function coachApplyAdaptivePrescription(ex,request,base){
  const out={...base},strategy=coachAdaptiveProgressionStrategy(ex,request,base);
  out.progressionStrategy=strategy;
+ out.adaptiveProgression=true;
  if(strategy==='top_backoff'){
    const structure=coachTopBackoffStructure(ex,request,out);
    out.setStructure=structure;
@@ -124,8 +125,21 @@ function coachAdaptiveReasonText(ex,request){
  return p.exposures>=2?'multi-week continuity is established':'baseline is still forming';
 }
 function coachAdaptiveRecommendation(config,prev,exerciseId){
- if(config?.progressionStrategy!=='top_backoff'&&config?.setStructure?.type!=='top_backoff')return null;
- const structure=config.setStructure||{},done=progressionSets(prev);
+ const topBackoff=config?.progressionStrategy==='top_backoff'||config?.setStructure?.type==='top_backoff';
+ if(!topBackoff&&!config?.adaptiveProgression)return null;
+ const done=progressionSets(prev);
+ if(!topBackoff){
+   if(!done.length||!exerciseId)return null;
+   const profile=coachMultiWeekExerciseProfile(exerciseId,Date.now());
+   if(!['plateau_high_effort','performance_dip'].includes(profile.status))return null;
+   const weights=Array.from({length:Math.max(1,Number(config.sets)||done.length)},(_,i)=>Number(done[i]?.weight??done.at(-1)?.weight??0));
+   const reps=Array.from({length:weights.length},(_,i)=>Math.max(1,Number(done[i]?.reps??done.at(-1)?.reps??config.minReps)||config.minReps));
+   const reason=profile.status==='plateau_high_effort'
+     ?'Multi-week performance has been flat while recent logged effort is high. Coach is holding the last completed targets instead of forcing another progression step.'
+     :'Recent performance is below this training block’s best. Coach is holding the last completed targets for another exposure instead of automatically adding load or reps.';
+   return {status:'adaptive_hold',weight:weights[0]||0,weights,targetReps:reps,headline:'Hold this target and consolidate',detail:reason};
+ }
+ const structure=config.setStructure||{};
  const topSets=Math.max(1,Number(structure.topSets)||1),backoffSets=Math.max(1,Number(structure.backoffSets)||2);
  const topMin=Math.max(1,Number(structure.topMinReps)||3),topMax=Math.max(topMin,Number(structure.topMaxReps)||5);
  const backMin=Math.max(1,Number(structure.backoffMinReps)||5),backMax=Math.max(backMin,Number(structure.backoffMaxReps)||8);
