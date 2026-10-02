@@ -218,6 +218,9 @@ assert(!w.coachParseTargetExclusions('back workout, avoid chest supported rows')
 [
   ["I'm a newbie",'beginner'],
   ["I'm a rookie lifter",'beginner'],
+  ["im brand new and dont know what im doing",'beginner'],
+  ["new to the gym and just getting started",'beginner'],
+  ["starting out with lifting",'beginner'],
   ["I've never lifted before",'beginner'],
   ["I'm a seasoned lifter",'advanced'],
   ["I've been training for years",'advanced'],

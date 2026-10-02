@@ -336,7 +336,7 @@ function coachApplyLiftingGrammarToDefaults(defaults,grammar){
 }
 function coachParseTrainingExperience(text){
  const lower=coachNormalizeGymText(text);
- if(/\b(?:beginner|newbie|rookie|new to lifting|new lifter|just starting|just started lifting|first time lifting|never lifted|novice)\b/.test(lower))return 'beginner';
+ if(/\b(?:beginner|newbie|rookie|novice|brand new|new to lifting|new to working out|new to training|new to the gym|new lifter|just starting|just starting out|starting out|just getting started|just started lifting|first time lifting|first time training|never lifted|never trained)\b/.test(lower))return 'beginner';
  if(/\b(?:advanced|experienced lifter|seasoned lifter|competitive lifter|been lifting for years|training for years)\b/.test(lower))return 'advanced';
  if(/\b(?:intermediate|not a beginner|some lifting experience)\b/.test(lower))return 'intermediate';
  return 'auto';
