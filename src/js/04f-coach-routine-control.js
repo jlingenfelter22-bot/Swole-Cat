@@ -276,7 +276,7 @@ function coachRoutineFitDuration(target){
    for(let i=r.exercises.length-1;i>=0;i--){
      const re=r.exercises[i],ex=exById(re.exerciseId);
      const compound=COACH_COMPOUND_PATTERNS.has(ex?.pattern);
-     const minSets=re.setStructure?.type==='top_backoff'?Math.max(2,Number(re.setStructure.topSets)||1+1):(compound?2:1);
+     const minSets=re.setStructure?.type==='top_backoff'?Math.max(2,(Number(re.setStructure.topSets)||1)+1):(compound?2:1);
      if(Number(re.sets)>minSets){
        re.sets--;
        if(re.setStructure?.type==='top_backoff')re.setStructure.backoffSets=Math.max(1,re.sets-(Number(re.setStructure.topSets)||1));
@@ -410,7 +410,7 @@ function renderCoachRoutineControl(){
    '<div class="card" style="margin-top:10px">'+coachRoutineControlListHtml()+'</div>',
    s.lastResponse?'<div class="notice" style="margin-top:10px">'+esc(s.lastResponse)+'</div>':'',
    '<div class="coach-console" style="margin-top:10px"><div class="eyebrow">TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Try “make the second exercise 4 sets,” “swap bench for dumbbell bench,” “move that before curls,” “add rear delts,” “make this 40 minutes,” or “why is the third one here?”</div>',
-   '<div class="home-coach-row"><div class="coach-voice-field"><input id="coachRoutinePrompt" placeholder="Tell Coach what to change..." onkeydown="if(event.key===\\'Enter\\')coachRoutineApplyFromInput()">'+coachVoiceButtonHtml('coachRoutinePrompt')+'</div><button class="btn" onclick="coachRoutineApplyFromInput()">Update</button></div></div>',
+   '<div class="home-coach-row"><div class="coach-voice-field"><input id="coachRoutinePrompt" placeholder="Tell Coach what to change..." onkeydown="if(event.key===\'Enter\')coachRoutineApplyFromInput()">'+coachVoiceButtonHtml('coachRoutinePrompt')+'</div><button class="btn" onclick="coachRoutineApplyFromInput()">Update</button></div></div>',
    '<div class="actions"><button class="btn secondary" onclick="coachRoutineUndoAndRender()" '+(s.undoStack.length?'':'disabled')+'>Undo</button><button class="btn secondary" onclick="coachRoutineRedoAndRender()" '+(s.redoStack.length?'':'disabled')+'>Redo</button><button class="btn green" onclick="coachRoutineSave()">Save Changes</button><button class="btn secondary" onclick="coachRoutineCancel()">Cancel</button></div>',
    '<div class="notice">Coach makes surgical routine edits. Completed workout history stays untouched, and adaptive progression/top-backoff data is preserved unless the requested edit makes that structure incompatible.</div>',
    '</div>'

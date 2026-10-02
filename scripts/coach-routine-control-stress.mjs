@@ -34,7 +34,7 @@ await new Promise(r=>setTimeout(r,160));
 const w=dom.window;
 if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
 
-assert.equal(w.COACH_ROUTINE_CONTROL_VERSION,'0.61.0');
+assert.equal(w.eval('COACH_ROUTINE_CONTROL_VERSION'),'0.61.0');
 assert.equal(w.openCoachRoutineControl('r1'),true,'saved routine should open in Coach control');
 let draft=w.eval('coachRoutineSession.working');
 assert.notEqual(draft,w.eval("state.routines.find(r=>r.id==='r1')"),'Coach must edit a draft copy, not live state');
