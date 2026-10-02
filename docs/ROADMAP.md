@@ -591,7 +591,7 @@ Locked behavior:
 
 ## v0.65.0 — Focus Mode Live Workout
 
-**Status: In progress**
+**Status: Complete**
 
 Goal: make live gym use a guided sequence of obvious actions instead of a long scrolling workout form. At any moment, one exercise and one set are foregrounded; everything else stays reachable without demanding attention.
 
@@ -602,7 +602,7 @@ Implementation order:
 4. [x] **Add gym-first defer / next / substitute controls.** Keep Substitute visible, allow Next Exercise to defer unfinished work without marking it skipped, and preserve explicit Skip as a separate intentional action.
 5. [x] **Reconcile unfinished work before finishing.** If pending sets/exercises remain, Finish Workout must surface them and offer Do It Now, Skip, or Finish Anyway instead of silently losing them.
 6. [x] **Stabilize keyboard/input focus and secondary controls.** Keep the active set anchored when the mobile keyboard opens, move edit/reorder/delete details out of the primary logging surface, and retain existing Coach target/rest behavior without visual duplication.
-7. [ ] **Add Focus Mode regressions and cut a fresh beta build.** Verify multi-set in-place advancement, exercise jumping/defer behavior, pending-work reconciliation, substitute access, data/history integrity, full regression wall, Pages, and Android before release.
+7. [x] **Add Focus Mode regressions and cut a fresh beta build.** Verify multi-set in-place advancement, exercise jumping/defer behavior, pending-work reconciliation, substitute access, data/history integrity, full regression wall, Pages, and Android before release.
 
 Locked behavior:
 - Live gym mode prioritizes **current exercise → current set → Weight / Reps / RIR → Complete Set**.
@@ -614,9 +614,11 @@ Locked behavior:
 - Full-set/history editing remains possible, but it is secondary to the focused logging path.
 - Every completed step is checked off here so a new chat can reconstruct the exact implementation state.
 
+**Milestone record:** The live workout has been rebuilt around a gym-first Focus Mode. Swole Cat now foregrounds one exercise and one set instead of rendering a long vertical workout form. A sticky exercise navigator shows Exercise X of Y and lets the user jump directly to any movement; a compact set rail keeps every set reachable while only the current set gets a full Weight / Reps / RIR card. Completing a set advances the focused card in place, and completing the final set advances to the next unfinished exercise without requiring scrolling. **Substitute** and **Next Exercise** remain directly visible, while advanced set type/reorder/delete and exercise-management tools live behind secondary controls. Next Exercise defers unfinished work into a transient **Pending** state rather than marking it skipped; explicit Skip remains separate and session-only. Finish Workout reconciles unfinished work with **Do It Now / Skip Exercise / Finish Anyway** choices. Keyboard/visualViewport handling keeps the active set anchored when mobile input opens. Superset rotation, progression, adaptive Coach targets, compact rest timer, routine structure editing, Programs, recap/history, and saved-routine data continue using the existing Swole Cat data model. Dedicated v0.65 regressions now cover single-canvas rendering, in-place set advancement, defer-vs-skip semantics, exercise navigation, pending-work reconciliation, secondary set controls, history/routine immutability, and legacy compatibility. The implementation checkpoint passed the complete regression wall, GitHub Pages deployment, and Android build before this release was closed.
+
 After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
-Implemented locally through v0.64.0:
+Implemented locally through v0.65.0:
 - generate complete 2–6 day programs from natural-language frequency/split/schedule requests
 - refine a whole generated program's frequency, split, weekdays, session duration, goal, equipment, and muscle emphasis
 - preview approximate weekly primary/secondary set-equivalents
