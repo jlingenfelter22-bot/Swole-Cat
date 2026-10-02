@@ -11,6 +11,7 @@ This document is the canonical product roadmap for Swole Cat. Features listed as
 5. **Social features should enhance training, not turn Swole Cat into a generic social network.**
 6. **Visual identity should evolve without sacrificing usability.** Swole Cat should preserve the clean information architecture, sizing, readability, and fast workout flow while developing a distinctive dark retro-futurist/cyberpunk visual identity.
 7. **Fitness should not be gatekept by friction.** Core fitness functionality should not be gatekept behind ads, intrusive monetization, or a maze of in-app purchases. Swole Cat should prioritize helping someone open the app, build or start a workout, train, and leave with useful history and guidance.
+8. **The business model should feel like Swole Cat.** The core workout app should remain genuinely useful for free, with no ads and no required recurring subscription. The intended monetization model is an optional **Swole Cat Pro lifetime unlock**, initially targeted at **$7.99 one time**, for cloud-connected and other premium features. A user who buys Lifetime Pro keeps that entitlement permanently, even if pricing changes for future customers.
 
 ---
 
@@ -818,6 +819,20 @@ Goal: add identity and cloud infrastructure only when it unlocks meaningful valu
 - [ ] Conflict-safe sync strategy
 - [ ] Local-first/offline behavior remains supported
 
+### Locked: Monetization philosophy
+- [ ] Keep the core workout experience genuinely useful for free.
+- [ ] No advertising.
+- [ ] No required recurring subscription for the core Swole Cat product.
+- [ ] Target **Swole Cat Pro at $7.99 lifetime** as the initial paid model.
+- [ ] Use Pro primarily for features that create ongoing infrastructure cost or meaningful premium value, such as cloud backup, multi-device sync, cloud sharing/short codes, and selected connected/advanced features.
+- [ ] A Lifetime Pro purchase remains lifetime. Existing buyers are never converted into recurring subscribers because pricing changes later.
+- [ ] Future customers may have a different one-time purchase price if operating costs or product scope change.
+- [ ] Do not deliberately cripple ordinary workout tracking to force a Pro purchase.
+- [ ] If future cloud AI creates material per-use cost, price that usage separately rather than silently undermining the lifetime promise.
+- [ ] Design infrastructure with lifetime economics in mind: keep recurring server/storage costs lean, preserve local-first operation, and avoid unnecessary cloud dependence.
+
+**Positioning:** Pro should feel like a voluntary way to unlock connected convenience and support an independent, ad-free, subscription-free product, not a toll booth placed in front of training.
+
 ### Likely implementation direction
 A hosted backend such as Supabase or an equivalent service can provide authentication, relational data, permissions, storage, and real-time features. Final provider should be chosen when this phase begins based on current cost, reliability, and platform needs.
 
@@ -974,6 +989,10 @@ The following product ideas are explicitly retained on the roadmap:
 - [ ] Preserve an ad-free, no-paywall core workout experience
 - [ ] Routine sharing/import
 - [ ] Optional Swole Cat accounts
+- [ ] Free core workout experience with no ads
+- [ ] Swole Cat Pro lifetime purchase model, initially targeted at $7.99 one time
+- [ ] Lifetime entitlement guarantee for existing Pro buyers
+- [ ] Cloud-connected Pro features without making local workout tracking dependent on payment
 - [ ] Cloud backup and multi-device sync
 - [ ] Shared workout groups/programs
 - [ ] Independent stats for every member on a shared program

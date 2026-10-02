@@ -22,6 +22,8 @@ See [docs/ANDROID.md](docs/ANDROID.md) for build and migration details.
 
 The canonical feature roadmap, implementation order, and locked long-term product direction live in [docs/ROADMAP.md](docs/ROADMAP.md).
 
+The principles governing the free core, independence, ads, subscriptions, Lifetime Pro, and sustainable cloud monetization live in [docs/PRODUCT_PHILOSOPHY.md](docs/PRODUCT_PHILOSOPHY.md).
+
 ## Data
 
 Workout data is local to the device. Export backups periodically, especially before clearing browser/app storage or moving between the PWA and Android app.
