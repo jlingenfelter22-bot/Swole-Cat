@@ -508,6 +508,8 @@ function coachRefineDraftText(text){
    changed=true;
  }
  if(explicitGoal&&explicitGoal!==req.goal){req.goal=explicitGoal;changed=true}
+ if(parsed.experienceLevel&&parsed.experienceLevel!=='auto'&&parsed.experienceLevel!==req.experienceLevel){req.experienceLevel=parsed.experienceLevel;changed=true}
+ if(parsed.lateralityPreference&&parsed.lateralityPreference!=='auto'&&parsed.lateralityPreference!==req.lateralityPreference){req.lateralityPreference=parsed.lateralityPreference;changed=true}
  if(equipment.allowed.length){
    req.allowedEquipment=[...equipment.allowed];
    req.excludedEquipment=req.excludedEquipment.filter(x=>!equipment.allowed.includes(x));
