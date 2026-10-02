@@ -9,6 +9,7 @@ function coachCloneRequest(request){
    allowedEquipment:[...(request.allowedEquipment||[])],excludedEquipment:[...(request.excludedEquipment||[])],
    priorityRegions:[...(request.priorityRegions||[])],priorityKeys:[...(request.priorityKeys||[])],
    experienceLevel:request.experienceLevel||'auto',lateralityPreference:request.lateralityPreference||'auto',
+   excludedTargetKeys:[...(request.excludedTargetKeys||[])],excludedTargetRegions:[...(request.excludedTargetRegions||[])],
    excludedExerciseIds:[...(request.excludedExerciseIds||[])],requiredExerciseIds:[...(request.requiredExerciseIds||[])]
  };
 }
@@ -21,7 +22,8 @@ function coachGenerateProgram(request,intent,previous=null){
  const defaults=coachProgrammingDefaults(req.goal,req.duration),usage={},muscleUsage={},dayOverrides=previous?.dayOverrides||[];
  const days=slots.map((key,index)=>{
    const group=COACH_TARGET_GROUPS[key],override=dayOverrides[index]||{excludedExerciseIds:[],requiredExerciseIds:[]};
-   const targetRegions=[...(group?.regions||[])],targetSet=new Set(targetRegions);
+   const excludedRegions=new Set(req.excludedTargetRegions||[]);
+   const targetRegions=[...(group?.regions||[])].filter(region=>!excludedRegions.has(region)),targetSet=new Set(targetRegions);
    const dayReq=coachCloneRequest(req);
    dayReq.targetKeys=[key];dayReq.targetLabels=[group?.label||'Workout'];dayReq.targetRegions=targetRegions;
    dayReq.priorityRegions=req.programFocusRegions.filter(region=>targetSet.has(region));
