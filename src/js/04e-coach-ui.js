@@ -204,6 +204,7 @@ function coachSubmitPrompt(){
  const taught=coachTryTeachAlias(prompt);
  if(taught.handled){showToast(taught.message);return}
  const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt),explicit=coachParseExplicitWorkout(prompt,request.goal);
+ request.excludedExerciseIds=[...new Set([...(request.excludedExerciseIds||[]),...(explicit.excludedExerciseIds||[])])];
  if(explicit.signal&&explicit.ambiguities?.length){coachBeginExerciseClarification({prompt,request,programIntent,explicit});return}
  if(explicit.signal&&explicit.items.length){
    coachProgramBuildDraft=null;coachGenerateExplicitWorkout(request,explicit);renderCoachPreview();return;
@@ -248,6 +249,7 @@ function homeCoachBuildPrompt(){
  const taught=coachTryTeachAlias(prompt);
  if(taught.handled){showToast(taught.message);return}
  const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt),explicit=coachParseExplicitWorkout(prompt,request.goal);
+ request.excludedExerciseIds=[...new Set([...(request.excludedExerciseIds||[]),...(explicit.excludedExerciseIds||[])])];
  if(explicit.signal&&explicit.ambiguities?.length){coachBeginExerciseClarification({prompt,request,programIntent,explicit});return}
  if(explicit.signal&&explicit.items.length){
    coachProgramBuildDraft=null;coachGenerateExplicitWorkout(request,explicit);renderCoachPreview();return;
