@@ -908,12 +908,28 @@ function workoutExerciseNavigatorHtml(w,ei){
     '<span class="focus-nav-copy"><b>'+esc(rx&&rx.name||'Exercise')+'</b><small>'+esc(status.label)+' · '+row.sets.filter(function(s){return s.done}).length+'/'+row.sets.length+' sets</small></span>'+
     '<span class="focus-nav-go">'+(i===ei?'●':'›')+'</span></button>';
  }).join('');
- return '<details class="focus-exercise-nav"><summary>'+
+ return '<div class="focus-exercise-nav-shell">'+
+   '<details class="focus-exercise-nav"><summary>'+
    '<div class="focus-exercise-position">EXERCISE '+(ei+1)+' OF '+w.exercises.length+'</div>'+
    '<div class="focus-exercise-name">'+esc(ex&&ex.name||'Exercise')+'</div>'+
    '<div class="focus-exercise-meta">'+esc(p.complete?'Complete':workoutActiveSetText(e))+' · '+esc(ex&&ex.muscle||'')+' · '+workingSetIndexes(e).length+' working sets</div>'+
-   '</summary><div class="focus-nav-list">'+rows+'</div></details>';
+   '<span class="focus-nav-switch" aria-hidden="true"><span>Switch</span><b>⌄</b></span>'+
+   '</summary><div class="focus-nav-list">'+rows+'</div></details>'+
+   '<button class="focus-howto-btn" onclick="event.preventDefault();event.stopPropagation();openFocusedExerciseHowTo('+ei+')" aria-label="How to do '+esc(ex&&ex.name||'this exercise')+'" title="How to"><span aria-hidden="true">i</span></button>'+
+   '</div>';
 }
+function openFocusedExerciseHowTo(ei){
+ const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],ex=e?exById(e.exerciseId):null;if(!w||!e||!ex)return;
+ const focusExercise=Number(w.focusExerciseIndex),focusSet=Number(w.focusSetIndex);
+ openModal(esc(ex.name)+' · How to',
+  '<div class="focus-howto-lead"><div class="eyebrow">FORM HELP // IN WORKOUT</div><div class="mini">Quickly check setup and execution, then close this sheet to return to the exact set you were logging.</div></div>'+
+  '<div id="exerciseFormGuide"><div class="empty"><strong>Loading public form guide…</strong>Checking the source exercise library.</div></div>'+
+  '<div class="actions focus-howto-actions"><button class="btn" onclick="closeModal()">Back to workout</button></div>');
+ const live=state.activeWorkout;
+ if(live){live.focusExerciseIndex=focusExercise;live.focusSetIndex=focusSet}
+ loadExerciseFormGuide(e.exerciseId);
+}
+
 function selectWorkoutExercise(ei){
  const w=state.activeWorkout;if(!w||!w.exercises||!w.exercises[ei]||w.exercises[ei].skipped)return;
  const current=normalizeWorkoutFocusState(w);

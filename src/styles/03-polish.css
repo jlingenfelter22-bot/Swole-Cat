@@ -1248,3 +1248,86 @@
     max-width:calc(100vw - 16px);
   }
 }
+
+/* v0.65.1 FOCUS MODE QOL // STEPS 2-4
+   Discoverable exercise switching + in-workout form help. */
+#workout .focus-exercise-nav-shell{
+  position:sticky;
+  top:var(--workout-sticky-top,72px);
+  z-index:17;
+  margin:8px 0 10px;
+}
+#workout .focus-exercise-nav{
+  position:relative;
+  top:auto;
+  z-index:auto;
+  margin:0;
+}
+#workout .focus-exercise-nav>summary{
+  min-height:72px;
+  padding:11px 142px 11px 13px;
+}
+#workout .focus-exercise-nav>summary:after{display:none}
+#workout .focus-exercise-name{padding-right:0}
+#workout .focus-exercise-meta{padding-right:0}
+#workout .focus-nav-switch{
+  position:absolute;
+  right:10px;
+  top:50%;
+  transform:translateY(-50%);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  min-width:62px;
+  min-height:40px;
+  padding:0 9px;
+  border:1px solid rgba(34,211,238,.40);
+  border-radius:999px;
+  background:rgba(34,211,238,.065);
+  color:#c6f7ff;
+  font-size:.64rem;
+  font-weight:900;
+  letter-spacing:.025em;
+  pointer-events:none;
+}
+#workout .focus-nav-switch b{
+  font-size:.9rem;
+  line-height:1;
+  color:#77eaff;
+  transition:transform var(--motion-fast) var(--ease-ui);
+}
+#workout .focus-exercise-nav[open] .focus-nav-switch b{transform:rotate(180deg)}
+#workout .focus-howto-btn{
+  position:absolute;
+  right:82px;
+  top:50%;
+  transform:translateY(-50%);
+  z-index:3;
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  padding:0;
+  border:1px solid rgba(168,85,247,.42);
+  border-radius:50%;
+  background:linear-gradient(145deg,rgba(168,85,247,.12),rgba(34,211,238,.055)),rgba(11,18,30,.97);
+  color:#e8ddff;
+  box-shadow:0 3px 10px rgba(0,0,0,.22);
+  font-family:Georgia,serif;
+  font-size:1rem;
+  font-weight:900;
+}
+#workout .focus-howto-btn:active{
+  transform:translateY(-50%) scale(.94);
+  border-color:rgba(168,85,247,.72);
+}
+.focus-howto-lead{margin-bottom:12px}
+.focus-howto-actions{position:sticky;bottom:-18px;margin:14px -18px -18px;padding:10px 18px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(17,23,34,.10),#111722 28%)}
+.focus-howto-actions .btn{width:100%;min-height:48px}
+@media(max-width:390px){
+  #workout .focus-exercise-nav>summary{padding-right:118px}
+  #workout .focus-howto-btn{right:62px;width:40px;height:40px}
+  #workout .focus-nav-switch{right:8px;min-width:44px;width:44px;padding:0}
+  #workout .focus-nav-switch>span{display:none}
+}

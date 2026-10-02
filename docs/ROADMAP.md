@@ -624,9 +624,9 @@ Goal: keep the new one-exercise/one-set Focus Mode intact while making the few m
 
 Implementation order:
 1. [x] **Dock the rest timer into the bottom navigation edge.** Keep the timer compact and non-blocking, visually attach it to the nav bar, preserve quick +30, allow expanded controls on tap, and animate it into/out of the nav chrome.
-2. [ ] **Add instant How To / form help inside Focus Mode.** Put a clear form-help control in the focused exercise header and open the existing exercise guidance as an overlay/sheet without navigating away or losing workout state.
-3. [ ] **Strengthen exercise-switcher discoverability.** Make the exercise navigator chevron/control larger, higher contrast, and easier to hit while keeping the full header tappable; add a subtle one-time first-use hint if it improves clarity without becoming permanent clutter.
-4. [ ] **Preserve exact workout state through overlays/navigation.** Closing form help or the exercise list must return to the same focused exercise/set and must not mutate set entries, pending state, timers, saved routines, or completed history.
+2. [x] **Add instant How To / form help inside Focus Mode.** Put a clear form-help control in the focused exercise header and open the existing exercise guidance as an overlay/sheet without navigating away or losing workout state.
+3. [x] **Strengthen exercise-switcher discoverability.** Make the exercise navigator chevron/control larger, higher contrast, and easier to hit while keeping the full header tappable; add a subtle one-time first-use hint if it improves clarity without becoming permanent clutter.
+4. [x] **Preserve exact workout state through overlays/navigation.** Closing form help or the exercise list must return to the same focused exercise/set and must not mutate set entries, pending state, timers, saved routines, or completed history.
 5. [ ] **Add QoL regressions and cut a fresh beta build.** Permanently test nav-docked timer behavior, in-workout form overlay, exercise-switcher affordance, focus-state preservation, full regression wall, Pages, and Android before release.
 
 Locked behavior:
