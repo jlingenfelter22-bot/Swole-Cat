@@ -878,8 +878,23 @@ function renderWorkout(){
       </div>
     </div>
     <div class="exercise-expanded-content">
-      <div class="targetbox"><div class="eyebrow">SESSION GOAL</div><div class="exercise-name" style="margin-top:5px">${esc(e.targetOverride?`${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`:rec.headline)}</div><div class="mini" style="margin-top:5px">${esc(e.targetOverride?`Session-only ${e.targetOverride.reason||'override'}. Routine progression is unchanged.`:rec.detail)}</div>${plateText?`<div class="plates">🏋 ${esc(plateText)}</div>`:''}${e.targetOverride?`<div class="override-note">Manual/session target active</div>`:''}</div>
-      ${coach?`<div class="coachbox ${coach.level==='info'?'':coach.level}"><div class="coach-title">${esc(coach.title)}</div><div class="coach-text">${esc(coach.text)}</div>${coach.canReset&&!e.targetOverride?`<div class="actions" style="margin-top:8px"><button class="btn small secondary" onclick="applyCoachReset(${ei})">Apply ${coach.resetPercent}% reset for today</button></div>`:''}</div>`:''}
+      <details class="workout-guidance" ${e.targetOverride?'open':''}>
+       <summary>
+        <div class="workout-guidance-copy">
+         <div class="eyebrow">COACH TARGET</div>
+         <div class="workout-guidance-title">${esc(e.targetOverride?`${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`:rec.headline)}</div>
+         <div class="workout-guidance-meta">${esc(coach?.title||compactTarget)} · ${e.config.restSeconds||120}s rest</div>
+        </div>
+        <span class="workout-guidance-more">Details</span>
+       </summary>
+       <div class="workout-guidance-detail">
+        <div class="mini">${esc(e.targetOverride?`Session-only ${e.targetOverride.reason||'override'}. Routine progression is unchanged.`:rec.detail)}</div>
+        ${coach?`<div class="mini guidance-coach-copy"><b>${esc(coach.title)}:</b> ${esc(coach.text)}</div>`:''}
+        ${plateText?`<div class="plates">🏋 ${esc(plateText)}</div>`:''}
+        ${e.targetOverride?`<div class="override-note">Manual/session target active</div>`:''}
+        ${coach?.canReset&&!e.targetOverride?`<div class="actions compact-guidance-action"><button class="btn small secondary" onclick="applyCoachReset(${ei})">Apply ${coach.resetPercent}% reset for today</button></div>`:''}
+       </div>
+      </details>
       <div class="toolrow">${warmups.length?`<button class="toolchip" onclick="openWarmupGuide(${ei})">Warm-up guide</button>`:''}<button class="toolchip" onclick="openTargetOverride(${ei})">Override target</button><button class="toolchip" onclick="openWorkoutSubstitute(${ei})">Substitute</button><button class="toolchip" onclick="openSupersetPicker(${ei})">⚡ ${superset?`Superset ${superset.label}`:'Superset'}</button><span class="toolchip">${e.config.restSeconds||120}s rest</span>${e.config.targetRIR!=null&&Number.isFinite(Number(e.config.targetRIR))?`<span class="toolchip">Target ${e.config.targetRIR} RIR</span>`:''}</div>
       ${superset?`<div class="superset-note"><b>Superset ${superset.label}</b> · ${esc(supersetNames(superset.id))}<br>Rotate through working sets, then rest after the round.</div>`:''}
     <div class="live-body">

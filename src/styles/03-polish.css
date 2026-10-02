@@ -931,3 +931,18 @@
  #workout .active-exercise-jump{min-width:54px;padding-left:7px;padding-right:7px}
  #workout .active-exercise-name{font-size:.98rem}
 }
+
+/* TODAY BETA READINESS // STEP 4 */
+#workout .workout-guidance{margin:10px 0 8px;border:1px solid rgba(168,85,247,.34);border-radius:4px 12px 4px 12px;background:linear-gradient(110deg,rgba(168,85,247,.075),rgba(34,211,238,.025)),rgba(7,13,24,.96);overflow:hidden}
+#workout .workout-guidance>summary{list-style:none;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 11px;cursor:pointer;user-select:none}
+#workout .workout-guidance>summary::-webkit-details-marker{display:none}
+#workout .workout-guidance-copy{min-width:0}
+#workout .workout-guidance-title{margin-top:3px;font-family:var(--display);font-size:.96rem;font-weight:920;color:#f3f7ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#workout .workout-guidance-meta{margin-top:3px;color:#a3b3c7;font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#workout .workout-guidance-more{color:#cdbdff;font-size:.68rem;font-weight:900;border:1px solid rgba(168,85,247,.28);border-radius:999px;padding:5px 7px;background:rgba(168,85,247,.07)}
+#workout .workout-guidance[open] .workout-guidance-more:after{content:" ↑"}
+#workout .workout-guidance:not([open]) .workout-guidance-more:after{content:" ↓"}
+#workout .workout-guidance-detail{padding:0 11px 11px;border-top:1px solid rgba(91,120,163,.24)}
+#workout .workout-guidance-detail>.mini:first-child{padding-top:9px}
+#workout .guidance-coach-copy{margin-top:7px}
+#workout .compact-guidance-action{margin-top:8px}
