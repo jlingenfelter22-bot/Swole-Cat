@@ -99,7 +99,7 @@ const beginnerPrompts=[
   ['I want to work my lower back','lower back'],
   ['Give me a workout for my whole upper body','upper body'],
   ['I want to hit my butt and hams','hamstrings'],
-  ['Can we do abs today?','core'],
+  ['Can we do abs today?','abs'],
   ['I want a pull day','pull'],
   ['I need something for my delts','shoulders'],
   ['Can I work my pecs?','chest']
