@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.59.1
+Version: v0.60.0
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -805,3 +805,136 @@ The language suite also checks:
 - vague prompts that must not invent a target
 
 The separate v0.59 history-aware intelligence suite remains active with its 90 target × goal × duration cases and weekly/progression/laterality/prescription assertions.
+
+
+## v0.60 adaptive progression and multi-week training intelligence
+
+v0.60 extends Coach from session-level programming into exercise-specific progression across repeated exposures.
+
+### Multi-week exercise profiles
+
+For exercises with saved working-set history, Coach can inspect up to the most recent eight exposures and classify the observable performance pattern as:
+- baseline / building
+- progressing
+- consolidating
+- plateau watch
+- high-effort plateau
+- performance dip
+
+The profile uses the user's own logged load, repetitions, estimated 1RM trend and optional RIR. It does not compare the user against population strength standards.
+
+These labels are programming descriptions, not diagnoses. A flat or lower performance trend does not prove fatigue, poor recovery, overtraining, injury or a need to deload.
+
+### Continuity before random exercise rotation
+
+A movement that is progressing over multiple exposures receives a continuity preference when it still matches the user's requested muscles, equipment and programming role.
+
+A flat movement is not automatically replaced. Coach first distinguishes:
+- flat performance without enough effort context -> hold/retest
+- repeated flat performance with high logged effort -> stop forcing another automatic progression step
+- meaningful recent performance drop -> hold/review rather than automatically increasing load or reps
+
+This keeps variation purposeful and prevents the programming engine from treating exercise novelty as progress.
+
+### Exercise-specific progression strategy
+
+Coach-generated exercises now carry an explicit progression strategy.
+
+Current strategies:
+- **Double progression:** rep-first progression through a range, then load
+- **Load-first:** strength-oriented progression that prioritizes small load increases after the programmed minimum is established
+- **Top + backoff:** an established weighted compound can use a heavier top set followed by lower-load backoff work
+
+Isolation exercises normally remain on simple rep-first progression rather than receiving unnecessarily complex top/backoff structures.
+
+Manual and pre-v0.60 routines do not silently opt into the new adaptive hold behavior. The adaptive layer is persisted explicitly on Coach-generated exercise configs.
+
+### Top-set and backoff programming
+
+Coach understands structured requests such as:
+- "top set 3-5 reps then 3 backoff sets 6-8 reps"
+- "one top set and two backoff sets"
+- "backoff at 90 percent"
+
+For appropriate weighted compounds, strength-oriented defaults can also select a top/backoff strategy after sufficient exercise history is available.
+
+The default structure is practical, not a claim that top/backoff programming is universally superior:
+- one primary top set
+- two or more backoff sets where session structure permits
+- strength top-set range roughly 3-5 reps
+- strength backoff range roughly 5-8 reps
+- default backoff load around 90% of the programmed top-set load
+
+Explicit user instructions override these defaults.
+
+Top/backoff roles are real workout data:
+- active workout rows display **Top Set** and **Backoff**
+- progression targets differ by role
+- the structure survives Save as Routine and Program generation
+- working-set edits keep the saved structure coherent
+
+### Adaptive progression holds
+
+For Coach-generated adaptive routines using normal double progression, repeated high-effort flat performance or a meaningful performance dip can temporarily suppress the normal automatic rep/load increase.
+
+The resulting recommendation is a **hold**, not an automatic exercise replacement or medical/recovery recommendation.
+
+The user can still override the target at any time.
+
+### No invented starting weights
+
+Top/backoff programming does not create a population-based working weight.
+
+If the user has no usable history for the exercise, Coach provides the set/rep structure but the working load remains 0 / user-selected until the user establishes their own baseline.
+
+Once personal history exists, future targets can come from that history and the normal progression engine.
+
+### Evidence interpretation
+
+Evidence supports multiple viable forms of progressive overload. Research comparing load progression with repetition progression found both strategies can produce strength and hypertrophy adaptations, so Coach does not treat increasing weight every session as the only valid progression method.
+
+Autoregulated resistance-training approaches also have evidence supporting their use for maximal-strength programming. Swole Cat uses this as support for incorporating the user's own performance and effort history, not as justification for claiming physiological readiness.
+
+Periodization evidence is used conservatively. Periodized programming appears useful for maximal strength, particularly in trained lifters, while evidence does not justify claiming that periodization itself is necessary for hypertrophy.
+
+Top-set/backoff structures are treated as a practical way to express heavy priority work plus subsequent volume. Swole Cat does not claim they are universally superior to straight sets.
+
+Relevant sources are recorded in `src/data/coach-knowledge.js`, including:
+- ACSM 2026 resistance-training position stand
+- load versus repetition progression research
+- autoregulated strength-training systematic review/meta-analysis
+- periodization systematic review/meta-analysis
+
+### v0.60 validation
+
+A dedicated simulated training-block suite tests:
+- eight-exposure progressing movement history
+- repeated high-effort plateau history
+- meaningful performance-dip history
+- adaptive strategy assignment
+- adaptive progression holds
+- top/backoff recommendation generation
+- role-specific active workout sets
+- explicit top/backoff natural-language grammar
+- persistence into generated routines
+- compatibility with manual/legacy non-adaptive routines
+- fresh exercises with no history remaining at zero suggested load
+
+The v0.60 suite runs alongside the existing 360-prompt programming matrix, 432-check language-resilience suite and 90-case history-aware v0.59 intelligence matrix.
+
+### Safety boundary
+
+The adaptive progression engine can say:
+- performance has been flat across recent exposures
+- a movement has been progressing
+- the last logged performance is below the recent block best
+- hold the programmed target for another exposure
+- the user's own history supports a next rep/load target
+
+It must not infer from logs alone that:
+- the user is recovered or unrecovered
+- central nervous system fatigue exists
+- soreness is absent
+- the user is overtrained
+- an injury explains performance
+- a deload is medically necessary
