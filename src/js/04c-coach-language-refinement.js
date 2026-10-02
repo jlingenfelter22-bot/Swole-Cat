@@ -251,6 +251,18 @@ function coachAnalyzeExerciseMentions(text){
  return {mentions:deduped,ambiguities};
 }
 function coachFindExerciseMentions(text){return coachAnalyzeExerciseMentions(text).mentions}
+function coachExerciseMentionNegated(normalizedText,mention){
+ const raw=coachNormalizeGymText(coachNumbersToDigits(normalizedText));
+ const before=raw.slice(Math.max(0,(mention?.start||0)-60),mention?.start||0);
+ return /(?:^|\s)(?:no|without|skip|avoid|exclude|leave out|drop|dont include|do not include|dont want|do not want|not doing|not do)(?:\s+(?:the|any|doing|to do|exercise))?\s*$/.test(before);
+}
+function coachParseExerciseExclusions(text,analysis=coachAnalyzeExerciseMentions(text)){
+ const ids=[];
+ (analysis?.mentions||[]).forEach(mention=>{
+   if(coachExerciseMentionNegated(text,mention))ids.push(mention.exerciseId);
+ });
+ return [...new Set(ids)];
+}
 function coachPrescriptionNumbersAround(text,mention,index,mentions,goal,globalRep){
  const beforeStart=index?mentions[index-1].end:0,nextStart=index<mentions.length-1?mentions[index+1].start:text.length;
  const before=text.slice(beforeStart,mention.start).trim(),after=text.slice(mention.end,nextStart).trim();
@@ -279,7 +291,9 @@ function coachPrescriptionNumbersAround(text,mention,index,mentions,goal,globalR
  };
 }
 function coachParseExplicitWorkout(text,goal=coachPromptGoal){
- const normalized=coachNumbersToDigits(text),lower=normalized.toLowerCase(),normalizedWords=coachNormalizeGymText(normalized),analysis=coachAnalyzeExerciseMentions(normalized),mentions=analysis.mentions,items=[],seen=new Set();
+ const normalized=coachNumbersToDigits(text),lower=normalized.toLowerCase(),normalizedWords=coachNormalizeGymText(normalized),analysis=coachAnalyzeExerciseMentions(normalized);
+ const excludedExerciseIds=coachParseExerciseExclusions(normalized,analysis),excludedSet=new Set(excludedExerciseIds);
+ const mentions=analysis.mentions.filter(mention=>!excludedSet.has(mention.exerciseId)),items=[],seen=new Set();
  let globalRep=null;
  let globalMatch=lower.match(/(?:target(?:ing)?|aim(?:ing)?(?:\s+for)?|shoot(?:ing)?(?:\s+for)?)\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?\s*(?:each|for each|on each|across|all)?/i);
  if(!globalMatch)globalMatch=lower.match(/(\d+)(?:\s*(?:-|to)\s*(\d+))?\s*reps?\s*(?:each|for each|on each)/i);
@@ -292,14 +306,14 @@ function coachParseExplicitWorkout(text,goal=coachPromptGoal){
  });
  const hasPrescriptionLanguage=/\bsets?\b|\breps?\b|\b\d+\s*x\s*\d+\b/i.test(normalized);
  const listLanguage=/\b(?:i want|i need|want to do|need to do|do|doing|workout with|routine with|include|add)\b/i.test(lower);
- const ambiguities=analysis.ambiguities.map(a=>{
+ const ambiguities=analysis.ambiguities.filter(a=>!coachExerciseMentionNegated(normalized,a)).map(a=>{
    const temp={...a,segmentText:a.segmentText||a.phrase};
    const cfg=coachPrescriptionNumbersAround(normalizedWords,temp,0,[temp],goal,globalRep);
    return {...a,config:cfg,options:a.alternatives.slice(0,3).map(x=>({exerciseId:x.exercise.id,name:x.exercise.name,confidence:x.score}))};
  });
  const understoodCount=items.length+ambiguities.length;
  const signal=understoodCount>=2||(understoodCount===1&&hasPrescriptionLanguage)||(understoodCount===1&&listLanguage);
- return {signal,items,ambiguities,mentions:mentions.map(x=>x.exerciseId)};
+ return {signal,items,ambiguities,mentions:mentions.map(x=>x.exerciseId),excludedExerciseIds};
 }
 function coachShowExerciseClarification(){
  const ctx=coachClarificationContext,ambiguity=ctx?.explicit?.ambiguities?.[0];if(!ctx||!ambiguity)return false;
