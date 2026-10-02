@@ -477,11 +477,31 @@ Locked behavior:
 - Insight actions are opt-in. Coach can suggest an action but does not rewrite routines or Programs automatically.
 
 **v0.63 — Program Auditor + Long-Term Planning Intelligence**
-- audit an entire multi-day Program against actual training history
-- identify redundant movements, neglected areas, poor weekly distribution, repeated stalls, and progression opportunities
-- compare programmed intent with what the user is actually completing
-- make minimal, explainable long-term adjustments while preserving user control and exercise preferences
-- deepen history-aware muscle scheduling across multi-day plans
+
+**Status: In progress**
+
+Implementation checklist:
+- [ ] Add a deterministic Program-audit engine that reads the saved Program, its ordered Routines, current exercise configuration, preferred schedule, and completed Program history.
+- [ ] Compare programmed frequency with actual completed Program frequency over a recent multi-week window without treating missed sessions as a recovery diagnosis.
+- [ ] Compare planned routine-slot rotation with what the user is actually completing and flag repeatedly skipped/underrepresented days without rewriting history.
+- [ ] Audit planned weekly primary/secondary muscle set-equivalents across all Program Routines and compare them with recent completed Program muscle coverage.
+- [ ] Detect meaningful cross-day movement-family redundancy while respecting intentionally repeated staples and exercise preferences.
+- [ ] Detect poor weekly distribution when heavily overlapping muscle work is clustered on adjacent preferred days or concentrated into one day despite a multi-day schedule.
+- [ ] Surface repeated exercise stalls/performance dips and clear progression opportunities using the existing v0.60 multi-week progression classifications.
+- [ ] Generate ranked, explainable Program findings with evidence, severity, affected Routine/exercise, and a minimal next action.
+- [ ] Let findings hand off into v0.61 Coach Routine Control, exercise Progress, Analytics, or Program editing without silently mutating the Program.
+- [ ] Add direct Coach language such as “audit my program,” “review my current plan,” and “how is my program actually going?” plus a visible Coach Audit action on saved Programs.
+- [ ] Preserve user exercise preferences, Routine configuration, Program order, completed workout history, and explicit Program choices unless the user chooses to edit them.
+- [ ] Add dedicated v0.63 regression coverage for adherence, slot completion, planned-vs-actual muscle coverage, redundancy, distribution, stalls, opportunities, ranking, handoffs, and no-mutation guarantees.
+- [ ] Run the full production validation, Pages deployment, and Android build before closing v0.63.
+- [ ] Record the completed v0.63 milestone and bump app/version metadata only after all checks pass.
+
+Locked behavior:
+- The auditor describes what the Program contains and what the logs show; it does not diagnose fatigue, soreness, injury, recovery, overtraining, or medical readiness.
+- Low adherence is reported as a completion pattern, not blamed on the user and not treated as proof the Program is bad.
+- Repeated compound staples are not automatically labeled redundant just because they recur across days. Redundancy requires meaningful same-family overlap without a distinct programming role.
+- A stall is not automatically a reason to replace an exercise. Coach first surfaces the pattern and offers a minimal review path.
+- Program-audit actions are opt-in. Auditing never silently saves Routine or Program changes.
 
 After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
