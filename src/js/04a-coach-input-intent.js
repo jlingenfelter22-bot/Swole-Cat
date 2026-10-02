@@ -197,7 +197,10 @@ function coachParsePriorityTargets(text,availableKeys=[]){
  return {keys:[...new Set(keys)],regions:[...new Set(regions)]};
 }
 function coachParseTargetExclusions(text){
- const lower=coachNormalizeGymText(text),keys=[],regions=[];
+ const lower=coachNormalizeGymText(text)
+   .replace(/\bchest supported\b/g,'supported')
+   .replace(/\bback squats?\b/g,'squats');
+ const keys=[],regions=[];
  Object.keys(COACH_TARGET_GROUPS).forEach(key=>{
    const term=coachTargetPriorityRegex(key);
    const patterns=[
