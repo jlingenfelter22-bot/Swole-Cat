@@ -722,6 +722,38 @@ function exerciseSetProgress(e){
  if(e.skipped)return {done,total,pct:100,complete:true,skipped:true};
  return {done,total,pct:total?Math.round(done/total*100):0,complete:total>0&&done===total,skipped:false};
 }
+function workoutActiveExerciseIndex(w=state.activeWorkout){
+ if(!w)return -1;
+ const expanded=w.exercises.findIndex(e=>e.expanded&&!exerciseSetProgress(e).complete&&!e.skipped);
+ if(expanded>=0)return expanded;
+ return w.exercises.findIndex(e=>!exerciseSetProgress(e).complete&&!e.skipped);
+}
+function workoutActiveSetText(e){
+ if(!e)return '';
+ const next=e.sets.findIndex(s=>!s.done);
+ if(next<0)return 'Exercise complete';
+ return `Set ${next+1} of ${e.sets.length}`;
+}
+function activeExerciseDockHtml(w){
+ const index=workoutActiveExerciseIndex(w);
+ if(index<0)return '<div id="activeExerciseDock" class="active-exercise-dock complete"><div><div class="active-exercise-kicker">SESSION STATUS</div><div class="active-exercise-name">All programmed sets complete</div></div></div>';
+ const e=w.exercises[index],ex=exById(e.exerciseId),progress=exerciseSetProgress(e);
+ return `<div id="activeExerciseDock" class="active-exercise-dock" data-exercise-index="${index}">
+  <div class="active-exercise-signal"><span></span>NOW TRAINING</div>
+  <div class="active-exercise-copy">
+    <div class="active-exercise-name">${esc(ex?.name||'Exercise')}</div>
+    <div class="active-exercise-meta">${esc(workoutActiveSetText(e))} · ${progress.done}/${progress.total} complete${ex?.muscle?` · ${esc(ex.muscle)}`:''}</div>
+  </div>
+  <button class="active-exercise-jump" onclick="scrollToWorkoutExercise(${index})" aria-label="Jump to current exercise">Current</button>
+ </div>`;
+}
+function syncWorkoutStickyOffsets(){
+ const header=document.querySelector('header'),dock=document.getElementById('activeExerciseDock');
+ const headerHeight=Math.max(0,Math.round(header?.getBoundingClientRect().height||0));
+ const dockHeight=Math.max(0,Math.round(dock?.getBoundingClientRect().height||0));
+ document.documentElement.style.setProperty('--workout-sticky-top',headerHeight+'px');
+ document.documentElement.style.setProperty('--workout-scroll-offset',(headerHeight+dockHeight+12)+'px');
+}
 function ensureExerciseAccordion(){
  const w=state.activeWorkout;if(!w)return;
  const hasDefined=w.exercises.some(e=>typeof e.expanded==='boolean');
@@ -821,6 +853,7 @@ function renderWorkout(){
    <div class="progress-bar"><div style="width:${pct}%"></div></div>
    <div class="workout-stats"><div class="workout-stat"><b>${counts.activeExercises}</b><span>Active moves</span></div><div class="workout-stat"><b>${counts.done}</b><span>Sets done</span></div><div class="workout-stat"><b>${workoutElapsed()}</b><span>Elapsed</span></div></div>
  </div>
+ ${activeExerciseDockHtml(w)}
  ${w.exercises.map((e,ei)=>{
    const ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId),coach=coachSignal(e.exerciseId,e.config);
    const firstWorking=firstWorkingSetIndex(e),firstTarget=liveSetTarget(e,firstWorking,prev),plateText=plateLoadText(firstTarget.weight,ex),warmups=warmupGuide(firstTarget.weight,ex);
@@ -916,6 +949,7 @@ function renderWorkout(){
  <button class="btn secondary" style="width:100%;padding:15px;margin:8px 0 12px" onclick="openAddWorkoutExercise()">+ Add Exercise</button>
  <button class="btn green" style="width:100%;padding:16px" onclick="finishWorkout()">Finish & Save Workout</button>`;
  document.getElementById('workoutArea').innerHTML=html;
+ requestAnimationFrame(syncWorkoutStickyOffsets);
 }
 const firstExerciseWeightSeedTimers=new Map();
 function exerciseHasLoggedWeightHistory(exerciseId){
