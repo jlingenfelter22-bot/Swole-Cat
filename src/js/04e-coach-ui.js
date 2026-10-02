@@ -35,6 +35,12 @@ function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
    })
  };
 }
+function coachPreviewExercisePrescription(exerciseId,draft){
+ const ex=exById(exerciseId),d=draft?.defaults||{},r=draft?.request||{},explicit=draft?.explicitConfigById?.[exerciseId];
+ const p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,r,d):d;
+ const sets=explicit?.sets||p.sets,min=explicit?.minReps||p.minReps,max=explicit?.maxReps||p.maxReps;
+ return sets+' sets · '+min+(max!==min?'–'+max:'')+' reps · '+p.restSeconds+'s rest'+(Number.isFinite(Number(p.targetRIR))?' · '+p.targetRIR+' RIR':'');
+}
 function renderCoachPreview(){
  const draft=coachBuildDraft;if(!draft)return;
  const req=draft.request,d=draft.defaults,routine=coachDraftRoutine(draft,'preview');
@@ -45,19 +51,19 @@ function renderCoachPreview(){
       <div class="eyebrow">QUICK BUILD // LOCAL ENGINE</div>
       <div class="coach-preview-head"><div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(routine.name)}</div><div class="mini" style="margin-top:5px">Built from audited Swolecat exercise metadata · local and offline.</div></div><span class="tag">${req.duration} min target</span></div>
       ${draft.lastRefinement?`<div class="mini" style="margin-top:8px"><b>Last change:</b> ${esc(draft.lastRefinement)}</div>`:''}
-      <div class="coach-preview-meta"><span class="tag">${esc(coachGoalLabel(req.goal))}</span><span class="tag">${esc(equipment)}</span>${draft.explicitPrescription?'<span class="tag">Custom sets / reps</span>':`<span class="tag">${d.sets} × ${d.minReps}–${d.maxReps}</span>`}<span class="tag">${d.restSeconds}s rest</span>${req.liftingGrammar?.warmupMode==='first_compound'?'<span class="tag">Warm-up first</span>':''}${Number.isFinite(Number(d.targetRIR))?`<span class="tag">Target ${d.targetRIR} RIR</span>`:''}${req.liftingGrammar?.lastSetAmrap?'<span class="tag">Last set AMRAP</span>':''}</div>
+      <div class="coach-preview-meta"><span class="tag">${esc(coachGoalLabel(req.goal))}</span><span class="tag">${esc(equipment)}</span>${draft.explicitPrescription?'<span class="tag">Custom sets / reps</span>':'<span class="tag">Per-exercise prescription</span>'}${req.liftingGrammar?.warmupMode==='first_compound'?'<span class="tag">Warm-up first</span>':''}${Number.isFinite(Number(d.targetRIR))?`<span class="tag">Target ${d.targetRIR} RIR</span>`:''}${req.liftingGrammar?.lastSetAmrap?'<span class="tag">Last set AMRAP</span>':''}</div>
     </div>
     <div class="coach-exercise-list">
       ${draft.selectedIds.map((id,i)=>{const ex=exById(id);return `<div class="coach-exercise">
         <div class="coach-exercise-index">${String(i+1).padStart(2,'0')}</div>
-        <div><div class="exercise-name">${esc(ex?.name||'Exercise')} ${preferenceBadgeHtml(id)}</div><div class="mini" style="margin-top:3px">${esc(coachExerciseReason(ex,req))}<br>${draft.explicitConfigById?.[id]?.sets||d.sets} sets · ${draft.explicitConfigById?.[id]?.minReps||d.minReps}${(draft.explicitConfigById?.[id]?.maxReps||d.maxReps)!==(draft.explicitConfigById?.[id]?.minReps||d.minReps)?'–'+(draft.explicitConfigById?.[id]?.maxReps||d.maxReps):''} reps · ${d.restSeconds}s rest</div></div>
+        <div><div class="exercise-name">${esc(ex?.name||'Exercise')} ${preferenceBadgeHtml(id)}</div><div class="mini" style="margin-top:3px">${esc(coachExerciseReason(ex,req))}<br>${esc(coachPreviewExercisePrescription(id,draft))}</div></div>
         <div class="coach-exercise-actions"><button class="btn small secondary" onclick="coachSwapExercise(${i})">Swap</button><button class="btn small secondary" onclick="coachRemoveExercise(${i})">Remove</button></div>
       </div>`}).join('')}
     </div>
-    <div class="coach-rationale"><b>Why this structure:</b> ${draft.explicitPrescription?'This is your exercise list. Coach preserves the exercises you named and only changes the list when you explicitly ask it to add, remove, swap, or modify something.':'exercise selection is ranked from requested muscles, primary/secondary involvement, equipment, movement-pattern balance, your Prefer/Avoid/Favorite/Hidden settings, and a light recent-exercise variety signal.'} Swolecat does not invent a starting weight; your own exercise history and progression engine handle load once the workout starts.</div>
+    <div class="coach-rationale"><b>Why this structure:</b> ${draft.explicitPrescription?'This is your exercise list. Coach preserves the exercises you named and only changes the list when you explicitly ask it to add, remove, swap, or modify something.':'Coach ranked the session from requested muscles, anatomical roles, weekly primary/secondary set-equivalents, recent movement overlap, exercise progression continuity, movement demand, equipment, target priority, and your exercise preferences.'} Swolecat does not invent a starting weight; your own history and progression engine handle load once the workout starts.${draft.intelligenceAudit&&typeof coachIntelligenceSummaryText==='function'?'<br><span class="mini">'+esc(coachIntelligenceSummaryText(draft))+'</span>':''}</div>
     ${coachRecentContextText(req)?`<div class="notice">${esc(coachRecentContextText(req))}</div>`:''}
     <div class="coach-console" style="margin-top:10px"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">${draft.explicitPrescription?'Edit your exact list. Try “add 1 set of assisted pull-ups,” “make bench 4 sets of 6,” or “remove Bulgarian split squats.”':'Change the draft naturally. Try “make it 30 minutes,” “no barbells,” “more chest,” “strength focused,” “remove bench press,” or “add lateral raise.”'}</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachRefinePrompt" placeholder="${draft.explicitPrescription?'Add 1 set of assisted pull-ups...':'Make it 30 min, no barbells, more chest...'}" onkeydown="if(event.key==='Enter')coachApplyRefinement()">${coachVoiceButtonHtml('coachRefinePrompt')}</div><button class="btn" onclick="coachApplyRefinement()">Update</button></div></div>
-    <div class="notice">Programming presets are practical defaults, not claims that one rep range or exercise is universally best. Recent logs are used only as context and a small variety signal, never as a recovery or readiness diagnosis.</div>
+    <div class="notice">Programming presets are evidence-backed practical defaults, not claims that one rep range or exercise is universally best. Completed logs inform weekly overlap, progression continuity, and movement demand, but Coach never treats them as a diagnosis of soreness, recovery, injury, or medical readiness.</div>
     <div class="actions"><button class="btn green" onclick="coachStartWorkoutNow()">Start Workout Now</button><button class="btn" onclick="coachSaveRoutine()">Save as Routine</button><button class="btn secondary" onclick="coachOpenAddToProgram()">Add to Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
    </div>`);
 }
