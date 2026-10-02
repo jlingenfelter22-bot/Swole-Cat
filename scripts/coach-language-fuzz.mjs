@@ -75,6 +75,17 @@ const targetCases=[
   ['calfs today','calves'],
   ['abdominals','abs'],
   ['love handles','obliques'],
+  ['rhomboids today','upper back'],
+  ['rectus abdominis','abs'],
+  ['vastus medialis','quads'],
+  ['biceps femoris','hamstrings'],
+  ['soleus work','calves'],
+  ['brachioradialis','forearms'],
+  ['inner thighs','adductors'],
+  ['hip adductors','adductors'],
+  ['back of my shoulders','rear delts'],
+  ['side of my shoulders','side delts'],
+  ['front of my shoulders','front delts'],
   ['posterior chain','posterior chain'],
   ['wheels today','legs'],
   ['push day','push'],
@@ -96,6 +107,13 @@ assert(req.targetKeys.includes('biceps'),'bi\'s should normalize to biceps');
 assert(req.targetKeys.includes('lats'),'lats should remain precise alongside generic back');
 assert(req.priorityRegions.includes('lats'),'focus lats should become priority');
 checks+=3;
+
+req=w.coachParsePrompt('shoulder-heavy arms workout','hypertrophy');checks+=2;
+assert.equal(req.goal,'hypertrophy','shoulder-heavy must not silently become a strength request');
+assert(req.priorityRegions.includes('front_delts')||req.priorityRegions.includes('side_delts'),'shoulder-heavy should create shoulder priority');
+
+req=w.coachParsePrompt('go heavy on back','hypertrophy');checks++;
+assert.equal(req.goal,'strength','go heavy should still express strength intent');
 
 // Human time phrasing and number words.
 [
@@ -124,6 +142,24 @@ checks+=3;
   ['stay active upper body','general'],
   ['general training legs','general']
 ].forEach(([p,g])=>checkGoal(p,g));
+
+// Program/frequency/schedule phrasing.
+const programCases=[
+  ['three day full body program',3,'full_body',[ ]],
+  ['three times a week full body plan',3,'full_body',[ ]],
+  ['twice a week upper lower program',2,'upper_lower',[ ]],
+  ['4x a week upper/lower',4,'upper_lower',[ ]],
+  ['M/W/F full body program',3,'full_body',[1,3,5]],
+  ['Tue/Thu upper lower plan',2,'upper_lower',[2,4]],
+  ['six day PPL',6,'ppl',[ ]]
+];
+for(const [prompt,frequency,split,days] of programCases){
+  checks++;
+  const intent=w.coachParseProgramIntent(prompt);
+  assert.equal(intent.frequency,frequency,`program frequency failed: ${prompt}`);
+  assert.equal(intent.split,split,`program split failed: ${prompt}`);
+  if(days.length)assert.deepEqual(intent.preferredDays,days,`program weekdays failed: ${prompt}`);
+}
 
 // Equipment language.
 const equipmentCases=[
@@ -231,5 +267,30 @@ assert(!w.coachParseTargets('chest supported row').keys.includes('chest'),'chest
 checks++;
 assert(!w.coachParseTargets('back squat').keys.includes('back'),'Back Squat must not become Back target');
 
-console.log(`Coach Swolecat language-resilience PASS: ${checks} curated language checks`);
+// Catalog-wide one-edit typo fuzz. Long exercise names should remain recoverable,
+// and no mutation may confidently resolve to the wrong exercise.
+let mutationChecks=0;
+function mutateExerciseName(name){
+  const words=w.coachNormalizeGymText(name).split(' ').filter(Boolean);
+  let index=words.findIndex(token=>token.length>=6);
+  if(index<0)index=words.findIndex(token=>token.length>=5);
+  if(index<0)return null;
+  const token=words[index],cut=Math.max(1,Math.floor(token.length/2));
+  words[index]=token.slice(0,cut)+token.slice(cut+1);
+  return words.join(' ');
+}
+for(const ex of w.visibleExercises()){
+  const typo=mutateExerciseName(ex.name);if(!typo)continue;
+  const out=w.coachUnderstandExercisePhrase(typo);
+  mutationChecks++;
+  if(out.level==='high'){
+    assert.equal(out.exercise?.id,ex.id,`confidently wrong typo resolution: "${typo}" -> ${out.exercise?.name}, expected ${ex.name}`);
+  }else{
+    assert(out.alternatives.some(row=>row.exercise.id===ex.id),`correct exercise missing from typo clarification candidates: "${typo}" (${ex.name})`);
+  }
+}
+assert(mutationChecks>=250,'catalog typo fuzz should cover most exercise names');
+checks+=mutationChecks;
+
+console.log(`Coach Swolecat language-resilience PASS: ${checks} checks including ${mutationChecks} catalog typo mutations`);
 dom.window.close();
