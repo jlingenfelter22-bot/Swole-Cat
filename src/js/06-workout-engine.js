@@ -597,9 +597,12 @@ function routineExerciseFromWorkout(e){
    maxReps:Math.max(Math.max(1,Number(cfg.minReps)||1),Number(cfg.maxReps)||12),
    increment:Math.max(0,Number(cfg.increment)||0),
    mode:cfg.mode==='range'?'double':(cfg.mode||'double'),
+   progressionStrategy:cfg.progressionStrategy||'double',
+   setStructure:cfg.setStructure?cloneData(cfg.setStructure):null,
    trainingGoal:cfg.trainingGoal||'general',
    resetPercent:Number(cfg.resetPercent)||7.5,
    restSeconds:Math.max(15,Number(cfg.restSeconds)||120),
+   targetRIR:Number.isFinite(Number(cfg.targetRIR))?Number(cfg.targetRIR):null,
    supersetGroup:e.supersetId||null
  };
 }
