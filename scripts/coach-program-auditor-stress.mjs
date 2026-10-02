@@ -12,7 +12,7 @@ const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://swole-cat.test/'
 await new Promise(r=>setTimeout(r,160));
 const w=dom.window;if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
 const get=name=>w.allExercises().find(x=>x.name===name);
-const bench=get('Barbell Bench Press'),incline=get('Incline Dumbbell Press'),machine=get('Machine Chest Press'),row=get('Seated Cable Row')||get('Cable Row'),squat=get('Back Squat');
+const bench=get('Barbell Bench Press'),incline=get('Incline Dumbbell Press'),machine=get('Dumbbell Bench Press'),row=get('Seated Cable Row')||get('Cable Row'),squat=get('Back Squat');
 assert(bench&&incline&&machine&&row&&squat);
 
 const cfg=(exerciseId,min=8,max=10,goal='hypertrophy')=>({exerciseId,sets:3,minReps:min,maxReps:max,increment:5,mode:'double',progressionStrategy:'double',adaptiveProgression:true,setStructure:null,trainingGoal:goal,restSeconds:120});
