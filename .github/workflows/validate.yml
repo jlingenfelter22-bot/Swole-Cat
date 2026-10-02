@@ -177,7 +177,7 @@ jobs:
             assert.equal(state.activeWorkout.id,firstWorkoutId,'same routine should resume, not overwrite active workout');
 
             w.stopRestTimer();
-            w.finishWorkout();
+            w.finishWorkout(true);
             state=read();
             assert.equal(state.sessions.length,1,'finished workout should enter history');
             assert.equal(state.activeWorkout,null,'finished workout should clear active state');
@@ -259,7 +259,7 @@ jobs:
             w.updateSet(0,0,'reps','8');
             w.toggleSet(0,0);
             w.stopRestTimer();
-            w.finishWorkout();
+            w.finishWorkout(true);
 
             state=read();
             assert.equal(state.sessions.length,1,'test workout should be saved');
