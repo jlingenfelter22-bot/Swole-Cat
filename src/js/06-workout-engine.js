@@ -601,6 +601,7 @@ function routineExerciseFromWorkout(e){
    increment:Math.max(0,Number(cfg.increment)||0),
    mode:cfg.mode==='range'?'double':(cfg.mode||'double'),
    progressionStrategy:cfg.progressionStrategy||'double',
+   adaptiveProgression:!!cfg.adaptiveProgression,
    setStructure:cfg.setStructure?cloneData(cfg.setStructure):null,
    trainingGoal:cfg.trainingGoal||'general',
    resetPercent:Number(cfg.resetPercent)||7.5,
