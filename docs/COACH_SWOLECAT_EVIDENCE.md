@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.57.0
+Version: v0.58.0
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -24,6 +24,17 @@ Coach Swolecat's first workout builder is deterministic and local. Natural-langu
   https://pubmed.ncbi.nlm.nih.gov/32107499/
 - Review of lumbar-extensor exercise specificity:
   https://pubmed.ncbi.nlm.nih.gov/24092889/
+
+- Regional biceps hypertrophy from preacher versus incline curls:
+  https://pubmed.ncbi.nlm.nih.gov/39809454/
+- Triceps hypertrophy with overhead versus neutral-arm elbow extension:
+  https://pubmed.ncbi.nlm.nih.gov/35819335/
+- Cable versus dumbbell lateral-raise hypertrophy:
+  https://pubmed.ncbi.nlm.nih.gov/40692697/
+- Deltoid-region activation across common shoulder exercises:
+  https://pubmed.ncbi.nlm.nih.gov/33312291/
+- Systematic review/meta-analysis of muscle length and regional hypertrophy:
+  https://pubmed.ncbi.nlm.nih.gov/40570881/
 
 ## Programming presets
 
@@ -428,3 +439,109 @@ Exercise-order evidence is applied as a priority rule: the movement most importa
 ### Safety / scope
 
 These rules program resistance training for healthy adults. They do not diagnose or treat low-back pain, determine injury status, or infer that a user is medically ready for loaded lumbar exercise. User exclusions, equipment constraints, and explicit exercise choices continue to override Coach ranking where appropriate.
+
+
+## v0.58 target priority, complete regional roles, and stress validation
+
+Coach now distinguishes **minimum requested coverage** from **emphasis allocation**.
+
+A mixed request such as:
+- “shoulders and arms, more shoulders”
+- “chest and back, chest emphasis”
+- “legs, mostly quads”
+- “pull day, prioritize lats”
+
+first reserves the minimum programming roles needed to keep every explicitly requested area represented. Remaining discretionary exercise slots are then preferentially allocated to the emphasized target. This prevents an emphasis from erasing secondary requested areas while also preventing a 50/50 workout when the user clearly asked for one area to dominate.
+
+Priority language is recognized during the initial request and during later refinement. Supported forms include language such as:
+- more shoulders
+- focus more on shoulders
+- shoulder-focused
+- shoulder emphasis
+- mostly arms
+- prioritize lats
+- biased toward chest
+- delt dominant
+
+Common gym vocabulary is also normalized at the target level, including examples such as pecs, delts, bis, tris, hams, spinal erectors, and posterior chain.
+
+### Complete shoulder role model
+
+A generic Shoulders request reserves three distinct roles:
+1. anterior-delt / pressing work
+2. direct lateral-delt abduction
+3. posterior-delt / rear-delt work
+
+The engine does not allow pressing alone to stand in for a complete shoulder session.
+
+This is an anatomical programming rule rather than a claim that one exercise is universally best. Shoulder-press and lateral-raise research is used as contextual support for distinct deltoid-region demands. EMG findings are not treated as direct proof of long-term hypertrophy.
+
+### Complete arm role model
+
+A generic full Arms request now guarantees direct biceps and direct triceps work, then uses complementary joint/arm positions when session duration permits.
+
+For a full arm session, Coach can reserve:
+- a conventional/supinated elbow-flexion role
+- a neutral-grip elbow-flexion role
+- a non-overhead triceps-extension role
+- an overhead triceps-extension role
+- direct forearm flexor/extensor work when session length permits
+
+The neutral-grip role is used to diversify elbow-flexor loading rather than to claim a uniquely superior “brachialis exercise.”
+
+The overhead-triceps rule has direct hypertrophy evidence showing greater triceps growth in the overhead condition than a neutral-arm cable-extension condition in the cited trial. Coach still treats this as one useful evidence-supported programming option rather than a universal mandate for every user and every session.
+
+Biceps exercise selection uses systematic variation rather than a claim of one best curl. Regional hypertrophy research comparing preacher and incline curls supports the idea that different curl positions can produce different regional adaptations. This is used to justify complementary roles, not random exercise rotation.
+
+Forearms are now a first-class target and are included as part of the broader Arms region model.
+
+### Complete leg role model
+
+A generic Legs request now reserves:
+1. knee-dominant quad work
+2. hip-hinge / posterior-chain work
+3. knee-flexion hamstring work
+4. calf work
+
+Glute- and adductor-focused work are added as session length allows.
+
+This prevents one squat plus one hinge from being treated as complete lower-body programming.
+
+Posterior Chain is also a first-class target and reserves hip-hinge, knee-flexion hamstring, and direct spinal-erector roles with glute emphasis when time allows.
+
+### Broad mixed-session redundancy control
+
+For multi-target workouts without a specific emphasis, discretionary slots prefer a **new movement family** when an appropriate alternative exists. This keeps broad sessions from using scarce exercise slots on a second curl, second triceps extension, or redundant row while another requested role remains available.
+
+When the user explicitly emphasizes Arms, Biceps, or Triceps, the family cap permits a second complementary direct movement so the priority can be expressed intentionally.
+
+### Automated prompt stress matrix
+
+The production bundle is now tested through a permanent Coach prompt-stress harness in CI.
+
+The current matrix executes 306 cases spanning:
+- beginner conversational requests
+- knowledgeable lifter shorthand
+- 30 / 45 / 60 minute sessions
+- hypertrophy, strength, and general training
+- individual muscle groups
+- broad regions
+- Push / Pull / Legs
+- Upper / Lower / Full Body
+- Posterior Chain
+- equipment-only and equipment-exclusion constraints
+- mixed muscle groups
+- explicit target emphasis
+- vague prompts that should remain unresolved rather than inventing a target
+
+For generated workouts the harness verifies:
+- no duplicate exercise IDs
+- equipment restrictions are respected
+- selected exercises remain on-target
+- required semantic coverage roles are present when compatible exercises exist
+- movement-family caps are respected
+- priority requests allocate discretionary work toward the emphasized target
+
+Targeted assertions separately verify full Arms, complete Shoulders, complete Legs, shoulder-biased Shoulders + Arms, arm-biased Shoulders + Arms, and chest-emphasized Chest + Back behavior.
+
+The stress matrix runs against the same bundled production application that GitHub Pages and Capacitor consume.
