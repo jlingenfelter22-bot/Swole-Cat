@@ -45,6 +45,7 @@ assert.match(switchCue.textContent,/Switch/i,'wide layouts should label the exer
 assert(howTo,'focused exercise should expose one-tap form help');
 assert.match(howTo.getAttribute('aria-label')||'',/How to do/i,'form-help control should be self-describing');
 assert.match(html,/\.focus-howto-btn\{[\s\S]*?width:42px;[\s\S]*?height:42px;/i,'form-help icon should retain a gym-friendly touch target');
+assert.match(html,/#workout \.focus-howto-btn\{[\s\S]*?top:36px;/i,'form-help icon should stay anchored to the fixed exercise header when the list expands');
 
 // Opening the exercise list must not alter workout data.
 summary.click();
@@ -59,16 +60,23 @@ assert.equal(nav.open,false,'tapping the header again should close the exercise 
 const focusBefore=w.eval('({ei:state.activeWorkout.focusExerciseIndex,si:state.activeWorkout.focusSetIndex,pending:[...(state.activeWorkout.deferredExerciseIndexes||[])]})');
 w.openFocusedExerciseHowTo(focusBefore.ei);
 await wait(25);
-assert(w.document.getElementById('modal')?.classList.contains('open'),'How To should open the existing overlay sheet');
+const modal=w.document.getElementById('modal');
+assert(modal?.classList.contains('open'),'How To should open the existing overlay sheet');
+assert(modal?.classList.contains('modal-mode-focus-howto'),'How To should opt into its dedicated modal layout');
 assert.match(w.document.getElementById('modalTitle')?.textContent||'',/How to/i,'form overlay should clearly identify itself');
 assert(w.document.getElementById('exerciseFormGuide'),'How To overlay should reuse the existing exercise form-guide host');
+assert(w.document.querySelector('.focus-howto-scroll'),'How To content should live in its own scroll region');
+assert(w.document.querySelector('.focus-howto-footer'),'How To should render a dedicated docked footer');
 assert.match(w.document.getElementById('modalBody')?.textContent||'',/Back to workout/i,'overlay should offer an explicit return-to-workout action');
+assert.match(html,/\.modal-mode-focus-howto \.sheet\{[\s\S]*?overflow:hidden;/i,'How To sheet should keep modal chrome fixed instead of scrolling the footer');
+assert.match(html,/\.focus-howto-scroll\{[\s\S]*?overflow:auto;/i,'form-guide content should own the scrolling region');
 assert.equal(w.document.querySelector('#workout .view.active'),null,'How To should not navigate by creating another active app view');
 const focusDuring=w.eval('({ei:state.activeWorkout.focusExerciseIndex,si:state.activeWorkout.focusSetIndex,pending:[...(state.activeWorkout.deferredExerciseIndexes||[])]})');
 assert.deepEqual(focusDuring,focusBefore,'opening How To must preserve exact Focus Mode state');
 w.closeModal();
 await wait(10);
 assert(!w.document.getElementById('modal')?.classList.contains('open'),'closing How To should return directly to workout');
+assert(!w.document.getElementById('modal')?.classList.contains('modal-mode-focus-howto'),'closing How To should clear its modal-only layout class');
 const focusAfter=w.eval('({ei:state.activeWorkout.focusExerciseIndex,si:state.activeWorkout.focusSetIndex,pending:[...(state.activeWorkout.deferredExerciseIndexes||[])]})');
 assert.deepEqual(focusAfter,focusBefore,'closing How To must preserve exact Focus Mode state');
 
@@ -93,5 +101,5 @@ assert.equal(JSON.stringify(live.activeWorkout),activeBefore,'QoL overlays and t
 assert.equal(JSON.stringify(live.routines.find(r=>r.id===rid)),routineBefore,'QoL surfaces must not rewrite saved routine');
 assert.equal(JSON.stringify(live.sessions),historyBefore,'QoL surfaces must not rewrite completed history');
 
-console.log('Swole Cat v0.65.1 Focus Mode QoL PASS: nav-docked timer, How To overlay, stronger switcher, and exact state preservation');
+console.log('Swole Cat v0.65.2 Focus Mode visual stability PASS: fixed How To anchor, docked form footer, nav timer, and exact state preservation');
 dom.window.close();

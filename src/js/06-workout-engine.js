@@ -922,9 +922,12 @@ function openFocusedExerciseHowTo(ei){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],ex=e?exById(e.exerciseId):null;if(!w||!e||!ex)return;
  const focusExercise=Number(w.focusExerciseIndex),focusSet=Number(w.focusSetIndex);
  openModal(esc(ex.name)+' · How to',
-  '<div class="focus-howto-lead"><div class="eyebrow">FORM HELP // IN WORKOUT</div><div class="mini">Quickly check setup and execution, then close this sheet to return to the exact set you were logging.</div></div>'+
-  '<div id="exerciseFormGuide"><div class="empty"><strong>Loading public form guide…</strong>Checking the source exercise library.</div></div>'+
-  '<div class="actions focus-howto-actions"><button class="btn" onclick="closeModal()">Back to workout</button></div>');
+  '<div class="focus-howto-scroll">'+
+   '<div class="focus-howto-lead"><div class="eyebrow">FORM HELP // IN WORKOUT</div><div class="mini">Quickly check setup and execution, then close this sheet to return to the exact set you were logging.</div></div>'+
+   '<div id="exerciseFormGuide"><div class="empty"><strong>Loading public form guide…</strong>Checking the source exercise library.</div></div>'+
+  '</div>'+
+  '<div class="focus-howto-footer"><button class="btn" onclick="closeModal()">Back to workout</button></div>',
+  'modal-mode-focus-howto');
  const live=state.activeWorkout;
  if(live){live.focusExerciseIndex=focusExercise;live.focusSetIndex=focusSet}
  loadExerciseFormGuide(e.exerciseId);

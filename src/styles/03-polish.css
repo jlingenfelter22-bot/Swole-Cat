@@ -1301,7 +1301,7 @@
 #workout .focus-howto-btn{
   position:absolute;
   right:82px;
-  top:50%;
+  top:36px;
   transform:translateY(-50%);
   z-index:3;
   display:grid;
@@ -1322,9 +1322,39 @@
   transform:translateY(-50%) scale(.94);
   border-color:rgba(168,85,247,.72);
 }
+.modal-mode-focus-howto .sheet{
+  height:min(88dvh,calc(var(--sc-viewport-height,100dvh) - var(--sc-safe-top,0px) - 12px));
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  padding-bottom:0;
+}
+.modal-mode-focus-howto .sheet-head{flex:0 0 auto}
+.modal-mode-focus-howto #modalBody{
+  display:flex;
+  flex:1 1 auto;
+  min-height:0;
+  flex-direction:column;
+  margin:0 -18px;
+  overflow:hidden;
+}
+.focus-howto-scroll{
+  flex:1 1 auto;
+  min-height:0;
+  overflow:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:0 18px 18px;
+}
 .focus-howto-lead{margin-bottom:12px}
-.focus-howto-actions{position:sticky;bottom:-18px;margin:14px -18px -18px;padding:10px 18px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(17,23,34,.10),#111722 28%)}
-.focus-howto-actions .btn{width:100%;min-height:48px}
+.focus-howto-footer{
+  flex:0 0 auto;
+  padding:10px 18px calc(10px + var(--sc-safe-bottom,env(safe-area-inset-bottom,0px)));
+  border-top:1px solid rgba(71,91,119,.38);
+  background:linear-gradient(180deg,rgba(17,23,34,.96),#111722 36%);
+  box-shadow:0 -12px 28px rgba(0,0,0,.28);
+}
+.focus-howto-footer .btn{width:100%;min-height:48px}
 @media(max-width:390px){
   #workout .focus-exercise-nav>summary{padding-right:118px}
   #workout .focus-howto-btn{right:62px;width:40px;height:40px}

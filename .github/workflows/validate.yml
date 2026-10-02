@@ -113,7 +113,7 @@ jobs:
       - name: Stress test v0.65 Focus Mode workout flow
         run: node scripts/focus-mode-workout-stress.mjs
 
-      - name: Stress test v0.65.1 Focus Mode QoL
+      - name: Stress test v0.65.2 Focus Mode visual stability
         run: node scripts/focus-mode-qol-stress.mjs
 
       - name: Smoke test active workouts, set types, progression, and supersets

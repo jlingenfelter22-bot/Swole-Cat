@@ -641,9 +641,30 @@ Locked behavior:
 
 **Milestone record:** Focus Mode mid-workout QoL is complete. The rest timer now measures the actual persistent bottom-navigation height and docks into the nav's upper edge with a compact rise/retract treatment instead of floating over workout content; quick +30 and expandable −30/+30/Skip controls remain intact. The focused exercise header now exposes a gym-friendly **How To** information control that opens Swole Cat's existing public-source form guide inside the workout modal sheet, with an explicit Back to workout action and no route change or Focus Mode rerender. Exercise switching is more discoverable through a larger **Switch** affordance and stronger chevron while the full header remains tappable. Opening/closing the exercise list, form overlay, and rest controls preserves the exact focused exercise/set, pending state, saved Routine, and completed History. Dedicated v0.65.1 production-bundle coverage now verifies nav-height timer docking, form-guide overlay reuse, switcher discoverability, state immutability, and legacy Focus Mode/workout compatibility. The implementation checkpoint passed the full validation wall, GitHub Pages deployment, and Android build before this version bump.
 
+## v0.65.2 — Focus Mode Visual Stability
+
+**Status: Complete**
+
+Goal: resolve the first hands-on beta feedback from v0.65.1 without changing the one-exercise/one-set Focus Mode model.
+
+Implementation order:
+1. [x] **Keep How To fixed in the exercise header.** Anchor the information control to the fixed 72px navigator header so expanding/collapsing the exercise list cannot pull it down with the disclosure content.
+2. [x] **Turn Back to workout into real modal chrome.** Give the How To sheet its own scrollable content region and a dedicated bottom footer that stays flush with the sheet edge, respects Android safe-area spacing, and never floats over the form guide.
+3. [x] **Preserve both exit paths and exact workout state.** Keep the top-right close control and the bottom Back to workout action while preserving the same focused exercise/set and all workout data.
+4. [x] **Add visual-stability regressions and cut a fresh beta build.** Permanently verify the fixed How To anchor, dedicated modal mode, scroll ownership, footer docking, modal-class cleanup, full regression wall, Pages, and Android before release.
+
+Locked behavior:
+- Expanding the exercise switcher may grow only below the fixed header controls.
+- The How To information control must not move vertically when the exercise list opens.
+- Form-guide content scrolls independently while the sheet header and Back to workout footer remain stable.
+- The top-right close control and bottom Back to workout action remain available.
+- Opening or closing form help must not mutate the active workout, saved Routine, completed History, timer state, or Focus Mode position.
+
+**Milestone record:** The first v0.65.1 hands-on beta feedback pass is complete. The How To information control is now anchored to the fixed exercise-header height instead of the expanding navigator shell, so opening the exercise list no longer drags the icon down beside the list. The How To overlay now opts into a dedicated modal layout with fixed sheet chrome, an independently scrolling form-guide body, and a true bottom footer that owns the Back to workout action and Android safe-area spacing. The normal top-right close control remains available. Modal-only layout state is explicitly cleared on close so later sheets cannot inherit the form-help layout. Dedicated production-bundle coverage now locks these visual-stability contracts alongside the existing Focus Mode QoL state-integrity checks.
+
 After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
-Implemented locally through v0.65.1:
+Implemented locally through v0.65.2:
 - generate complete 2–6 day programs from natural-language frequency/split/schedule requests
 - refine a whole generated program's frequency, split, weekdays, session duration, goal, equipment, and muscle emphasis
 - preview approximate weekly primary/secondary set-equivalents

@@ -247,8 +247,25 @@ const appSelectObserver=new MutationObserver(records=>{
 });
 appSelectObserver.observe(document.body,{childList:true,subtree:true});
 
-function openModal(title,body){document.getElementById('modalTitle').innerHTML=title;document.getElementById('modalBody').innerHTML=body;document.getElementById('modal').classList.add('open');enhanceAppSelects(document.getElementById('modalBody'))}
-function closeModal(){closeAppSelect();document.getElementById('modal').classList.remove('open')}
+function resetModalModeClasses(modal){
+ if(!modal)return;
+ Array.from(modal.classList).filter(cls=>cls.startsWith('modal-mode-')).forEach(cls=>modal.classList.remove(cls));
+}
+function openModal(title,body,modeClass=''){
+ const modal=document.getElementById('modal');
+ resetModalModeClasses(modal);
+ if(modeClass)modal.classList.add(modeClass);
+ document.getElementById('modalTitle').innerHTML=title;
+ document.getElementById('modalBody').innerHTML=body;
+ modal.classList.add('open');
+ enhanceAppSelects(document.getElementById('modalBody'));
+}
+function closeModal(){
+ closeAppSelect();
+ const modal=document.getElementById('modal');
+ modal.classList.remove('open');
+ resetModalModeClasses(modal);
+}
 function uid(){return 'id_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function escAttr(s){return esc(s)}
