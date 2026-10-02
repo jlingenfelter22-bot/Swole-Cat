@@ -7,8 +7,9 @@ function coachCloneRequest(request){
    ...request,
    targetKeys:[...(request.targetKeys||[])],targetLabels:[...(request.targetLabels||[])],targetRegions:[...(request.targetRegions||[])],
    allowedEquipment:[...(request.allowedEquipment||[])],excludedEquipment:[...(request.excludedEquipment||[])],
-   priorityRegions:[...(request.priorityRegions||[])],excludedExerciseIds:[...(request.excludedExerciseIds||[])],
-   requiredExerciseIds:[...(request.requiredExerciseIds||[])]
+   priorityRegions:[...(request.priorityRegions||[])],priorityKeys:[...(request.priorityKeys||[])],
+   experienceLevel:request.experienceLevel||'auto',lateralityPreference:request.lateralityPreference||'auto',
+   excludedExerciseIds:[...(request.excludedExerciseIds||[])],requiredExerciseIds:[...(request.requiredExerciseIds||[])]
  };
 }
 function coachGenerateProgram(request,intent,previous=null){
@@ -17,7 +18,7 @@ function coachGenerateProgram(request,intent,previous=null){
  const req=coachCloneRequest({...request,duration:request.duration||45});
  req.programFocusRegions=[...new Set(intent.focusRegions||request.programFocusRegions||[])];
  req.programFocusLabels=[...new Set(intent.focusLabels||request.programFocusLabels||[])];
- const defaults=coachProgrammingDefaults(req.goal,req.duration),usage={},dayOverrides=previous?.dayOverrides||[];
+ const defaults=coachProgrammingDefaults(req.goal,req.duration),usage={},muscleUsage={},dayOverrides=previous?.dayOverrides||[];
  const days=slots.map((key,index)=>{
    const group=COACH_TARGET_GROUPS[key],override=dayOverrides[index]||{excludedExerciseIds:[],requiredExerciseIds:[]};
    const targetRegions=[...(group?.regions||[])],targetSet=new Set(targetRegions);
@@ -27,8 +28,15 @@ function coachGenerateProgram(request,intent,previous=null){
    dayReq.excludedExerciseIds=[...new Set([...(req.excludedExerciseIds||[]),...(override.excludedExerciseIds||[])])];
    dayReq.requiredExerciseIds=[...new Set(override.requiredExerciseIds||[])];
    dayReq.programExerciseUsage=usage;
+   dayReq.programMuscleUsage={...muscleUsage};
    const selected=coachSelectExercises(dayReq,defaults.exerciseCount);
-   selected.forEach(ex=>usage[ex.id]=(usage[ex.id]||0)+1);
+   selected.forEach(ex=>{
+     usage[ex.id]=(usage[ex.id]||0)+1;
+     const prescription=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,dayReq,defaults):defaults;
+     const sets=Number(prescription.sets||defaults.sets)||0,meta=exerciseMuscleMetadata(ex);
+     meta.primary.forEach(region=>muscleUsage[region]=(muscleUsage[region]||0)+sets);
+     meta.secondary.forEach(region=>muscleUsage[region]=(muscleUsage[region]||0)+sets*.5);
+   });
    return {
      key,label:coachProgramDayDisplayLabel(key,index,slots),request:dayReq,
      defaults:{...defaults},selectedIds:selected.map(ex=>ex.id)
@@ -74,10 +82,14 @@ function coachProgramRoutineFromDay(day,draft=coachProgramBuildDraft,id=uid()){
    id,name:`${coachProgramName(r,draft.intent)} · ${day.label}`,
    description:`Generated locally by Coach Swolecat as part of a ${draft.intent.frequency}-day ${coachProgramSplitLabel(draft.intent.split)} program. Evidence rules: ACSM 2026 resistance-training position stand + NSCA program-design framework.`,
    trainingMode:d.trainingMode,
-   exercises:day.selectedIds.map(exerciseId=>({
-     exerciseId,sets:d.sets,minReps:d.minReps,maxReps:d.maxReps,increment:state.settings.defaultIncrement,
-     mode:'double',trainingGoal:d.goal,resetPercent:7.5,restSeconds:d.restSeconds
-   }))
+   exercises:day.selectedIds.map(exerciseId=>{
+     const ex=exById(exerciseId),p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,day.request,d):d;
+     return {
+       exerciseId,sets:p.sets,minReps:p.minReps,maxReps:p.maxReps,increment:state.settings.defaultIncrement,
+       mode:'double',trainingGoal:d.goal,resetPercent:7.5,restSeconds:p.restSeconds,
+       targetRIR:Number.isFinite(Number(p.targetRIR))?Number(p.targetRIR):null
+     };
+   })
  };
 }
 function renderCoachProgramPreview(){
@@ -100,7 +112,7 @@ function renderCoachProgramPreview(){
    </div>
    ${coverage?`<div class="coach-rationale"><b>Planned weekly set-equivalents:</b> ${esc(coverage)}.<br><span class="mini">Primary involvement counts as 1.0 set and secondary involvement as 0.5. This is a planning aid, not a claim about muscle damage or recovery.</span></div>`:''}
    <div class="coach-console"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Try “make it 4 days,” “upper/lower,” “35 minutes,” “dumbbells only,” “more shoulders,” or “Monday Tuesday Thursday Saturday.”</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachProgramRefinePrompt" placeholder="4 days, upper/lower, 40 min, more shoulders..." onkeydown="if(event.key==='Enter')coachApplyProgramRefinement()">${coachVoiceButtonHtml('coachProgramRefinePrompt')}</div><button class="btn" onclick="coachApplyProgramRefinement()">Update</button></div></div>
-   <div class="notice">Coach distributes work across the week using your requested frequency, split, equipment, goal, exercise preferences, and a light recent-exercise variety signal. Weekly volume is balanced pragmatically around the time available. The plan does not estimate recovery or medical readiness.</div>
+   <div class="notice">Coach distributes work across the week using your requested frequency, split, equipment, goal, exercise preferences, completed training history, planned muscle set-equivalents from earlier program days, and progression continuity. Weekly workload is used as programming context only; the plan does not diagnose recovery or medical readiness.</div>
    <div class="actions"><button class="btn green" onclick="coachStartProgramFirstWorkout()">Save + Start Day 1</button><button class="btn" onclick="coachSaveGeneratedProgram()">Save Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
   </div>`);
 }
