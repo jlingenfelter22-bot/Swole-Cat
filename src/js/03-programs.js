@@ -34,6 +34,7 @@ function programCard(p){
      ${next?`<button class="btn small ${isActive?'green':''}" onclick="startProgramWorkout('${p.id}')">${state.activeWorkout?.programId===p.id?'Resume Program Workout':'Start Next'}</button>`:''}
      ${!isActive?`<button class="btn small secondary" onclick="activateProgram('${p.id}')">Set Active</button>`:''}
       <button class="btn small secondary" onclick="openCoachProgramAudit('${p.id}')">Coach Audit</button>
+     <button class="btn small secondary" onclick="openProgramShare('${p.id}')">Share</button>
      <button class="btn small secondary" onclick="newProgram('${p.id}')">Edit</button>
      <button class="btn small danger" onclick="deleteProgram('${p.id}')">Delete</button>
    </div>

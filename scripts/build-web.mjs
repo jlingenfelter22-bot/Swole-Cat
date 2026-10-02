@@ -26,6 +26,7 @@ const JS_SOURCES = [
   'src/js/04g-coach-history-insights.js',
   'src/js/04h-coach-program-auditor.js',
   'src/js/05-exercises-routines.js',
+  'src/js/05b-sharing.js',
   'src/js/06-workout-engine.js',
   'src/js/07-history-editor.js',
   'src/js/08-exercise-tools.js',

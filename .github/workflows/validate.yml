@@ -49,10 +49,11 @@ jobs:
           assert(!/<style>[\s\S]*<\/style>/.test(source),'index.html should not contain the application stylesheet');
           assert(!/<script>[\s\S]*<\/script>/.test(source),'index.html should not contain the application runtime');
           const moduleTags=[...source.matchAll(/<script src="\.\/src\/js\/([^"]+)"><\/script>/g)].map(m=>m[1]);
-          assert.equal(moduleTags.length,19,'source shell should load all JavaScript domain modules');
+          assert.equal(moduleTags.length,20,'source shell should load all JavaScript domain modules');
           assert(moduleTags.includes('04f-coach-routine-control.js'),'v0.61 Coach saved-routine control module must stay registered');
           assert(moduleTags.includes('04g-coach-history-insights.js'),'v0.62 Coach history intelligence module must stay registered');
           assert(moduleTags.includes('04h-coach-program-auditor.js'),'v0.63 Coach Program auditor module must stay registered');
+          assert(moduleTags.includes('05b-sharing.js'),'v0.66 local sharing module must stay registered');
           assert(!moduleTags.includes('04-coach.js'),'legacy monolithic Coach module must stay removed');
           const dataTags=[...source.matchAll(/<script src="\.\/src\/data\/([^"]+)"><\/script>/g)].map(m=>m[1]);
           assert.deepEqual(dataTags,['exercises.js','anatomy.js','coach-knowledge.js'],'source shell should load static data modules in order');
@@ -115,6 +116,9 @@ jobs:
 
       - name: Stress test v0.65.2 Focus Mode visual stability
         run: node scripts/focus-mode-qol-stress.mjs
+
+      - name: Stress test v0.66.0 local routine and program sharing
+        run: node scripts/sharing-stress.mjs
 
       - name: Smoke test active workouts, set types, progression, and supersets
         run: |

@@ -721,16 +721,23 @@ Coach Swole Cat becomes substantially better after exercise muscle metadata and 
 
 Goal: make useful sharing available before a full cloud/account platform exists.
 
-### Locked: Share a routine
-- [ ] Share/export a routine as a portable Swole Cat payload
-- [ ] Native Android share sheet
-- [ ] Human-friendly share link/code if practical
-- [ ] Preview before import
-- [ ] **Add to My Routines** action
-- [ ] Imported routine becomes the recipient's independent copy
+### v0.66.0 beta sharing milestone
+- [x] Share/export a routine as a versioned, self-contained Swole Cat payload
+- [x] Share/export a Program together with every Routine blueprint required by its rotation
+- [x] Native Android share sheet, with web share/copy fallback
+- [ ] Short human-friendly cloud link/code. Deferred until a backend exists so local sharing stays server-free.
+- [x] One universal Routine/Program importer
+- [x] Preview before import
+- [x] **Add to My Routines** / **Add Program** action
+- [x] Imported routines and Programs receive fresh local IDs and become independent copies
+- [x] Required custom exercises travel with the plan and receive safe local IDs
+- [x] Weight-based progression increments convert between lb and kg during import
+- [x] Corruption checksum and malformed-package validation
 
 ### Data rule
-Sharing a routine must never copy another person's private workout history unless the user explicitly exports that data for backup/migration.
+Sharing a routine or Program never copies workout history, PRs, bodyweight, profile data, active-workout state, personal analytics, sender Program progress, or other private performance data.
+
+**Milestone record:** v0.66.0 completes the local sharing foundation for outside beta testing. Routine cards and Program cards expose Share actions that package only training blueprints into a versioned `SWOLECAT1` code. Android uses the native share sheet when available. The Routines screen exposes one universal Import action that can read either a bare code or an entire shared message, identify Routine versus Program automatically, validate the package, and show a full preview before saving. Program packages bundle the exact Routine blueprints they require but deliberately reset the recipient to Day 1. Import remaps Program, Routine, superset, and custom-exercise identifiers, reuses exact matching custom exercise definitions when safe, converts weight increments between lb/kg, and never imports the sender's performance history. The same payload structure can later be stored behind a short cloud code or link without replacing the local import/export model.
 
 ---
 

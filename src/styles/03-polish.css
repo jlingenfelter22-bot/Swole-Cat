@@ -1361,3 +1361,54 @@
   #workout .focus-nav-switch{right:8px;min-width:44px;width:44px;padding:0}
   #workout .focus-nav-switch>span{display:none}
 }
+
+
+/* v0.66.0 LOCAL PLAN SHARING */
+.section-title-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.share-export-card,.share-import-card{min-width:0}
+.share-code-field textarea,.share-import-input{
+  min-height:132px;
+  max-height:32vh;
+  resize:vertical;
+  font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+  font-size:.72rem;
+  line-height:1.35;
+  word-break:break-all;
+}
+.share-code-field textarea{color:#bfefff;background:rgba(6,12,21,.88)}
+.share-import-error{
+  min-height:18px;
+  margin-top:-4px;
+  color:#ff9dbd;
+  font-size:.76rem;
+  font-weight:750;
+}
+.share-preview-head{margin-bottom:12px}
+.share-preview-head h3{margin:4px 0 3px;font-family:var(--display);font-size:1.18rem}
+.share-preview-routine,.share-program-route{
+  border:1px solid rgba(71,91,119,.38);
+  border-radius:6px 16px 6px 16px;
+  background:rgba(7,13,22,.7);
+  padding:12px;
+  margin:12px 0;
+}
+.share-preview-list{margin-top:9px}
+.share-preview-row,.share-program-step{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  min-height:52px;
+  padding:8px 4px;
+  border-top:1px solid rgba(71,91,119,.22);
+}
+.share-preview-row:first-child,.share-program-step:first-child{border-top:0}
+.share-preview-row>div,.share-program-step>div{min-width:0}
+.share-program-step{justify-content:flex-start}
+.share-program-step .program-letter{flex:0 0 auto}
+.share-unit-note{margin:10px 0}
+.share-privacy-note{margin-top:12px}
+@media(max-width:390px){
+ .section-title-actions{gap:5px}
+ .share-code-field textarea,.share-import-input{min-height:116px;font-size:.68rem}
+}

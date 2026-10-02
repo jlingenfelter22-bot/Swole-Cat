@@ -409,7 +409,7 @@ function renderRoutines(){
      <div class="grow"><div class="exercise-name">${esc(r.name)}</div><div class="mini">${esc(trainingModeLabel(r.trainingMode))} · ${active?`${counts.done} of ${counts.total} sets complete · active workout is autosaved`:(r.exercises.map(x=>esc(exById(x.exerciseId)?.name||'Unknown')).join(' · ')||'No exercises yet')}</div></div>
      <button class="btn small ${active?'green':''}" onclick="${active?'resumeActiveWorkout()':`openRoutine('${r.id}')`}">${active?'Resume':'Start'}</button>
    </div>
-   <div class="actions">${active?'<span class="tag">● ACTIVE</span>':''}<button class="btn small secondary" onclick="editRoutine('${r.id}')">Edit routine</button><button class="btn small secondary" onclick="archiveRoutine('${r.id}')">Archive</button></div>
+   <div class="actions">${active?'<span class="tag">● ACTIVE</span>':''}<button class="btn small secondary" onclick="openRoutineShare('${r.id}')">Share</button><button class="btn small secondary" onclick="editRoutine('${r.id}')">Edit routine</button><button class="btn small secondary" onclick="archiveRoutine('${r.id}')">Archive</button></div>
  </div>`;
  }).join(''):`<div class="empty">You don't have any active routines yet.</div>`;
  const archivedHtml=archived.length?`<div class="picker-section" style="margin-top:18px">Archived routines</div>${archived.map(r=>`
