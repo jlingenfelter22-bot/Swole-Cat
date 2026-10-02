@@ -12,9 +12,11 @@ function coachRecentExercisePenalty(exerciseId){
  const previous=derivedSessionData().previousByExercise.get(exerciseId);
  if(!previous?.date)return 0;
  const days=coachDaysSince(previous.date);
- if(days<=1)return 16;
- if(days<=3)return 9;
- if(days<=7)return 4;
+ const profile=typeof coachExerciseHistoryProfile==='function'?coachExerciseHistoryProfile(exerciseId):null;
+ const continuityDiscount=profile?.trend==='up'?.5:profile?.trend==='flat'?.75:1;
+ if(days<=1)return 16*continuityDiscount;
+ if(days<=3)return 9*continuityDiscount;
+ if(days<=7)return 4*continuityDiscount;
  return 0;
 }
 function coachExerciseAllowedByConstraints(ex,request){
@@ -95,7 +97,8 @@ function coachGenericExerciseBias(ex,request){
  return score;
 }
 function coachSmartExerciseCount(request,baseCount){
- const keys=coachRequestedTargetKeys(request),base=Math.max(1,Number(baseCount)||1);
+ const keys=coachRequestedTargetKeys(request);let base=Math.max(1,Number(baseCount)||1);
+ if(request?.experienceLevel==='beginner')base=Math.min(base,5);
  if(keys.length!==1)return keys.length===2?Math.min(base,7):base;
  const key=keys[0];
  if(key==='lower back')return Math.min(base,4);
@@ -113,6 +116,7 @@ function coachCandidateBaseScore(ex,request){
  const primaryHits=meta.primary.filter(m=>targets.has(m)),secondaryHits=meta.secondary.filter(m=>targets.has(m));
  if(!primaryHits.length&&!secondaryHits.length)return -Infinity;
  let score=(primaryHits.length?115+(primaryHits.length-1)*32:0)+secondaryHits.length*28+preferenceRank(ex.id)+coachGenericExerciseBias(ex,request);
+ if(typeof coachHistoryAwareCandidateAdjustment==='function')score+=coachHistoryAwareCandidateAdjustment(ex,request);
  const programUses=Number(request.programExerciseUsage?.[ex.id])||0;
  if(programUses)score-=programUses*(request.goal==='strength'?18:34);
  meta.primary.filter(m=>priority.has(m)).forEach(()=>score+=82);
@@ -164,6 +168,8 @@ function coachCoveragePlan(request,count){
  const trapDirect=ex=>meta(ex).primary.includes('traps')||ex.pattern==='shrug';
  const upperBackAccessory=ex=>ex.pattern==='rear_delt'&&meta(ex).secondary.includes('upper_back');
  const bicepsDirect=ex=>ex.pattern==='elbow_flexion'&&meta(ex).primary.includes('biceps');
+ const unilateral=ex=>typeof coachExerciseLaterality==='function'&&coachExerciseLaterality(ex)==='unilateral';
+ const bilateral=ex=>!unilateral(ex);
  const bicepsSupinated=ex=>bicepsDirect(ex)&&!/\b(?:hammer|reverse|zottman)\b/i.test(ex.name||'');
  const bicepsNeutral=ex=>bicepsDirect(ex)&&/\b(?:hammer|cross-body|rope hammer)\b/i.test(ex.name||'');
  const tricepsDirect=ex=>coachMovementFamily(ex)==='triceps_extension'&&meta(ex).primary.includes('triceps')&&!/\b(?:dip|push-?up|bench press|jm press|tate press)\b/i.test(ex.name||'');
@@ -227,10 +233,17 @@ function coachCoveragePlan(request,count){
  };
  const addArms=()=>{
    if(keys.length===1&&keys[0]==='arms'){
-     add(core,'arms_biceps_supinated','Supinated elbow flexion',bicepsSupinated);
-     add(core,'arms_biceps_neutral','Neutral-grip elbow flexion',bicepsNeutral);
-     add(core,'arms_triceps_neutral','Triceps extension',tricepsNeutral);
-     add(core,'arms_triceps_overhead','Overhead triceps extension',tricepsOverhead);
+     if(request.lateralityPreference==='mixed'){
+       add(core,'arms_biceps_bilateral','Bilateral elbow flexion',ex=>bicepsSupinated(ex)&&bilateral(ex));
+       add(core,'arms_biceps_unilateral','Unilateral elbow flexion',ex=>bicepsDirect(ex)&&unilateral(ex));
+       add(core,'arms_triceps_bilateral','Bilateral triceps extension',ex=>tricepsNeutral(ex)&&bilateral(ex));
+       add(core,'arms_triceps_unilateral','Unilateral overhead triceps extension',ex=>tricepsOverhead(ex)&&unilateral(ex));
+     }else{
+       add(core,'arms_biceps_supinated','Supinated elbow flexion',bicepsSupinated);
+       add(core,'arms_biceps_neutral','Neutral-grip elbow flexion',bicepsNeutral);
+       add(core,'arms_triceps_neutral','Triceps extension',tricepsNeutral);
+       add(core,'arms_triceps_overhead','Overhead triceps extension',tricepsOverhead);
+     }
      add(optional,'arms_forearm_flexion','Forearm flexors',forearmFlexion);
      add(optional,'arms_forearm_extension','Forearm extensors',forearmExtension);
    }else{
@@ -373,6 +386,7 @@ function coachSelectExercises(request,count){
    register(pick);
  }
  const compoundPatterns=new Set(['squat','hinge','horizontal_press','incline_press','vertical_press','horizontal_pull','vertical_pull','lunge']);
+ const priorityRegions=new Set(request.priorityRegions||[]);
  const orderTier=ex=>{
    const family=coachMovementFamily(ex);
    if(compoundPatterns.has(ex.pattern)&&!['biceps_curl','triceps_extension','dip_press'].includes(family))return 0;
@@ -380,9 +394,13 @@ function coachSelectExercises(request,count){
    if(['biceps_curl','triceps_extension','calf_raise','spinal_flexion','hip_flexion_core','anti_extension'].includes(family))return 2;
    return 1;
  };
- return selected.map((ex,index)=>({ex,index,tier:orderTier(ex)}))
-   .sort((a,b)=>a.tier-b.tier||a.index-b.index)
-   .map(x=>x.ex);
+ return selected.map((ex,index)=>{
+   const priority=exerciseMuscleMetadata(ex).primary.some(region=>priorityRegions.has(region))?1:0;
+   return {ex,index,tier:orderTier(ex),priority};
+ }).sort((a,b)=>{
+   if(a.priority!==b.priority)return b.priority-a.priority;
+   return a.tier-b.tier||a.index-b.index;
+ }).map(x=>x.ex);
 }
 function coachWorkoutName(request){
  const target=request.targetLabels.length?request.targetLabels.join(' + '):'Workout';
@@ -395,12 +413,15 @@ function coachGenerateWorkout(request){
    targetKeys:[...(request.targetKeys||[])],targetLabels:[...(request.targetLabels||[])],targetRegions:[...(request.targetRegions||[])],
    liftingGrammar:{...(request.liftingGrammar||{})},
    allowedEquipment:[...(request.allowedEquipment||[])],excludedEquipment:[...(request.excludedEquipment||[])],
-   priorityRegions:[...(request.priorityRegions||[])],priorityKeys:[...(request.priorityKeys||[])],excludedExerciseIds:[...(request.excludedExerciseIds||[])],
-   requiredExerciseIds:[...(request.requiredExerciseIds||[])]
+   priorityRegions:[...(request.priorityRegions||[])],priorityKeys:[...(request.priorityKeys||[])],
+   experienceLevel:request.experienceLevel||'auto',lateralityPreference:request.lateralityPreference||'auto',
+   excludedExerciseIds:[...(request.excludedExerciseIds||[])],requiredExerciseIds:[...(request.requiredExerciseIds||[])]
  };
  const defaults=coachApplyLiftingGrammarToDefaults(coachProgrammingDefaults(req.goal,req.duration),req.liftingGrammar);
  const selected=coachSelectExercises(req,defaults.exerciseCount);
  if(!selected.length)return null;
- coachBuildDraft={request:req,defaults,selectedIds:selected.map(x=>x.id),createdAt:new Date().toISOString(),lastRefinement:request.lastRefinement||''};
+ const intelligenceAudit=typeof coachWorkoutIntelligenceAudit==='function'?coachWorkoutIntelligenceAudit(req,selected,defaults):null;
+ if(intelligenceAudit&&!intelligenceAudit.pass)return null;
+ coachBuildDraft={request:req,defaults,selectedIds:selected.map(x=>x.id),intelligenceAudit,createdAt:new Date().toISOString(),lastRefinement:request.lastRefinement||''};
  return coachBuildDraft;
 }
