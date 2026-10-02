@@ -105,18 +105,28 @@ for(const c of promptCases){
  assert.equal(req.goal,c.goal,c.name+' goal');
  if(c.level)assert.equal(req.experienceLevel,c.level,c.name+' experience');
  if(c.target)assert(req.targetKeys.includes(c.target),c.name+' target '+c.target+' missing: '+req.targetKeys.join(','));
+ let draft=null;
  if(c.explicitExercise){
   const explicit=w.coachParseExplicitWorkout(c.prompt,req.goal);
   const ex=w.allExercises().find(x=>x.name===c.explicitExercise);
   assert(ex,'battle explicit fixture missing '+c.explicitExercise);
   assert(explicit.items.some(item=>item.exerciseId===ex.id),c.name+' explicit exercise was not understood');
+  draft=w.coachGenerateExplicitWorkout(req,explicit);
+  assert(draft?.explicitPrescription,c.name+' did not enter explicit-workout mode');
+  assert(draft.selectedIds.includes(ex.id),c.name+' explicit-workout draft lost the requested exercise');
+ }else{
+  draft=w.coachGenerateWorkout(req);
+  assert(draft?.intelligenceAudit?.pass,c.name+' end-to-end generation failed intelligence audit');
  }
  if(c.equipment)assert(w.coachParseEquipment(c.prompt).allowed.includes(c.equipment),c.name+' equipment');
- if(c.topBackoff)assert.equal(w.coachParseLiftingGrammar(c.prompt).topBackoff?.enabled,true,c.name+' top/backoff grammar');
- const draft=w.coachGenerateWorkout(req);
- assert(draft?.intelligenceAudit?.pass,c.name+' end-to-end generation failed intelligence audit');
+ if(c.topBackoff){
+  assert.equal(w.coachParseLiftingGrammar(c.prompt).topBackoff?.enabled,true,c.name+' top/backoff grammar');
+  const targetEx=c.explicitExercise?w.allExercises().find(x=>x.name===c.explicitExercise):w.exById(draft.selectedIds[0]);
+  const prescription=w.coachExercisePrescription(targetEx,req,w.coachProgrammingDefaults(req.goal,req.duration||45));
+  assert.equal(prescription.progressionStrategy,'top_backoff',c.name+' explicit top/backoff grammar did not reach prescription logic');
+ }
  if(c.maxExercises)assert(draft.selectedIds.length<=c.maxExercises,c.name+' beginner plan too large');
- say(c.name,'prompt','generated '+draft.selectedIds.length+' exercises; goal='+req.goal+' level='+(req.experienceLevel||'unspecified'));
+ say(c.name,'prompt',(c.explicitExercise?'explicit ':'generated ')+draft.selectedIds.length+' exercise'+(draft.selectedIds.length===1?'':'s')+'; goal='+req.goal+' level='+(req.experienceLevel||'unspecified'));
 }
 
 // Routing collisions and ambiguity must stay deterministic.
