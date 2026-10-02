@@ -546,7 +546,7 @@ Locked behavior:
 Goal: make the core in-gym workout loop feel obvious, smooth, and orientation-safe before real-world beta testing with a first outside user.
 
 Implementation order:
-1. [ ] **Fix the active-workout top bar / Cancel control.** Restore a properly sized, centered, readable Cancel button with a reliable mobile hit target and no clipping.
+1. [x] **Fix the active-workout top bar / Cancel control.** Restore a properly sized, centered, readable Cancel button with a reliable mobile hit target and no clipping.
 2. [ ] **Add persistent active-exercise identity.** Keep the current exercise name and set position visible while the user is working inside that exercise.
 3. [ ] **Make auto-advance land predictably.** Completing the final set of Exercise A must advance to Exercise B with Exercise B’s identity immediately visible, never into an ambiguous middle-of-card scroll position.
 4. [ ] **Compress Session Goal / Building Baseline guidance.** Preserve Coach intelligence while reducing the vertical space it consumes during live logging; detailed explanation remains available on demand.

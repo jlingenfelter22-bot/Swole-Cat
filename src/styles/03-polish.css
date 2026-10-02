@@ -883,3 +883,14 @@
   .exercise-block{
     contain:layout paint;
   }
+
+/* TODAY BETA READINESS // STEP 1 */
+#workout .workout-console-title>div:first-child{min-width:0;flex:1 1 auto}
+#workout .workout-cancel-btn{
+  display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+  min-width:78px;min-height:44px;padding:10px 14px;line-height:1;text-align:center;
+  white-space:nowrap;overflow:visible
+}
+@media(max-width:380px){
+  #workout .workout-cancel-btn{min-width:72px;padding-left:11px;padding-right:11px}
+}
