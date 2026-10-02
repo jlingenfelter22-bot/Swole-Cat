@@ -282,7 +282,7 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 
 ## Phase 6 — Coach Swole Cat / Quick Build
 
-**Status: In progress through v0.62.0**
+**Status: In progress through v0.63.0**
 
 ### Product intent: useful, not bloated
 Coach Swole Cat should reinforce the core product philosophy rather than turn the app into a noisy AI product.
@@ -476,25 +476,25 @@ Locked behavior:
 - A workout request containing an exercise name still routes to workout creation unless it is clearly phrased as a question about past training.
 - Insight actions are opt-in. Coach can suggest an action but does not rewrite routines or Programs automatically.
 
-**v0.63 — Program Auditor + Long-Term Planning Intelligence**
+**v0.63.0 — Program Auditor + Long-Term Planning Intelligence**
 
-**Status: In progress**
+**Status: Complete**
 
 Implementation checklist:
-- [ ] Add a deterministic Program-audit engine that reads the saved Program, its ordered Routines, current exercise configuration, preferred schedule, and completed Program history.
-- [ ] Compare programmed frequency with actual completed Program frequency over a recent multi-week window without treating missed sessions as a recovery diagnosis.
-- [ ] Compare planned routine-slot rotation with what the user is actually completing and flag repeatedly skipped/underrepresented days without rewriting history.
-- [ ] Audit planned weekly primary/secondary muscle set-equivalents across all Program Routines and compare them with recent completed Program muscle coverage.
-- [ ] Detect meaningful cross-day movement-family redundancy while respecting intentionally repeated staples and exercise preferences.
-- [ ] Detect poor weekly distribution when heavily overlapping muscle work is clustered on adjacent preferred days or concentrated into one day despite a multi-day schedule.
-- [ ] Surface repeated exercise stalls/performance dips and clear progression opportunities using the existing v0.60 multi-week progression classifications.
-- [ ] Generate ranked, explainable Program findings with evidence, severity, affected Routine/exercise, and a minimal next action.
-- [ ] Let findings hand off into v0.61 Coach Routine Control, exercise Progress, Analytics, or Program editing without silently mutating the Program.
-- [ ] Add direct Coach language such as “audit my program,” “review my current plan,” and “how is my program actually going?” plus a visible Coach Audit action on saved Programs.
-- [ ] Preserve user exercise preferences, Routine configuration, Program order, completed workout history, and explicit Program choices unless the user chooses to edit them.
-- [ ] Add dedicated v0.63 regression coverage for adherence, slot completion, planned-vs-actual muscle coverage, redundancy, distribution, stalls, opportunities, ranking, handoffs, and no-mutation guarantees.
-- [ ] Run the full production validation, Pages deployment, and Android build before closing v0.63.
-- [ ] Record the completed v0.63 milestone and bump app/version metadata only after all checks pass.
+- [x] Add a deterministic Program-audit engine that reads the saved Program, its ordered Routines, current exercise configuration, preferred schedule, and completed Program history.
+- [x] Compare programmed frequency with actual completed Program frequency over a recent multi-week window without treating missed sessions as a recovery diagnosis.
+- [x] Compare planned routine-slot rotation with what the user is actually completing and flag repeatedly skipped/underrepresented days without rewriting history.
+- [x] Audit planned weekly primary/secondary muscle set-equivalents across all Program Routines and compare them with recent completed Program muscle coverage.
+- [x] Detect meaningful cross-day movement-family redundancy while respecting intentionally repeated staples and exercise preferences.
+- [x] Detect poor weekly distribution when heavily overlapping muscle work is clustered on adjacent preferred days or concentrated into one day despite a multi-day schedule.
+- [x] Surface repeated exercise stalls/performance dips and clear progression opportunities using the existing v0.60 multi-week progression classifications.
+- [x] Generate ranked, explainable Program findings with evidence, severity, affected Routine/exercise, and a minimal next action.
+- [x] Let findings hand off into v0.61 Coach Routine Control, exercise Progress, Analytics, or Program editing without silently mutating the Program.
+- [x] Add direct Coach language such as “audit my program,” “review my current plan,” and “how is my program actually going?” plus a visible Coach Audit action on saved Programs.
+- [x] Preserve user exercise preferences, Routine configuration, Program order, completed workout history, and explicit Program choices unless the user chooses to edit them.
+- [x] Add dedicated v0.63 regression coverage for adherence, slot completion, planned-vs-actual muscle coverage, redundancy, distribution, stalls, opportunities, ranking, handoffs, and no-mutation guarantees.
+- [x] Run the full production validation, Pages deployment, and Android build before closing v0.63.
+- [x] Record the completed v0.63 milestone and bump app/version metadata only after all checks pass.
 
 Locked behavior:
 - The auditor describes what the Program contains and what the logs show; it does not diagnose fatigue, soreness, injury, recovery, overtraining, or medical readiness.
@@ -503,9 +503,12 @@ Locked behavior:
 - A stall is not automatically a reason to replace an exercise. Coach first surfaces the pattern and offers a minimal review path.
 - Program-audit actions are opt-in. Auditing never silently saves Routine or Program changes.
 
+
+**Milestone record:** Coach can now audit an entire saved Program against its ordered Routines and completed Program history. The auditor compares saved target frequency with recent completed frequency, checks rotation-slot representation, compares planned versus actual muscle set-equivalents, detects meaningful same-family redundancy without treating repeated staples as automatically bad, evaluates Program distribution from actual adjacent-day history and safe schedule-level evidence, and surfaces existing v0.60 progression stalls, dips, and positive continuity signals inside the Program context. Findings are ranked, explainable, and opt-in, with handoffs into Routine Control, exercise Progress, Program editing, and Analytics. A final semantic audit corrected an important assumption: preferred weekdays are availability preferences only, not positional Routine-to-day assignments, and regression coverage now permanently guards against inventing that mapping.
+
 After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
-Implemented locally through v0.62.0:
+Implemented locally through v0.63.0:
 - generate complete 2–6 day programs from natural-language frequency/split/schedule requests
 - refine a whole generated program's frequency, split, weekdays, session duration, goal, equipment, and muscle emphasis
 - preview approximate weekly primary/secondary set-equivalents
@@ -532,6 +535,12 @@ Implemented locally through v0.62.0:
 - answer exact last-session, best-set, progression, stall, consistency, recency, and neglected-area questions from completed local logs
 - rank deeper Home insights across stalls, performance dips, neglected areas, progressing exercises, and consistency
 - hand history insights into Progress, Analytics, generated workouts, or Coach routine review only when the user chooses the action
+- audit complete saved Programs against completed Program history
+- compare programmed frequency and rotation-slot representation with recent completion patterns
+- compare planned weekly muscle set-equivalents with recent completed Program coverage
+- detect explainable redundancy and distribution issues without inventing weekday-to-Routine mappings
+- surface Program-level stalls, performance dips, and positive progression continuity from the existing adaptive engine
+- hand Program findings into Routine Control, exercise Progress, Program editing, or Analytics without mutating the Program
 
 ### Product/safety guardrails
 - Recommendations should be framed as training suggestions, not medical advice.

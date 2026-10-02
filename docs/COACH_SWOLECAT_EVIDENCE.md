@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.62.0
+Version: v0.63.0
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -1114,3 +1114,122 @@ The dedicated production-bundle regression suite verifies:
 - normalized phrasing such as stalled/stalling and apostrophe/pronoun variants
 
 The full Swole Cat regression suite continues to run alongside v0.62 coverage.
+
+
+## v0.63 Program auditor and long-term planning intelligence
+
+v0.63 extends Coach from exercise/routine intelligence into saved Program-level analysis.
+
+### Program audit inputs
+
+The auditor reads:
+- Program routine order
+- saved target training frequency
+- preferred training days
+- current Routine exercise configuration
+- exercise preferences/favorites
+- completed sessions that are explicitly linked to the Program
+- planned and completed muscle set-equivalents
+- v0.60 multi-week exercise progression profiles
+
+Completed non-Program workouts are not counted as Program adherence.
+
+### Adherence and rotation
+
+Coach can compare recent completed Program frequency with the Program’s saved frequency target.
+
+It can also identify underrepresented Program slots when enough recent Program history exists.
+
+These are completion-pattern observations only. Coach does not infer motivation, recovery, fatigue, soreness, injury, or why a workout was missed.
+
+### Planned versus actual coverage
+
+For each broad push, pull, and lower-body group, Coach can compare:
+- planned weekly primary/secondary set-equivalents represented by the saved Program
+- recent completed Program set-equivalents normalized across the audit window
+
+Coach can surface:
+- a structural planned-coverage gap
+- a meaningful planned-versus-actual coverage gap
+- concentration of a muscle group inside one Routine
+
+### Redundancy
+
+The auditor compares movement families across Program Routines and considers:
+- whether the exact movement or close variants recur
+- whether the rep/progression role is materially the same
+- whether the overlap appears across multiple Routines
+- whether the movement is explicitly preferred or favorited
+
+Repeated compound staples are not automatically called redundant. Similar movement-family slots need meaningfully overlapping programming roles before a finding is raised.
+
+### Distribution semantics
+
+Preferred Program days are availability preferences, not Routine-to-weekday assignments.
+
+Therefore Coach never assumes:
+- Routine A maps to the first preferred weekday
+- Routine B maps to the second preferred weekday
+- and so on
+
+Distribution findings are supported by:
+- actual adjacent-day completed Program sessions with substantial overlapping muscle involvement
+- unavoidable schedule-level overlap when every Routine substantially trains the same group and preferred days include a back-to-back pair
+- clear concentration of a group inside one Routine across a multi-day Program
+
+This prevents the auditor from inventing a schedule mapping that the Program data model does not contain.
+
+### Long-term progression signals
+
+The Program auditor reuses v0.60 classifications for exercises that are part of the Program:
+- progressing
+- plateau watch
+- high-effort plateau
+- recent performance dip
+
+A stall does not automatically trigger exercise replacement. The default action is to review the existing Routine or exercise progress first.
+
+### Ranked findings and actions
+
+Program findings include:
+- severity/priority
+- explanation
+- affected Routine when applicable
+- affected exercise or muscle group when applicable
+- a minimal opt-in action
+
+Supported handoffs include:
+- Review Routine in v0.61 Coach Routine Control
+- Open Exercise Progress
+- Review/Edit Program
+- Open Analytics
+
+Auditing itself never mutates the Program, Routines, completed sessions, or progression history.
+
+### Direct Coach language
+
+Coach can route requests such as:
+- “audit my program”
+- “review my current plan”
+- “check my split”
+- “how is my program actually going?”
+
+Program cards and the active Program Home panel also expose a visible Coach Audit action.
+
+### v0.63 validation
+
+The dedicated production-bundle stress suite verifies:
+- Program-audit module registration
+- programmed-versus-actual frequency
+- underrepresented rotation slots
+- planned-versus-actual muscle coverage
+- movement-family redundancy
+- actual adjacent-day distribution
+- no positional preferred-day/Routine assumption
+- progression stalls and positive progression signals
+- finding ranking and action handoffs
+- direct audit-language routing
+- workout/program creation intent not being hijacked
+- no mutation of Program, Routine, or completed-session state
+
+The full Swole Cat regression suite continues to run alongside v0.63 coverage.
