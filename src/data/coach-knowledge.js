@@ -99,6 +99,24 @@ const COACH_EVIDENCE_MODEL=Object.freeze({
      title:'Resistance training prescription for muscle strength and hypertrophy in healthy adults: a systematic review and Bayesian network meta-analysis',
      year:2023,
      url:'https://pubmed.ncbi.nlm.nih.gov/37414459/'
+   }),
+   autoregulationStrength2025:Object.freeze({
+     id:'autoregulation-strength-2025',
+     title:'Autoregulated Resistance Training for Maximal Strength: A Systematic Review and Network Meta-analysis',
+     year:2025,
+     url:'https://pubmed.ncbi.nlm.nih.gov/40791980/'
+   }),
+   loadVsRepProgression2022:Object.freeze({
+     id:'load-vs-rep-progression-2022',
+     title:'Progressive overload without progressing load? The effects of load or repetition progression on muscular adaptations',
+     year:2022,
+     url:'https://pubmed.ncbi.nlm.nih.gov/36199287/'
+   }),
+   periodization2022:Object.freeze({
+     id:'periodization-strength-hypertrophy-2022',
+     title:'Comparison of Periodized and Non-Periodized Resistance Training on Maximal Strength and Muscle Hypertrophy: A Systematic Review and Meta-analysis',
+     year:2022,
+     url:'https://pubmed.ncbi.nlm.nih.gov/35044672/'
    })
  }),
  principles:Object.freeze({
@@ -114,7 +132,10 @@ const COACH_EVIDENCE_MODEL=Object.freeze({
    weeklyVolume:'use-direct-and-indirect-set-equivalents-as-a-planning-context-not-a-hard-ceiling',
    proximityToFailure:'closer-to-failure-can-support-hypertrophy-but-momentary-failure-is-not-required',
    overloadProgression:'repetition-and-load-progression-are-both-valid-tools',
-   supersets:'use-compatible-pairings-for-time-efficiency; avoid-same-biomechanical-pairing-when-volume-quality-matters'
+   supersets:'use-compatible-pairings-for-time-efficiency; avoid-same-biomechanical-pairing-when-volume-quality-matters',
+   autoregulation:'use-the-lifters-own-performance-and-effort-history-to-adjust-targets-without-diagnosing-readiness',
+   multiWeekProgression:'preserve-progressing-movements; hold-or-retest-flat-high-effort-performance-before-forcing-progression',
+   topBackoff:'a-practical-strength-structure-not-a-universally-superior-method'
  })
 });
 
