@@ -36,6 +36,8 @@ function coachMultiWeekExerciseProfile(exerciseId,referenceMs=Date.now()){
  const changePct=firstBest>0?(recentBest-firstBest)/firstBest:0;
  const recentChangePct=previous?.bestE1>0?(latest.bestE1-previous.bestE1)/previous.bestE1:0;
  const recentSpreadPct=recentBest>0?(recentBest-recentLow)/recentBest:0;
+ const recentFirst=recentRows[0]?.bestE1||0;
+ const recentDirectionalPct=recentFirst>0?(latest.bestE1-recentFirst)/recentFirst:0;
  const recentRIR=rows.slice(-3).map(x=>x.avgRIR).filter(v=>v!=null);
  const highEffort=recentRIR.length>=2&&recentRIR.reduce((a,b)=>a+b,0)/recentRIR.length<=1.5;
  const dates=rows.map(r=>new Date(r.date).getTime()).filter(Number.isFinite);
@@ -45,7 +47,7 @@ function coachMultiWeekExerciseProfile(exerciseId,referenceMs=Date.now()){
  // A stall is a recent pattern, not the absence of progress across an entire block.
  // Require the recent four-exposure window to span at least 10 days so several
  // clustered sessions in one week are not mislabeled as a multi-week plateau.
- const stableWindow=n>=4&&recentSpanDays>=10&&recentSpreadPct<.02;
+ const stableWindow=n>=4&&recentSpanDays>=10&&recentSpreadPct<.02&&Math.abs(recentDirectionalPct)<.015;
  const priorBest=n>=2?Math.max(...rows.slice(0,-1).map(x=>x.bestE1||0)):0;
  const performanceDip=n>=3&&spanDays>=7&&latest.bestE1>0&&priorBest>0&&latest.bestE1<priorBest*.94;
  let status='building';
@@ -55,7 +57,7 @@ function coachMultiWeekExerciseProfile(exerciseId,referenceMs=Date.now()){
  else if(stableWindow)status='plateau_watch';
  else if(recentChangePct>.015||changePct>.025)status='progressing';
  else status='consolidating';
- return {exerciseId,exposures:n,status,changePct,recentChangePct,recentSpreadPct,highEffort,bestE1:best,latestE1:latest.bestE1||0,spanDays,recentSpanDays,rows};
+ return {exerciseId,exposures:n,status,changePct,recentChangePct,recentSpreadPct,recentDirectionalPct,highEffort,bestE1:best,latestE1:latest.bestE1||0,spanDays,recentSpanDays,rows};
 }
 function coachIsAdaptiveCompound(ex){
  if(!ex)return false;
