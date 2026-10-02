@@ -177,6 +177,9 @@ function coachHistoryAwareCandidateAdjustment(ex,request){
 }
 function coachExercisePrescription(ex,request,defaults){
  const family=coachMovementFamily(ex),compound=COACH_COMPOUND_PATTERNS.has(ex?.pattern)&&!['biceps_curl','triceps_extension','dip_press'].includes(family);
+ const grammar=request?.liftingGrammar||{};
+ const explicitRest=Number.isFinite(Number(grammar.restSeconds))&&Number(grammar.restSeconds)>0;
+ const explicitRIR=Number.isFinite(Number(grammar.targetRIR));
  let minReps=defaults.minReps,maxReps=defaults.maxReps,restSeconds=defaults.restSeconds,targetRIR=defaults.targetRIR;
  if(request?.goal==='strength'){
    if(compound){minReps=3;maxReps=6;restSeconds=Math.max(180,restSeconds||0);targetRIR=2}
@@ -190,6 +193,8 @@ function coachExercisePrescription(ex,request,defaults){
    if(compound){minReps=6;maxReps=10;restSeconds=Math.max(120,restSeconds||0);targetRIR=3}
    else {minReps=8;maxReps=12;restSeconds=Math.max(75,Math.min(120,restSeconds||120));targetRIR=2}
  }
+ if(explicitRest)restSeconds=Number(grammar.restSeconds);
+ if(explicitRIR)targetRIR=Number(grammar.targetRIR);
  return {...defaults,minReps,maxReps,restSeconds,targetRIR};
 }
 function coachExerciseIntelligenceReason(ex,request){
