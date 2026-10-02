@@ -207,6 +207,7 @@ function coachSubmitPrompt(){
  if(!prompt){showToast('Tell Coach Swolecat what you want to train');return}
  const taught=coachTryTeachAlias(prompt);
  if(taught.handled){showToast(taught.message);return}
+ if(typeof coachTryHistoryQuestion==='function'&&coachTryHistoryQuestion(prompt,{render:true}))return;
  const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt),explicit=coachParseExplicitWorkout(prompt,request.goal);
  request.excludedExerciseIds=[...new Set([...(request.excludedExerciseIds||[]),...(explicit.excludedExerciseIds||[])])];
  if(explicit.signal&&explicit.ambiguities?.length){coachBeginExerciseClarification({prompt,request,programIntent,explicit});return}
@@ -229,13 +230,13 @@ function openCoachSwolecat(reset=false){
   <div class="coach-builder">
    <div class="coach-console">
     <div class="eyebrow">QUICK BUILD // OFFLINE</div>
-    <div class="exercise-name" style="font-size:1.17rem;margin-top:5px">What are we building?</div>
-    <div class="mini" style="margin-top:5px">Describe today's workout or a multi-day program naturally. Coach only asks for missing information that materially changes the plan.</div>
-    <div class="coach-voice-field" style="margin-top:12px"><textarea id="coachPrompt" class="coach-prompt" placeholder="Say or type: bench press, squats, curls... or exact sets/reps"></textarea>${coachVoiceButtonHtml('coachPrompt')}</div>
+    <div class="exercise-name" style="font-size:1.17rem;margin-top:5px">What do you need?</div>
+     <div class="mini" style="margin-top:5px">Build a workout or ask about your logged training history. Coach routes history questions without creating a workout.</div>
+    <div class="coach-voice-field" style="margin-top:12px"><textarea id="coachPrompt" class="coach-prompt" placeholder="Build chest + back... or ask: what did I bench last time?"></textarea>${coachVoiceButtonHtml('coachPrompt')}</div>
     <div class="coach-example-row"><button class="coach-example" onclick="coachFillExample('Chest and back, 45 minutes, dumbbells and cables')">Chest + back</button><button class="coach-example" onclick="coachFillExample('3-day full body program, Monday Wednesday Friday, 45 minutes')">3-day plan</button><button class="coach-example" onclick="coachFillExample('Push pull legs program, 3 days, 60 minutes')">PPL</button></div>
    </div>
    <div><div class="mini" style="margin-bottom:6px">Primary goal</div><div class="picker-chips"><button class="chip active" data-coach-goal="hypertrophy" onclick="coachSetGoal('hypertrophy')">Muscle growth</button><button class="chip" data-coach-goal="strength" onclick="coachSetGoal('strength')">Strength</button><button class="chip" data-coach-goal="general" onclick="coachSetGoal('general')">General</button></div></div>
-   <div class="actions"><button class="btn" onclick="coachSubmitPrompt()">Build Workout</button><button class="btn secondary" onclick="closeModal()">Cancel</button></div>
+   <div class="actions"><button class="btn" onclick="coachSubmitPrompt()">Ask / Build</button><button class="btn secondary" onclick="closeModal()">Cancel</button></div>
    <div class="mini">Evidence rules are versioned locally. Current foundation: ACSM 2026 resistance-training position stand and NSCA program-design framework.</div>
   </div>`);
  coachSetGoal(coachPromptGoal);
@@ -249,9 +250,10 @@ function homeSuggestedRoutine(){
 }
 function homeCoachBuildPrompt(){
  const input=document.getElementById('homeCoachPrompt'),prompt=input?.value.trim()||'';
- if(!prompt){showToast('Tell Coach Swolecat what you want to build');return}
+ if(!prompt){showToast('Ask Coach something or tell it what you want to build');return}
  const taught=coachTryTeachAlias(prompt);
  if(taught.handled){showToast(taught.message);return}
+ if(typeof coachTryHistoryQuestion==='function'&&coachTryHistoryQuestion(prompt,{render:true}))return;
  const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt),explicit=coachParseExplicitWorkout(prompt,request.goal);
  request.excludedExerciseIds=[...new Set([...(request.excludedExerciseIds||[]),...(explicit.excludedExerciseIds||[])])];
  if(explicit.signal&&explicit.ambiguities?.length){coachBeginExerciseClarification({prompt,request,programIntent,explicit});return}
@@ -274,8 +276,8 @@ function homeCoachExample(text){
 function homeCoachLauncherHtml({embedded=false}={}){
  return `<div class="${embedded?'home-new-user':''}">
    ${embedded?'':`<div class="home-coach-head"><div><div class="home-coach-title">Coach Swolecat</div><div class="mini">Need something different today?</div></div><span class="tag">QUICK BUILD</span></div>`}
-   <div class="home-coach-row"><div class="coach-voice-field"><input id="homeCoachPrompt" placeholder="Say or type what you want to train..." onkeydown="if(event.key==='Enter')homeCoachBuildPrompt()">${coachVoiceButtonHtml('homeCoachPrompt')}</div><button class="btn" onclick="homeCoachBuildPrompt()">Build</button></div>
-   <div class="home-coach-chips"><button class="home-coach-chip" onclick="homeCoachExample('30 minute leg workout')">30m legs</button><button class="home-coach-chip" onclick="homeCoachExample('Chest and back, 45 minutes')">Chest + back</button><button class="home-coach-chip" onclick="homeCoachExample('3-day full body program, Monday Wednesday Friday, 45 minutes')">3-day plan</button></div>
+   <div class="home-coach-row"><div class="coach-voice-field"><input id="homeCoachPrompt" placeholder="Build something or ask about your training..." onkeydown="if(event.key==='Enter')homeCoachBuildPrompt()">${coachVoiceButtonHtml('homeCoachPrompt')}</div><button class="btn" onclick="homeCoachBuildPrompt()">Go</button></div>
+    <div class="home-coach-chips"><button class="home-coach-chip" onclick="homeCoachExample('30 minute leg workout')">30m legs</button><button class="home-coach-chip" onclick="homeCoachExample('What did I bench last time?')">Last bench?</button><button class="home-coach-chip" onclick="homeCoachExample('What am I progressing on?')">My trends</button></div>
  </div>`;
 }
 function homeQuickActionsHtml(){
@@ -291,6 +293,7 @@ function coachSessionGroupScore(session,group){
  return group.regions.reduce((n,region)=>n+(Number(scores[region])||0),0);
 }
 function coachHistoryInsight(){
+ if(typeof coachDeepHistoryInsight==='function')return coachDeepHistoryInsight();
  if(state.activeWorkout||activeProgram()||state.sessions.length<3)return null;
  const sessions=state.sessions.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
  const now=Date.now(),recent=sessions.filter(s=>{
@@ -326,6 +329,7 @@ function coachBuildFromInsight(targetKey){
  renderCoachPreview();
 }
 function coachInsightHtml(){
+ if(typeof coachDeepInsightHtml==='function')return coachDeepInsightHtml();
  const insight=coachHistoryInsight();if(!insight)return '';
  return `<div class="home-signal-card" style="margin-top:8px"><div class="grow"><div class="eyebrow">COACH INSIGHT</div><div class="signal-copy"><b>${esc(insight.group.label)} hasn’t shown up lately.</b> ${esc(insight.text)} <span class="mini">That’s a log observation, not a recovery warning.</span></div></div><button class="btn small secondary" onclick="coachBuildFromInsight('${escAttr(insight.group.key)}')">Build ${esc(insight.group.label)}</button></div>`;
 }
