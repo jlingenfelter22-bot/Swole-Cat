@@ -2949,7 +2949,7 @@ jobs:
             const noGrammar=w.coachParsePrompt('45 minute chest workout','hypertrophy');
             const plainDraft=w.coachGenerateWorkout(noGrammar);
             const plainRoutine=w.coachDraftRoutine(plainDraft,'plain');
-            assert(plainRoutine.exercises.every(ex=>ex.targetRIR===null),'ordinary Coach workouts should not silently become 0 RIR workouts');
+            assert(plainRoutine.exercises.every(ex=>ex.targetRIR==null||Number(ex.targetRIR)>=1),'ordinary Coach workouts may receive evidence-backed effort targets but must not silently become 0 RIR/failure workouts');
             assert(plainRoutine.exercises.every(ex=>!ex.autoWarmup),'warmups should only auto-insert when requested');
             assert(plainRoutine.exercises.every(ex=>!ex.lastSetAmrap),'AMRAP should only appear when requested');
 
