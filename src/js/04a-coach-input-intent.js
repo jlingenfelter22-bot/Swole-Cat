@@ -314,8 +314,9 @@ function coachParseLiftingGrammar(text){
      topBackoff.backoffMinReps=Math.max(1,Number(tb[1])||1);
      topBackoff.backoffMaxReps=Math.max(topBackoff.backoffMinReps,Number(tb[2])||topBackoff.backoffMinReps);
    }
-   tb=lower.match(/\bback[- ]?off(?: sets?)?\s+(?:at\s+)?(\d{2})(?:\.([05]))?\s*%/i);
-   if(tb)topBackoff.backoffPercent=Math.max(70,Math.min(97.5,Number(tb[1]+(tb[2]?'.'+tb[2]:''))));
+   tb=lower.match(/\bback[- ]?off(?: sets?)?\s+at\s+(\d{2})(?:\s*percent)?\b/i)
+     ||lower.match(/\bback[- ]?off(?: sets?)?\s+(\d{2})\s+percent\b/i);
+   if(tb)topBackoff.backoffPercent=Math.max(70,Math.min(97.5,Number(tb[1])||90));
    out.topBackoff=topBackoff;
  }
  if(/\b(?:no|skip|without)\s+top set(?:s)?\b|\b(?:no|skip|without)\s+back[- ]?off sets?\b/i.test(lower))out.topBackoff={enabled:false};
