@@ -27,7 +27,7 @@ w.eval('state.routines='+JSON.stringify(routines)+';state.programs=['+JSON.strin
 
 const sessions=[];
 [27,20,13,6].forEach((d,i)=>sessions.push({id:'x'+i,programId:'p',routineId:i%2?'b':'a',routineName:i%2?'Push B':'Push A',status:'finished',date:ago(d),exercises:[{exerciseId:bench.id,sets:sets(185,6,1)},{exerciseId:row.id,sets:sets(120+i*10,8,2)},{exerciseId:i%2?incline.id:machine.id,sets:sets(90+i*5,8,2)}]}));
-sessions.push({id:'x4',programId:'p',routineId:'a',routineName:'Push A',status:'finished',date:ago(3),exercises:[{exerciseId:bench.id,sets:sets(185,6,1)},{exerciseId:row.id,sets:sets(165,8,2)},{exerciseId:machine.id,sets:sets(110,8,2)}]});
+sessions.push({id:'x4',programId:'p',routineId:'a',routineName:'Push A',status:'finished',date:ago(2),exercises:[{exerciseId:bench.id,sets:sets(185,6,1)},{exerciseId:row.id,sets:sets(165,8,2)},{exerciseId:machine.id,sets:sets(110,8,2)}]});
 sessions.push({id:'x5',programId:'p',routineId:'b',routineName:'Push B',status:'finished',date:ago(1),exercises:[{exerciseId:bench.id,sets:sets(185,6,1)},{exerciseId:row.id,sets:sets(175,8,2)},{exerciseId:incline.id,sets:sets(115,8,2)}]});
 w.eval('state.sessions='+JSON.stringify(sessions)+';save()');
 
@@ -38,6 +38,10 @@ assert(audit);assert.equal(audit.routines.length,3);
 assert(audit.coverageRows.find(x=>x.key==='lower body').plannedSets>0);
 assert.equal(audit.coverageRows.find(x=>x.key==='lower body').actualSets,0);
 for(const type of ['adherence','slot_gap','actual_coverage_gap','redundancy','distribution','plateau_high_effort','progressing'])assert(audit.findings.some(x=>x.type===type),'missing '+type);
+const distribution=audit.findings.find(x=>x.type==='distribution'&&x.evidence==='actual_adjacent_sessions');
+assert(distribution,'distribution must be supported by actual adjacent completed Program sessions rather than positional preferred-day assumptions');
+assert.match(distribution.text,/completed Program days|on .* and .* on /i);
+assert(!audit.findings.some(x=>/Push A \(Mon\).*Push B \(Tue\)/i.test(x.text)),'preferred weekdays must never be positionally assigned to routine slots');
 assert.equal(JSON.stringify({programs:read().programs,routines:read().routines,sessions:read().sessions}),before);
 
 assert.equal(w.coachProgramAuditIntent('audit my program').handled,true);

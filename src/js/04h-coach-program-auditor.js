@@ -117,15 +117,62 @@ function coachProgramAuditRedundancy(program){
  });
  return f;
 }
+function coachProgramAuditCalendarDayNumber(value){
+ const d=new Date(value);if(Number.isNaN(d.getTime()))return null;
+ d.setHours(12,0,0,0);return Math.floor(d.getTime()/86400000);
+}
 function coachProgramAuditDistribution(program,audit){
- const f=[],days=program.preferredDays||[],routines=coachProgramAuditRoutines(program);
- if(days.length!==routines.length||routines.length<2)return f;
- const rows=routines.map((r,i)=>({...r,day:days[i],coverage:audit.planned.byRoutine[r.id]||{}}));
- for(let i=0;i<rows.length;i++)for(let j=i+1;j<rows.length;j++){
-  const raw=Math.abs(rows[i].day-rows[j].day),gap=Math.min(raw,7-raw);if(gap!==1)continue;
-  const overlap=coachProgramAuditGroups().map(g=>({g,a:coachProgramAuditGroupScore(rows[i].coverage,g),b:coachProgramAuditGroupScore(rows[j].coverage,g)})).find(x=>x.a>=4&&x.b>=4);
-  if(overlap)f.push(coachProgramAuditFinding('distribution',70,overlap.g.label+' work is clustered on adjacent preferred days.',rows[i].routine.name+' ('+PROGRAM_DAYS[rows[i].day]+') and '+rows[j].routine.name+' ('+PROGRAM_DAYS[rows[j].day]+') both contain substantial '+overlap.g.label.toLowerCase()+' involvement. Coach is flagging concentration, not claiming the spacing is unsafe or unrecoverable.',{action:'edit_program',programId:program.id,routineId:rows[j].id,groupKey:overlap.g.key}));
+ const f=[],routines=coachProgramAuditRoutines(program),groups=coachProgramAuditGroups(),seenActual=new Set();
+ if(routines.length<2)return f;
+
+ // Preferred days are availability preferences, not routine-to-weekday assignments.
+ // Therefore actual adjacent-day findings come from completed Program sessions only.
+ const sessions=audit.actual.sessions||[];
+ for(let i=1;i<sessions.length;i++){
+  const a=sessions[i-1],b=sessions[i],da=coachProgramAuditCalendarDayNumber(a.date),db=coachProgramAuditCalendarDayNumber(b.date);
+  if(da==null||db==null||db-da!==1)continue;
+  const aScores=sessionMuscleScores(a),bScores=sessionMuscleScores(b);
+  groups.forEach(group=>{
+   if(seenActual.has(group.key))return;
+   const left=coachProgramAuditGroupScore(aScores,group),right=coachProgramAuditGroupScore(bScores,group);
+   if(left<4||right<4)return;
+   seenActual.add(group.key);
+   f.push(coachProgramAuditFinding(
+    'distribution',76,group.label+' work has landed on adjacent completed Program days.',
+    (a.routineName||'One Program workout')+' on '+coachHistoryDateLabel(a.date)+' and '+(b.routineName||'the next Program workout')+' on '+coachHistoryDateLabel(b.date)+' both logged substantial '+group.label.toLowerCase()+' involvement. This describes recent scheduling, not a recovery or safety diagnosis.',
+    {action:'edit_program',programId:program.id,routineId:b.routineId||null,groupKey:group.key,evidence:'actual_adjacent_sessions'}
+   ));
+  });
  }
+
+ // A preferred-day risk is only deterministic when every routine in the rotation
+ // substantially trains the same group. We never assign preferredDays by index.
+ const days=[...new Set(program.preferredDays||[])].sort((a,b)=>a-b);
+ const hasAdjacentPreferred=days.some((day,i)=>days.slice(i+1).some(other=>Math.min(Math.abs(day-other),7-Math.abs(day-other))===1));
+ if(hasAdjacentPreferred&&days.length>=2){
+  groups.forEach(group=>{
+   const heavy=routines.filter(row=>coachProgramAuditGroupScore(audit.planned.byRoutine[row.id]||{},group)>=4);
+   if(heavy.length!==routines.length)return;
+   f.push(coachProgramAuditFinding(
+    'distribution',62,group.label+' involvement spans the full rotation while preferred training days include an adjacent pair.',
+    'Every saved Program Routine contains substantial '+group.label.toLowerCase()+' involvement, and the preferred schedule includes back-to-back training days. Coach cannot assign a specific Routine to a preferred weekday, so this is a schedule-design note rather than a claim about which workouts land together.',
+    {action:'edit_program',programId:program.id,groupKey:group.key,evidence:'rotation_wide_schedule_risk'}
+   ));
+  });
+ }
+
+ // Concentration inside one routine is independent of weekday mapping.
+ groups.forEach(group=>{
+  const rows=routines.map(row=>({row,score:coachProgramAuditGroupScore(audit.planned.byRoutine[row.id]||{},group)}));
+  const total=rows.reduce((n,x)=>n+x.score,0),top=rows.slice().sort((a,b)=>b.score-a.score)[0];
+  if(Number(program.frequency)>=3&&total>=6&&top?.score>=total*.7&&top.score>=6){
+   f.push(coachProgramAuditFinding(
+    'distribution',64,group.label+' work is concentrated in '+top.row.routine.name+'.',
+    top.row.routine.name+' contains about '+top.score.toFixed(1)+' of '+total.toFixed(1)+' planned '+group.label.toLowerCase()+' set-equivalents across the saved rotation. Coach is flagging concentration across the Program, not saying the design is automatically wrong.',
+    {action:'review_routine',programId:program.id,routineId:top.row.id,groupKey:group.key,evidence:'routine_concentration'}
+   ));
+  }
+ });
  return f;
 }
 function coachProgramAuditProgression(program){
