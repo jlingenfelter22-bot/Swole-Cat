@@ -44,7 +44,10 @@ function coachPreviewExercisePrescription(exerciseId,draft){
  const ex=exById(exerciseId),d=draft?.defaults||{},r=draft?.request||{},explicit=draft?.explicitConfigById?.[exerciseId];
  const p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,r,d):d;
  const sets=explicit?.sets||p.sets,min=explicit?.minReps||p.minReps,max=explicit?.maxReps||p.maxReps;
- return sets+' sets · '+min+(max!==min?'–'+max:'')+' reps · '+p.restSeconds+'s rest'+(Number.isFinite(Number(p.targetRIR))?' · '+p.targetRIR+' RIR':'');
+ const structure=p.setStructure?.type==='top_backoff'
+   ?` · top ${p.setStructure.topMinReps}–${p.setStructure.topMaxReps} + ${p.setStructure.backoffSets} backoff @ ${p.setStructure.backoffPercent}%`
+   :'';
+ return sets+' sets · '+min+(max!==min?'–'+max:'')+' reps · '+p.restSeconds+'s rest'+(Number.isFinite(Number(p.targetRIR))?' · '+p.targetRIR+' RIR':'')+structure;
 }
 function renderCoachPreview(){
  const draft=coachBuildDraft;if(!draft)return;
