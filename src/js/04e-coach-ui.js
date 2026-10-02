@@ -7,6 +7,8 @@ function coachExerciseReason(ex,request){
  if(primary.length)bits.push('Primary: '+primary.join(', '));
  if(secondary.length)bits.push('Secondary: '+secondary.join(', '));
  bits.push(patternLabel(ex.pattern));
+ const intelligence=typeof coachExerciseIntelligenceReason==='function'?coachExerciseIntelligenceReason(ex,request):'';
+ if(intelligence)bits.push(intelligence);
  return bits.join(' · ');
 }
 function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
@@ -20,12 +22,13 @@ function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
    description:`Generated locally by Coach Swolecat from: "${r.prompt||r.targetLabels.join(' + ')}". Evidence rules: ACSM 2026 resistance-training position stand + NSCA program-design framework.`,
    trainingMode:d.trainingMode,
    exercises:draft.selectedIds.map(exerciseId=>{
-     const explicit=draft.explicitConfigById?.[exerciseId];
+     const ex=exById(exerciseId),explicit=draft.explicitConfigById?.[exerciseId];
+     const p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,r,d):d;
      return {
-       exerciseId,sets:explicit?.sets||d.sets,minReps:explicit?.minReps||d.minReps,maxReps:explicit?.maxReps||d.maxReps,increment:state.settings.defaultIncrement,
-       mode:'double',trainingGoal:d.goal,resetPercent:7.5,restSeconds:d.restSeconds,
+       exerciseId,sets:explicit?.sets||p.sets,minReps:explicit?.minReps||p.minReps,maxReps:explicit?.maxReps||p.maxReps,increment:state.settings.defaultIncrement,
+       mode:'double',trainingGoal:d.goal,resetPercent:7.5,restSeconds:p.restSeconds,
        autoWarmup:exerciseId===firstWarmupId,
-       targetRIR:Number.isFinite(Number(d.targetRIR))?Number(d.targetRIR):null,
+       targetRIR:Number.isFinite(Number(p.targetRIR))?Number(p.targetRIR):null,
        targetRPE:Number.isFinite(Number(d.targetRPE))?Number(d.targetRPE):null,
        lastSetAmrap:!!g.lastSetAmrap
      };
