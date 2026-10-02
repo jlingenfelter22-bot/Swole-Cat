@@ -63,6 +63,42 @@ const COACH_EVIDENCE_MODEL=Object.freeze({
      title:'Does Muscle Length Influence Regional Hypertrophy? A Systematic Review and Meta-Analysis',
      year:2025,
      url:'https://pubmed.ncbi.nlm.nih.gov/40570881/'
+   }),
+   unilateralBilateral2025:Object.freeze({
+     id:'unilateral-bilateral-2025',
+     title:'Comparison of Muscle Growth and Dynamic Strength Adaptations Induced by Unilateral and Bilateral Resistance Training: A Systematic Review and Meta-analysis',
+     year:2025,
+     url:'https://pubmed.ncbi.nlm.nih.gov/39794667/'
+   }),
+   volumeFrequencyDose2025:Object.freeze({
+     id:'volume-frequency-dose-2025',
+     title:'The Resistance Training Dose Response: Meta-Regressions Exploring the Effects of Weekly Volume and Frequency on Muscle Hypertrophy and Strength Gains',
+     year:2025,
+     url:'https://pubmed.ncbi.nlm.nih.gov/41343037/'
+   }),
+   proximityFailure2024:Object.freeze({
+     id:'proximity-failure-meta-regression-2024',
+     title:'Exploring the Dose-Response Relationship Between Estimated Resistance Training Proximity to Failure, Strength Gain, and Muscle Hypertrophy',
+     year:2024,
+     url:'https://pubmed.ncbi.nlm.nih.gov/38970765/'
+   }),
+   overloadProgression2024:Object.freeze({
+     id:'overload-progression-2024',
+     title:'Effects of Resistance Training Overload Progression Protocols on Strength and Muscle Mass',
+     year:2024,
+     url:'https://pubmed.ncbi.nlm.nih.gov/38286426/'
+   }),
+   supersets2025:Object.freeze({
+     id:'supersets-2025',
+     title:'Superset Versus Traditional Resistance Training Prescriptions: A Systematic Review and Meta-analysis',
+     year:2025,
+     url:'https://pubmed.ncbi.nlm.nih.gov/39903375/'
+   }),
+   loadingSpectrum2023:Object.freeze({
+     id:'loading-spectrum-network-2023',
+     title:'Resistance training prescription for muscle strength and hypertrophy in healthy adults: a systematic review and Bayesian network meta-analysis',
+     year:2023,
+     url:'https://pubmed.ncbi.nlm.nih.gov/37414459/'
    })
  }),
  principles:Object.freeze({
@@ -73,7 +109,12 @@ const COACH_EVIDENCE_MODEL=Object.freeze({
    exerciseVariation:'systematic-not-random',
    exerciseOrder:'put the highest-priority strength movement early',
    failure:'not-required-for-results',
-   equipment:'machines-and-free-weights-can-both-work'
+   equipment:'machines-and-free-weights-can-both-work',
+   unilateralBilateral:'hypertrophy-is-similar; strength-adaptation-is-specific-to-the-trained-mode',
+   weeklyVolume:'use-direct-and-indirect-set-equivalents-as-a-planning-context-not-a-hard-ceiling',
+   proximityToFailure:'closer-to-failure-can-support-hypertrophy-but-momentary-failure-is-not-required',
+   overloadProgression:'repetition-and-load-progression-are-both-valid-tools',
+   supersets:'use-compatible-pairings-for-time-efficiency; avoid-same-biomechanical-pairing-when-volume-quality-matters'
  })
 });
 
