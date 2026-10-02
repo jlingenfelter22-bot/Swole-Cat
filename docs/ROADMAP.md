@@ -539,6 +539,29 @@ Locked behavior:
 
 **Milestone record:** Coach’s production bundle now runs through an adversarial 12-week simulation lab rather than only isolated unit snapshots. The permanent battle harness covers vague beginners, experienced lifters, advanced strength users, slang/typos/shorthand, explicit prescriptions, full-body, upper/lower, PPL, top-set/backoff strength work, rapid beginner progression, slow intermediate progression, genuine high-effort stalls, one-session dips with rebound, messy adherence, skipped Program slots, same-week false-plateau traps, a multi-week comeback after time off, and recommendation-stability checks across neighboring weeks. Weeks 4, 8, and 12 are used as longitudinal checkpoints. Adaptive progression, History Q&A, deeper insights, and Program Audit are cross-checked against the same synthetic history so they cannot quietly disagree. The campaign permanently guards against invented starting loads, fabricated causes, false weekday mappings, history mutation, overreaction to one bad session, and irrational hold/progress oscillation. Every real reasoning bug discovered while building the harness remains encoded as regression coverage rather than being removed to make the suite pass.
 
+## Today — Beta Readiness Live-Workout Polish
+
+**Status: In progress**
+
+Goal: make the core in-gym workout loop feel obvious, smooth, and orientation-safe before real-world beta testing with a first outside user.
+
+Implementation order:
+1. [ ] **Fix the active-workout top bar / Cancel control.** Restore a properly sized, centered, readable Cancel button with a reliable mobile hit target and no clipping.
+2. [ ] **Add persistent active-exercise identity.** Keep the current exercise name and set position visible while the user is working inside that exercise.
+3. [ ] **Make auto-advance land predictably.** Completing the final set of Exercise A must advance to Exercise B with Exercise B’s identity immediately visible, never into an ambiguous middle-of-card scroll position.
+4. [ ] **Compress Session Goal / Building Baseline guidance.** Preserve Coach intelligence while reducing the vertical space it consumes during live logging; detailed explanation remains available on demand.
+5. [ ] **Tighten completed/active exercise card state.** Completed exercises should get out of the way and the newly active exercise should be expanded and visually dominant without deleting access to prior logged sets.
+6. [ ] **Polish the transition and live-workout ergonomics.** Keep “Up next” as secondary confirmation, review spacing/tap targets around the live set controls, and remove any remaining orientation friction without adding extra confirmation steps.
+7. [ ] **Regression-test the full workout flow and cut a fresh beta build.** Test multi-exercise auto-advance repeatedly, preserve workout/session data, run the full regression wall, Pages, and Android build, then provide the exact fresh APK for real-world beta use.
+
+Locked behavior:
+- Auto-advance remains automatic. Do not replace it with a required “Next Exercise” confirmation.
+- The live workout UI prioritizes **what am I doing now?** and **what set am I on?** over explanatory Coach copy.
+- Coach guidance remains available but must not push the active exercise identity out of view.
+- Completed workout history and progression behavior must remain unchanged by this polish pass.
+- The post-workout summary is not being redesigned in this pass unless a regression requires a surgical fix.
+- Every completed step is checked off in this roadmap before moving on, so a new chat can reconstruct the exact beta-readiness state.
+
 After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
 Implemented locally through v0.64.0:
