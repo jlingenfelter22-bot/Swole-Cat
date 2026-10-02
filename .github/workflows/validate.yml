@@ -86,6 +86,9 @@ jobs:
       - name: Stress test v0.59 Coach training intelligence
         run: node scripts/coach-intelligence-stress.mjs
 
+      - name: Stress test v0.60 adaptive progression intelligence
+        run: node scripts/coach-adaptive-progression-stress.mjs
+
       - name: Smoke test active workouts, set types, progression, and supersets
         run: |
           node <<'JS'
