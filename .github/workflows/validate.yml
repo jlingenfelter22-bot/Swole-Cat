@@ -2020,7 +2020,8 @@ jobs:
             assert.equal(routine.trainingMode,'strength');
             assert(routine.exercises.every(e=>e.trainingGoal==='strength'),'saved routine config should preserve Coach strength goal');
             assert(routine.exercises.every(e=>e.restSeconds>=90),'strength accessories should retain meaningful inter-set rest');
-            const strengthCompoundRows=routine.exercises.filter(e=>w.COACH_COMPOUND_PATTERNS.has(w.exById(e.exerciseId)?.pattern));
+            const compoundPatterns=new Set(['squat','hinge','horizontal_press','incline_press','vertical_press','horizontal_pull','vertical_pull','lunge']);
+            const strengthCompoundRows=routine.exercises.filter(e=>compoundPatterns.has(w.exById(e.exerciseId)?.pattern));
             assert(strengthCompoundRows.length&&strengthCompoundRows.every(e=>e.restSeconds>=180),'strength compounds should retain long rest intervals');
 
             const before=JSON.parse(w.localStorage.getItem('overload_v3')).routines.length;
