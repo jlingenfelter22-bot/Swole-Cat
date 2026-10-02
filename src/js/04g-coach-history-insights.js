@@ -231,7 +231,7 @@ function coachDeepHistoryInsight(){return coachDeepInsightCandidates()[0]||null}
 function coachDeepInsightHtml(){
  const insight=coachDeepHistoryInsight();if(!insight)return '';
  let action='';
- if(insight.type==='neglected'&&insight.targetKey&&COACH_TARGET_GROUPS[insight.targetKey])action='<button class="btn small secondary" onclick="coachBuildFromInsight(\''+escAttr(insight.targetKey)+'\')">Build '+esc(COACH_TARGET_GROUPS[insight.targetKey].label)+'</button>';
+ if(insight.type==='neglected'&&insight.targetKey&&COACH_TARGET_GROUPS[insight.targetKey])action='<button class="btn small secondary" onclick="coachBuildFromInsight(\''+escAttr(insight.targetKey)+'\')">Build '+esc(insight.group?.label||COACH_TARGET_GROUPS[insight.targetKey].label)+'</button>';
  else if(insight.routineId)action='<button class="btn small secondary" onclick="openCoachRoutineControl(\''+escAttr(insight.routineId)+'\')">Review Routine</button>';
  else if(insight.exerciseId)action='<button class="btn small secondary" onclick="openExerciseProgress(\''+escAttr(insight.exerciseId)+'\')">Open Progress</button>';
  else action='<button class="btn small secondary" onclick="go(\'analytics\')">Open Progress</button>';
