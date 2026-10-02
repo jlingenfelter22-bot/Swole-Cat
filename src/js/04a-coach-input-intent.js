@@ -245,10 +245,27 @@ function coachApplyLiftingGrammarToDefaults(defaults,grammar){
  if(Number.isFinite(Number(g.targetRPE)))out.targetRPE=Number(g.targetRPE);
  return out;
 }
+function coachParseTrainingExperience(text){
+ const lower=coachNormalizeGymText(text);
+ if(/\b(?:beginner|new to lifting|new lifter|just starting|first time lifting|novice)\b/.test(lower))return 'beginner';
+ if(/\b(?:advanced|experienced lifter|competitive lifter|been lifting for years)\b/.test(lower))return 'advanced';
+ if(/\bintermediate\b/.test(lower))return 'intermediate';
+ return 'auto';
+}
+function coachParseLateralityPreference(text){
+ const lower=coachNormalizeGymText(text);
+ const unilateral=/\b(?:unilateral|single[- ]arm|single[- ]leg|one arm at a time|one leg at a time|each arm individually|each leg individually|left and right separately)\b/.test(lower);
+ const bilateral=/\b(?:bilateral|both arms together|both legs together|both sides together|together and separately|individually and together)\b/.test(lower);
+ if(unilateral&&bilateral)return 'mixed';
+ if(unilateral)return 'unilateral';
+ if(bilateral)return 'bilateral';
+ return 'auto';
+}
 function coachParsePrompt(text,defaultGoal=coachPromptGoal){
  const raw=String(text||'').trim(),lower=raw.toLowerCase();
  const targets=coachParseTargets(lower),equipment=coachParseEquipment(lower),liftingGrammar=coachParseLiftingGrammar(raw);
  const priority=coachParsePriorityTargets(raw,targets.keys||[]);
+ const experienceLevel=coachParseTrainingExperience(raw),lateralityPreference=coachParseLateralityPreference(raw);
  let duration=0;
  const min=lower.match(/(\d{2,3})\s*(?:min|mins|minute|minutes)\b/);
  const hrs=lower.match(/(\d(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/);
@@ -262,7 +279,8 @@ function coachParsePrompt(text,defaultGoal=coachPromptGoal){
  return {
    prompt:raw,goal,duration,targetKeys:[...(targets.keys||[])],targetLabels:targets.labels,targetRegions:targets.regions,
    allowedEquipment:equipment.allowed,excludedEquipment:equipment.excluded,
-   priorityRegions:[...priority.regions],priorityKeys:[...priority.keys],excludedExerciseIds:[],requiredExerciseIds:[],liftingGrammar
+   priorityRegions:[...priority.regions],priorityKeys:[...priority.keys],experienceLevel,lateralityPreference,
+   excludedExerciseIds:[],requiredExerciseIds:[],liftingGrammar
  };
 }
 
@@ -273,6 +291,7 @@ function coachParseProgramFocus(text){
    labels.push(g.label);regions.push(...g.regions);
  };
  const terms=[
+   ['posterior chain',/\bposterior chain\b/],
    ['upper back',/\bupper back\b|\bmid(?:dle)? back\b/],
    ['lower back',/\blower back\b|\blumbar(?: spine| extensors?)?\b|\bspinal erectors?\b|\berector spinae\b|\berectors?\b/],
    ['lats',/\blats\b|\blatissimus(?: dorsi)?\b/],['traps',/\btraps?\b|\btrapezius\b/],['forearms',/\bforearms?\b/],
