@@ -891,140 +891,167 @@ function advanceFromCompletedExercise(ei){
  return true;
 }
 
+
+function workoutExerciseFocusStatus(w,e,ei){
+ const p=exerciseSetProgress(e),done=e.sets.filter(function(s){return s.done}).length;
+ if(e.skipped)return {label:'Skipped',cls:'skipped'};
+ if(p.complete)return {label:'Complete',cls:'complete'};
+ if(ei===w.focusExerciseIndex)return {label:'Now',cls:'current'};
+ if(workoutExerciseDeferred(ei,w))return {label:done?('Pending · '+done+'/'+e.sets.length):'Pending',cls:'pending'};
+ if(done)return {label:done+'/'+e.sets.length+' done',cls:'pending'};
+ return {label:'Up next',cls:'up-next'};
+}
+function nextWorkoutExerciseIndex(from,w){
+ w=w||state.activeWorkout;if(!w||!w.exercises||!w.exercises.length)return -1;
+ for(let step=1;step<=w.exercises.length;step++){
+   const i=(from+step)%w.exercises.length,e=w.exercises[i];
+   if(!e.skipped&&!exerciseSetProgress(e).complete)return i;
+ }
+ return -1;
+}
+function workoutExerciseNavigatorHtml(w,ei){
+ const e=w.exercises[ei],ex=exById(e.exerciseId),p=exerciseSetProgress(e);
+ const rows=w.exercises.map(function(row,i){
+   const rx=exById(row.exerciseId),status=workoutExerciseFocusStatus(w,row,i),rp=exerciseSetProgress(row);
+   return '<button class="focus-nav-row '+status.cls+' '+(i===ei?'selected':'')+'" onclick="event.preventDefault();event.stopPropagation();selectWorkoutExercise('+i+')" '+(row.skipped?'disabled':'')+'>'+
+    '<span class="focus-nav-index">'+(row.skipped?'–':rp.complete?'✓':i+1)+'</span>'+
+    '<span class="focus-nav-copy"><b>'+esc(rx&&rx.name||'Exercise')+'</b><small>'+esc(status.label)+' · '+row.sets.filter(function(s){return s.done}).length+'/'+row.sets.length+' sets</small></span>'+
+    '<span class="focus-nav-go">'+(i===ei?'●':'›')+'</span></button>';
+ }).join('');
+ return '<details class="focus-exercise-nav"><summary>'+
+   '<div class="focus-exercise-position">EXERCISE '+(ei+1)+' OF '+w.exercises.length+'</div>'+
+   '<div class="focus-exercise-name">'+esc(ex&&ex.name||'Exercise')+'</div>'+
+   '<div class="focus-exercise-meta">'+esc(p.complete?'Complete':workoutActiveSetText(e))+' · '+esc(ex&&ex.muscle||'')+' · '+workingSetIndexes(e).length+' working sets</div>'+
+   '</summary><div class="focus-nav-list">'+rows+'</div></details>';
+}
+function selectWorkoutExercise(ei){
+ const w=state.activeWorkout;if(!w||!w.exercises||!w.exercises[ei]||w.exercises[ei].skipped)return;
+ const current=normalizeWorkoutFocusState(w);
+ const currentName=exById(w.exercises[current]&&w.exercises[current].exerciseId);
+ const wasIncomplete=current!==ei&&current>=0&&!exerciseSetProgress(w.exercises[current]).complete&&!w.exercises[current].skipped;
+ if(!setWorkoutFocus(ei,null,{deferCurrent:true,render:false}))return;
+ saveActiveWorkout();renderWorkout();
+ if(wasIncomplete)showToast(((currentName&&currentName.name)||'Exercise')+' saved as pending');
+}
+function selectWorkoutSet(ei,si){
+ const w=state.activeWorkout;if(!w||!w.exercises||!w.exercises[ei]||!w.exercises[ei].sets||!w.exercises[ei].sets[si])return;
+ setWorkoutFocus(ei,si,{deferCurrent:false,render:false});
+ saveActiveWorkout();renderWorkout();
+}
+function deferFocusedExercise(){
+ const w=state.activeWorkout,ei=normalizeWorkoutFocusState(w);if(ei<0)return;
+ const next=nextWorkoutExerciseIndex(ei,w);
+ if(next<0){showToast('No other unfinished exercise');return}
+ const ex=exById(w.exercises[ei].exerciseId),name=ex&&ex.name||'Exercise';
+ setWorkoutFocus(next,null,{deferCurrent:true,render:false});
+ saveActiveWorkout();renderWorkout();showToast(name+' saved as pending');
+}
+function focusedSetRailHtml(e,ei,si){
+ return '<div class="focus-set-rail" aria-label="Workout sets">'+e.sets.map(function(set,i){
+   const cls=set.done?'done':i===si?'current':'future';
+   return '<button class="focus-set-pill '+cls+'" onclick="selectWorkoutSet('+ei+','+i+')" aria-label="Open '+esc(setDisplayLabel(e,i))+'">'+(set.done?'✓ ':'')+(i+1)+'</button>';
+ }).join('')+'</div>';
+}
+function openFocusedSetOptions(ei,si){
+ const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],set=e&&e.sets&&e.sets[si];if(!e||!set)return;
+ const type=setType(set);
+ openModal(esc(setDisplayLabel(e,si))+' options',
+  '<div class="notice">These are advanced set controls. Your live workout stays focused on logging weight, reps, and RIR.</div>'+
+  '<div class="field" style="margin-top:12px"><label>Set type</label><select onchange="setWorkoutSetType('+ei+','+si+',this.value);closeModal();renderWorkout()">'+setTypeOptions(type)+'</select></div>'+
+  '<div class="actions"><button class="btn secondary" onclick="moveWorkoutSet('+ei+','+si+',-1);closeModal()">Move earlier</button>'+
+  '<button class="btn secondary" onclick="moveWorkoutSet('+ei+','+si+',1);closeModal()">Move later</button>'+
+  '<button class="btn danger" onclick="removeWorkoutSet('+ei+','+si+');closeModal()">Remove set</button>'+
+  '<button class="btn secondary" onclick="closeModal()">Done</button></div>');
+}
+function openFocusedExerciseMore(ei){
+ const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],ex=e?exById(e.exerciseId):null;if(!e)return;
+ const prev=previousExercise(e.exerciseId),target=liveSetTarget(e,firstWorkingSetIndex(e),prev),warmups=warmupGuide(target.weight,ex),superset=supersetMeta(ei);
+ openModal(esc(ex&&ex.name||'Exercise')+' · More',
+  '<div class="notice">Use these only when you need them. They do not change completed workout history unless you explicitly log or save a change.</div>'+
+  '<div class="actions">'+
+  (warmups.length?'<button class="btn secondary" onclick="closeModal();openWarmupGuide('+ei+')">Warm-up guide</button>':'')+
+  '<button class="btn secondary" onclick="closeModal();openTargetOverride('+ei+')">Override target</button>'+
+  '<button class="btn secondary" onclick="closeModal();openSupersetPicker('+ei+')">⚡ '+(superset?('Superset '+superset.label):'Superset')+'</button>'+
+  '<button class="btn secondary" onclick="addWorkoutSet('+ei+',\'working\');closeModal()">+ Working set</button>'+
+  '<button class="btn secondary" onclick="closeModal();openWorkoutStructureEditor()">Manage workout</button>'+
+  '<button class="btn danger" onclick="closeModal();toggleSkipWorkoutExercise('+ei+')">Skip exercise today</button></div>'+
+  '<div class="field" style="margin-top:14px"><label>Exercise notes</label><textarea oninput="updateNotes('+ei+',this.value)" placeholder="Seat setting, grip, tempo, machine used...">'+esc(e.notes||'')+'</textarea></div>');
+}
+function focusedCoachTargetHtml(e,ei,ex,prev){
+ const rec=buildRecommendation(e.config,prev,e.exerciseId),coach=coachSignal(e.exerciseId,e.config);
+ const firstWorking=firstWorkingSetIndex(e),firstTarget=liveSetTarget(e,firstWorking,prev),plateText=plateLoadText(firstTarget.weight,ex),compactTarget=compactTargetText(e,ex,prev);
+ const title=e.targetOverride?(e.targetOverride.weight+' '+state.profile.unit+' × '+e.targetOverride.reps):rec.headline;
+ const detail=e.targetOverride?('Session-only '+(e.targetOverride.reason||'override')+'. Routine progression is unchanged.'):rec.detail;
+ return '<details class="workout-guidance focus-guidance" '+(e.targetOverride?'open':'')+'><summary>'+
+  '<div class="workout-guidance-copy"><div class="eyebrow">COACH TARGET</div><div class="workout-guidance-title">'+esc(title)+'</div>'+
+  '<div class="workout-guidance-meta">'+esc((coach&&coach.title)||compactTarget)+' · '+(e.config.restSeconds||120)+'s rest</div></div><span class="workout-guidance-more">Why</span></summary>'+
+  '<div class="workout-guidance-detail"><div class="mini">'+esc(detail)+'</div>'+
+  (coach?'<div class="mini guidance-coach-copy"><b>'+esc(coach.title)+':</b> '+esc(coach.text)+'</div>':'')+
+  (plateText?'<div class="plates">🏋 '+esc(plateText)+'</div>':'')+
+  (coach&&coach.canReset&&!e.targetOverride?'<div class="actions compact-guidance-action"><button class="btn small secondary" onclick="applyCoachReset('+ei+')">Apply '+coach.resetPercent+'% reset for today</button></div>':'')+
+  '</div></details>';
+}
+function focusedSetCardHtml(e,ei,si,ex,prev){
+ const s=e.sets[si],type=setType(s),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev),ref=type==='working'?setReference(prev,wi):'Not used for progression',pt=plateLoadText(s.weight||target.weight,ex);
+ const rirOptions=[0,1,2,3,4,5].map(function(v){return '<option value="'+v+'" '+(String(s.rir)===String(v)?'selected':'')+'>'+v+'</option>'}).join('');
+ const increment=Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5));
+ return '<div class="focus-set-card set-card type-'+type+' '+(s.done?'completed':'')+'" data-set-index="'+si+'">'+
+  '<div class="focus-set-head"><div><div class="exercise-kicker">'+esc(setDisplayLabel(e,si))+' · '+(si+1)+' OF '+e.sets.length+'</div><div class="focus-set-reference">'+(type==='working'?('Previous: '+esc(ref)):'Logged separately from progression')+'</div></div>'+
+  '<button class="focus-set-options" onclick="openFocusedSetOptions('+ei+','+si+')" aria-label="Set options">•••</button></div>'+
+  (type==='working'?'<div class="focus-set-target"><span class="set-target">'+esc(targetBadgeText(target,ex))+'</span></div>':'<div class="set-nonprogress-note">'+esc(setProgressionNote(type))+'</div>')+
+  '<div class="live-entry"><div class="live-input-wrap"><div class="input-label-row"><label>'+((ex&&ex.equipment)==='bodyweight'?'Added weight':'Weight')+' ('+state.profile.unit+')</label><div class="micro-step">'+
+  '<button aria-label="decrease weight" onclick="changeSetValue('+ei+','+si+',\'weight\',-'+increment+')">−</button><button aria-label="increase weight" onclick="changeSetValue('+ei+','+si+',\'weight\','+increment+')">+</button></div></div>'+
+  '<input class="direct-number" type="number" inputmode="decimal" enterkeyhint="done" step=".25" min="0" value="'+displaySetWeightValue(s.weight)+'" placeholder="'+((ex&&ex.equipment)==='bodyweight'?'0':'Enter')+'" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+',\'weight\',this.value)" onblur="commitFirstExerciseWeightAutofill('+ei+','+si+')" aria-label="weight"></div>'+
+  '<div class="live-input-wrap"><div class="input-label-row"><label>Reps</label><div class="micro-step"><button aria-label="decrease reps" onclick="changeSetValue('+ei+','+si+',\'reps\',-1)">−</button><button aria-label="increase reps" onclick="changeSetValue('+ei+','+si+',\'reps\',1)">+</button></div></div>'+
+  '<input class="direct-number" type="number" inputmode="numeric" enterkeyhint="done" min="0" value="'+s.reps+'" placeholder="Reps" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+',\'reps\',this.value)" aria-label="reps"></div>'+
+  '<div class="live-input-wrap rir-small"><div class="input-label-row"><label>RIR</label></div><select onchange="updateSet('+ei+','+si+',\'rir\',this.value)"><option value="">—</option>'+rirOptions+'</select></div></div>'+
+  (pt?'<div class="plates">'+esc(pt)+'</div>':'')+
+  '<button class="complete-set '+(s.done?'done':'')+'" onclick="toggleSet('+ei+','+si+')">'+(s.done?'✓ Completed · tap to reopen':'Complete Set')+'</button>'+
+  (s.pr?'<div class="pr-banner"><span class="inline-pr-mark">PR</span> '+esc(s.pr)+'</div>':'')+'</div>';
+}
+function focusedExerciseCanvasHtml(w,ei){
+ const e=w.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),si=workoutFocusedSetIndex(w),prog=exerciseSetProgress(e),superset=supersetMeta(ei);
+ const next=nextWorkoutExerciseIndex(ei,w);
+ return workoutExerciseNavigatorHtml(w,ei)+
+  '<div id="workoutExercise-'+ei+'" class="focus-exercise-canvas tone-'+(ei%4)+' '+(prog.complete?'complete-block':'')+'">'+
+  '<div class="focus-exercise-actions"><button class="btn secondary" onclick="openWorkoutSubstitute('+ei+')">⇄ Substitute</button>'+
+  '<button class="btn secondary" onclick="deferFocusedExercise()" '+(next<0?'disabled':'')+'>Next Exercise</button>'+
+  '<button class="btn secondary focus-more-btn" onclick="openFocusedExerciseMore('+ei+')">More ···</button></div>'+
+  focusedCoachTargetHtml(e,ei,ex,prev)+
+  (superset?'<div class="superset-note"><b>Superset '+superset.label+'</b> · '+esc(supersetNames(superset.id))+'<br>Complete this set, then Swole Cat will rotate to the paired movement.</div>':'')+
+  focusedSetRailHtml(e,ei,si)+focusedSetCardHtml(e,ei,si,ex,prev)+
+  '<div class="focus-exercise-footer">'+(prog.complete?'<button class="btn secondary" onclick="deferFocusedExercise()">Go to unfinished exercise</button>':'<span>'+e.sets.filter(function(s){return s.done}).length+' of '+e.sets.length+' sets complete</span>')+'</div></div>';
+}
+function workoutNumberFocus(el){
+ smartNumberFocus(el);
+ const anchor=document.querySelector('.focus-set-card');
+ setTimeout(function(){
+   if(!anchor||document.activeElement!==el)return;
+   const header=Math.max(0,Math.round((document.querySelector('header')&&document.querySelector('header').getBoundingClientRect().height)||0));
+   const top=Math.max(0,window.scrollY+anchor.getBoundingClientRect().top-header-12);
+   window.scrollTo({top:top,behavior:'smooth'});
+ },220);
+}
+
+
 function renderWorkout(){
  const w=state.activeWorkout;
  if(!w){document.getElementById('workoutArea').innerHTML='<div class="empty">No active workout.</div>';return;}
- ensureExerciseAccordion();
+ const focus=normalizeWorkoutFocusState(w);
  const counts=workoutCounts(),pct=counts.total?Math.round(counts.done/counts.total*100):0,workoutCoach=workoutCoachSignal();
- const activeExerciseIndex=workoutActiveExerciseIndex(w);
- const html=`<div class="workout-title workout-console-title"><div><div class="workout-console-code"><span class="active-pulse"></span>SESSION // ACTIVE</div><div class="eyebrow">${esc(trainingModeLabel(w.trainingMode))}</div><h1 style="font-size:1.7rem">${esc(w.routineName)}</h1><div class="mini">${counts.activeExercises} active exercise${counts.activeExercises===1?'':'s'}${counts.skipped?` · ${counts.skipped} skipped`:''} · ${counts.total} programmed sets</div><div class="autosave-note">✓ Changes save automatically on this device</div></div><button class="btn small danger workout-cancel-btn" onclick="cancelWorkout()" aria-label="Cancel active workout">Cancel</button></div>
- <div class="workout-overview">
-   <div class="row"><div><b>${counts.done} of ${counts.total} sets complete</b><div class="mini">Tap an exercise to open the full sets and coaching. Use Manage Workout to reorder, skip, or remove movements.</div></div><span class="tag">${pct}%</span></div>
-   <div class="actions" style="margin-top:9px"><button class="btn small secondary" onclick="openWorkoutStructureEditor()">☰ Manage Workout</button></div>
-   ${w.structureDirty?`<div class="workout-structure-note"><b>Today's workout structure changed.</b> Your saved routine is still untouched. When you finish, Swole Cat will ask whether to keep these changes today-only or update the routine.</div>`:''}
-   ${workoutCoach?`<div class="coachbox ${workoutCoach.level}"><div class="coach-title">Workout coach</div><div class="coach-text">${esc(workoutCoach.text)}</div>${workoutCoach.level==='reset'?`<div class="actions" style="margin-top:8px"><button class="btn small secondary" onclick="applyLightSession()">Use a 7.5% lighter session</button></div>`:''}</div>`:''}
-   <div class="progress-bar"><div style="width:${pct}%"></div></div>
-   <div class="workout-stats"><div class="workout-stat"><b>${counts.activeExercises}</b><span>Active moves</span></div><div class="workout-stat"><b>${counts.done}</b><span>Sets done</span></div><div class="workout-stat"><b>${workoutElapsed()}</b><span>Elapsed</span></div></div>
- </div>
- ${activeExerciseDockHtml(w)}
- ${w.exercises.map((e,ei)=>{
-   const ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId),coach=coachSignal(e.exerciseId,e.config);
-   const firstWorking=firstWorkingSetIndex(e),firstTarget=liveSetTarget(e,firstWorking,prev),plateText=plateLoadText(firstTarget.weight,ex),warmups=warmupGuide(firstTarget.weight,ex);
-   const prog=exerciseSetProgress(e),status=exerciseStatus(e,ei),compactTarget=compactTargetText(e,ex,prev),superset=supersetMeta(ei);
-   return `<div id="workoutExercise-${ei}" class="card live-card exercise-block tone-${ei%4} ${e.expanded?'':'collapsed'} ${prog.complete?'complete-block':''} ${ei===activeExerciseIndex?'active-exercise':''} ${superset?'superset-member':''} ${e.skipped?'skipped-exercise':''}">
-    <div class="live-head exercise-head-click" onclick="toggleExercisePanel(${ei})">
-      <div class="row">
-        <div class="exercise-identity">
-          <div class="exercise-number">${e.skipped?'–':prog.complete?'✓':ei+1}</div>
-          <div>
-            <div class="exercise-kicker">Exercise ${ei+1} of ${w.exercises.length}</div>
-            <div class="exercise-title">${esc(ex?.name||'Exercise')} ${preferenceBadgeHtml(e.exerciseId)}</div>
-            <div class="exercise-meta">${e.skipped?'Skipped for today':`${esc(ex?.muscle||'')} · ${workingSetIndexes(e).length} working sets · ${e.config.minReps}-${e.config.maxReps} reps`}</div>
-            ${superset?`<div style="margin-top:6px"><span class="superset-badge">⚡ Superset ${superset.label}</span></div>`:''}
-          </div>
-        </div>
-        <div class="exercise-header-actions">
-          <span class="goalbadge exercise-goal-mobile">${goalLabel(e.config.trainingGoal||'general')}</span>
-          <span class="exercise-status ${status.cls}">${status.label}</span>
-          <button class="exercise-toggle-btn" aria-label="${e.expanded?'Collapse':'Expand'} exercise" aria-expanded="${e.expanded?'true':'false'}" onclick="event.stopPropagation();toggleExercisePanel(${ei})">${e.expanded?'⌃':'⌄'}</button>
-        </div>
-      </div>
-    </div>
-    <div class="exercise-expanded-content">
-      <details class="workout-guidance" ${e.targetOverride?'open':''}>
-       <summary>
-        <div class="workout-guidance-copy">
-         <div class="eyebrow">COACH TARGET</div>
-         <div class="workout-guidance-title">${esc(e.targetOverride?`${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`:rec.headline)}</div>
-         <div class="workout-guidance-meta">${esc(coach?.title||compactTarget)} · ${e.config.restSeconds||120}s rest</div>
-        </div>
-        <span class="workout-guidance-more">Details</span>
-       </summary>
-       <div class="workout-guidance-detail">
-        <div class="mini">${esc(e.targetOverride?`Session-only ${e.targetOverride.reason||'override'}. Routine progression is unchanged.`:rec.detail)}</div>
-        ${coach?`<div class="mini guidance-coach-copy"><b>${esc(coach.title)}:</b> ${esc(coach.text)}</div>`:''}
-        ${plateText?`<div class="plates">🏋 ${esc(plateText)}</div>`:''}
-        ${e.targetOverride?`<div class="override-note">Manual/session target active</div>`:''}
-        ${coach?.canReset&&!e.targetOverride?`<div class="actions compact-guidance-action"><button class="btn small secondary" onclick="applyCoachReset(${ei})">Apply ${coach.resetPercent}% reset for today</button></div>`:''}
-       </div>
-      </details>
-      <details class="exercise-options" ${e.targetOverride||superset?'open':''}>
-       <summary>
-        <span>Exercise options</span>
-        <span class="exercise-options-meta">${e.targetOverride?'Override active':superset?`Superset ${superset.label}`:'Warm-up · substitute · more'}</span>
-       </summary>
-       <div class="toolrow">${warmups.length?`<button class="toolchip" onclick="openWarmupGuide(${ei})">Warm-up guide</button>`:''}<button class="toolchip" onclick="openTargetOverride(${ei})">Override target</button><button class="toolchip" onclick="openWorkoutSubstitute(${ei})">Substitute</button><button class="toolchip" onclick="openSupersetPicker(${ei})">⚡ ${superset?`Superset ${superset.label}`:'Superset'}</button><span class="toolchip">${e.config.restSeconds||120}s rest</span>${e.config.targetRIR!=null&&Number.isFinite(Number(e.config.targetRIR))?`<span class="toolchip">Target ${e.config.targetRIR} RIR</span>`:''}</div>
-      </details>
-      ${superset?`<div class="superset-note"><b>Superset ${superset.label}</b> · ${esc(supersetNames(superset.id))}<br>Rotate through working sets, then rest after the round.</div>`:''}
-    <div class="live-body">
-     ${e.sets.map((s,si)=>{
-       const type=setType(s),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev),ref=type==='working'?setReference(prev,wi):'Not used for progression',pt=plateLoadText(s.weight||target.weight,ex);
-       return `<div class="set-card type-${type} ${s.done?'completed':''}" data-set-index="${si}">
-        <div class="set-top">
-          <div class="set-title-wrap">
-            <select class="set-type-select" aria-label="Set type" onchange="setWorkoutSetType(${ei},${si},this.value)">${setTypeOptions(type)}</select>
-            <div><b>${esc(setDisplayLabel(e,si))}</b><div class="set-reference">${type==='working'?`Previous: ${esc(ref)}`:'Logged separately from progression'}</div></div>
-          </div>
-          <div class="set-card-actions">
-            <button class="set-icon-btn" aria-label="Move set up" onclick="moveWorkoutSet(${ei},${si},-1)" ${si===0?'disabled':''}>↑</button>
-            <button class="set-icon-btn" aria-label="Move set down" onclick="moveWorkoutSet(${ei},${si},1)" ${si===e.sets.length-1?'disabled':''}>↓</button>
-            <button class="set-icon-btn danger" aria-label="Remove set" onclick="removeWorkoutSet(${ei},${si})">×</button>
-          </div>
-        </div>
-        ${type==='working'?`<div style="display:flex;justify-content:flex-end;margin-top:-2px;margin-bottom:7px"><span class="set-target">${esc(targetBadgeText(target,ex))}</span></div>`:`<div class="set-nonprogress-note">${esc(setProgressionNote(type))}</div>`}
-        <div class="live-entry">
-          <div class="live-input-wrap">
-            <div class="input-label-row">
-              <label>${ex?.equipment==='bodyweight'?'Added weight':'Weight'} (${state.profile.unit})</label>
-              <div class="micro-step">
-                <button aria-label="decrease weight" onclick="changeSetValue(${ei},${si},'weight',-${Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5))})">−</button>
-                <button aria-label="increase weight" onclick="changeSetValue(${ei},${si},'weight',${Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5))})">+</button>
-              </div>
-            </div>
-            <input class="direct-number" type="number" inputmode="decimal" enterkeyhint="done" step=".25" min="0"
-              value="${displaySetWeightValue(s.weight)}" placeholder="${ex?.equipment==='bodyweight'?'0':'Enter'}"
-              onfocus="smartNumberFocus(this)" onclick="smartNumberFocus(this)"
-              oninput="updateSet(${ei},${si},'weight',this.value)" onblur="commitFirstExerciseWeightAutofill(${ei},${si})" aria-label="weight">
-          </div>
-          <div class="live-input-wrap">
-            <div class="input-label-row">
-              <label>Reps</label>
-              <div class="micro-step">
-                <button aria-label="decrease reps" onclick="changeSetValue(${ei},${si},'reps',-1)">−</button>
-                <button aria-label="increase reps" onclick="changeSetValue(${ei},${si},'reps',1)">+</button>
-              </div>
-            </div>
-            <input class="direct-number" type="number" inputmode="numeric" enterkeyhint="done" min="0"
-              value="${s.reps}" placeholder="Reps"
-              onfocus="smartNumberFocus(this)" onclick="smartNumberFocus(this)"
-              oninput="updateSet(${ei},${si},'reps',this.value)" aria-label="reps">
-          </div>
-          <div class="live-input-wrap rir-small">
-            <div class="input-label-row"><label>RIR</label></div>
-            <select onchange="updateSet(${ei},${si},'rir',this.value)"><option value="">—</option>${[0,1,2,3,4,5].map(v=>`<option value="${v}" ${String(s.rir)===String(v)?'selected':''}>${v}</option>`).join('')}</select>
-          </div>
-        </div>
-        ${pt?`<div class="plates">${esc(pt)}</div>`:''}
-        <button class="complete-set ${s.done?'done':''}" onclick="toggleSet(${ei},${si})">${s.done?'✓ Completed':'Complete set'}</button>
-        ${s.pr?`<div class="pr-banner"><span class="inline-pr-mark">PR</span> ${esc(s.pr)}</div>`:''}
-       </div>`;
-     }).join('')}
-     <div class="set-add-row">
-       <button class="set-add-btn working" onclick="addWorkoutSet(${ei},'working')">+ Working</button>
-       <button class="set-add-btn warmup" onclick="addWorkoutSet(${ei},'warmup')">+ Warm-up</button>
-       <button class="set-add-btn drop" onclick="addWorkoutSet(${ei},'drop')">+ Drop</button>
-       <button class="set-add-btn failure" onclick="addWorkoutSet(${ei},'failure')">+ Failure</button>
-     </div>
-     <div class="field" style="margin-top:12px"><label>Exercise notes</label><textarea oninput="updateNotes(${ei},this.value)" placeholder="Seat setting, grip, tempo, machine used...">${esc(e.notes||'')}</textarea></div>
-    </div>
-    </div>
-   </div>`;
- }).join('')}
- <button class="btn secondary" style="width:100%;padding:15px;margin:8px 0 12px" onclick="openAddWorkoutExercise()">+ Add Exercise</button>
- <button class="btn green" style="width:100%;padding:16px" onclick="finishWorkout()">Finish & Save Workout</button>`;
+ let html='<div class="focus-workout-top"><div class="focus-session-copy"><div class="workout-console-code"><span class="active-pulse"></span>SESSION // ACTIVE</div>'+
+  '<h1>'+esc(w.routineName)+'</h1><div class="mini">'+counts.done+'/'+counts.total+' sets · '+pct+'% · '+workoutElapsed()+'</div></div>'+
+  '<button class="btn small danger workout-cancel-btn" onclick="cancelWorkout()" aria-label="Cancel active workout">Cancel</button></div>'+
+  '<div class="focus-session-progress"><div style="width:'+pct+'%"></div></div>';
+ if(w.structureDirty)html+='<div class="workout-structure-note"><b>Today’s structure changed.</b> Your saved routine stays untouched unless you choose to update it when finishing.</div>';
+ if(workoutCoach)html+='<details class="focus-session-coach"><summary>Coach session note</summary><div class="coachbox '+workoutCoach.level+'"><div class="coach-text">'+esc(workoutCoach.text)+'</div>'+
+  (workoutCoach.level==='reset'?'<div class="actions"><button class="btn small secondary" onclick="applyLightSession()">Use a 7.5% lighter session</button></div>':'')+'</div></details>';
+ html+=focus>=0?focusedExerciseCanvasHtml(w,focus):'<div class="empty">No available exercise.</div>';
+ html+='<div class="focus-workout-footer"><button class="btn secondary" onclick="openAddWorkoutExercise()">+ Add Exercise</button><button class="btn green" onclick="finishWorkout()">Finish Workout</button></div>';
  document.getElementById('workoutArea').innerHTML=html;
  requestAnimationFrame(syncWorkoutStickyOffsets);
 }
+
 const firstExerciseWeightSeedTimers=new Map();
 function exerciseHasLoggedWeightHistory(exerciseId){
  return derivedSessionData().loggedExerciseIds.has(exerciseId);

@@ -1134,3 +1134,56 @@
 }
 #workout .set-card-actions .set-icon-btn:focus,
 #workout .set-card-actions .set-icon-btn:active{opacity:1}
+
+/* v0.65 FOCUS MODE — gym-first single exercise / single set */
+#workout .focus-workout-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:6px 0 9px}
+#workout .focus-session-copy{min-width:0}
+#workout .focus-session-copy h1{margin:3px 0 4px;font-family:var(--display);font-size:1.28rem;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#workout .focus-session-progress{height:4px;margin:0 0 10px;border-radius:999px;background:rgba(71,88,114,.28);overflow:hidden}
+#workout .focus-session-progress>div{height:100%;background:linear-gradient(90deg,var(--cyan),var(--purple))}
+#workout .focus-session-coach{margin:8px 0}
+#workout .focus-session-coach>summary{color:#9caec4;font-size:.7rem;font-weight:850;cursor:pointer;padding:5px 2px}
+#workout .focus-exercise-nav{position:sticky;top:var(--workout-sticky-top,72px);z-index:17;margin:8px 0 10px;border:1px solid rgba(34,211,238,.46);border-radius:6px 16px 6px 16px;background:rgba(6,12,21,.985);box-shadow:0 10px 24px rgba(0,0,0,.28)}
+#workout .focus-exercise-nav>summary{list-style:none;display:block;padding:11px 13px;cursor:pointer;position:relative}
+#workout .focus-exercise-nav>summary::-webkit-details-marker{display:none}
+#workout .focus-exercise-nav>summary:after{content:"⌄";position:absolute;right:13px;top:50%;transform:translateY(-50%);color:#8ca1b8;font-size:.9rem}
+#workout .focus-exercise-nav[open]>summary:after{content:"⌃"}
+#workout .focus-exercise-position{color:#71e9ff;font-family:var(--display);font-size:.59rem;font-weight:900;letter-spacing:.12em}
+#workout .focus-exercise-name{margin-top:3px;padding-right:26px;color:#fff;font-family:var(--display);font-size:1.12rem;font-weight:950;line-height:1.08;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#workout .focus-exercise-meta{margin-top:4px;padding-right:25px;color:#a3b2c3;font-size:.7rem;font-weight:760;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#workout .focus-nav-list{max-height:min(52vh,410px);overflow:auto;border-top:1px solid rgba(71,91,119,.32);padding:5px}
+#workout .focus-nav-row{width:100%;display:grid;grid-template-columns:34px minmax(0,1fr) 20px;align-items:center;gap:8px;min-height:54px;padding:7px 8px;border:0;border-radius:9px;background:transparent;color:#dce7f2;text-align:left}
+#workout .focus-nav-row+.focus-nav-row{border-top:1px solid rgba(65,80,106,.18)}
+#workout .focus-nav-row.selected{background:rgba(34,211,238,.08)}
+#workout .focus-nav-row.complete{opacity:.66}
+#workout .focus-nav-row.pending{background:rgba(245,158,11,.055)}
+#workout .focus-nav-index{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:1px solid rgba(99,116,146,.5);font-size:.68rem;font-weight:900}
+#workout .focus-nav-row.current .focus-nav-index{border-color:rgba(34,211,238,.68);color:#74edff}
+#workout .focus-nav-row.complete .focus-nav-index{border-color:rgba(53,233,138,.45);color:#8ce9a4}
+#workout .focus-nav-copy{min-width:0}
+#workout .focus-nav-copy b{display:block;font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#workout .focus-nav-copy small{display:block;margin-top:2px;color:#8192a8;font-size:.63rem}
+#workout .focus-nav-go{color:#8498ae;text-align:center}
+#workout .focus-exercise-canvas{border:1px solid rgba(63,84,114,.55);border-radius:8px 18px 8px 18px;background:linear-gradient(145deg,rgba(11,18,30,.98),rgba(7,12,21,.98));padding:11px;box-shadow:0 12px 30px rgba(0,0,0,.22)}
+#workout .focus-exercise-actions{display:grid;grid-template-columns:1fr 1fr auto;gap:7px;margin-bottom:8px}
+#workout .focus-exercise-actions .btn{min-height:42px;padding:8px 9px;font-size:.7rem}
+#workout .focus-more-btn{min-width:64px}
+#workout .focus-guidance{margin:7px 0 9px}
+#workout .focus-set-rail{display:flex;align-items:center;gap:7px;margin:9px 0 8px;overflow-x:auto;padding:2px}
+#workout .focus-set-pill{min-width:38px;height:34px;padding:0 9px;border-radius:999px;border:1px solid rgba(73,91,120,.66);background:rgba(18,27,40,.8);color:#96a6ba;font-weight:900}
+#workout .focus-set-pill.current{border-color:rgba(34,211,238,.72);background:rgba(34,211,238,.10);color:#bff8ff;box-shadow:0 0 0 2px rgba(34,211,238,.06)}
+#workout .focus-set-pill.done{border-color:rgba(53,233,138,.4);background:rgba(53,233,138,.07);color:#8ce9a4}
+#workout .focus-set-card{margin:0!important;padding:13px!important;border-radius:7px 17px 7px 17px!important;box-shadow:none!important}
+#workout .focus-set-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+#workout .focus-set-reference{margin-top:4px;color:#8ea0b4;font-size:.69rem;line-height:1.25}
+#workout .focus-set-options{min-width:40px;min-height:38px;border:1px solid rgba(75,93,121,.58);border-radius:10px;background:rgba(18,27,40,.82);color:#9fb0c3;font-weight:900;letter-spacing:.08em}
+#workout .focus-set-target{display:flex;justify-content:flex-end;margin:-2px 0 8px}
+#workout .focus-set-card .complete-set{margin-top:10px;min-height:54px;font-size:.88rem}
+#workout .focus-exercise-footer{display:flex;align-items:center;justify-content:center;min-height:36px;margin-top:7px;color:#8192a6;font-size:.68rem;font-weight:760}
+#workout .focus-workout-footer{display:grid;grid-template-columns:.8fr 1.2fr;gap:8px;margin:11px 0 14px}
+#workout .focus-workout-footer .btn{min-height:50px}
+@media(max-width:390px){
+ #workout .focus-exercise-actions{grid-template-columns:1fr 1fr 62px}
+ #workout .focus-exercise-actions .btn{font-size:.66rem;padding-left:6px;padding-right:6px}
+ #workout .focus-exercise-canvas{padding:9px}
+}
