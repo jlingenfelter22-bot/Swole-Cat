@@ -217,6 +217,45 @@ function coachProjectedWeeklyLedger(request,selected,defaults){
  });
  return projected;
 }
+function coachSupersetCompatibility(a,b){
+ if(!a||!b)return 0;
+ const da=coachExerciseDemand(a),db=coachExerciseDemand(b);
+ if(da.systemic>=3||db.systemic>=3)return 0;
+ const fa=coachMovementFamily(a),fb=coachMovementFamily(b);
+ if(fa===fb)return 0;
+ const ma=exerciseMuscleMetadata(a),mb=exerciseMuscleMetadata(b);
+ const pa=new Set(ma.primary),pb=new Set(mb.primary);
+ const shared=[...pa].filter(x=>pb.has(x));
+ if(shared.length)return 0;
+ const antagonistPairs=[
+   new Set(['flat_press','row']),new Set(['flat_press','vertical_pull']),new Set(['incline_press','row']),
+   new Set(['incline_press','vertical_pull']),new Set(['biceps_curl','triceps_extension']),
+   new Set(['squat','leg_curl']),new Set(['leg_extension','leg_curl'])
+ ];
+ if(antagonistPairs.some(pair=>pair.has(fa)&&pair.has(fb)))return 3;
+ if((fa==='lateral_raise'||fa==='rear_delt')&&(fb==='biceps_curl'||fb==='triceps_extension'))return 2;
+ if((fb==='lateral_raise'||fb==='rear_delt')&&(fa==='biceps_curl'||fa==='triceps_extension'))return 2;
+ return 1;
+}
+function coachTimeCompressionPlan(selected,request){
+ const out={},rows=[...(selected||[])];
+ if((Number(request?.duration)||45)>30||request?.goal==='strength'||rows.length<4)return out;
+ const used=new Set();let groupIndex=0;
+ const candidates=[];
+ for(let i=0;i<rows.length;i++)for(let j=i+1;j<rows.length;j++){
+   const score=coachSupersetCompatibility(rows[i],rows[j]);
+   if(score>0)candidates.push({i,j,score});
+ }
+ candidates.sort((a,b)=>b.score-a.score||a.i-b.i||a.j-b.j);
+ for(const row of candidates){
+   if(groupIndex>=2)break;
+   const a=rows[row.i],b=rows[row.j];
+   if(used.has(a.id)||used.has(b.id))continue;
+   const group='coach_ss_'+String.fromCharCode(97+groupIndex++);
+   out[a.id]=group;out[b.id]=group;used.add(a.id);used.add(b.id);
+ }
+ return out;
+}
 function coachWorkoutIntelligenceAudit(request,selected,defaults){
  const issues=[],warnings=[],pool=visibleExercises(),plan=coachCoveragePlan(request,selected.length),families={};
  selected.forEach(ex=>families[coachMovementFamily(ex)]=(families[coachMovementFamily(ex)]||0)+1);
@@ -230,7 +269,7 @@ function coachWorkoutIntelligenceAudit(request,selected,defaults){
    if((families[family]||0)>cap)issues.push('Too many '+family+' movements');
  });
  const projected=coachProjectedWeeklyLedger(request,selected,defaults);
- const context=coachTrainingContext(request);
+ const context=coachTrainingContext(request),supersets=coachTimeCompressionPlan(selected,request);
  const highDemand=selected.filter(ex=>coachExerciseDemand(ex).systemic>=3).length;
  if(highDemand>=3&&request.goal!=='strength')warnings.push('Several high-demand movements are stacked in one session.');
  return {
@@ -240,7 +279,8 @@ function coachWorkoutIntelligenceAudit(request,selected,defaults){
    warnings:[...new Set(warnings)],
    historyDepth:context.historyDepth,
    recentSessionCount:context.currentSessions.length,
-   projectedWeekly:projected
+   projectedWeekly:projected,
+   supersetGroups:[...new Set(Object.values(supersets))].length
  };
 }
 function coachIntelligenceSummaryText(draft){
