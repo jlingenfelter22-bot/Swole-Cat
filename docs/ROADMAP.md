@@ -450,10 +450,29 @@ Locked behavior:
 - Existing progression intelligence remains authoritative unless the user explicitly changes that programming.
 
 **v0.62 — Training History Q&A + Deeper Coach Insights**
-- answer workout-history questions such as “what did I bench last time?”
-- summarize exercise progression, stalls, recent trends, consistency, and neglected movement or muscle patterns
-- distinguish observed history from interpretation and continue avoiding unsupported recovery/readiness diagnoses
-- surface richer history-aware Coach Insights that can hand off directly into a workout or routine adjustment
+
+**Status: In progress**
+
+Implementation checklist:
+- [ ] Add a deterministic history-question router before workout/program generation so Coach can distinguish “what did I bench last time?” from “build me a bench workout.”
+- [ ] Answer exercise-specific last-session questions with exact logged date, working-set load/reps, effort when available, and a direct history/progress handoff.
+- [ ] Answer exercise best/PR and progression questions from the user’s own logged history without inventing population standards.
+- [ ] Answer global questions about what is progressing, holding, stalled, or recently down using the v0.60 multi-week progression classifications.
+- [ ] Add consistency summaries across useful recent windows using completed-session history only.
+- [ ] Add muscle/movement recency questions such as “what haven’t I trained lately?” and “when did I last train legs/chest/back?”
+- [ ] Replace the single neglected-area Home insight with a ranked deeper-insight engine covering progression, stalls, neglected areas, and consistency signals.
+- [ ] Give actionable insights a safe handoff into exercise progress, workout generation, or Coach routine control without silently changing the user’s program.
+- [ ] Keep observations and interpretations explicitly separated; never infer soreness, fatigue, injury, recovery state, overtraining, or medical readiness from logs.
+- [ ] Add dedicated v0.62 regression coverage for question routing, exact-history answers, progression summaries, consistency, neglected areas, insights, and action handoffs.
+- [ ] Run the full production validation, Pages deployment, and Android build before closing v0.62.
+- [ ] Record the completed v0.62 milestone and bump app/version metadata only after all checks pass.
+
+Locked behavior:
+- Logged history is authoritative for historical answers.
+- Coach says when there is not enough data instead of fabricating a trend.
+- A history question never accidentally creates a workout.
+- A workout request containing an exercise name still routes to workout creation unless it is clearly phrased as a question about past training.
+- Insight actions are opt-in. Coach can suggest an action but does not rewrite routines or Programs automatically.
 
 **v0.63 — Program Auditor + Long-Term Planning Intelligence**
 - audit an entire multi-day Program against actual training history
