@@ -287,6 +287,119 @@ const denseProfile=w.coachMultiWeekExerciseProfile(curl.id,now);
 assert(!['plateau_high_effort','plateau_watch'].includes(denseProfile.status),'four clustered same-week exposures became a false multi-week plateau');
 say('dense-week','4 exposures','flat high-effort work inside one week did not become a multi-week plateau');
 
+// ---------------------------------------------------------------------------
+// 8) Messy hypertrophy lifter: changing schedule, missed week, exercise continuity.
+//    Coach should use the evidence that exists without turning inconsistency into
+//    a diagnosis or constantly rotating useful movements.
+// ---------------------------------------------------------------------------
+const messyUpper={id:'messy_u',name:'Upper Hypertrophy',trainingMode:'guided',exercises:[
+ cfg(bench.id,{min:8,max:12}),cfg(row.id,{min:8,max:12}),cfg(curl.id,{min:10,max:15})
+]};
+const messyLower={id:'messy_l',name:'Lower Hypertrophy',trainingMode:'guided',exercises:[
+ cfg(squat.id,{min:8,max:12}),cfg(rdl.id,{min:8,max:12})
+]};
+const messyProgram={id:'messy_prog',name:'Real Life Upper Lower',routineIds:[messyUpper.id,messyLower.id],frequency:4,preferredDays:[1,2,4,5],trainingMode:'inherit',nextIndex:0};
+const messySessions=[];
+for(let week=1;week<=12;week++){
+ const missed=week===6;
+ const benchW=125+Math.floor((week-1)/2)*5;
+ const squatW=165+Math.floor((week-1)/3)*5;
+ if(!missed){
+  messySessions.push(session('mu1_'+week,at(week,1),messyUpper,messyProgram.id,[
+   {exerciseId:bench.id,sets:sets(benchW,8+(week%2),2)},
+   {exerciseId:row.id,sets:sets(115+Math.floor(week/3)*5,10,2)},
+   {exerciseId:curl.id,sets:sets(45+Math.floor(week/4)*5,12,2)}
+  ]));
+  messySessions.push(session('ml1_'+week,at(week,2),messyLower,messyProgram.id,[
+   {exerciseId:squat.id,sets:sets(squatW,8,2)},
+   {exerciseId:rdl.id,sets:sets(145+Math.floor(week/3)*5,10,2)}
+  ]));
+  if(week!==4&&week!==9)messySessions.push(session('mu2_'+week,at(week,4),messyUpper,messyProgram.id,[
+   {exerciseId:bench.id,sets:sets(benchW,9,2)},
+   {exerciseId:row.id,sets:sets(115+Math.floor(week/3)*5,10,2)},
+   {exerciseId:curl.id,sets:sets(45+Math.floor(week/4)*5,12,2)}
+  ]));
+  if(week!==3&&week!==10)messySessions.push(session('ml2_'+week,at(week,5),messyLower,messyProgram.id,[
+   {exerciseId:squat.id,sets:sets(squatW,9,2)},
+   {exerciseId:rdl.id,sets:sets(145+Math.floor(week/3)*5,10,2)}
+  ]));
+ }
+}
+for(const week of [4,8,12]){
+ const p=checkpointProfile('messy-hypertrophy',messySessions,bench.id,week,['progressing','consolidating']);
+ assert(!['plateau_high_effort','performance_dip'].includes(p.status),'messy hypertrophy history was overreacted to at week '+week);
+}
+reset([messyUpper,messyLower],[messyProgram],messySessions,messyProgram.id);
+audit=w.coachProgramAudit(messyProgram.id);
+const messyAuditText=audit.findings.map(x=>x.text).join(' ');
+assert(!/\b(?:lazy|unmotivated|undisciplined|overtrained|injured)\b/i.test(messyAuditText),'messy adherence created blame/medical diagnosis');
+hist=w.coachHistoryAnswer('how is my bench progressing?');
+assert.match(hist.answer,/trending up|stable|consolidation/i);
+say('messy-hypertrophy','week 12','missed week + scattered missed sessions did not erase useful progression continuity or create blame');
+
+// ---------------------------------------------------------------------------
+// 9) Comeback block: several weeks off, then a lower re-entry and renewed climb.
+//    Coach may notice the dip, but must not keep treating the athlete as stalled
+//    once multiple comeback exposures establish a new upward direction.
+// ---------------------------------------------------------------------------
+const comebackRoutine={id:'comeback_r',name:'Comeback Full Body',trainingMode:'guided',exercises:[
+ cfg(bench.id,{min:6,max:10}),cfg(squat.id,{min:6,max:10}),cfg(row.id,{min:8,max:12})
+]};
+const comebackSessions=[];
+const comebackBench={1:145,2:150,3:155,4:160,8:140,9:145,10:150,11:155,12:160};
+for(const week of Object.keys(comebackBench).map(Number)){
+ comebackSessions.push(session('cb_'+week,at(week,2),comebackRoutine,null,[
+  {exerciseId:bench.id,sets:sets(comebackBench[week],8,week===8?3:2)},
+  {exerciseId:squat.id,sets:sets(185+Math.max(0,week-8)*5,8,2)},
+  {exerciseId:row.id,sets:sets(120+Math.max(0,week-8)*5,10,2)}
+ ]));
+}
+const cb4=checkpointProfile('comeback',comebackSessions,bench.id,4,'progressing');
+assert.equal(cb4.status,'progressing');
+const cb8=checkpointProfile('comeback',comebackSessions,bench.id,8,['performance_dip','consolidating']);
+const cb12=checkpointProfile('comeback',comebackSessions,bench.id,12,['progressing','consolidating']);
+assert.notEqual(cb12.status,'performance_dip','Coach stayed anchored to the re-entry dip after four comeback exposures');
+reset([comebackRoutine],[],comebackSessions);
+hist=w.coachHistoryAnswer('how is my bench progressing?');
+assert(!/latest.*performance dip|classifies that as a recent performance dip/i.test(hist.answer),'comeback history answer stayed stuck on old dip');
+say('comeback','week 12','time off + lower re-entry + renewed climb resolved into current evidence instead of permanent stall labeling');
+
+// ---------------------------------------------------------------------------
+// 10) Longitudinal action stability: recommendations may change when evidence
+//     changes, but they must not flip-flop irrationally on neighboring checkpoints.
+// ---------------------------------------------------------------------------
+function actionAt(rows,exercise,routineCfg,week,goal='hypertrophy'){
+ reset([],[],historyUntil(rows,week));
+ const req={...w.coachParsePrompt(goal+' workout',''+goal),referenceDate:new Date(refAt(week)).toISOString()};
+ const decision=w.coachAdaptiveProgressionDecision(exercise,req);
+ const prev=w.previousExercise(exercise.id);
+ const rec=w.buildRecommendation({...routineCfg,routineMode:goal==='strength'?'strength':'guided'},prev,exercise.id);
+ return {decision:decision.action,rec:rec.status};
+}
+const beginnerActions=[8,9,10,11,12].map(week=>({week,...actionAt(beginnerSessions,bench,beginnerRoutine.exercises[0],week)}));
+assert(beginnerActions.every(x=>x.decision==='continue_progression'),'fast beginner progression oscillated unexpectedly: '+JSON.stringify(beginnerActions));
+say('beginner-fast','action stability',JSON.stringify(beginnerActions));
+
+const advancedActions=[9,10,11,12].map(week=>({week,...actionAt(advSessions,bench,advBenchCfg,week,'strength')}));
+const advTail=advancedActions.slice(-2);
+assert(advTail.every(x=>x.decision==='hold_or_small_reset'),'established advanced stall did not stabilize into conservative action: '+JSON.stringify(advancedActions));
+assert(!advancedActions.some((x,i)=>i>0&&x.decision==='continue_progression'&&advancedActions[i-1].decision==='hold_or_small_reset'),'advanced recommendations irrationally flipped from hold back to progress: '+JSON.stringify(advancedActions));
+say('advanced-stall','action stability',JSON.stringify(advancedActions));
+
+// ---------------------------------------------------------------------------
+// 11) Cross-system consistency at a shared checkpoint.
+// ---------------------------------------------------------------------------
+reset([advRoutine],[advProgram],advSessions,advProgram.id);
+const sharedBefore=stateSnapshot();
+const sharedProfile=w.coachMultiWeekExerciseProfile(bench.id,now);
+const sharedHistory=w.coachHistoryAnswer('has my bench stalled?');
+const sharedAudit=w.coachProgramAudit(advProgram.id);
+assert.equal(sharedProfile.status,'plateau_high_effort');
+assert.equal(sharedHistory.status,'plateau_high_effort');
+assert(sharedAudit.findings.some(x=>x.type==='plateau_high_effort'&&x.exerciseId===bench.id));
+assert.equal(stateSnapshot(),sharedBefore,'cross-system reads mutated saved state');
+say('cross-system','week 12','adaptive profile, history Q&A, and Program Audit returned the same high-effort plateau evidence');
+
 // Final invariant: battle suite itself never mutates history through questions/audits.
 const preQuestion=stateSnapshot();
 w.coachHistoryAnswer('what did I barbell curl last time?');
@@ -294,5 +407,5 @@ assert.equal(stateSnapshot(),preQuestion,'history Q&A mutated saved state');
 
 console.log('[BATTLE SUMMARY] personas='+new Set(report.map(x=>x.persona)).size+' checkpoints='+report.length);
 for(const row of report)console.log('[BATTLE REPORT]',JSON.stringify(row));
-console.log('Coach Swolecat v0.64 battle-hardening PASS: persona prompt torture + 12-week beginner/intermediate/advanced/dip/adherence simulations');
+console.log('Coach Swolecat v0.64 battle-hardening PASS: prompt torture + 12-week beginner/intermediate/advanced/messy/comeback/dip/adherence simulations + action-stability + cross-system agreement');
 dom.window.close();
