@@ -17,6 +17,9 @@ function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
  const firstWarmupId=g.warmupMode==='first_compound'
    ?draft.selectedIds.find(exerciseId=>COACH_COMPOUND_PATTERNS.has(exById(exerciseId)?.pattern))
    :null;
+ const supersetMap=typeof coachTimeCompressionPlan==='function'
+   ?coachTimeCompressionPlan(draft.selectedIds.map(exById).filter(Boolean),r)
+   :{};
  return {
    id,name:coachWorkoutName(r),
    description:`Generated locally by Coach Swolecat from: "${r.prompt||r.targetLabels.join(' + ')}". Evidence rules: ACSM 2026 resistance-training position stand + NSCA program-design framework.`,
@@ -30,7 +33,8 @@ function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
        autoWarmup:exerciseId===firstWarmupId,
        targetRIR:Number.isFinite(Number(p.targetRIR))?Number(p.targetRIR):null,
        targetRPE:Number.isFinite(Number(d.targetRPE))?Number(d.targetRPE):null,
-       lastSetAmrap:!!g.lastSetAmrap
+       lastSetAmrap:!!g.lastSetAmrap,
+       supersetGroup:supersetMap[exerciseId]||null
      };
    })
  };
