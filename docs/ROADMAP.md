@@ -541,7 +541,7 @@ Locked behavior:
 
 ## Today — Beta Readiness Live-Workout Polish
 
-**Status: In progress**
+**Status: Complete — v0.64.1**
 
 Goal: make the core in-gym workout loop feel obvious, smooth, and orientation-safe before real-world beta testing with a first outside user.
 
@@ -552,7 +552,7 @@ Implementation order:
 4. [x] **Compress Session Goal / Building Baseline guidance.** Preserve Coach intelligence while reducing the vertical space it consumes during live logging; detailed explanation remains available on demand.
 5. [x] **Tighten completed/active exercise card state.** Completed exercises should get out of the way and the newly active exercise should be expanded and visually dominant without deleting access to prior logged sets.
 6. [x] **Polish the transition and live-workout ergonomics.** Keep “Up next” as secondary confirmation, review spacing/tap targets around the live set controls, and remove any remaining orientation friction without adding extra confirmation steps.
-7. [ ] **Regression-test the full workout flow and cut a fresh beta build.** Test multi-exercise auto-advance repeatedly, preserve workout/session data, run the full regression wall, Pages, and Android build, then provide the exact fresh APK for real-world beta use.
+7. [x] **Regression-test the full workout flow and cut a fresh beta build.** Test multi-exercise auto-advance repeatedly, preserve workout/session data, run the full regression wall, Pages, and Android build, then provide the exact fresh APK for real-world beta use.
 
 Locked behavior:
 - Auto-advance remains automatic. Do not replace it with a required “Next Exercise” confirmation.
@@ -561,6 +561,8 @@ Locked behavior:
 - Completed workout history and progression behavior must remain unchanged by this polish pass.
 - The post-workout summary is not being redesigned in this pass unless a regression requires a surgical fix.
 - Every completed step is checked off in this roadmap before moving on, so a new chat can reconstruct the exact beta-readiness state.
+
+**Milestone record:** Today’s first outside-user beta-readiness pass is complete. The active-workout Cancel control is no longer squeezed/clipped; a sticky **NOW TRAINING** strip keeps the current exercise and set position visible; auto-advance now scrolls to an explicit offset beneath the app header and sticky exercise identity; Session Goal/Building Baseline guidance is compressed into a tap-to-expand Coach target strip; completed exercises recede while the current exercise is visually dominant; live set controls received larger gym-friendly tap targets; and the existing transient “Up next” message remains secondary confirmation rather than the only orientation cue. A dedicated production-bundle regression now repeatedly finishes multiple exercises and verifies that the next movement becomes the sole expanded/active card, the sticky identity matches it, offset-aware scrolling fires, the compact guidance remains available, and saved Routines/completed History are not mutated. The implementation checkpoint passed the full validation wall, Pages deployment, and Android build before this beta version bump.
 
 After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
