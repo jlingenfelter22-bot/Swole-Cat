@@ -982,3 +982,51 @@
   #workout .micro-step button{min-width:34px;min-height:34px;width:34px;height:34px}
   #workout .set-icon-btn{min-width:40px!important;min-height:40px!important;width:40px;height:40px}
 }
+
+/* TODAY BETA READINESS PASS 2 // STEP 1
+   Weight / reps / RIR stay readable on narrow workout cards. */
+#workout .live-entry{
+  grid-template-columns:minmax(0,1.16fr) minmax(0,1fr) 74px;
+  gap:7px;
+}
+#workout .input-label-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:5px;
+}
+#workout .input-label-row>label{
+  min-width:0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#workout .rir-small .input-label-row{
+  display:flex;
+  justify-content:center;
+  min-height:34px;
+}
+#workout .rir-small select{
+  width:100%;
+  min-width:0;
+}
+#workout .live-entry .micro-step{gap:3px}
+#workout .live-entry .micro-step button{
+  min-width:34px;
+  min-height:34px;
+  width:34px;
+  height:34px;
+}
+@media(max-width:370px){
+  #workout .live-entry{
+    grid-template-columns:minmax(0,1.2fr) minmax(0,.96fr) 68px;
+    gap:6px;
+  }
+  #workout .live-entry .micro-step button{
+    min-width:32px;
+    min-height:32px;
+    width:32px;
+    height:32px;
+  }
+  #workout .live-input-wrap label{font-size:.62rem;letter-spacing:.045em}
+}
