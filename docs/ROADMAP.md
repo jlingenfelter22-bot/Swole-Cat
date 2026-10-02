@@ -589,6 +589,31 @@ Locked behavior:
 
 **Milestone record:** The second first-time-user beta polish pass is complete. The live Weight/Reps/RIR row now reserves a readable RIR column on narrow phones instead of letting the enlarged rep controls collide with it. Rep-first progression now treats each saved movement’s programmed max as a hard Coach ceiling: in-session targets cannot prescribe above that max, and once every required set reaches the ceiling at one stable load, an adaptive hold cannot pin the exercise there instead of allowing the configured load increase and rep reset. The live rest timer is now a compact pill with one-tap +30 and expandable controls; it never starts after the true final programmed set and is defensively cleared on cancel/finish. The front-delt anatomy paths were redrawn onto the anterior shoulder cap while preserving the semantic front_delts mapping. Secondary exercise tools now live behind an Exercise options disclosure row unless an active override/superset makes them immediately relevant. A dedicated production-bundle regression permanently checks the RIR layout contract, rep-ceiling behavior, compact/final-aware timer, progressive disclosure, and bilateral front-delt geometry. The implementation checkpoint passed the full validation wall, Pages deployment, and Android build before this version bump.
 
+## v0.65.0 — Focus Mode Live Workout
+
+**Status: In progress**
+
+Goal: make live gym use a guided sequence of obvious actions instead of a long scrolling workout form. At any moment, one exercise and one set are foregrounded; everything else stays reachable without demanding attention.
+
+Implementation order:
+1. [ ] **Add a focused live-workout state model.** Track the active exercise and active set explicitly, preserve unfinished exercises as pending rather than silently skipping them, and keep the normal Routine/session data structures as source of truth.
+2. [ ] **Replace the vertical exercise stack with an exercise navigator + single active exercise canvas.** Show Exercise X of Y, the current exercise name, concise target context, and a dropdown/list to jump directly to any exercise.
+3. [ ] **Render one primary set card at a time.** Completing Set 1 should replace it in place with Set 2, then Set 3, without vertical scrolling; prior/upcoming sets remain accessible through a compact set-progress/history drawer.
+4. [ ] **Add gym-first defer / next / substitute controls.** Keep Substitute visible, allow Next Exercise to defer unfinished work without marking it skipped, and preserve explicit Skip as a separate intentional action.
+5. [ ] **Reconcile unfinished work before finishing.** If pending sets/exercises remain, Finish Workout must surface them and offer Do It Now, Skip, or Finish Anyway instead of silently losing them.
+6. [ ] **Stabilize keyboard/input focus and secondary controls.** Keep the active set anchored when the mobile keyboard opens, move edit/reorder/delete details out of the primary logging surface, and retain existing Coach target/rest behavior without visual duplication.
+7. [ ] **Add Focus Mode regressions and cut a fresh beta build.** Verify multi-set in-place advancement, exercise jumping/defer behavior, pending-work reconciliation, substitute access, data/history integrity, full regression wall, Pages, and Android before release.
+
+Locked behavior:
+- Live gym mode prioritizes **current exercise → current set → Weight / Reps / RIR → Complete Set**.
+- Completing a set never requires manually scrolling to the next set.
+- Jumping ahead does not automatically mark unfinished work skipped.
+- Skip and defer are different states/actions.
+- Saved Routine order and completed History remain intact unless the user explicitly edits/skips something.
+- All existing progression, adaptive Coach, superset, substitute, rest-timer, and workout-summary logic must continue using the normal Swole Cat data model.
+- Full-set/history editing remains possible, but it is secondary to the focused logging path.
+- Every completed step is checked off here so a new chat can reconstruct the exact implementation state.
+
 After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
 Implemented locally through v0.64.0:
