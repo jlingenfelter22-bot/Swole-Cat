@@ -294,6 +294,29 @@ function coachParseLiftingGrammar(text){
  }
  if(/\b(?:last set amrap|amrap (?:on )?(?:the )?last set|last set (?:is|to be) amrap)\b/i.test(lower))out.lastSetAmrap=true;
  if(/\b(?:no amrap|skip amrap)\b/i.test(lower))out.lastSetAmrap=false;
+
+ const mentionsTopBackoff=/\btop set\b|\bback[- ]?off sets?\b/.test(lower);
+ if(mentionsTopBackoff){
+   const topBackoff={enabled:true};
+   let tb=lower.match(/\b(\d+)\s+top sets?\b/i);
+   if(tb)topBackoff.topSets=Math.max(1,Math.min(2,Number(tb[1])||1));
+   tb=lower.match(/\b(\d+)\s+back[- ]?off sets?\b/i);
+   if(tb)topBackoff.backoffSets=Math.max(1,Math.min(5,Number(tb[1])||1));
+   tb=lower.match(/\btop set(?:s)?(?:\s+(?:for|of|at))?\s+(\d+)(?:\s*[-–]\s*(\d+))?\s*(?:reps?)?\b/i);
+   if(tb){
+     topBackoff.topMinReps=Math.max(1,Number(tb[1])||1);
+     topBackoff.topMaxReps=Math.max(topBackoff.topMinReps,Number(tb[2])||topBackoff.topMinReps);
+   }
+   tb=lower.match(/\bback[- ]?off sets?(?:\s+(?:for|of|at))?\s+(\d+)(?:\s*[-–]\s*(\d+))?\s*(?:reps?)?\b/i);
+   if(tb){
+     topBackoff.backoffMinReps=Math.max(1,Number(tb[1])||1);
+     topBackoff.backoffMaxReps=Math.max(topBackoff.backoffMinReps,Number(tb[2])||topBackoff.backoffMinReps);
+   }
+   tb=lower.match(/\bback[- ]?off(?: sets?)?\s+(?:at\s+)?(\d{2})(?:\.([05]))?\s*%/i);
+   if(tb)topBackoff.backoffPercent=Math.max(70,Math.min(97.5,Number(tb[1]+(tb[2]?'.'+tb[2]:''))));
+   out.topBackoff=topBackoff;
+ }
+ if(/\b(?:no|skip|without)\s+top set(?:s)?\b|\b(?:no|skip|without)\s+back[- ]?off sets?\b/i.test(lower))out.topBackoff={enabled:false};
  out.hasAny=Object.keys(out).some(k=>k!=='hasAny');
  return out;
 }
