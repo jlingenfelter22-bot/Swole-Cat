@@ -69,9 +69,10 @@ const COACH_GYM_TEXT_REPLACEMENTS=[
  // Body-part slang, common misspellings, and frequent speech-recognition repairs.
  [/\b(?:bicepts?|biseps?|buy ceps?|bye ceps?)\b/gi,'biceps'],
  [/\b(?:tricepts?|try ceps?|tri ceps?)\b/gi,'triceps'],
- [/\b(?:back of (?:my |the )?shoulders?|rear shoulders?|rear|back) deltoids?\b/gi,'rear delts'],[/\bposterior deltoids?\b/gi,'rear delts'],
- [/\b(?:middle|medial|lateral) deltoids?\b/gi,'side delts'],[/\b(?:side of (?:my |the )?shoulders?)\b/gi,'side delts'],
- [/\banterior deltoids?\b/gi,'front delts'],[/\b(?:front of (?:my |the )?shoulders?)\b/gi,'front delts'],
+ [/\bback of (?:my |the )?shoulders?\b/gi,'rear delts'],[/\b(?:rear|back) shoulders?\b/gi,'rear delts'],
+ [/\b(?:rear|back|posterior) (?:delts?|deltoids?)\b/gi,'rear delts'],
+ [/\b(?:middle|medial|lateral|side) (?:delts?|deltoids?)\b/gi,'side delts'],[/\bside of (?:my |the )?shoulders?\b/gi,'side delts'],
+ [/\b(?:front|anterior) (?:delts?|deltoids?)\b/gi,'front delts'],[/\bfront of (?:my |the )?shoulders?\b/gi,'front delts'],
  [/\b(?:sholders?|shoulderss|deltoids?)\b/gi,'shoulders'],
  [/\b(?:pectoralis major|pectoralis minor|pectorals?)\b/gi,'chest'],[/\bpecs?\b/gi,'chest'],[/\bchesticles?\b/gi,'chest'],
  [/\bham strings?\b/gi,'hamstrings'],[/\b(?:hammies|hammys|hammy)\b/gi,'hamstrings'],
