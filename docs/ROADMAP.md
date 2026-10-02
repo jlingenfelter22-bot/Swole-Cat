@@ -282,7 +282,7 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 
 ## Phase 6 — Coach Swole Cat / Quick Build
 
-**Status: In progress through v0.57.0**
+**Status: In progress through v0.58.0**
 
 ### Product intent: useful, not bloated
 Coach Swole Cat should reinforce the core product philosophy rather than turn the app into a noisy AI product.
@@ -333,6 +333,8 @@ Goal: let a user create a useful workout or full routine in seconds without manu
 **v0.56.0: Modular Architecture + Sync-Ready Foundation** — The former all-in-one `index.html` application is reorganized into a small HTML shell, layered CSS source, static data modules, and ordered JavaScript domains for core/runtime, analytics, Programs, Coach, routines/exercises, the workout engine, history editing, exercise tools, and settings/bootstrap. Coach is further split into intent/input, programming, language/refinement, program-building, and UI modules so future intelligence work does not recreate a new monolith. The exercise catalog and anatomy geometry live in dedicated data modules. A deterministic build assembles these sources into the compact production `app.js` + `app.css` consumed by both GitHub Pages and Capacitor, preserving runtime efficiency and offline behavior. Device persistence is routed through a registered storage service, core state exposes a narrow service boundary, and `state:saved` / `app:ready` events create clean future hooks for optional sync, sharing, identity, and group infrastructure without wiring network concerns into workout logic. CI now builds and tests the production bundle itself, and explicitly guards the modular source boundaries.
 
 **v0.57.0: Evidence-Backed Regional Programming** — Coach gains a dedicated, auditable programming-knowledge data layer anchored to the 2026 ACSM resistance-training position stand and supporting systematic reviews. Back is expanded from a simple lats/upper-back bucket into explicit full-back coverage across lats, upper/mid back, lumbar/spinal erectors, and traps. Upper Back, Lower Back/lumbar/spinal erectors, Lats, and Traps become first-class natural-language targets. Generic hypertrophy Back workouts reserve horizontal-pull, vertical-pull, direct spinal-erector, lat-isolation, trap, and scapular/rear-delt roles as time permits while retaining redundancy caps. Lower-back programming distinguishes direct lumbar-extension work from posterior-chain hinges, so RDLs and squats are not mislabeled as lumbar isolations. Strength-focused Back requests prefer the conventional Deadlift as the general hinge anchor while de-prioritizing specialized Rack Pull/Block Pull/Deficit variants unless explicitly requested. PPL Pull and Upper Body remain upper-pulling sessions by default so the broader Back definition does not force unnecessary lumbar fatigue into every split.
+
+**v0.58.0: Target Priority + Complete Regional Programming + Prompt Stress Matrix** — Coach distinguishes minimum requested coverage from user emphasis so mixed requests such as “shoulders and arms, more shoulders” preserve direct work for both areas while spending discretionary slots on the priority target. Initial prompts and refinements recognize emphasis language such as more, mostly, focused, emphasis, prioritize, biased toward and dominant. Target vocabulary expands to pecs, delts, bis, tris, hams, forearms, spinal erectors and posterior chain. Complete Shoulders reserves press/anterior-delt, lateral-delt and rear-delt roles. Full Arms reserves complementary direct biceps and triceps roles, including neutral-grip elbow flexion and overhead triceps extension when appropriate, with direct forearm work as session length permits. Legs now reserve knee-dominant, hip-hinge, knee-flexion hamstring and calf roles, with glute/adductor work added as time permits. Posterior Chain becomes a first-class target. Broad multi-target sessions prefer novel movement families over redundant optional work unless the user explicitly emphasizes the repeated target. A permanent production-bundle stress harness now runs 306 Coach prompts across beginner/advanced language, goals, durations, equipment constraints, target combinations, emphasis and vague-input cases in CI.
 
 ### Locked: Quick workout builder
 The home screen includes Coach Swolecat as the primary build path for new users and a secondary quick-build path for returning users when no workout is active.
@@ -422,7 +424,7 @@ Potential later capabilities:
 - conversational references such as “make that four sets,” “move the second one,” and undo
 - optional cloud-language understanding for requests the deterministic parser cannot confidently interpret
 
-Implemented locally through v0.57.0:
+Implemented locally through v0.58.0:
 - generate complete 2–6 day programs from natural-language frequency/split/schedule requests
 - refine a whole generated program's frequency, split, weekdays, session duration, goal, equipment, and muscle emphasis
 - preview approximate weekly primary/secondary set-equivalents
