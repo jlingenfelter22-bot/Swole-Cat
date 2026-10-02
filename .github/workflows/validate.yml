@@ -2241,7 +2241,14 @@ jobs:
             assert.equal(routine.name,'Leg Day I Actually Liked');
             assert.deepEqual(routine.exercises.map(e=>e.exerciseId),session.exercises.filter(e=>!e.skipped&&w.completedSets(e).length).map(e=>e.exerciseId),'exercise order should match completed session');
             assert(routine.exercises.every(e=>e.sets===1),'routine should respect completed working-set count');
-            assert(routine.exercises.every(e=>e.minReps===8&&e.maxReps===12&&e.restSeconds===90),'Coach programming config should be preserved');
+            routine.exercises.forEach(e=>{
+              const source=session.exercises.find(row=>row.exerciseId===e.exerciseId&&!row.skipped&&w.completedSets(row).length);
+              assert(source,'saved routine exercise should map back to completed source exercise');
+              assert.equal(e.minReps,source.config.minReps,'saved routine should preserve per-exercise minimum reps');
+              assert.equal(e.maxReps,source.config.maxReps,'saved routine should preserve per-exercise maximum reps');
+              assert.equal(e.restSeconds,source.config.restSeconds,'saved routine should preserve per-exercise rest');
+              assert.equal(e.trainingGoal,source.config.trainingGoal,'saved routine should preserve per-exercise training goal');
+            });
             assert.equal(JSON.stringify(state.sessions[0]),snapshot,'saving as routine must not mutate historical session');
 
             w.openHistoricalWorkoutRecap(session.id);
