@@ -1217,6 +1217,7 @@ jobs:
           const run=async()=>{
             await wait(40);
             const w=dom.window,d=w.document;
+            if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
 
             // Static filters should be enhanced without invoking platform selects.
             const muscle=d.getElementById('muscleFilter');
@@ -1249,14 +1250,18 @@ jobs:
             assert.equal(mode.dataset.appSelectReady,'1','dynamic program select should be enhanced');
             assert(mode.closest('.app-select-wrap').querySelector('.app-select-trigger'),'dynamic program select should get custom trigger');
 
-            // Workout set-type selector should use compact version.
+            // Focus Mode keeps set type secondary, but its Set Options modal should preserve the compact app-owned selector.
             w.closeModal();
             const rid=JSON.parse(w.localStorage.getItem('overload_v3')).routines[0].id;
             w.openRoutine(rid);
             await wait(10);
+            assert(!d.querySelector('#workout .set-type-select'),'Focus Mode should not permanently expose the advanced set-type selector');
+            w.openFocusedSetOptions(0,0);
+            await wait(20);
             const setType=d.querySelector('.set-type-select');
-            assert(setType,'active workout should render set-type selector');
-            assert(setType.closest('.app-select-wrap')?.classList.contains('app-select-compact'),'set type should use compact custom selector');
+            assert(setType,'Set Options should render the set-type selector');
+            assert.equal(setType.dataset.appSelectReady,'1','Set Options selector should be enhanced by the app-owned selector');
+            assert(setType.closest('.app-select-wrap')?.classList.contains('app-select-compact'),'set type should keep the compact custom selector treatment');
 
             // Settings toggles should use fixed non-overflow grid column.
             assert(html.includes('grid-template-columns:minmax(0,1fr) 52px'),'settings toggles should reserve a fixed switch column');

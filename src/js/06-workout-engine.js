@@ -947,7 +947,7 @@ function openFocusedSetOptions(ei,si){
  const type=setType(set);
  openModal(esc(setDisplayLabel(e,si))+' options',
   '<div class="notice">These are advanced set controls. Your live workout stays focused on logging weight, reps, and RIR.</div>'+
-  '<div class="field" style="margin-top:12px"><label>Set type</label><select onchange="setWorkoutSetType('+ei+','+si+',this.value);closeModal();renderWorkout()">'+setTypeOptions(type)+'</select></div>'+
+  '<div class="field" style="margin-top:12px"><label>Set type</label><select class="set-type-select" onchange="setWorkoutSetType('+ei+','+si+',this.value);closeModal();renderWorkout()">'+setTypeOptions(type)+'</select></div>'+
   '<div class="actions"><button class="btn secondary" onclick="moveWorkoutSet('+ei+','+si+',-1);closeModal()">Move earlier</button>'+
   '<button class="btn secondary" onclick="moveWorkoutSet('+ei+','+si+',1);closeModal()">Move later</button>'+
   '<button class="btn danger" onclick="removeWorkoutSet('+ei+','+si+');closeModal()">Remove set</button>'+
