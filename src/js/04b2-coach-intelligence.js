@@ -29,7 +29,8 @@ function coachMuscleLedger(sessions){
 function coachPriorWeeklyAverage(referenceMs=Date.now(),weeks=4){
  const totals={},count=Math.max(1,Number(weeks)||1);
  for(let i=1;i<=count;i++){
-   const end=referenceMs-(i-1)*7*86400000;
+   // Completed prior 7-day windows only. Never let the current week leak into its own baseline.
+   const end=referenceMs-i*7*86400000;
    const start=end-7*86400000;
    const rows=(state.sessions||[]).filter(s=>{
      const at=new Date(s?.date||0).getTime();
