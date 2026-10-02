@@ -370,10 +370,17 @@ function coachParseProgramFocus(text){
  return {labels:[...new Set(labels)],regions:[...new Set(regions)]};
 }
 function coachParseProgramIntent(text){
- const lower=String(text||'').toLowerCase();
+ let lower=coachNormalizeGymText(coachNumbersToDigits(String(text||'')));
+ lower=lower
+   .replace(/\btwice\s+(?:a|per)\s+week\b/g,'2 times a week')
+   .replace(/\bthree times\s+(?:a|per)\s+week\b/g,'3 times a week');
+ // Common schedule shorthand after punctuation normalization cannot preserve M/W/F, so detect it from the raw text.
+ const raw=String(text||'').toLowerCase();
+ if(/\bm\s*[\/-]\s*w\s*[\/-]\s*f\b/.test(raw))lower+=' monday wednesday friday';
+ if(/\bt(?:ue)?\s*[\/-]\s*th(?:u|ur|urs)?\b/.test(raw))lower+=' tuesday thursday';
  let frequency=0;
- const dayMatch=lower.match(/\b([2-6])\s*[- ]?days?\b/);
- const weekMatch=lower.match(/\b([2-6])\s*(?:x|times)\s*(?:\/\s*)?(?:per\s+)?week\b/);
+ const dayMatch=lower.match(/\b([2-6])\s*[- ]?days?(?:\s+(?:a|per)\s+week)?\b/);
+ const weekMatch=lower.match(/\b([2-6])\s*(?:x|times)\s*(?:\/\s*)?(?:(?:a|per)\s+)?week\b/);
  if(dayMatch)frequency=Number(dayMatch[1])||0;
  else if(weekMatch)frequency=Number(weekMatch[1])||0;
  const preferredDays=[];
