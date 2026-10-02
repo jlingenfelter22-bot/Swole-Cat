@@ -1201,3 +1201,50 @@
  .unfinished-work-row{grid-template-columns:1fr}
  .unfinished-work-actions{display:grid;grid-template-columns:1fr 1fr}
 }
+
+/* v0.65.1 FOCUS MODE QOL // STEP 1
+   Rest timer docks into the top edge of the persistent bottom navigation. */
+#restTimer.resttimer{
+  left:50%;
+  right:auto;
+  bottom:calc(var(--rest-nav-height,68px) - 1px);
+  transform:translate(-50%,52%) scale(.94);
+  width:max-content;
+  max-width:calc(100vw - 24px);
+  min-height:44px;
+  padding:4px;
+  display:flex;
+  visibility:hidden;
+  opacity:0;
+  pointer-events:none;
+  border-color:rgba(92,116,151,.72);
+  background:linear-gradient(180deg,rgba(23,32,46,.995),rgba(11,17,27,.995));
+  box-shadow:0 -4px 18px rgba(0,0,0,.30),0 0 0 1px rgba(255,255,255,.018);
+  transition:
+    opacity var(--motion-base) var(--ease-ui),
+    transform var(--motion-slow) var(--ease-ui),
+    border-color var(--motion-fast) var(--ease-ui);
+}
+#restTimer.resttimer.show{
+  display:flex;
+  visibility:visible;
+  opacity:1;
+  pointer-events:auto;
+  transform:translate(-50%,42%) scale(1);
+}
+#restTimer.resttimer.expanded{
+  transform:translate(-50%,34%) scale(1);
+  border-color:rgba(34,211,238,.52);
+}
+#restTimer .rest-main{min-height:38px;padding:6px 9px}
+#restTimer .rest-main span#restTimerText{font-size:1rem}
+#restTimer .rest-quick-add{min-height:36px}
+#restTimer .rest-actions button{min-height:36px}
+@media(max-width:390px){
+  #restTimer.resttimer{
+    left:50%;
+    right:auto;
+    bottom:calc(var(--rest-nav-height,66px) - 1px);
+    max-width:calc(100vw - 16px);
+  }
+}

@@ -1140,6 +1140,11 @@ let restInterval=null,restLeft=0;
 function workoutHasRemainingProgrammedWork(w=state.activeWorkout){
  return !!w?.exercises?.some(e=>!e.skipped&&(e.sets||[]).some(s=>!s.done));
 }
+function syncRestTimerDock(){
+ const nav=document.querySelector('nav'),root=document.documentElement;
+ const navHeight=Math.max(58,Math.round(nav?.getBoundingClientRect().height||0));
+ root.style.setProperty('--rest-nav-height',navHeight+'px');
+}
 function paintRestTimer(){
  const box=document.getElementById('restTimer'),txt=document.getElementById('restTimerText');if(!box||!txt)return;
  const m=Math.floor(restLeft/60),s=String(Math.max(0,restLeft%60)).padStart(2,'0');txt.textContent=`${m}:${s}`;
@@ -1152,6 +1157,7 @@ function startRestTimer(seconds){
  stopRestTimer();
  if(!workoutHasRemainingProgrammedWork())return;
  restLeft=Math.max(0,Number(seconds)||120);
+ syncRestTimerDock();
  const box=document.getElementById('restTimer');
  box?.classList.remove('expanded');box?.classList.add('show');paintRestTimer();
  restInterval=setInterval(()=>{restLeft--;paintRestTimer();if(restLeft<=0){stopRestTimer();haptic([120,80,120]);}},1000);
