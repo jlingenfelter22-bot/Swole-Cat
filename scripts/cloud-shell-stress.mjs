@@ -50,6 +50,7 @@ async function localOnlyCase(){
   await wait(20);
   assert.deepEqual(cloudKeys(w),[],'ordinary local saves must not create cloud metadata');
   assert.equal(fetchCalls,0,'local-only shell must make zero network calls');
+  assert.equal(w.document.querySelector('script[data-swolecat-supabase]'),null,'local-only startup must not load Supabase JS');
   const settings=w.cloudSettingsHtml();
   assert.match(settings,/Local-only mode/);
   assert.match(settings,/Nothing is being sent/i);
@@ -88,7 +89,7 @@ async function configuredShellCase(){
   assert.equal(identity.snapshot().configured,true);
   assert.equal(identity.snapshot().signedIn,false);
   assert.deepEqual(cloudKeys(w),[],'configured startup must still create no cloud storage before auth');
-  let restored=0,signedIn=0,signedOut=0;
+  let restored=0,signedIn=0,signedOut=0,loaderCalls=0;
   const fakeProvider={
     async restoreSession(){restored++;return {user:null};},
     async signInWithGoogle({authStorage}){
@@ -101,12 +102,19 @@ async function configuredShellCase(){
       await authStorage.removeItem('fake-session');
     }
   };
-  await identity.registerProvider(fakeProvider);
+  w.SwoleCatRuntime.registerService('identityProviderLoader',{
+    async ensureReady(){
+      loaderCalls++;
+      await identity.registerProvider(fakeProvider);
+    }
+  });
+  assert.equal(identity.snapshot().providerReady,false,'configured shell should stay lazy before account use');
+  assert.equal(fetchCalls,0,'configured signed-out startup should not perform hidden network work');
+  assert.equal(w.document.querySelector('script[data-swolecat-supabase]'),null,'configured signed-out startup should not load Supabase JS');
+  await identity.signInWithGoogle();
+  assert.equal(loaderCalls,1,'sign-in should lazy-load the identity provider');
   assert.equal(restored,1,'provider registration should restore once');
   assert.equal(identity.snapshot().providerReady,true);
-  assert.equal(identity.snapshot().signedIn,false);
-  assert.deepEqual(cloudKeys(w),[],'session restore with no user must not create metadata');
-  await identity.signInWithGoogle();
   assert.equal(signedIn,1);
   assert.equal(identity.snapshot().signedIn,true);
   assert.equal(identity.snapshot().user.email,'tester@example.com');

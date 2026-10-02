@@ -845,9 +845,10 @@ Core decisions:
 - [x] Explicitly keep workout sync OFF in the identity phase.
 - [x] Avoid creating Swole Cat database rows merely because an Auth account exists.
 - [x] Add production-bundle regression coverage proving local saves never wake the cloud shell.
-- [ ] Connect the actual Supabase Auth provider adapter.
+- [x] Connect the actual Supabase Auth provider adapter for web/PWA Google OAuth with pinned lazy-loaded Supabase JS.
 - [x] Provision the dedicated Supabase Free project and connect the lab build to its public URL/publishable key without adding application-data tables.
-- [ ] Start with Google sign-in for production-facing testing so the project does not depend on Supabase's built-in low-volume email sender.
+- [x] Start with Google sign-in for production-facing web/PWA testing so the project does not depend on Supabase's built-in low-volume email sender.
+- [ ] Add Android OAuth deep-link return handling and move Android auth session secrets to Keystore-backed secure storage.
 - [ ] Add account recovery path and cloud-account deletion.
 - [ ] Store auth tokens separately from workout state using Android Keystore-backed secure storage before public production use.
 - [x] Keep local-only mode fully supported.

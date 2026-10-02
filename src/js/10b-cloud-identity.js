@@ -21,6 +21,15 @@ const swoleCatCloudAuthStorage=SwoleCatRuntime.registerService('cloudAuthStorage
   },
   async removeItem(key){
     swoleCatStorage.removeItem(SWOLE_CAT_CLOUD_AUTH_PREFIX+String(key||''));
+  },
+  hasAny(){
+    try{
+      for(let i=0;i<window.localStorage.length;i++){
+        const key=window.localStorage.key(i);
+        if(key?.startsWith(SWOLE_CAT_CLOUD_AUTH_PREFIX))return true;
+      }
+    }catch(error){}
+    return false;
   }
 });
 
@@ -110,16 +119,27 @@ async function registerCloudIdentityProvider(provider){
   setCloudIdentityState({providerReady:true,lastError:''});
   return initializeCloudIdentity();
 }
+async function ensureCloudIdentityProvider(){
+  if(swoleCatIdentityProvider)return swoleCatIdentityProvider;
+  const loader=SwoleCatRuntime.getService('identityProviderLoader');
+  if(!loader?.ensureReady)throw new Error('The Google sign-in adapter is not connected yet.');
+  await loader.ensureReady();
+  if(!swoleCatIdentityProvider)throw new Error('The Google sign-in adapter did not initialize.');
+  return swoleCatIdentityProvider;
+}
 async function cloudSignInWithGoogle(){
   const config=cloudIdentityConfig();
   if(!config.configured)throw new Error('Cloud accounts are not configured in this build.');
-  if(!swoleCatIdentityProvider)throw new Error('The Google sign-in adapter is not connected yet.');
+  await ensureCloudIdentityProvider();
   setCloudIdentityState({status:'signing_in',lastError:''});
   try{
     const result=await swoleCatIdentityProvider.signInWithGoogle({
       config,
       authStorage:swoleCatCloudAuthStorage
     });
+    if(result?.redirecting){
+      return setCloudIdentityState({status:'redirecting',signedIn:false,user:null,lastError:''});
+    }
     const user=cloudIdentityPublicUser(result?.user);
     if(!user)throw new Error('Google sign-in did not return a Swole Cat account.');
     return setCloudIdentityState({status:'signed_in',signedIn:true,user,lastError:''});
@@ -192,14 +212,16 @@ function openCloudAccount(){
     openModal('Swole Cat Cloud','<div class="notice"><b>'+esc(label)+'</b><br><br>Account connection is active. Workout backup and multi-device sync are not enabled in Phase 8.1, so your training data is still local-only.</div><div class="actions"><button class="btn secondary" onclick="cloudSignOutFromUi()">Sign out</button><button class="btn secondary" onclick="closeModal()">Done</button></div>');
     return;
   }
-  const providerNote=info.providerReady
-    ?'Google sign-in is ready for this configured cloud environment.'
-    :'The cloud shell is configured, but the Google sign-in adapter has not been connected in this build yet.';
-  openModal('Swole Cat Cloud','<div class="notice"><b>Optional account</b><br><br>'+esc(providerNote)+'<br><br>Creating an account will not upload workout data in this phase. Cloud backup and sync are separate opt-in capabilities that come later.</div><div class="actions"><button class="btn" '+(info.providerReady?'':'disabled')+' onclick="cloudSignInWithGoogleFromUi()">Continue with Google</button><button class="btn secondary" onclick="closeModal()">Stay local-only</button></div>');
+  const nativePending=isNativeApp();
+  const providerNote=nativePending
+    ?'Google account testing is enabled on the web/PWA first. Android OAuth return handling is the next step.'
+    :(info.providerReady?'Google sign-in is ready.':'Google sign-in will load only when you choose to continue.');
+  openModal('Swole Cat Cloud','<div class="notice"><b>Optional account</b><br><br>'+esc(providerNote)+'<br><br>Creating an account will not upload workout data in this phase. Cloud backup and sync are separate opt-in capabilities that come later.</div><div class="actions"><button class="btn" '+(nativePending?'disabled':'')+' onclick="cloudSignInWithGoogleFromUi()">Continue with Google</button><button class="btn secondary" onclick="closeModal()">Stay local-only</button></div>');
 }
 async function cloudSignInWithGoogleFromUi(){
   try{
-    await cloudSignInWithGoogle();
+    const result=await cloudSignInWithGoogle();
+    if(result?.status==='redirecting')return;
     closeModal();
     showToast('Cloud account connected');
     openCloudAccount();
