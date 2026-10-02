@@ -154,8 +154,8 @@ req=w.coachParsePrompt("shoulders, don't train chest",'hypertrophy');checks++;
 assert(req.targetKeys.includes('shoulders')&&!req.targetKeys.includes('chest'),'dont train chest must not become positive chest');
 assert(req.excludedTargetRegions.includes('chest'));
 
-req=w.coachParsePrompt('full body but skip calves','hypertrophy');checks++;
-assert(req.targetKeys.includes('full body'),'full-body request should remain');
+req=w.coachParsePrompt('lower body but skip calves','hypertrophy');checks++;
+assert(req.targetKeys.includes('lower body'),'lower-body request should remain');
 assert(req.excludedTargetRegions.includes('calves')&&!req.targetRegions.includes('calves'),'skip calves should subtract calves from a broad target');
 const noCalfDraft=w.coachGenerateWorkout({...req,duration:60});
 assert(noCalfDraft,'full body minus calves should still generate');
