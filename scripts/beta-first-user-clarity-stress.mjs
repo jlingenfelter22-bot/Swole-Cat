@@ -73,25 +73,29 @@ const currentExercise={
 const cappedTarget=w.liveSetTarget(currentExercise,1,nearCeilingPrev);
 assert(cappedTarget.reps<=15,'Coach-generated in-session target must never exceed the programmed max rep ceiling');
 
-// 3) Progressive disclosure keeps secondary tools out of the core logging path.
+// 3) Focus Mode keeps the core logging path obvious and moves secondary controls out of the primary card.
 w.installRegressionFixturePlan();
 let state=JSON.parse(w.localStorage.getItem('overload_v3'));
 const rid=state.routines[0].id;
 w.openRoutine(rid);
 await wait(60);
-const optionRows=[...w.document.querySelectorAll('#workout details.exercise-options')];
-assert(optionRows.length>0,'active workout should expose Exercise options disclosure rows');
-assert(optionRows.some(d=>!d.open),'ordinary secondary exercise tools should be collapsed by default');
+assert.equal(w.document.querySelectorAll('#workout .focus-exercise-canvas').length,1,'Focus Mode should render one exercise canvas');
+assert.equal(w.document.querySelectorAll('#workout .focus-set-card').length,1,'Focus Mode should render one primary set card');
+const actionButtons=[...w.document.querySelectorAll('#workout .focus-exercise-actions button')].map(b=>b.textContent.trim());
+assert(actionButtons.some(x=>/Substitute/i.test(x)),'Substitute should remain visible');
+assert(actionButtons.some(x=>/Next Exercise/i.test(x)),'Next Exercise should remain visible');
+assert(actionButtons.some(x=>/More/i.test(x)),'secondary tools should be grouped under More');
 const firstEntry=w.document.querySelector('#workout .live-entry');
 assert(firstEntry,'active workout should render the live set-entry row');
 assert.equal(firstEntry.querySelectorAll('.live-input-wrap').length,3,'live set row should still expose Weight, Reps, and RIR as three explicit controls');
 assert(firstEntry.querySelector('.rir-small'),'third live-entry control should remain the RIR control');
+assert(w.document.querySelector('#workout .focus-set-options'),'set reorder/delete/type controls should move behind a secondary set-options control');
 
 // 4) Rest timer is compact/expandable and disappears after the true final set.
 let active=w.eval('state.activeWorkout');
 const lastEi=active.exercises.length-1;
 const lastSi=active.exercises[lastEi].sets.length-1;
-w.eval(`state.activeWorkout.exercises.forEach((e,ei)=>{e.skipped=false;e.expanded=ei===${lastEi};e.sets.forEach((s,si)=>{s.done=!(ei===${lastEi}&&si===${lastSi})})});saveActiveWorkout();renderWorkout();`);
+w.eval(`state.activeWorkout.exercises.forEach((e,ei)=>{e.skipped=false;e.expanded=ei===${lastEi};e.sets.forEach((s,si)=>{s.done=!(ei===${lastEi}&&si===${lastSi})})});state.activeWorkout.focusExerciseIndex=${lastEi};state.activeWorkout.focusSetIndex=${lastSi};state.activeWorkout.deferredExerciseIndexes=[];saveActiveWorkout();renderWorkout();`);
 await wait(30);
 assert.equal(w.workoutHasRemainingProgrammedWork(),true,'fixture should have exactly one remaining programmed set');
 w.startRestTimer(90);

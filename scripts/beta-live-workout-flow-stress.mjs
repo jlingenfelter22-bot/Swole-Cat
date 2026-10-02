@@ -9,9 +9,7 @@ const dom=new JSDOM(html,{
   url:'https://swole-cat.test/',
   pretendToBeVisual:true,
   beforeParse(window){
-    window.localStorage.setItem('overload_v3',JSON.stringify({
-      ui:{onboardingDone:true,haptics:false,keepAwake:false}
-    }));
+    window.localStorage.setItem('overload_v3',JSON.stringify({ui:{onboardingDone:true,haptics:false,keepAwake:false}}));
     window.alert=()=>{};
     window.confirm=()=>true;
     window.scrollTo=arg=>scrollCalls.push(arg);
@@ -20,7 +18,7 @@ const dom=new JSDOM(html,{
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const read=()=>JSON.parse(dom.window.localStorage.getItem('overload_v3'));
 
-await wait(80);
+await wait(100);
 const w=dom.window;
 if(w.HTMLElement)w.HTMLElement.prototype.scrollIntoView=()=>{};
 
@@ -31,82 +29,86 @@ const routineBefore=JSON.stringify(state.routines.find(r=>r.id===rid));
 const sessionsBefore=JSON.stringify(state.sessions);
 
 w.openRoutine(rid);
-await wait(40);
+await wait(50);
 state=read();
 assert(state.activeWorkout,'fixture workout should start');
 assert(state.activeWorkout.exercises.length>=4,'beta-flow regression needs a multi-exercise workout');
+assert.equal(state.activeWorkout.focusExerciseIndex,0,'fresh workout should focus exercise one');
+assert.equal(state.activeWorkout.focusSetIndex,0,'fresh workout should focus set one');
 
 const cancel=w.document.querySelector('#workout .workout-cancel-btn');
 assert(cancel,'active workout should render dedicated Cancel control');
 assert.equal(cancel.textContent.trim(),'Cancel');
-assert.match(cancel.className,/danger/);
 
-function activeIndex(){
-  return w.workoutActiveExerciseIndex(w.eval('state.activeWorkout'));
+function focusState(){
+  return w.eval('({ei:state.activeWorkout.focusExerciseIndex,si:state.activeWorkout.focusSetIndex})');
 }
-function activeName(index){
-  const e=w.eval('state.activeWorkout.exercises')[index];
-  return w.exById(e.exerciseId)?.name||'Exercise';
-}
-function assertOrientation(expectedIndex,label){
-  const current=w.eval('state.activeWorkout');
-  assert.equal(activeIndex(),expectedIndex,label+' active index');
-  current.exercises.forEach((e,i)=>{
-    if(i===expectedIndex)assert.equal(e.expanded,true,label+' next exercise should be expanded');
-    else if(i<expectedIndex)assert.equal(e.expanded,false,label+' completed prior exercise should be collapsed');
-  });
-  const dock=w.document.getElementById('activeExerciseDock');
-  assert(dock,label+' should render Now Training dock');
-  assert.equal(Number(dock.dataset.exerciseIndex),expectedIndex,label+' dock index should match active exercise');
-  assert(dock.textContent.toLowerCase().includes(activeName(expectedIndex).toLowerCase()),label+' dock should name current exercise');
-  assert.match(dock.textContent,/Set\s+\d+\s+of\s+\d+/i,label+' dock should show current set position');
-  const card=w.document.getElementById('workoutExercise-'+expectedIndex);
-  assert(card?.classList.contains('active-exercise'),label+' card should be visually active');
-  assert(!card?.classList.contains('collapsed'),label+' active card should stay expanded');
-  assert(card?.querySelector('.workout-guidance'),label+' active card should use compact Coach guidance');
-  assert(card?.querySelector('.workout-guidance-more'),label+' detailed guidance should remain available on demand');
-}
-function finishExercise(index){
-  let current=w.eval('state.activeWorkout');
-  const setCount=current.exercises[index].sets.length;
-  for(let si=0;si<setCount;si++){
-    current=w.eval('state.activeWorkout');
-    if(!current.exercises[index].sets[si].done){
-      w.toggleSet(index,si);
-      w.stopRestTimer();
-    }
-  }
+function assertFocus(ei,si,label){
+  const focus=focusState();
+  assert.equal(focus.ei,ei,label+' exercise focus');
+  assert.equal(focus.si,si,label+' set focus');
+  assert.equal(w.document.querySelectorAll('#workout .focus-exercise-canvas').length,1,label+' should render one exercise canvas');
+  assert.equal(w.document.querySelectorAll('#workout .focus-set-card').length,1,label+' should render one primary set card');
+  const nav=w.document.querySelector('#workout .focus-exercise-nav');
+  assert(nav,label+' should render exercise navigator');
+  const ex=w.eval('state.activeWorkout.exercises')[ei];
+  const name=w.exById(ex.exerciseId)?.name||'Exercise';
+  assert(nav.textContent.toLowerCase().includes(name.toLowerCase()),label+' navigator should identify focused exercise');
+  const setCard=w.document.querySelector('#workout .focus-set-card');
+  assert.equal(Number(setCard?.dataset.setIndex),si,label+' primary card should match focused set');
+  assert(w.document.querySelector('#workout .focus-set-rail'),label+' should retain compact access to all sets');
 }
 
-assertOrientation(0,'initial');
-assert.match(w.document.getElementById('activeExerciseDock').textContent,/NOW TRAINING/i);
+assertFocus(0,0,'initial');
+assert.equal(w.document.getElementById('activeExerciseDock'),null,'retired scroll-era Now Training dock should not render');
 
-for(let index=0;index<3;index++){
-  const next=index+1;
-  scrollCalls.length=0;
-  finishExercise(index);
-  await wait(180);
+// Set 1 -> Set 2 in the same physical Focus Mode canvas.
+scrollCalls.length=0;
+w.toggleSet(0,0);w.stopRestTimer();
+await wait(60);
+state=read();
+assert.equal(state.activeWorkout.exercises[0].sets[0].done,true,'set one should log complete');
+assertFocus(0,1,'after set one');
+assert.equal(scrollCalls.length,0,'normal set advancement should not require scroll navigation');
 
-  const current=w.eval('state.activeWorkout');
-  assert.equal(w.exerciseSetProgress(current.exercises[index]).complete,true,'exercise '+index+' should be complete');
-  const finishedCard=w.document.getElementById('workoutExercise-'+index);
-  assert(finishedCard?.classList.contains('complete-block'),'finished exercise should be styled complete');
-  assert(finishedCard?.classList.contains('collapsed'),'finished exercise should collapse automatically');
-
-  assertOrientation(next,'after exercise '+(index+1));
-  assert(scrollCalls.length>=1,'auto-advance should issue a deterministic scroll after exercise '+(index+1));
-  const last=scrollCalls.at(-1);
-  assert(last&&typeof last==='object'&&Number.isFinite(Number(last.top)),'auto-advance scroll should use an explicit offset-aware top target');
-
-  const toast=w.document.getElementById('toast');
-  if(toast)assert.match(toast.textContent,/Up next|Superset/i,'transition toast remains secondary confirmation');
+// Finish the remaining sets of exercise one. The canvas should become exercise two.
+for(;;){
+  state=read();
+  if(w.exerciseSetProgress(state.activeWorkout.exercises[0]).complete)break;
+  const si=state.activeWorkout.focusSetIndex;
+  w.toggleSet(0,si);w.stopRestTimer();
 }
+await wait(70);
+state=read();
+assert.equal(w.exerciseSetProgress(state.activeWorkout.exercises[0]).complete,true,'exercise one should complete');
+assert.equal(state.activeWorkout.focusExerciseIndex,1,'completed exercise should advance to exercise two');
+assertFocus(1,state.activeWorkout.focusSetIndex,'after exercise one');
+
+// Manual Next defers, it does not skip.
+const deferredIndex=state.activeWorkout.focusExerciseIndex;
+const deferredName=w.exById(state.activeWorkout.exercises[deferredIndex].exerciseId)?.name||'Exercise';
+w.deferFocusedExercise();
+await wait(40);
+state=read();
+assert.notEqual(state.activeWorkout.focusExerciseIndex,deferredIndex,'Next Exercise should advance focus');
+assert(state.activeWorkout.deferredExerciseIndexes.includes(deferredIndex),'unfinished exercise should become pending');
+assert.equal(state.activeWorkout.exercises[deferredIndex].skipped,false,'defer must not mark exercise skipped');
+assert(w.document.querySelector('#workout .focus-nav-row.pending'),'navigator should expose pending state');
+
+// Jumping directly back removes Pending and restores the exact movement.
+w.selectWorkoutExercise(deferredIndex);
+await wait(40);
+state=read();
+assert.equal(state.activeWorkout.focusExerciseIndex,deferredIndex,'navigator jump should restore deferred exercise');
+assert(!state.activeWorkout.deferredExerciseIndexes.includes(deferredIndex),'restored exercise should leave pending list');
+assert(w.document.querySelector('#workout .focus-exercise-actions'),'focused exercise should expose gym-first actions');
+assert([...w.document.querySelectorAll('#workout .focus-exercise-actions button')].some(b=>/Substitute/i.test(b.textContent)),'Substitute should stay directly visible');
+assert([...w.document.querySelectorAll('#workout .focus-exercise-actions button')].some(b=>/Next Exercise/i.test(b.textContent)),'Next Exercise should stay directly visible');
 
 state=read();
-assert.equal(JSON.stringify(state.sessions),sessionsBefore,'live beta polish must not mutate completed history');
-assert.equal(JSON.stringify(state.routines.find(r=>r.id===rid)),routineBefore,'orientation polish must not rewrite saved routine');
-assert(state.activeWorkout,'workout should remain active during orientation regression');
-assert.equal(state.activeWorkout.exercises.slice(0,3).every(e=>e.sets.every(s=>s.done)),true,'first three exercises should remain logged complete');
+assert.equal(JSON.stringify(state.sessions),sessionsBefore,'Focus Mode navigation must not mutate completed history');
+assert.equal(JSON.stringify(state.routines.find(r=>r.id===rid)),routineBefore,'Focus Mode navigation must not rewrite saved routine');
+assert(state.activeWorkout,'workout should remain active throughout navigation');
 
-console.log('Swole Cat beta live-workout flow PASS: cancel control, sticky identity, compact guidance, collapse/expand, offset-aware auto-advance, and history immutability');
+console.log('Swole Cat Focus Mode live flow PASS: single-set canvas, in-place set advance, exercise auto-advance, pending/defer, direct navigation, and history integrity');
 dom.window.close();
