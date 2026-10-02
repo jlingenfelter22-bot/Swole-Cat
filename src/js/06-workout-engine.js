@@ -758,6 +758,12 @@ function workoutFocusedSetIndex(w=state.activeWorkout){
 function workoutExerciseDeferred(ei,w=state.activeWorkout){
  return !!w&&Array.isArray(w.deferredExerciseIndexes)&&w.deferredExerciseIndexes.includes(ei);
 }
+function workoutActiveSetText(e){
+ if(!e)return '';
+ const next=e.sets.findIndex(s=>!s.done);
+ if(next<0)return 'Exercise complete';
+ return `Set ${next+1} of ${e.sets.length}`;
+}
 
 function applyWorkoutFocusState(w,ei,si=null,{deferCurrent=true}={}){
  if(!w?.exercises?.[ei]||w.exercises[ei].skipped)return false;
