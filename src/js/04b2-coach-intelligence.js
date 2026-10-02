@@ -174,6 +174,7 @@ function coachHistoryAwareCandidateAdjustment(ex,request){
  let score=coachExerciseContinuityAdjustment(ex,request,context)+coachDemandAdjustment(ex,request,context)+coachLateralityAdjustment(ex,request);
  meta.primary.filter(region=>targets.has(region)).forEach(region=>score+=coachRegionNeedAdjustment(region,request,context));
  meta.secondary.filter(region=>targets.has(region)).forEach(region=>score+=coachRegionNeedAdjustment(region,request,context)*.3);
+ if(typeof coachAdaptiveCandidateAdjustment==='function')score+=coachAdaptiveCandidateAdjustment(ex,request);
  return score;
 }
 function coachExercisePrescription(ex,request,defaults){
@@ -196,7 +197,8 @@ function coachExercisePrescription(ex,request,defaults){
  }
  if(explicitRest)restSeconds=Number(grammar.restSeconds);
  if(explicitRIR)targetRIR=Number(grammar.targetRIR);
- return {...defaults,minReps,maxReps,restSeconds,targetRIR};
+ const base={...defaults,minReps,maxReps,restSeconds,targetRIR};
+ return typeof coachApplyAdaptivePrescription==='function'?coachApplyAdaptivePrescription(ex,request,base):base;
 }
 function coachExerciseIntelligenceReason(ex,request){
  const context=coachTrainingContext(request),meta=exerciseMuscleMetadata(ex),bits=[];
@@ -206,6 +208,9 @@ function coachExerciseIntelligenceReason(ex,request){
  if(profile.trend==='up'&&profile.exposures>=2)bits.push('keeps a movement that is progressing');
  if(profile.daysSince<=3&&coachExerciseDemand(ex).systemic>=3)bits.push('selected despite recent high-demand work because it fits a required role');
  if(request?.lateralityPreference&&request.lateralityPreference!=='auto')bits.push(coachExerciseLaterality(ex)===request.lateralityPreference?'matches laterality request':request.lateralityPreference==='mixed'?'supports mixed unilateral/bilateral work':'');
+ if(typeof coachAdaptiveReasonText==='function'){
+   const adaptive=coachAdaptiveReasonText(ex,request);if(adaptive)bits.push(adaptive);
+ }
  return bits.filter(Boolean).join(' · ');
 }
 function coachProjectedWeeklyLedger(request,selected,defaults){
