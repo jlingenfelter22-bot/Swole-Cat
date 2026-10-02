@@ -420,17 +420,33 @@ Coach Swole Cat can:
 
 The user must always remain in control of the final workout.
 
-### Later optional intelligence
-Once the local builder is proven, an optional AI-backed Coach layer can add more flexible natural-language understanding and programming discussion without replacing the deterministic training engine.
+### Locked next Coach sequence
 
-Potential later capabilities:
+The next Coach Swolecat work proceeds in this order so each layer builds on the prior one instead of fragmenting the training brain.
+
+**v0.61 — Conversational Routine Control + Saved Routine Intelligence**
 - modify an existing saved routine from natural language
-- deeper history-aware muscle scheduling across multi-day plans
-- richer Coach Insights covering trends, neglected movement/muscle patterns, stalls, and consistency
-- workout-history questions such as “what did I bench last time?”
-- advanced lifting grammar beyond the implemented top/backoff and superset foundations, including per-exercise failure prescriptions, role-specific effort/rest overrides, and more complex set structures
-- conversational references such as “make that four sets,” “move the second one,” and undo
-- optional cloud-language understanding for requests the deterministic parser cannot confidently interpret
+- understand conversational references such as “that one,” “the second exercise,” “make that four sets,” and “move it before curls”
+- support explicit undo / redo for Coach-applied routine mutations
+- explain why an exercise or structure exists inside the current routine
+- make routine-aware additions, removals, swaps, reordering, set/rep/rest changes, and duration changes
+- default to surgical edits instead of regenerating the whole routine
+- preserve adaptive progression, top/backoff structures, history continuity, manual preferences, and user-authored choices through Coach edits
+
+**v0.62 — Training History Q&A + Deeper Coach Insights**
+- answer workout-history questions such as “what did I bench last time?”
+- summarize exercise progression, stalls, recent trends, consistency, and neglected movement or muscle patterns
+- distinguish observed history from interpretation and continue avoiding unsupported recovery/readiness diagnoses
+- surface richer history-aware Coach Insights that can hand off directly into a workout or routine adjustment
+
+**v0.63 — Program Auditor + Long-Term Planning Intelligence**
+- audit an entire multi-day Program against actual training history
+- identify redundant movements, neglected areas, poor weekly distribution, repeated stalls, and progression opportunities
+- compare programmed intent with what the user is actually completing
+- make minimal, explainable long-term adjustments while preserving user control and exercise preferences
+- deepen history-aware muscle scheduling across multi-day plans
+
+After v0.63, later optional Coach work can include richer lifting grammar, explicit user-provided readiness/recovery inputs, and optional cloud-language understanding for requests the deterministic parser cannot confidently interpret.
 
 Implemented locally through v0.60.1:
 - generate complete 2–6 day programs from natural-language frequency/split/schedule requests
