@@ -149,6 +149,10 @@ function buildRecommendation(config,prev,exerciseId=null){
  const goal=config.trainingGoal||'general';
  const routineMode=normalizeTrainingMode(config.routineMode);
  const avgRIR=averageLoggedRIR(done);
+ if(routineMode!=='track'&&typeof coachAdaptiveRecommendation==='function'){
+   const adaptive=coachAdaptiveRecommendation(config,prev,exerciseId);
+   if(adaptive)return adaptive;
+ }
  if(!done.length){
    const mode=normalizeTrainingMode(config.routineMode);
    const headline=mode==='track'?'Log your starting sets':mode==='strength'?'Choose a strength starting load':'Set your starting weight';
