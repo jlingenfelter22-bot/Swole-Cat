@@ -1,6 +1,6 @@
 # Coach Swolecat Evidence Rules
 
-Version: v0.59.0
+Version: v0.59.1
 
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
@@ -681,3 +681,127 @@ It must not state or imply from workout logs alone that:
 - a medical condition explains performance changes
 
 The user retains control over exercise exclusions, preferences, workout edits and working weights.
+
+
+## v0.59.1 language resilience and prompt hardening
+
+v0.59.1 audits Coach Swolecat's local language layer so normal human phrasing, gym slang, common misspellings, speech-recognition mistakes and advanced anatomical terminology are less likely to be misread.
+
+The goal is **not** to claim that every possible sentence is understood. The invariant is:
+1. confidently understood language should resolve to the intended supported meaning
+2. ambiguous exercise language should trigger clarification
+3. vague language should remain unresolved rather than inventing a target
+4. typo repair must never confidently resolve to the wrong exercise
+
+### Target vocabulary
+
+The normalizer now covers broad and precise vocabulary ranging from casual gym language to anatomical terms.
+
+Examples include:
+- pecs / pectorals / pectoralis -> chest
+- delts -> shoulders
+- front/anterior delts -> front delts
+- side/lateral/medial delts -> side delts
+- rear/posterior delts -> rear delts
+- bis / biceps brachii -> biceps
+- tris / triceps brachii -> triceps
+- hammies / biceps femoris / semitendinosus / semimembranosus -> hamstrings
+- quadriceps / rectus femoris / vastus muscles -> quads
+- rhomboids -> upper back
+- latissimus / wings -> lats
+- trapezius -> traps
+- spinal erectors / erector spinae -> lower back
+- rectus abdominis -> abs
+- obliques / love handles -> obliques
+- gastrocnemius / soleus -> calves
+- brachioradialis -> forearms
+- hip adductors / inner thighs -> adductors
+- gluteus terminology / booty / butt -> glutes
+- guns -> arms
+- wheels -> legs
+
+Precise deltoid, abs, oblique and adductor targets remain distinct when the exercise metadata can support that distinction. Generic terms such as “delts” and “core” remain broad.
+
+### Speech, typo and number-word normalization
+
+Common input repairs include phrases such as:
+- dumbell / dumb bell -> dumbbell
+- barbel -> barbell
+- Romanian dead left -> Romanian deadlift
+- dead left -> deadlift
+- lat pull town -> lat pulldown
+- preacher coral -> preacher curl
+- Bulgarian split squad -> Bulgarian split squat
+- buy ceps / bicepts -> biceps
+- try ceps / tricepts -> triceps
+- hyper trophy -> hypertrophy
+
+Spoken number words now support compound values such as twenty five, forty five and ninety so duration, rest and effort grammar can understand phrases such as:
+- “forty five minute chest workout”
+- “ninety seconds between sets”
+- “RPE eight”
+- “leave two reps in the tank”
+- “two reps shy of failure”
+
+### Goal, emphasis and schedule disambiguation
+
+Coach distinguishes similar phrases by context:
+- “heavy push workout” -> strength intent
+- “shoulder-heavy arms workout” -> shoulder emphasis, not an accidental Strength-mode switch
+- “go heavy” -> strength intent
+
+Program language also accepts natural frequency and schedule phrasing such as:
+- three times a week
+- twice a week
+- 4x a week
+- M/W/F
+- Tue/Thu
+
+### Negative intent
+
+Muscle, equipment and exercise exclusions are parsed separately from positive requests.
+
+Examples:
+- “back and arms, no chest”
+- “lower body but skip calves”
+- “no free weights”
+- “back workout, no barbell rows”
+- “legs, don't include back squats”
+- “back workout, avoid chest-supported rows”
+
+Exercise-name wording is protected from false muscle exclusions. “Back squat” must not become “exclude Back,” and “chest-supported row” must not become “exclude Chest.”
+
+A high-confidence negative exercise mention is removed before explicit-exercise routing and added to Coach's normal exercise constraints instead.
+
+### Ambiguity and learned language
+
+The existing fuzzy exercise resolver remains confidence-based:
+- high-confidence matches may resolve directly
+- crowded medium-confidence matches ask the user which exercise they meant
+- low-confidence input is not silently guessed
+
+Users can still teach local aliases such as “when I say spider boys I mean spider dumbbell curl.” Learned aliases stay local to Swole Cat state.
+
+### Validation
+
+The standard Coach programming matrix now covers **360 prompt cases**.
+
+A dedicated language-resilience suite adds **432 checks**, including **291 one-edit typo mutations across the exercise catalog**. For each mutated exercise name:
+- a high-confidence result must be the correct exercise
+- otherwise the correct exercise must remain available among clarification candidates
+
+The language suite also checks:
+- slang and anatomical terminology
+- precise muscle-region requests
+- misspellings and speech-style substitutions
+- goal and target-emphasis ambiguity
+- spoken durations / RPE / RIR / rest
+- equipment inclusion and exclusion
+- negative muscle and exercise intent
+- program frequency and weekday shorthand
+- beginner/advanced phrasing
+- unilateral / bilateral / mixed phrasing
+- false-positive guards for phrases such as single-arm row, chest-supported row and back squat
+- vague prompts that must not invent a target
+
+The separate v0.59 history-aware intelligence suite remains active with its 90 target × goal × duration cases and weekly/progression/laterality/prescription assertions.
