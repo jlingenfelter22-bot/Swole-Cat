@@ -28,6 +28,7 @@ const routineBefore=JSON.stringify(state.routines.find(r=>r.id===rid));
 const historyBefore=JSON.stringify(state.sessions);
 w.openRoutine(rid);
 await wait(50);
+state=read();
 
 // Only one exercise and one set are foregrounded.
 assert.equal(w.document.querySelectorAll('#workout .focus-exercise-canvas').length,1);
