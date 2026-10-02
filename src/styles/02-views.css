@@ -402,9 +402,6 @@
   #workout .exercise-number{
     border-radius:3px 10px 3px 10px;
   }
-  #workout .exercise-toggle-btn{
-    border-radius:3px 9px 3px 9px;
-  }
   #workout .targetbox{
     position:relative;
     overflow:hidden;

@@ -6,6 +6,7 @@ function convertStoredUnits(fromUnit,toUnit){
  state.settings.defaultIncrement=cv(state.settings.defaultIncrement);
  state.routines.forEach(r=>r.exercises.forEach(e=>{e.increment=cv(e.increment)}));
  state.sessions.forEach(s=>s.exercises.forEach(e=>e.sets.forEach(set=>{set.weight=cv(set.weight)})));
+ state.sessions=[...state.sessions];
  (state.bodyweight||[]).forEach(x=>{x.value=cv(x.value)});
  if(state.activeWorkout){
    state.activeWorkout.exercises.forEach(e=>{
@@ -270,8 +271,6 @@ function uid(){return 'id_'+Date.now().toString(36)+Math.random().toString(36).s
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function escAttr(s){return esc(s)}
 
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;updateInstallButton();});
-window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;updateInstallButton();showToast('Swole Cat installed');});
 document.addEventListener('visibilitychange',()=>{
  if(document.visibilityState==='hidden'){
    if(pendingStateSave)flushPendingStateSave();
@@ -303,7 +302,7 @@ window.visualViewport?.addEventListener?.('resize',syncViewportMetrics,{passive:
 window.addEventListener('orientationchange',()=>setTimeout(syncViewportMetrics,120),{passive:true});
 enhanceAppSelects(document);
 verifyDeviceStorageWritable();
-renderNavigationView('home');populateMuscles();updateInstallButton();updateActiveWorkoutChrome();
+renderNavigationView('home');populateMuscles();updateActiveWorkoutChrome();
 SwoleCatRuntime.events.dispatchEvent(new CustomEvent('app:ready',{detail:{version:APP_VERSION}}));
 installNativeBehaviorHandlers();
 configureNativeUi();

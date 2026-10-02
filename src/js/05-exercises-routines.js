@@ -1,18 +1,3 @@
-function routineCard(r){
- const active=state.activeWorkout?.routineId===r.id;
- const counts=active?activeWorkoutCounts():null;
- return `<div class="card clickable" onclick="${active?'resumeActiveWorkout()':`openRoutine('${r.id}')`}">
-   <div class="row"><div><div class="exercise-name">${esc(r.name)}</div><div class="mini">${esc(trainingModeLabel(r.trainingMode))} · ${active?`${counts.done} of ${counts.total} sets complete · autosaved`:`${r.exercises.length} exercise${r.exercises.length===1?'':'s'}`}</div></div><span class="tag">${active?'● ACTIVE · RESUME ›':'START ›'}</span></div>
-   <div class="actions" onclick="event.stopPropagation()">
-     <button class="btn small secondary" onclick="editRoutineDetails('${r.id}')">Edit</button>
-     <button class="btn small secondary" onclick="archiveRoutine('${r.id}')">Archive</button>
-   </div>
- </div>`;
-}
-function sessionCard(s){
- let sets=sessionSetCount(s),prs=sessionPRCount(s);
- return `<div class="card clickable" onclick="go('history')"><div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleDateString()} · ${sets} working sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div><span class="tag">${prs?`PR · ${prs}`:`${s.exercises.length} moves`}</span></div></div>`;
-}
 
 let exerciseFilterOptionsKey='';
 function populateMuscles(force=false){
@@ -95,21 +80,8 @@ function renderExercises(){
      ${x.custom?`<button class="btn small secondary" onclick="editExercise('${x.id}')">Edit</button>`:''}
    </div>`).join(''):`<div class="empty">${emptyMessage}</div>`;
 }
-function exercisePatternSvg(pattern){
- const p=String(pattern||'other');
- const cls=p.includes('press')||p.includes('fly')?'press':p.includes('pull')||p.includes('row')?'pull':p.includes('squat')||p.includes('lunge')?'legs':p.includes('hinge')||p.includes('extension')?'hinge':'other';
- const paths={
-  press:'<path d="M4 12h16M6 8v8M18 8v8M9 6v12M15 6v12"/>',
-  pull:'<path d="M4 6h16M6 6v5c0 4 2.5 7 6 7s6-3 6-7V6"/><path d="M9 12h6"/>',
-  legs:'<path d="M7 4h10M9 4v6l-3 8M15 4v6l3 8M7 12h10"/>',
-  hinge:'<path d="M5 18h14M8 18l2-8 4-3 3 4M10 10l-3-3"/>',
-  other:'<path d="M12 3v18M3 12h18M6 6l12 12M18 6 6 18"/>'
- };
- return '<svg class="sigil-svg sigil-'+cls+'" viewBox="0 0 24 24" aria-hidden="true">'+paths[cls]+'</svg>';
-}
 function patternLabel(p){return String(p||'other').replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())}
 
-function favoriteIds(){return new Set(state.favorites||[])}
 function isFavorite(id){return (state.favorites||[]).includes(id)}
 function exercisePreference(id){return state.exercisePreferences?.[id]||'neutral'}
 function isHiddenExercise(id){return exercisePreference(id)==='hide'}
@@ -369,9 +341,6 @@ function exerciseThumbFallback(img){
  }
  img?.parentElement?.classList.add('thumb-unavailable');
 }
-function swoleCatBadgeSvg(){
- return '<svg class="thumb-cat-mark" viewBox="0 0 16 16" aria-hidden="true"><circle class="badge-bg" cx="8" cy="8" r="7"/><path class="badge-cat" d="M4.1 6.3 4.6 3l2.1 1.7A5 5 0 0 1 8 4.5a5 5 0 0 1 1.3.2L11.4 3l.5 3.3c.7.8 1.1 1.8 1.1 2.9 0 2.7-2.2 4-5 4s-5-1.3-5-4c0-1.1.4-2.1 1.1-2.9Z"/></svg>';
-}
 function catExerciseThumbnail(ex){
  const exact=workoutArtExactSlug(ex),fallback=workoutArtFallbackSlug(ex);
  const exactUrl=workoutArtUrl(exact),fallbackUrl=workoutArtUrl(fallback);
@@ -382,7 +351,6 @@ function catExerciseThumbnail(ex){
    '<span class="schematic-corner" aria-hidden="true"></span>'+
   '</span>';
 }
-function equipmentIcon(e){return {'barbell':'🏋','dumbbell':'◐','machine':'⚙','cable':'⌁','bodyweight':'◆','smith machine':'▥','kettlebell':'●','landmine':'◒','trap bar':'⬡','sled':'▰','plate':'◉'}[e]||'●'}
 
 function routineIsArchived(r){return !!r?.archivedAt}
 function activeRoutines(){return state.routines.filter(r=>!routineIsArchived(r))}

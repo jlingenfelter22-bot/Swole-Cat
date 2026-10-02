@@ -15,7 +15,7 @@ function saveCustomExercise(id,editing){
  const obj={id,name,muscle:document.getElementById('exMuscle').value.trim()||'Other',equipment:document.getElementById('exEquip').value,pattern:document.getElementById('exPattern').value,custom:true};
  const resolved=exerciseMuscleMetadata(obj);
  obj.primaryMuscles=resolved.primary;obj.secondaryMuscles=resolved.secondary;obj.movementFamily=resolved.movementFamily;
- if(editing)state.customExercises=state.customExercises.map(x=>x.id===id?obj:x); else state.customExercises.push(obj);
+ if(editing)state.customExercises=state.customExercises.map(x=>x.id===id?obj:x); else state.customExercises=[...state.customExercises,obj];
  save();closeModal();renderExercises();
 }
 function deleteCustomExercise(id){
@@ -145,7 +145,6 @@ function renderAddExercisePicker(){
  <div class="picker-chips"><button class="chip ${!addPickerMovement?'active':''}" onclick="setAddMovement('')">All</button>${patterns.map(p=>`<button class="chip ${addPickerMovement===p?'active':''}" onclick="setAddMovement('${p}')">${esc(patternLabel(p))}</button>`).join('')}</div>
  <div class="picker-result-list">${addPickerRows(filtered)}</div>`;
 }
-function refreshAddExercisePicker(){renderAddExercisePicker()}
 
 function defaultWorkoutExerciseConfig(){
  return {
@@ -159,14 +158,7 @@ function defaultWorkoutExerciseConfig(){
    restSeconds:120
  };
 }
-function workoutScrollOffset(){
- const css=Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--workout-scroll-offset'));
- if(Number.isFinite(css)&&css>0)return css;
- const header=Math.max(0,Math.round(document.querySelector('header')?.getBoundingClientRect().height||0));
- const dock=Math.max(0,Math.round(document.getElementById('activeExerciseDock')?.getBoundingClientRect().height||0));
- return header+dock+12;
-}
-function scrollToWorkoutExercise(index,{behavior='smooth'}={}){
+={}){
  setTimeout(()=>{
    const el=document.getElementById(`workoutExercise-${index}`);
    if(!el)return;
@@ -199,11 +191,10 @@ function addExerciseToWorkout(exerciseId,permanent){
        supersetGroup:null
      };
      routine.exercises.push(savedCfg);
-     w.exercises.forEach((e,i)=>e.expanded=i===existingIndex);
+     applyWorkoutFocusState(w,existingIndex,null,{deferCurrent:true});
      w.exercises[existingIndex].routineIndex=routine.exercises.length-1;
      saveActiveWorkout();haptic([20,30,20]);closeModal();renderWorkout();
      showToast(`${ex.name} saved to routine`);
-     scrollToWorkoutExercise(existingIndex);
      return;
    }
    showToast(`${ex.name} is already in this workout`);
@@ -241,12 +232,11 @@ function addExerciseToWorkout(exerciseId,permanent){
    })),
    notes:''
  };
- w.exercises.forEach(e=>e.expanded=false);
  w.exercises.push(entry);
  const newIndex=w.exercises.length-1;
+ applyWorkoutFocusState(w,newIndex,null,{deferCurrent:true});
  if(!permanent)markWorkoutStructureDirty();else saveActiveWorkout();haptic([20,30,20]);closeModal();renderWorkout();
  showToast(permanent?`${ex.name} added + saved to routine`:`${ex.name} added for today`);
- scrollToWorkoutExercise(newIndex);
 }
 
 

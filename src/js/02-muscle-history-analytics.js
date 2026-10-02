@@ -138,9 +138,6 @@ function muscleHeatLevel(score){
  return 0;
 }
 function muscleRegionClass(region,scores){return 'muscle-region heat-'+muscleHeatLevel(Number(scores?.[region])||0)}
-function muscleMapRegion(region,scores,shape){
- return `<${shape.tag} class="${muscleRegionClass(region,scores)}" data-region="${region}" ${shape.attrs}></${shape.tag}>`;
-}
 function anatomyScoreRegion(id){
  if(/^chest-/.test(id))return 'chest';
  if(/^shoulder-front-/.test(id))return 'front_delts';
@@ -430,14 +427,6 @@ function exerciseMetrics(exerciseId){
  else if(priorE1 && latestE1<priorE1*.99)trend='down';
  return {history:h,sets,bestWeight,bestE1,bestVolume,latestE1,priorE1,trend};
 }
-function weeklyMuscleSets(){
- const start=startOfWeek(),counts={};
- state.sessions.filter(s=>new Date(s.date)>=start).forEach(s=>s.exercises.forEach(e=>{
-   const ex=exById(e.exerciseId);if(!ex)return;
-   counts[ex.muscle]=(counts[ex.muscle]||0)+progressionSets(e).length;
- }));
- return counts;
-}
 function lastEightWeeks(){
  const now=startOfWeek(),rows=[];
  for(let i=7;i>=0;i--){
@@ -689,10 +678,6 @@ function formGuideMap(){
 function saveFormGuideChoice(exerciseId,guideId){
  const map=formGuideMap();map[exerciseId]=guideId;localStorage.setItem(FORM_GUIDE_MAP_KEY,JSON.stringify(map));
  loadExerciseFormGuide(exerciseId);
-}
-function clearFormGuideChoice(exerciseId){
- const map=formGuideMap();delete map[exerciseId];localStorage.setItem(FORM_GUIDE_MAP_KEY,JSON.stringify(map));
- showFormGuidePicker(exerciseId);
 }
 function guideKey(s){
  return String(s||'').toLowerCase()

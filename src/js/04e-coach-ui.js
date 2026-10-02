@@ -339,6 +339,7 @@ function renderHome(){
  const primary=document.getElementById('homePrimary'),coach=document.getElementById('homeCoachLauncher'),quick=document.getElementById('homeQuickActions'),signal=document.getElementById('homeTelemetry'),latest=document.getElementById('homeLatest');
  if(!primary)return;
  const name=state.profile.name?.trim(),active=state.activeWorkout,p=activeProgram(),next=p?programNextRoutine(p):null,suggested=homeSuggestedRoutine();
+ const sessionData=state.sessions.length?derivedSessionData():null;
 
  if(active){
    const ac=activeWorkoutCounts(active),saved=active.lastSavedAt?new Date(active.lastSavedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'just now';
@@ -349,7 +350,7 @@ function renderHome(){
    primary.innerHTML=`<div class="eyebrow">UP NEXT · ${esc(p.name)}</div><h1>${esc(next.name)}</h1><div class="muted">${next.exercises.length} exercise${next.exercises.length===1?'':'s'} · ${esc(trainingModeLabel(normalizeProgramTrainingMode(p.trainingMode)==='inherit'?next.trainingMode:p.trainingMode))}${last?` · last program session ${new Date(last.date).toLocaleDateString()}`:''}</div><div class="actions"><button class="btn green" onclick="startProgramWorkout('${p.id}')">Start Next Workout</button><button class="btn secondary" onclick="go('routines')">View Program</button></div>`;
    coach.innerHTML=`<div class="home-coach-launcher">${homeCoachLauncherHtml()}</div>`;quick.innerHTML=homeQuickActionsHtml();
  }else if(suggested){
-   const last=state.sessions.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).find(s=>s.routineId===suggested.id);
+   const last=sessionData?.sessionsByRoutine.get(suggested.id)?.[0];
    primary.innerHTML=`<div class="eyebrow">READY TO TRAIN${name?` · ${esc(name)}`:''}</div><h1>${esc(suggested.name)}</h1><div class="muted">${suggested.exercises.length} exercise${suggested.exercises.length===1?'':'s'} · ${esc(trainingModeLabel(suggested.trainingMode))}${last?` · last trained ${new Date(last.date).toLocaleDateString()}`:''}</div><div class="actions"><button class="btn green" onclick="openRoutine('${suggested.id}')">Start Workout</button><button class="btn secondary" onclick="go('routines')">Choose Another</button></div>`;
    coach.innerHTML=`<div class="home-coach-launcher">${homeCoachLauncherHtml()}</div>`;quick.innerHTML=homeQuickActionsHtml();
  }else{
@@ -360,10 +361,10 @@ function renderHome(){
  if(!state.sessions.length){
    signal.innerHTML='';latest.innerHTML='';
  }else{
-   const weekStart=startOfWeek(),weekSessions=state.sessions.filter(s=>new Date(s.date)>=weekStart);
+   const weekStart=startOfWeek(),weekSessions=(sessionData?.sessionsDesc||[]).filter(s=>new Date(s.date)>=weekStart);
    const weekSets=weekSessions.reduce((n,s)=>n+sessionSetCount(s),0),weekPrs=weekSessions.reduce((n,s)=>n+sessionPRCount(s),0);
    signal.innerHTML=`<div class="home-signal-card" onclick="go('analytics')"><div><div class="eyebrow">THIS WEEK</div><div class="signal-copy"><b>${weekSessions.length} workout${weekSessions.length===1?'':'s'}</b> · ${weekSets} working sets · ${weekPrs} PR${weekPrs===1?'':'s'}</div></div><span class="tag">PROGRESS ›</span></div>`+coachInsightHtml();
-   const last=state.sessions.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0],sets=sessionSetCount(last),prs=sessionPRCount(last);
+   const last=sessionData.sessionsDesc[0],sets=sessionSetCount(last),prs=sessionPRCount(last);
    latest.innerHTML=`<div class="home-latest" onclick="openHistoricalWorkoutRecap('${last.id}')"><div class="row"><div><div class="eyebrow">LAST WORKOUT</div><div class="home-latest-title">${esc(last.routineName)}</div><div class="home-latest-meta">${new Date(last.date).toLocaleDateString()} · ${sets} working sets${last.durationMinutes!=null?` · ${last.durationMinutes} min`:''}${prs?` · ${prs} PR${prs===1?'':'s'}`:''}</div></div><span class="tag">RECAP ›</span></div></div>`;
  }
  updateActiveWorkoutChrome();

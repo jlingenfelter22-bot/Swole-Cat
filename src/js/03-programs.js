@@ -9,8 +9,9 @@ function programRoutine(p,index){
  return state.routines.find(r=>r.id===p.routineIds[i])||null;
 }
 function programNextRoutine(p){return programRoutine(p,p?.nextIndex||0)}
+
 function programSessions(p){
- return state.sessions.filter(s=>s.programId===p.id).sort((a,b)=>b.date.localeCompare(a.date));
+ return derivedSessionData().sessionsByProgram.get(p.id)||[];
 }
 function programSlotLabel(index){return index<26?String.fromCharCode(65+index):String(index+1)}
 function programDaysText(p){return p.preferredDays?.length?p.preferredDays.map(d=>PROGRAM_DAYS[d]).join(' / '):'Any days'}

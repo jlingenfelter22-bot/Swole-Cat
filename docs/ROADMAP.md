@@ -755,6 +755,25 @@ When accounts/cloud sharing are added:
 
 The detailed contract and future migration notes live in **`docs/SHARING_ARCHITECTURE.md`** and should be read before implementing short codes, account-based sharing, shared templates, or cloud sync.
 
+### v0.66.1 — Final Outside-Beta Optimization Hardening
+
+**Status: Complete**
+
+Goal: freeze the pre-beta product on a leaner, faster, better-audited runtime before expanding to accounts/cloud work.
+
+- [x] Decouple completed-history indexes from unrelated state saves so ordinary weight/reps/active-workout persistence does not rescan historical sessions.
+- [x] Decouple the exercise-catalog lookup map from unrelated state saves so workout logging does not rebuild the full built-in/custom exercise map.
+- [x] Pre-index completed sessions by newest-first order, Program, Routine, date, and exercise for reuse across Home, Programs, History, progression, and Coach paths.
+- [x] Reuse cached Program and History ordering instead of repeatedly filtering/sorting the entire session list during rendering.
+- [x] Make session/custom-exercise structural changes invalidate their caches deliberately while preserving cache correctness through lb/kg conversion.
+- [x] Remove proven-unreachable pre-Focus-Mode workout accordion/sticky-dock helpers, duplicate routine/session card helpers, unused artwork helpers, and retired custom PWA install-prompt wiring.
+- [x] Remove the stale pre-Focus Add Exercise scroll target and make Add Exercise focus the newly added movement directly in the current Focus Mode canvas while preserving unfinished work as Pending.
+- [x] Prune CSS belonging exclusively to the retired pre-Focus sticky exercise dock/toggle.
+- [x] Add a production-bundle optimization regression that verifies cache identity across ordinary workout saves, invalidation after real history/catalog changes, current Focus Mode add-exercise behavior, and absence of retired globals.
+- [x] Require the complete legacy regression wall, Pages deploy, and Android APK build to pass before calling this the outside-beta baseline.
+
+**Optimization principle:** the beta freeze favors measured, low-risk simplification over architectural churn. Large rewrites, speculative lazy-loading, and broad CSS deletion are intentionally deferred when they could destabilize working behavior without a clear runtime win.
+
 ---
 
 ## Phase 8 — Accounts, Cloud Backup, and Multi-Device Sync

@@ -441,8 +441,6 @@
   .exercise-head-click{cursor:pointer;user-select:none}
   .exercise-head-click:active{filter:brightness(1.08)}
   .exercise-header-actions{display:flex;gap:6px;align-items:center;flex:0 0 auto}
-  .exercise-toggle-btn{width:38px;height:38px;border-radius:11px;border:1px solid color-mix(in srgb,var(--ex-accent) 35%,#303a50);background:var(--ex-soft);color:var(--ex-accent);font-size:1rem;font-weight:950;display:grid;place-items:center;padding:0}
-  .exercise-toggle-btn:active{transform:scale(.95)}
   .exercise-status{display:inline-flex;align-items:center;gap:5px;border:1px solid #334056;background:#151d2a;color:#b9c3d3;border-radius:999px;padding:5px 8px;font-size:.66rem;font-weight:900;white-space:nowrap}
   .exercise-status.current{border-color:color-mix(in srgb,var(--ex-accent) 45%,#334056);background:var(--ex-soft);color:color-mix(in srgb,var(--ex-accent) 76%,white)}
   .exercise-status.complete{border-color:rgba(34,197,94,.38);background:rgba(34,197,94,.08);color:#8ce9a4}

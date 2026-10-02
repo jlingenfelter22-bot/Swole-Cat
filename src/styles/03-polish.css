@@ -17,7 +17,7 @@
     overscroll-behavior-y:none;
     -webkit-tap-highlight-color:transparent;
   }
-  button,.clickable,.chip,.toolchip,.day-chip,.favbtn,.orderbtn,.set-icon-btn,.exercise-toggle-btn{
+  button,.clickable,.chip,.toolchip,.day-chip,.favbtn,.orderbtn,.set-icon-btn{
     touch-action:manipulation;
   }
 
@@ -39,7 +39,7 @@
   .screen-banner:after{opacity:.62}
 
   /* One motion language. */
-  .btn,.card.clickable,.navbtn,.chip,.day-chip,.toolchip,.favbtn,.orderbtn,.set-icon-btn,.exercise-toggle-btn,input,select,textarea,.toggle,.exercise-block{
+  .btn,.card.clickable,.navbtn,.chip,.day-chip,.toolchip,.favbtn,.orderbtn,.set-icon-btn,input,select,textarea,.toggle,.exercise-block{
     transition-duration:var(--motion-base)!important;
     transition-timing-function:var(--ease-ui)!important;
   }
@@ -83,7 +83,7 @@
 
   /* Minimum interaction affordances, without changing the approved overall sizing system. */
   .btn.small,.day-chip,.toolchip,.preference-btn,.set-add-btn{min-height:38px}
-  .favbtn,.orderbtn,.set-icon-btn,.exercise-toggle-btn,.x{min-width:38px;min-height:38px}
+  .favbtn,.orderbtn,.set-icon-btn,.x{min-width:38px;min-height:38px}
   button:disabled{
     opacity:.46;
     cursor:not-allowed;
@@ -221,7 +221,7 @@
   }
 
   @media (prefers-reduced-motion:reduce){
-    .btn,.card.clickable,.navbtn,.chip,.day-chip,.toolchip,.favbtn,.orderbtn,.set-icon-btn,.exercise-toggle-btn,input,select,textarea,.toggle,.exercise-block,.toast{
+    .btn,.card.clickable,.navbtn,.chip,.day-chip,.toolchip,.favbtn,.orderbtn,.set-icon-btn,input,select,textarea,.toggle,.exercise-block,.toast{
       transition:none!important;
     }
   }
@@ -895,43 +895,6 @@
   #workout .workout-cancel-btn{min-width:72px;padding-left:11px;padding-right:11px}
 }
 
-/* TODAY BETA READINESS // STEP 2 */
-#workout .active-exercise-dock{
- position:sticky;top:var(--workout-sticky-top,72px);z-index:18;
- display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;
- margin:10px 0 14px;padding:10px 11px;min-height:62px;
- border:1px solid rgba(34,211,238,.48);border-radius:5px 15px 5px 15px;
- background:linear-gradient(100deg,rgba(34,211,238,.105),rgba(168,85,247,.08) 55%,rgba(5,10,18,.98)),rgba(5,10,18,.985);
- box-shadow:0 9px 24px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.035)
-}
-#workout .active-exercise-dock.complete{grid-template-columns:1fr;border-color:rgba(53,233,138,.42)}
-#workout .active-exercise-signal{
- display:flex;align-items:center;gap:6px;color:#75eaff;font-family:var(--display);
- font-size:.58rem;font-weight:900;letter-spacing:.12em;writing-mode:vertical-rl;transform:rotate(180deg)
-}
-#workout .active-exercise-signal span{
- width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 10px rgba(53,233,138,.42)
-}
-#workout .active-exercise-copy{min-width:0}
-#workout .active-exercise-name{
- font-family:var(--display);font-size:1.05rem;font-weight:950;line-height:1.08;color:#f7fbff;
- white-space:nowrap;overflow:hidden;text-overflow:ellipsis
-}
-#workout .active-exercise-meta{
- margin-top:4px;color:#a9b9cc;font-size:.72rem;font-weight:760;
- white-space:nowrap;overflow:hidden;text-overflow:ellipsis
-}
-#workout .active-exercise-kicker{color:#8ce9a4;font-family:var(--display);font-size:.6rem;font-weight:900;letter-spacing:.12em}
-#workout .active-exercise-jump{
- min-width:62px;min-height:40px;padding:7px 9px;border:1px solid rgba(34,211,238,.38);
- border-radius:4px 10px 4px 10px;background:rgba(34,211,238,.07);color:#c9f9ff;font-size:.7rem;font-weight:900
-}
-@media(max-width:390px){
- #workout .active-exercise-dock{gap:8px;padding:9px}
- #workout .active-exercise-jump{min-width:54px;padding-left:7px;padding-right:7px}
- #workout .active-exercise-name{font-size:.98rem}
-}
-
 /* TODAY BETA READINESS // STEP 4 */
 #workout .workout-guidance{margin:10px 0 8px;border:1px solid rgba(168,85,247,.34);border-radius:4px 12px 4px 12px;background:linear-gradient(110deg,rgba(168,85,247,.075),rgba(34,211,238,.025)),rgba(7,13,24,.96);overflow:hidden}
 #workout .workout-guidance>summary{list-style:none;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 11px;cursor:pointer;user-select:none}
@@ -971,13 +934,6 @@
 #workout .micro-step button{min-width:36px;min-height:36px;width:36px;height:36px;border-radius:9px}
 #workout .set-type-select{min-height:40px}
 #workout .complete-set{min-height:48px;padding-top:12px;padding-bottom:12px}
-#workout .active-exercise-dock{
-  transition:border-color var(--motion-base) var(--ease-ui),box-shadow var(--motion-base) var(--ease-ui),background var(--motion-base) var(--ease-ui)
-}
-#workout .active-exercise-dock:focus-within{
-  border-color:rgba(34,211,238,.72);
-  box-shadow:0 10px 26px rgba(0,0,0,.34),0 0 0 2px rgba(34,211,238,.08)
-}
 @media(max-width:390px){
   #workout .micro-step button{min-width:34px;min-height:34px;width:34px;height:34px}
   #workout .set-icon-btn{min-width:40px!important;min-height:40px!important;width:40px;height:40px}

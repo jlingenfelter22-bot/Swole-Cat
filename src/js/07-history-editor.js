@@ -2,7 +2,7 @@ let sessionEditDraft=null;
 
 function renderHistory(){
  const el=document.getElementById('historyList');
- const sessions=state.sessions.slice().sort((a,b)=>b.date.localeCompare(a.date));
+ const sessions=derivedSessionData().sessionsDesc;
  if(!sessions.length){el.innerHTML='<div class="empty"><div class="empty-illustration"><span class="empty-glyph empty-glyph-history" aria-hidden="true"></span></div><strong>No workout history yet</strong>Finish your first session and it will be saved here.</div>';return;}
  el.innerHTML=sessions.map((s,sessionIndex)=>`<div class="card history-entry">
    <div class="history-sequence"><span>${String(sessions.length-sessionIndex).padStart(2,'0')}</span><small>SESSION</small></div>

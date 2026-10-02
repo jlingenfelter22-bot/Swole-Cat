@@ -177,38 +177,52 @@ SwoleCatRuntime.registerService('state',{
  requestSave(){return save()}
 });
 const navigationRenderRevision={home:-1,routines:-1,exercises:-1,history:-1,analytics:-1};
-let derivedSessionCacheRevision=-1,derivedSessionCache=null;
-let exerciseCatalogCacheRevision=-1,exerciseCatalogCache=null;
+let derivedSessionCacheSource=null,derivedSessionCacheLength=-1,derivedSessionCache=null;
+let exerciseCatalogCacheSource=null,exerciseCatalogCacheLength=-1,exerciseCatalogCache=null;
 let navigationRefreshFrame=null;
+
 function derivedSessionData(){
- if(derivedSessionCache&&derivedSessionCacheRevision===stateRevision)return derivedSessionCache;
- const sessionsByDate=new Map(),historyByExercise=new Map(),previousByExercise=new Map(),loggedExerciseIds=new Set();
- state.sessions.forEach(session=>{
+ const source=state.sessions;
+ if(derivedSessionCache&&derivedSessionCacheSource===source&&derivedSessionCacheLength===source.length)return derivedSessionCache;
+ const sessionsDesc=source.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+ const sessionsByDate=new Map(),historyByExercise=new Map(),previousByExercise=new Map(),loggedExerciseIds=new Set(),sessionsByProgram=new Map(),sessionsByRoutine=new Map();
+ sessionsDesc.forEach(session=>{
    const dateKey=localDateKey(session.date);
    if(dateKey){
      if(!sessionsByDate.has(dateKey))sessionsByDate.set(dateKey,[]);
      sessionsByDate.get(dateKey).push(session);
    }
+   if(session.programId){
+     if(!sessionsByProgram.has(session.programId))sessionsByProgram.set(session.programId,[]);
+     sessionsByProgram.get(session.programId).push(session);
+   }
+   if(session.routineId){
+     if(!sessionsByRoutine.has(session.routineId))sessionsByRoutine.set(session.routineId,[]);
+     sessionsByRoutine.get(session.routineId).push(session);
+   }
    (session.exercises||[]).forEach(e=>{
      const working=progressionSets(e),all=completedSets(e);
      if(all.length)loggedExerciseIds.add(e.exerciseId);
-     const previous=previousByExercise.get(e.exerciseId);
-     if(!previous||String(session.date).localeCompare(String(previous.date))>0)previousByExercise.set(e.exerciseId,{date:session.date,...e});
+     if(!previousByExercise.has(e.exerciseId))previousByExercise.set(e.exerciseId,{date:session.date,...e});
      if(!working.length)return;
      if(!historyByExercise.has(e.exerciseId))historyByExercise.set(e.exerciseId,[]);
      historyByExercise.get(e.exerciseId).push({date:session.date,routineName:session.routineName,sets:working,allSets:all,notes:e.notes||''});
    });
  });
- historyByExercise.forEach(rows=>rows.sort((a,b)=>a.date.localeCompare(b.date)));
- derivedSessionCache={sessionsByDate,historyByExercise,previousByExercise,loggedExerciseIds};
- derivedSessionCacheRevision=stateRevision;
+ historyByExercise.forEach(rows=>rows.sort((a,b)=>String(a.date).localeCompare(String(b.date))));
+ derivedSessionCache={sessionsDesc,sessionsByDate,sessionsByProgram,sessionsByRoutine,historyByExercise,previousByExercise,loggedExerciseIds};
+ derivedSessionCacheSource=source;
+ derivedSessionCacheLength=source.length;
  return derivedSessionCache;
 }
+
 function exerciseCatalog(){
- if(exerciseCatalogCache&&exerciseCatalogCacheRevision===stateRevision)return exerciseCatalogCache;
- const list=[...LIBRARY,...state.customExercises],byId=new Map(list.map(ex=>[ex.id,ex]));
+ const source=state.customExercises;
+ if(exerciseCatalogCache&&exerciseCatalogCacheSource===source&&exerciseCatalogCacheLength===source.length)return exerciseCatalogCache;
+ const list=[...LIBRARY,...source],byId=new Map(list.map(ex=>[ex.id,ex]));
  exerciseCatalogCache={list,byId};
- exerciseCatalogCacheRevision=stateRevision;
+ exerciseCatalogCacheSource=source;
+ exerciseCatalogCacheLength=source.length;
  return exerciseCatalogCache;
 }
 function queueNavigationRefresh(id){
@@ -242,9 +256,6 @@ function renderNavigationView(id){
  if(id==='history')renderHistory();
  if(id==='analytics')renderAnalytics();
  navigationRenderRevision[id]=stateRevision;
-}
-function invalidateNavigationView(id){
- if(Object.prototype.hasOwnProperty.call(navigationRenderRevision,id))navigationRenderRevision[id]=-1;
 }
 
 function save(){
@@ -354,7 +365,7 @@ function openStartupStorageNotice(){
  }
 }
 
-let deferredInstallPrompt=null,wakeLock=null,confirmCallback=null,toastTimer=null;
+let wakeLock=null,confirmCallback=null,toastTimer=null;
 function haptic(pattern=20){
  if(state.ui?.haptics!==false && navigator.vibrate)navigator.vibrate(pattern);
 }
@@ -513,17 +524,7 @@ async function installNativeBehaviorHandlers(){
    });
  }catch(e){nativeBehaviorReady=false}
 }
-function updateInstallButton(){
- const b=document.getElementById('installBtn');
- if(b)b.classList.toggle('show',!isNativeApp()&&!!deferredInstallPrompt);
-}
-async function installApp(){
- if(!deferredInstallPrompt){showToast('Install option is not available in this browser yet.');return;}
- deferredInstallPrompt.prompt();
- try{await deferredInstallPrompt.userChoice;}catch(e){}
- deferredInstallPrompt=null;updateInstallButton();
-}
-function onboarding(){
+async function onboarding(){
  openModal('Welcome to Swole Cat',`
  <div class="onboard-hero"><div class="onboard-logo">🐱</div><div class="eyebrow">${isNativeApp()?'ANDROID · LOCAL. FAST. YOURS.':'LOCAL. FAST. YOURS.'}</div><h1 style="font-size:1.8rem;margin:7px 0">Train, log, progress.</h1><div class="muted">No account, no subscription, no cloud workout profile. Your training data stays on this device.</div></div>
  ${isNativeApp()?'<div class="notice"><b>Already use the Swole Cat PWA?</b><br>Android app storage is separate from the browser version. Export a backup from the PWA first, then import it here to bring over your routines, workouts, programs, PRs, preferences, and bodyweight history.</div>':''}
@@ -547,24 +548,23 @@ function finishOnboarding(){
 
 function allExercises(){return exerciseCatalog().list;}
 function exById(id){return exerciseCatalog().byId.get(id);}
-function fmtWeight(w){return `${Number(w||0)} ${state.profile.unit}`;}
+
 
 function activeWorkoutCounts(w=state.activeWorkout){
  if(!w)return {total:0,done:0,pct:0,skipped:0,activeExercises:0};
- const active=(w.exercises||[]).filter(e=>!e.skipped);
- const total=active.reduce((n,e)=>n+(e.sets||[]).length,0);
- const done=active.reduce((n,e)=>n+(e.sets||[]).filter(s=>s.done).length,0);
- const skipped=(w.exercises||[]).filter(e=>e.skipped).length;
- return {total,done,pct:total?Math.round(done/total*100):0,skipped,activeExercises:active.length};
+ let total=0,done=0,skipped=0,activeExercises=0;
+ for(const e of w.exercises||[]){
+   if(e.skipped){skipped++;continue}
+   activeExercises++;
+   const sets=e.sets||[];
+   total+=sets.length;
+   for(const set of sets)if(set.done)done++;
+ }
+ return {total,done,pct:total?Math.round(done/total*100):0,skipped,activeExercises};
 }
 function markWorkoutStructureDirty(){
  if(!state.activeWorkout)return;
  state.activeWorkout.structureDirty=true;
- saveActiveWorkout();
-}
-function clearWorkoutStructureDirty(){
- if(!state.activeWorkout)return;
- state.activeWorkout.structureDirty=false;
  saveActiveWorkout();
 }
 function saveActiveWorkout(defer=false){

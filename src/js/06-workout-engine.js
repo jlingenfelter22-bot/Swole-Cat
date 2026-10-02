@@ -12,7 +12,6 @@ function firstWorkingSetIndex(e){const a=workingSetIndexes(e);return a.length?a[
 function setTypeLabel(type){
  return type==='warmup'?'Warm-up':type==='drop'?'Drop set':type==='failure'?'Failure':'Working';
 }
-function setTypeShort(type){return type==='warmup'?'W':type==='drop'?'D':type==='failure'?'F':'S'}
 function finiteNumber(value,fallback=0){
  const n=Number(value);
  return Number.isFinite(n)?n:fallback;
@@ -205,10 +204,6 @@ function buildRecommendation(config,prev,exerciseId=null){
    detail:`Last session: ${done.map(s=>`${s.weight}×${s.reps}`).join(' · ')}. Next target: ${target.map((r,i)=>`${nextWeights[i]??baseWeight}×${r}`).join(' · ')}. Each set progresses by one rep until all ${config.sets} sets reach ${config.maxReps}, then the load increases by your configured increment. RIR remains optional context and never blocks a rep-range progression step. ${goalRIRText(goal)}`};
 }
 function roundLoad(n){return Math.round(Number(n)*4)/4}
-function previousSummary(prev){
- const done=progressionSets(prev); if(!done.length)return 'No previous working sets logged.';
- return done.map((s,i)=>`S${i+1} ${s.weight}×${s.reps}${s.rir!==''&&s.rir!=null?` @${s.rir} RIR`:''}`).join(' · ');
-}
 
 function setReference(prev,workingIndex){
  const done=progressionSets(prev),s=done[workingIndex]||done[done.length-1];
@@ -763,7 +758,28 @@ function workoutFocusedSetIndex(w=state.activeWorkout){
 function workoutExerciseDeferred(ei,w=state.activeWorkout){
  return !!w&&Array.isArray(w.deferredExerciseIndexes)&&w.deferredExerciseIndexes.includes(ei);
 }
+
+function applyWorkoutFocusState(w,ei,si=null,{deferCurrent=true}={}){
+ if(!w?.exercises?.[ei]||w.exercises[ei].skipped)return false;
+ const current=normalizeWorkoutFocusState(w);
+ if(!Array.isArray(w.deferredExerciseIndexes))w.deferredExerciseIndexes=[];
+ if(deferCurrent&&current>=0&&current!==ei&&!w.exercises[current].skipped&&!exerciseSetProgress(w.exercises[current]).complete){
+   if(!w.deferredExerciseIndexes.includes(current))w.deferredExerciseIndexes.push(current);
+ }
+ w.deferredExerciseIndexes=w.deferredExerciseIndexes.filter(i=>i!==ei);
+ w.focusExerciseIndex=ei;
+ w.focusSetIndex=si==null?workoutFirstIncompleteSetIndex(w.exercises[ei]):Math.max(0,Math.min(w.exercises[ei].sets.length-1,Number(si)||0));
+ w.exercises.forEach((e,i)=>e.expanded=i===ei);
+ return true;
+}
 function setWorkoutFocus(ei,si=null,{deferCurrent=true,render=true}={}){
+ const w=state.activeWorkout;
+ if(!applyWorkoutFocusState(w,ei,si,{deferCurrent}))return false;
+ saveActiveWorkout(true);
+ if(render)renderWorkout();
+ return true;
+}
+={}){
  const w=state.activeWorkout;if(!w?.exercises?.[ei]||w.exercises[ei].skipped)return false;
  const current=normalizeWorkoutFocusState(w);
  if(deferCurrent&&current>=0&&current!==ei&&!w.exercises[current].skipped&&!exerciseSetProgress(w.exercises[current]).complete){
@@ -777,89 +793,17 @@ function setWorkoutFocus(ei,si=null,{deferCurrent=true,render=true}={}){
  if(render)renderWorkout();
  return true;
 }
-function workoutActiveSetText(e){
- if(!e)return '';
- const next=e.sets.findIndex(s=>!s.done);
- if(next<0)return 'Exercise complete';
- return `Set ${next+1} of ${e.sets.length}`;
-}
-function activeExerciseDockHtml(w){
- const index=workoutActiveExerciseIndex(w);
- if(index<0)return '<div id="activeExerciseDock" class="active-exercise-dock complete" role="status" aria-live="polite"><div><div class="active-exercise-kicker">SESSION STATUS</div><div class="active-exercise-name">All programmed sets complete</div></div></div>';
- const e=w.exercises[index],ex=exById(e.exerciseId),progress=exerciseSetProgress(e);
- return `<div id="activeExerciseDock" class="active-exercise-dock" data-exercise-index="${index}" role="status" aria-live="polite" aria-atomic="true">
-  <div class="active-exercise-signal"><span></span>NOW TRAINING</div>
-  <div class="active-exercise-copy">
-    <div class="active-exercise-name">${esc(ex?.name||'Exercise')}</div>
-    <div class="active-exercise-meta">${esc(workoutActiveSetText(e))} · ${progress.done}/${progress.total} complete${ex?.muscle?` · ${esc(ex.muscle)}`:''}</div>
-  </div>
-  <button class="active-exercise-jump" onclick="scrollToWorkoutExercise(${index})" aria-label="Jump to current exercise">Current</button>
- </div>`;
-}
+
 function syncWorkoutStickyOffsets(){
- const header=document.querySelector('header'),dock=document.getElementById('activeExerciseDock');
+ const header=document.querySelector('header');
  const headerHeight=Math.max(0,Math.round(header?.getBoundingClientRect().height||0));
- const dockHeight=Math.max(0,Math.round(dock?.getBoundingClientRect().height||0));
  document.documentElement.style.setProperty('--workout-sticky-top',headerHeight+'px');
- document.documentElement.style.setProperty('--workout-scroll-offset',(headerHeight+dockHeight+12)+'px');
-}
-function ensureExerciseAccordion(){
- const w=state.activeWorkout;if(!w)return;
- const hasDefined=w.exercises.some(e=>typeof e.expanded==='boolean');
- if(!hasDefined){
-   const current=w.exercises.findIndex(e=>!exerciseSetProgress(e).complete);
-   w.exercises.forEach((e,i)=>e.expanded=i===(current>=0?current:0));
-   save();
-   return;
- }
- // Never allow a legacy/edited workout to accidentally have every unfinished movement expanded.
- const expanded=w.exercises.filter(e=>e.expanded);
- if(expanded.length>1){
-   let kept=false;
-   w.exercises.forEach(e=>{if(e.expanded&&!kept){kept=true}else if(e.expanded)e.expanded=false});
-   save();
- }
-}
-function exerciseStatus(e,ei){
- const p=exerciseSetProgress(e);
- if(p.skipped)return {label:'Skipped',cls:'skipped'};
- if(p.complete)return {label:'✓ Complete',cls:'complete'};
- if(e.expanded)return {label:p.done?`${p.done}/${p.total} sets · Current`:'Current',cls:'current'};
- if(p.done)return {label:`${p.done}/${p.total} sets`,cls:''};
- return {label:'Up next',cls:''};
 }
 function compactTargetText(e,ex,prev){
  const t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
  if(e.targetOverride)return `Target ${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`;
  if((Number(t.weight)||0)<=0)return ex?.equipment==='bodyweight'?`${t.reps} reps · bodyweight`:`Choose starting weight · ${t.reps} reps`;
  return `${t.weight} ${state.profile.unit} × ${t.reps} target`;
-}
-function paintWorkoutAccordion(){
- const w=state.activeWorkout;if(!w)return;
- w.exercises.forEach((e,i)=>{
-   const card=document.getElementById(`workoutExercise-${i}`);if(!card)return;
-   card.classList.toggle('collapsed',!e.expanded);
-   const toggle=card.querySelector('.exercise-toggle-btn');
-   if(toggle){
-     toggle.textContent=e.expanded?'⌃':'⌄';
-     toggle.setAttribute('aria-label',e.expanded?'Collapse exercise':'Expand exercise');
-     toggle.setAttribute('aria-expanded',e.expanded?'true':'false');
-   }
- });
-}
-function toggleExercisePanel(ei){
- const w=state.activeWorkout;if(!w||!w.exercises[ei])return;
- if(w.exercises[ei].skipped){showToast('This exercise is skipped for today. Use Manage Workout to restore it.');return}
- const opening=!w.exercises[ei].expanded;
- if(opening)w.exercises.forEach((e,i)=>e.expanded=i===ei);
- else w.exercises[ei].expanded=false;
- haptic(10);saveActiveWorkout(true);paintWorkoutAccordion();
- if(opening)scrollToWorkoutExercise(ei);
-}
-function openExercisePanel(ei){
- const w=state.activeWorkout;if(!w||!w.exercises[ei])return;
- w.exercises.forEach((e,i)=>e.expanded=i===ei);
- saveActiveWorkout(true);paintWorkoutAccordion();scrollToWorkoutExercise(ei);
 }
 function advanceFromCompletedExercise(ei){
  const w=state.activeWorkout;if(!w)return false;
@@ -1248,7 +1192,7 @@ function finalizeWorkout(updateRoutine=false){
  const end=new Date(),duration=Math.max(0,Math.round(workoutElapsedMs(w,end.getTime())/60000));
  const session={id:w.id,routineId:w.routineId,routineName:w.routineName,trainingMode:normalizeTrainingMode(w.trainingMode),programId:w.programId||null,status:'finished',date:end.toISOString(),startDate:w.startDate,durationMinutes:duration,exercises:w.exercises};
  const progressHighlights=sessionProgressHighlights(session,state.sessions);
- state.sessions.push(session);
+ state.sessions=[...state.sessions,session];
  advanceProgramAfterWorkout(session);
  state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();haptic([40,45,100]);renderHome();go('home',{resetHistory:true});
  openModal('Workout complete',workoutRecapHtml(session,{updateRoutine,progressHighlights}));
