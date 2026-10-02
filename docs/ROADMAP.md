@@ -572,7 +572,7 @@ Goal: reduce live-workout cognitive load for a first-time outside tester while p
 
 Implementation order:
 1. [x] **Fix the Weight / Reps / RIR row layout.** Give each input its own readable column and prevent the RIR label/control from colliding with adjacent rep controls on narrow phones.
-2. [ ] **Audit and harden rep-ceiling progression.** A movement may legitimately use a high rep range, but Coach must treat the programmed max as a ceiling: once enough programmed sets reach the top of that range at appropriate effort, increase load and return toward the lower end instead of continuing an unbounded rep chase.
+2. [x] **Audit and harden rep-ceiling progression.** A movement may legitimately use a high rep range, but Coach must treat the programmed max as a ceiling: once enough programmed sets reach the top of that range at appropriate effort, increase load and return toward the lower end instead of continuing an unbounded rep chase.
 3. [ ] **Redesign the live rest timer.** Replace the oversized persistent tray with a compact rest control that can expand on demand; automatically dismiss it when no programmed work remains and never require the user to hit Skip after the final workout set.
 4. [ ] **Correct front-delt heat-map anatomy.** Verify the semantic mapping and SVG geometry so front delts highlight the anterior shoulder cap, not the upper-trap/neck region.
 5. [ ] **Run a first-time-user density pass, regressions, and fresh beta build.** Quiet secondary controls where sensible, preserve the core logging path, add permanent coverage for the fixes above, run the full regression wall/Pages/Android, then cut a newer beta APK.

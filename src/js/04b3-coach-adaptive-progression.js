@@ -144,6 +144,16 @@ function coachAdaptiveRecommendation(config,prev,exerciseId){
  const done=progressionSets(prev);
  if(!topBackoff){
    if(!done.length||!exerciseId)return null;
+   // The saved rep ceiling is authoritative. Once every required working set
+   // reaches it at one stable load, the normal double-progression load step
+   // must be allowed to fire instead of being pinned by an adaptive hold.
+   const required=Math.max(1,Number(config.sets)||done.length);
+   const ceiling=Math.max(Number(config.minReps)||1,Number(config.maxReps)||Number(config.minReps)||1);
+   const ceilingSets=done.slice(0,required);
+   const ceilingComplete=ceilingSets.length>=required
+     && ceilingSets.every(s=>Number(s.reps)>=ceiling)
+     && ceilingSets.every(s=>Number(s.weight)===Number(ceilingSets[0]?.weight));
+   if(ceilingComplete)return null;
    const profile=coachMultiWeekExerciseProfile(exerciseId,Date.now());
    if(!['plateau_high_effort','performance_dip'].includes(profile.status))return null;
    const weights=Array.from({length:Math.max(1,Number(config.sets)||done.length)},(_,i)=>Number(done[i]?.weight??done.at(-1)?.weight??0));

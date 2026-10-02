@@ -233,9 +233,13 @@ function liveSetTarget(e,si,prev){
    const expected=Number(base.targetReps?.[Math.min(prevWi,(base.targetReps?.length||1)-1)]??reps);
    const miss=Number(last.reps)-expected;
    if(miss<=-2) reps=Math.max(Math.max(1,roleRange.min-2),reps-1);
-   else if(miss>=2) reps=Math.min(roleRange.max+2,reps+1);
+   else if(miss>=2) reps=Math.min(roleRange.max,reps+1);
    if(last.rir!=='' && Number(last.rir)===0) reps=Math.max(Math.max(1,roleRange.min-2),reps-1);
  }
+ // Strong in-session performance can adjust a target inside the programmed
+ // range, but Coach never prescribes reps above that role's saved ceiling.
+ // The user can still manually log whatever they actually perform.
+ reps=Math.min(roleRange.max,reps);
  return {weight:roundLoad(weight),reps:Math.max(1,reps)};
 }
 function smartNumberFocus(el){
