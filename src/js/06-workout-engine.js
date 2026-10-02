@@ -347,9 +347,14 @@ function setTypeOptions(type){
  return [['working','Working'],['warmup','Warm-up'],['drop','Drop'],['failure','Failure']].map(([v,label])=>`<option value="${v}" ${setType({type})===v?'selected':''}>${label}</option>`).join('');
 }
 function setDisplayLabel(e,si){
- const type=setType(e.sets[si]);
+ const set=e.sets[si],type=setType(set);
  const peers=e.sets.slice(0,si+1).filter(s=>setType(s)===type).length;
- return type==='working'?`Set ${peers}${e.sets[si]?.amrap?' · AMRAP':''}`:`${setTypeLabel(type)} ${peers}`;
+ if(type==='working'&&set?.role==='top')return `Top Set${set.amrap?' · AMRAP':''}`;
+ if(type==='working'&&set?.role==='backoff'){
+   const n=e.sets.slice(0,si+1).filter(s=>setType(s)==='working'&&s.role==='backoff').length;
+   return `Backoff ${n}${set.amrap?' · AMRAP':''}`;
+ }
+ return type==='working'?`Set ${peers}${set?.amrap?' · AMRAP':''}`:`${setTypeLabel(type)} ${peers}`;
 }
 function setProgressionNote(type){
  if(type==='warmup')return 'Warm-up set · saved to history and volume, ignored by progression and PRs.';
