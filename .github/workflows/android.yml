@@ -67,6 +67,9 @@ jobs:
           grep -Eq "versionCode[[:space:]]+${{ steps.meta.outputs.version_code }}" android/app/build.gradle
           grep -Eq "versionName[[:space:]]+\"${{ steps.meta.outputs.version }}\"" android/app/build.gradle
           grep -F "const APP_VERSION='${{ steps.meta.outputs.version }}';" www/app.js
+          grep -F 'android:scheme="com.jlingenfelter.swolecat"' android/app/src/main/AndroidManifest.xml
+          grep -F 'android:host="auth"' android/app/src/main/AndroidManifest.xml
+          grep -F 'android:pathPrefix="/callback"' android/app/src/main/AndroidManifest.xml
 
       - name: Build debug APK
         working-directory: android

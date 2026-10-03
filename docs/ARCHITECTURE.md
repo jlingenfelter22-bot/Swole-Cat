@@ -31,7 +31,7 @@ src/
     08-exercise-tools.js
     10a-cloud-config.js         # Phase 8.1 build/runtime cloud configuration boundary
     10b-cloud-identity.js       # Provider-neutral optional-account shell
-    10c-supabase-auth-provider.js # Lazy web/PWA Supabase Google OAuth adapter
+    10c-supabase-auth-provider.js # Lazy web/PWA + Android Supabase Google OAuth adapter
     09-settings-ui-bootstrap.js
 scripts/
   build-web.mjs               # Deterministic source -> production bundle

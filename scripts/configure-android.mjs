@@ -4,6 +4,10 @@ const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url
 const versionName = String(pkg.version || '').trim();
 const versionCode = Number(pkg.swoleCat?.androidVersionCode);
 const gradleUrl = new URL('../android/app/build.gradle', import.meta.url);
+const manifestUrl = new URL('../android/app/src/main/AndroidManifest.xml', import.meta.url);
+const ANDROID_AUTH_SCHEME='com.jlingenfelter.swolecat';
+const ANDROID_AUTH_HOST='auth';
+const ANDROID_AUTH_PATH='/callback';
 
 if (!versionName) throw new Error('package.json is missing version');
 if (!Number.isInteger(versionCode) || versionCode < 1) {
@@ -67,7 +71,26 @@ if (signingEnabled) {
 
 await writeFile(gradleUrl, gradle);
 
+let manifest=await readFile(manifestUrl,'utf8');
+if(!manifest.includes(`android:scheme="${ANDROID_AUTH_SCHEME}"`)){
+  const filter=`
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="${ANDROID_AUTH_SCHEME}"
+                    android:host="${ANDROID_AUTH_HOST}"
+                    android:pathPrefix="${ANDROID_AUTH_PATH}" />
+            </intent-filter>`;
+  if(!/<\/activity>/.test(manifest)){
+    throw new Error('Could not find MainActivity closing tag in AndroidManifest.xml');
+  }
+  manifest=manifest.replace(/\s*<\/activity>/,filter+'\n        </activity>');
+}
+await writeFile(manifestUrl,manifest);
+
 console.log(
-  `Configured Android versionName=${versionName}, versionCode=${versionCode}` +
+  `Configured Android versionName=${versionName}, versionCode=${versionCode}, authRedirect=${ANDROID_AUTH_SCHEME}://${ANDROID_AUTH_HOST}${ANDROID_AUTH_PATH}` +
   (signingEnabled ? ', release signing enabled' : '')
 );

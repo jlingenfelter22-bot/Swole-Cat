@@ -212,11 +212,12 @@ function openCloudAccount(){
     openModal('Swole Cat Cloud','<div class="notice"><b>'+esc(label)+'</b><br><br>Account connection is active. Workout backup and multi-device sync are not enabled in Phase 8.1, so your training data is still local-only.</div><div class="actions"><button class="btn secondary" onclick="cloudSignOutFromUi()">Sign out</button><button class="btn secondary" onclick="closeModal()">Done</button></div>');
     return;
   }
-  const nativePending=isNativeApp();
-  const providerNote=nativePending
-    ?'Google account testing is enabled on the web/PWA first. Android OAuth return handling is the next step.'
-    :(info.providerReady?'Google sign-in is ready.':'Google sign-in will load only when you choose to continue.');
-  openModal('Swole Cat Cloud','<div class="notice"><b>Optional account</b><br><br>'+esc(providerNote)+'<br><br>Creating an account will not upload workout data in this phase. Cloud backup and sync are separate opt-in capabilities that come later.</div><div class="actions"><button class="btn" '+(nativePending?'disabled':'')+' onclick="cloudSignInWithGoogleFromUi()">Continue with Google</button><button class="btn secondary" onclick="closeModal()">Stay local-only</button></div>');
+  const providerNote=info.providerReady
+    ?'Google sign-in is ready.'
+    :(isNativeApp()
+      ?'Google sign-in will open in the system browser and return directly to Swole Cat.'
+      :'Google sign-in will load only when you choose to continue.');
+  openModal('Swole Cat Cloud','<div class="notice"><b>Optional account</b><br><br>'+esc(providerNote)+'<br><br>Creating an account will not upload workout data in this phase. Cloud backup and sync are separate opt-in capabilities that come later.</div><div class="actions"><button class="btn" onclick="cloudSignInWithGoogleFromUi()">Continue with Google</button><button class="btn secondary" onclick="closeModal()">Stay local-only</button></div>');
 }
 async function cloudSignInWithGoogleFromUi(){
   try{

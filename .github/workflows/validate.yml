@@ -130,6 +130,9 @@ jobs:
       - name: Stress test v0.67.0 cloud shell boundaries
         run: node scripts/cloud-shell-stress.mjs
 
+      - name: Stress test v0.67.2 Android OAuth deep-link contract
+        run: node scripts/android-auth-deeplink-stress.mjs
+
       - name: Smoke test active workouts, set types, progression, and supersets
         run: |
           node <<'JS'

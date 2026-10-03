@@ -194,7 +194,9 @@ This deliberately avoids shadow data and keeps early cloud cost and privacy surf
 
 Start with **Google sign-in** for early cloud testing.
 
-**v0.67.1:** Web/PWA Google OAuth is connected through a provider-neutral identity loader. Supabase JS is pinned to 2.117.2 and lazy-loaded only when the user initiates account sign-in or when namespaced auth state exists and a prior session needs restoration. Signed-out workout usage does not load the SDK. Android OAuth return/deep-link handling remains a separate next step and is deliberately disabled in this web-first milestone.
+**v0.67.1:** Web/PWA Google OAuth is connected through a provider-neutral identity loader. Supabase JS is pinned to 2.117.2 and lazy-loaded only when the user initiates account sign-in or when namespaced auth state exists and a prior session needs restoration. Signed-out workout usage does not load the SDK.
+
+**v0.67.2:** Android uses the same Supabase PKCE Google OAuth flow through the system browser and returns via `com.jlingenfelter.swolecat://auth/callback`. The generated Android manifest is patched during `android:prepare`, and the Capacitor App API handles both warm `appUrlOpen` events and cold-start launch URLs. The official Capacitor Browser plugin is pinned for browser handoff/close. Android secure Keystore-backed auth storage remains required before public production use.
 
 Reason:
 - Android users already have a Google identity available
