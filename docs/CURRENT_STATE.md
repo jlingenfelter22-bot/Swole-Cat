@@ -278,7 +278,7 @@ Remaining Phase 8.2 exit work:
 - [x] create two more backups and verify only latest + previous remain
 - [x] change local data and restore the previous snapshot
 - [x] verify the pre-restore local rollback snapshot is created and exposed in Settings
-- [ ] verify the pre-restore local rollback snapshot can recover the replaced state
+- [x] verify the pre-restore local rollback snapshot can recover the replaced state
 - [ ] verify local workout flow still works with cloud unavailable
 - [ ] verify account deletion also clears backup objects/metadata while preserving local workout data
 - [ ] then mark Phase 8.2 complete
@@ -390,3 +390,13 @@ Verified on 2026-10-04 from Swole Cat Testing v0.68.0:
 - this confirms the required local safety snapshot was created before cloud state replacement
 
 Remaining rollback verification: restore the pre-import snapshot and confirm the local profile marker returns to `Cloud Test 3`.
+
+
+### Phase 8.2 real-device checkpoint: rollback recovery
+
+Verified on 2026-10-04:
+- after restoring the previous cloud snapshot, the local marker was `Cloud Test 2`
+- **Restore pre-import snapshot** successfully restored the pre-restore local state
+- the local marker returned to `Cloud Test 3`
+
+This confirms the cloud-restore safety snapshot is not only created, but can successfully recover the local state that was replaced.
