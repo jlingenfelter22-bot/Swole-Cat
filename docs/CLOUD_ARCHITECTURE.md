@@ -638,3 +638,21 @@ If economics or reliability later favor Cloudflare, a self-hosted Postgres servi
 ## 25. Current decision summary
 
 **Use Supabase Free. Spend $0 during the lab/private cloud beta. Keep every workout local-first. Add cloud as an optional, replaceable adapter. Separate full backup from record-level sync. Do not use realtime or per-set network writes. Keep private data behind RLS. Reuse existing Swole Cat backup and sharing formats. Upgrade the backend only when real users, paid cloud expectations, or measured limits justify the cost.**
+
+
+## 26. Phase 8.1 completion verification
+
+Phase 8.1 was completed and verified on 2026-10-04 using Swole Cat Testing v0.67.6 on real Android hardware.
+
+Verified:
+- v0.67.6 updated in place over permanently signed v0.67.5
+- the existing Keystore-backed Google/Supabase session survived the update
+- sign-out preserved all local workout data
+- a workout completed while signed out remained saved locally
+- signing back in with the same Google account restored the cloud identity without changing local data
+- destructive account deletion required a fresh Google verification and explicit final confirmation
+- successful cloud-account deletion preserved local routines, history, workouts, and settings
+- post-delete backend verification showed 0 Supabase Auth users
+- public Swole Cat application tables remained at 0
+
+This closes the identity-only phase. The next cloud capability is Phase 8.2 Cloud Backup.
