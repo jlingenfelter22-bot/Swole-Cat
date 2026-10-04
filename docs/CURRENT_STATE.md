@@ -25,9 +25,9 @@ Checkpoint date: **2026-10-04 (America/Chicago)**
 ### Experimental development
 
 - Branch: `main`
-- Functional code baseline before this docs-only checkpoint: `2e5bdb4199691a1839cbcb03e7cb3b4c14184d53`
-- App version: **v0.67.6**
-- Android version code: **89**
+- Functional code baseline before this docs-only checkpoint: `12c3cfbfef1bbade89d1185ab2fc496410aea0d4`
+- App version: **v0.68.0**
+- Android version code: **90**
 - Android app name: **Swole Cat Testing**
 - Android package ID: `com.jlingenfelter.swolecat.testing`
 - Purpose: cloud/account work, new features, architecture experiments, and risky development
@@ -45,15 +45,16 @@ Do not change the `main` package ID back to `com.jlingenfelter.swolecat` while t
 
 ## 2. Latest green development gate
 
-For functional baseline `2e5bdb4199691a1839cbcb03e7cb3b4c14184d53`:
+For functional baseline `12c3cfbfef1bbade89d1185ab2fc496410aea0d4`:
 
-- Final pre-merge validation: run **594**, success
-- Validate Swole Cat on `main`: run **595**, success
-- Deploy Swole Cat to GitHub Pages: run **593**, success
-- Build Swole Cat Testing Android: run **329**, success
-- Android artifact: `Swole-Cat-Testing-Android-v0.67.6-signed`
-- Android artifact digest: `sha256:53bb9378d7a9e4a7888089a82ef557435719836e04a0e06b1c52c8c82d2f0db0`
-- Extracted APK SHA-256: `31d8f2df05d0b93d65a091912f1fca645061c799dbcb573dfaa88121f4e363f0`
+- Final pre-merge validation: run **608**, success
+- Validate Swole Cat on `main`: run **609**, success
+- Deploy Swole Cat to GitHub Pages: run **602**, success
+- Build Swole Cat Testing Android: run **330**, success
+- permanent Testing certificate verification: success
+- Android artifact: `Swole-Cat-Testing-Android-v0.68.0-signed`
+- Android artifact digest: `sha256:678233feb44c5e34cc8e051497c236407a47982c147ca762d6ba6bab7a0630c0`
+- Extracted APK SHA-256: `c5bcc1fbb3f88590f472a96a7d8d52b9cde773a0838f62e7b6f8a5aa4e858828`
 
 The build verifies the generated Android application ID, visible app name, OAuth callback scheme, version metadata, and the full regression wall.
 
@@ -89,13 +90,14 @@ Project:
 
 Client builds use the Supabase **publishable** key. The Google client secret stays in Supabase and is not committed to the app.
 
-As verified after the first real Android login on 2026-10-03:
-- Supabase Auth users: **1**
-- Auth provider: **Google**
-- Public Swole Cat application tables: **0**
-- Workout/routine/history data uploaded by account creation: **0**
+Current Phase 8 backend state before v0.68.0 real-device testing:
+- Supabase Auth users: **0** after the completed Phase 8.1 account-deletion test
+- Public Swole Cat application tables: **1**, `backup_metadata`
+- `backup_metadata` rows: **0**
+- Private `swole-cat-backups` Storage objects: **0**
+- Supabase security advisor findings after Phase 8.2 provisioning: **0**
 
-This is intentional. Phase 8.1 is identity-only.
+Phase 8.1 was identity-only. Phase 8.2 deliberately adds the first user-owned cloud data surface for private disaster-recovery backups.
 
 ## 5. Google OAuth status
 
@@ -135,12 +137,15 @@ Current cloud modules:
 - `src/js/10a-cloud-config.js`
 - `src/js/10b-cloud-identity.js`
 - `src/js/10c-supabase-auth-provider.js`
+- `src/js/10d-cloud-backup.js`
+- `src/js/10e-supabase-backup-provider.js`
 
 Runtime services:
 - `cloudConfig`
 - `cloudAuthStorage`
 - `identity`
 - `identityProviderLoader`
+- `cloudBackup`
 
 Important behavior:
 - local-only mode can explicitly disable cloud
@@ -155,7 +160,9 @@ Important behavior:
 
 ## 7. What is intentionally NOT in the cloud yet
 
-Do not create these merely because account login works:
+Phase 8.2 intentionally adds only `backup_metadata` plus private backup Storage objects.
+
+Do not create these yet:
 - profile table
 - device table
 - routine table
@@ -169,7 +176,7 @@ Do not create these merely because account login works:
 - sync records
 - realtime subscriptions
 
-There are currently **zero public application tables** by design.
+There is currently **one** public Swole Cat application table, `backup_metadata`, with RLS enabled. It exists only to index private recovery snapshots.
 
 ## 7.1 Permanent Testing APK signing
 
@@ -235,9 +242,9 @@ Final real-device Phase 8.1 verification completed on 2026-10-04:
 
 **Phase 8.1 is complete.**
 
-### Immediate next step: validate Phase 8.2 Cloud Backup v0.68.0
+### Immediate next step: real-device verification of Phase 8.2 Cloud Backup v0.68.0
 
-Phase 8.2 implementation now exists on the `phase-8.2-cloud-backup` branch:
+Phase 8.2 implementation is now merged to `main` and the full v0.68.0 build wall is green:
 - private owner-only `swole-cat-backups` Storage bucket
 - RLS-protected `backup_metadata` table
 - exact existing `swole-cat-backup` envelope uploaded, no second format
@@ -256,16 +263,23 @@ Current backend state immediately after infrastructure provisioning:
 - `backup_metadata` rows: 0
 - private backup bucket objects: 0
 
+Automated Phase 8.2 verification:
+- [x] branch validation run 608 passed, including v0.68.0 cloud backup/restore stress coverage
+- [x] main validation run 609 passed
+- [x] Pages run 602 passed
+- [x] Android Testing run 330 passed with the persistent Testing signature
+- [x] Supabase security advisor reports zero findings
+
 Remaining Phase 8.2 exit work:
-- pass the full v0.68.0 CI/build wall
-- install the permanently signed v0.68.0 Testing APK in place
-- sign in again
-- create three backups and verify only latest + previous remain
-- change local data and restore the previous snapshot
-- verify the pre-restore local rollback snapshot exists
-- verify local workout flow still works with cloud unavailable
-- verify account deletion also clears backup objects/metadata
-- then mark Phase 8.2 complete
+- [ ] install the permanently signed v0.68.0 Testing APK over v0.67.6 without uninstalling
+- [ ] confirm existing local workout data survives the update
+- [ ] sign in again after the Phase 8.1 account-deletion test
+- [ ] create three backups and verify only latest + previous remain
+- [ ] change local data and restore the previous snapshot
+- [ ] verify the pre-restore local rollback snapshot exists and can recover the replaced state
+- [ ] verify local workout flow still works with cloud unavailable
+- [ ] verify account deletion also clears backup objects/metadata while preserving local workout data
+- [ ] then mark Phase 8.2 complete
 
 Do not jump directly to multi-device sync before proving backup.
 
@@ -328,4 +342,4 @@ Before changing code:
 
 If context is lost, the safest continuation is:
 
-> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 is complete. Phase 8.2 Cloud Backup is implemented on `phase-8.2-cloud-backup` for Swole Cat Testing v0.68.0 using a private RLS-protected Storage bucket plus `backup_metadata`, exact canonical backup envelopes, SHA-256 verification, latest+previous retention, restore preview, and local rollback snapshots. Finish CI/build and real-device backup/restore/account-deletion verification before Phase 8.3. Keep beta v0.66.1 frozen.
+> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 is complete. Phase 8.2 Cloud Backup is merged on `main` as Swole Cat Testing v0.68.0. Branch validation 608, main validation 609, Pages 602, and signed Android build 330 are green. The live backend uses private owner-only `swole-cat-backups` Storage plus RLS-protected `backup_metadata`, exact canonical backup envelopes, SHA-256 verification, latest+previous retention, restore preview, and local rollback snapshots. Next perform real-device backup/restore/account-deletion verification before Phase 8.3. Keep beta v0.66.1 frozen.
