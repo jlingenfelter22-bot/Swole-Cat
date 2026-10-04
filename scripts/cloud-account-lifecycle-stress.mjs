@@ -8,8 +8,8 @@ const providerSource=fs.readFileSync('src/js/10c-supabase-auth-provider.js','utf
 const deleteFunction=fs.readFileSync('supabase/functions/delete-account/index.ts','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.67.6');
-assert.equal(pkg.swoleCat.androidVersionCode,89);
+assert.equal(pkg.version,'0.68.0');
+assert.equal(pkg.swoleCat.androidVersionCode,90);
 
 assert.match(identitySource,/reauthenticateWithGoogle/);
 assert.match(identitySource,/deleteAccount/);
@@ -32,6 +32,9 @@ assert.match(providerSource,/scope:'local'/);
 assert.match(deleteFunction,/SUPABASE_SERVICE_ROLE_KEY/);
 assert.match(deleteFunction,/admin\.auth\.getUser\(token\)/);
 assert.match(deleteFunction,/admin\.auth\.admin\.deleteUser\(user\.id, false\)/);
+assert.match(deleteFunction,/deleteUserCloudBackups/,'account deletion must clean private cloud backups');
+assert.match(deleteFunction,/\.from\(SWOLE_CAT_BACKUP_BUCKET\)[\s\S]*\.remove\(paths\)/,'account deletion must remove Storage objects');
+assert(deleteFunction.indexOf('await deleteUserCloudBackups')<deleteFunction.indexOf('admin.auth.admin.deleteUser'),'cloud backups must be removed before Auth user deletion');
 assert.match(deleteFunction,/body\.confirm !== true/);
 assert.doesNotMatch(deleteFunction,/body\.userId|body\.user_id|body\.id/,'caller must never choose which user is deleted');
 
@@ -102,4 +105,4 @@ assert.equal(identity.snapshot().signedIn,false);
 assert.equal(w.localStorage.getItem('overload_v3'),before,'deleting the cloud account must not alter local workout data');
 
 dom.window.close();
-console.log('Swole Cat v0.67.6 Phase 8.1 account lifecycle PASS');
+console.log('Swole Cat v0.68.0 Phase 8.1 account lifecycle PASS');

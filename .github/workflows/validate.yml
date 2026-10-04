@@ -49,7 +49,7 @@ jobs:
           assert(!/<style>[\s\S]*<\/style>/.test(source),'index.html should not contain the application stylesheet');
           assert(!/<script>[\s\S]*<\/script>/.test(source),'index.html should not contain the application runtime');
           const moduleTags=[...source.matchAll(/<script src="\.\/src\/js\/([^"]+)"><\/script>/g)].map(m=>m[1]);
-          assert.equal(moduleTags.length,23,'source shell should load all JavaScript domain modules');
+          assert.equal(moduleTags.length,25,'source shell should load all JavaScript domain modules');
           assert(moduleTags.includes('04f-coach-routine-control.js'),'v0.61 Coach saved-routine control module must stay registered');
           assert(moduleTags.includes('04g-coach-history-insights.js'),'v0.62 Coach history intelligence module must stay registered');
           assert(moduleTags.includes('04h-coach-program-auditor.js'),'v0.63 Coach Program auditor module must stay registered');
@@ -57,6 +57,8 @@ jobs:
           assert(moduleTags.includes('10a-cloud-config.js'),'v0.67 cloud configuration boundary must stay registered');
           assert(moduleTags.includes('10b-cloud-identity.js'),'v0.67 identity shell must stay registered');
           assert(moduleTags.includes('10c-supabase-auth-provider.js'),'v0.67.1 Supabase Auth provider must stay registered');
+          assert(moduleTags.includes('10d-cloud-backup.js'),'v0.68 provider-neutral cloud backup service must stay registered');
+          assert(moduleTags.includes('10e-supabase-backup-provider.js'),'v0.68 Supabase backup provider must stay registered');
           assert(!moduleTags.includes('04-coach.js'),'legacy monolithic Coach module must stay removed');
           const dataTags=[...source.matchAll(/<script src="\.\/src\/data\/([^"]+)"><\/script>/g)].map(m=>m[1]);
           assert.deepEqual(dataTags,['exercises.js','anatomy.js','coach-knowledge.js'],'source shell should load static data modules in order');
@@ -138,6 +140,9 @@ jobs:
 
       - name: Stress test v0.67.6 account lifecycle
         run: node scripts/cloud-account-lifecycle-stress.mjs
+
+      - name: Stress test v0.68.0 cloud backup and restore
+        run: node scripts/cloud-backup-stress.mjs
 
       - name: Smoke test active workouts, set types, progression, and supersets
         run: |

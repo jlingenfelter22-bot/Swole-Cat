@@ -33,6 +33,8 @@ const JS_SOURCES = [
   'src/js/10a-cloud-config.js',
   'src/js/10b-cloud-identity.js',
   'src/js/10c-supabase-auth-provider.js',
+  'src/js/10d-cloud-backup.js',
+  'src/js/10e-supabase-backup-provider.js',
   'src/js/09-settings-ui-bootstrap.js'
 ];
 const CSS_SOURCES = [
