@@ -132,6 +132,14 @@ const fakeBackupProvider={
     return {ok:true};
   }
 };
+const lastBackupBeforeFailure=JSON.parse(w.localStorage.getItem('overload_v3')).meta?.lastBackupAt||null;
+await cloud.registerProvider({
+  ...fakeBackupProvider,
+  async uploadBackup(){throw new Error('upload failed');}
+});
+await assert.rejects(()=>cloud.backUpNow(),/upload failed/);
+assert.equal(JSON.parse(w.localStorage.getItem('overload_v3')).meta?.lastBackupAt||null,lastBackupBeforeFailure,'failed upload must not claim a successful local backup timestamp');
+
 await cloud.registerProvider(fakeBackupProvider);
 assert.equal(hiddenFetchCalls,0,'registering backup transport must not trigger hidden traffic');
 
