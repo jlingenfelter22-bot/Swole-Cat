@@ -833,7 +833,7 @@ Core decisions:
 
 ### Phase 8.1 - Optional account foundation
 
-**Status: Phase 8.1 complete. Phase 8.2 Cloud Backup is implemented on the v0.68.0 Testing branch and awaiting full CI plus real-device backup/restore verification.**
+**Status: Phase 8.1 complete. Phase 8.2 Cloud Backup is merged as v0.68.0, the full regression/build wall is green, and real-device backup/restore verification is next.**
 
 **v0.67.0 Cloud Shell Foundation** established the provider-neutral identity boundary without uploading workout data.
 
@@ -889,8 +889,8 @@ Core decisions:
 - [x] Show restore preview before replacement and create the normal local pre-import safety snapshot first.
 - [x] Keep cloud failure non-blocking for workouts and keep backup traffic explicitly user initiated.
 - [x] Extend account deletion to remove private backup objects/metadata before deleting the Auth user.
-- [ ] Pass the full v0.68.0 regression/build wall on `main`.
-- [ ] Verify backup creation, two-snapshot retention, restore, and account deletion with cloud backups on real Android hardware.
+- [x] Pass the full v0.68.0 regression/build wall on `main` (branch Validate 608, main Validate 609, Pages 602, Android Testing 330).
+- [ ] Verify backup creation, two-snapshot retention, restore, rollback snapshot, offline safety, and account deletion with cloud backups on real Android hardware.
 
 ### Phase 8.3 - Multi-device sync
 - [ ] Add stable per-device identity and separate local sync metadata.
