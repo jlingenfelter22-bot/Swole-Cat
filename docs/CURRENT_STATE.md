@@ -275,7 +275,7 @@ Remaining Phase 8.2 exit work:
 - [ ] confirm existing local workout data survives the update
 - [x] sign in again after the Phase 8.1 account-deletion test
 - [x] create the first real-device v0.68.0 cloud backup and verify matching private Storage object + metadata row
-- [ ] create two more backups and verify only latest + previous remain
+- [x] create two more backups and verify only latest + previous remain
 - [ ] change local data and restore the previous snapshot
 - [ ] verify the pre-restore local rollback snapshot exists and can recover the replaced state
 - [ ] verify local workout flow still works with cloud unavailable
@@ -363,3 +363,16 @@ Verified on 2026-10-04 from Swole Cat Testing v0.68.0:
 - MIME type: `application/json`
 
 This confirms the first real Android **Back Up Now** reached private Supabase Storage and wrote the matching owner-scoped metadata record.
+
+
+### Phase 8.2 real-device checkpoint: bounded retention
+
+Verified on 2026-10-04 after three total manual cloud backups:
+- `backup_metadata` rows: 2
+- private `swole-cat-backups` Storage objects: 2
+- original first backup was pruned from both metadata and Storage
+- surviving backups are the two newest v0.68.0 snapshots
+- both surviving objects are 9,296 bytes
+- both surviving metadata rows and Storage objects share the same authenticated owner and source installation ID
+
+This confirms the live Android retention path keeps exactly **latest + previous** instead of growing cloud storage indefinitely.
