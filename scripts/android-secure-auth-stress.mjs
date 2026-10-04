@@ -28,5 +28,6 @@ assert.match(configure,/setKeySize\(256\)/);
 assert.match(configure,/registerPlugin\(SwoleCatSecureStoragePlugin\.class\);/);
 assert.match(configure,/registerPlugin\(SwoleCatSecureStoragePlugin\.class\);\\n        super\.onCreate/);
 assert.match(configure,/swole_cat_secure_auth_v1/);
+assert.match(configure,/encoded\.split\("\\\\\\\\.", 2\)/,'generator must emit a Java-safe escaped dot regex');
 
 console.log('Swole Cat v0.67.4 Android Keystore auth storage contract PASS');
