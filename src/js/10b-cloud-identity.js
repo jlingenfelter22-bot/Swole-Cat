@@ -152,12 +152,18 @@ async function initializeCloudIdentity(){
       authStorage:swoleCatCloudAuthStorage
     });
     const user=cloudIdentityPublicUser(result?.user);
+    const reauthError=result?.reauthError?String(result.reauthError):'';
     const next=setCloudIdentityState({
       status:user?'signed_in':'signed_out',
       signedIn:!!user,
       user,
-      lastError:''
+      lastError:reauthError
     });
+    if(reauthError){
+      setTimeout(()=>SwoleCatRuntime.events.dispatchEvent(
+        new CustomEvent('identity:reauthentication_failed',{detail:{message:reauthError}})
+      ),0);
+    }
     if(result?.reauthenticated){
       setTimeout(()=>SwoleCatRuntime.events.dispatchEvent(
         new CustomEvent('identity:reauthenticated',{detail:{provider:user?.provider||'google'}})
@@ -380,4 +386,8 @@ async function cloudSignOutFromUi(){
 }
 
 SwoleCatRuntime.events.addEventListener('identity:reauthenticated',()=>openCloudDeleteFinalConfirmation());
+SwoleCatRuntime.events.addEventListener('identity:reauthentication_failed',event=>{
+  const message=event?.detail?.message||'Google verification was not completed.';
+  try{alert('Could not verify your Google account: '+message)}catch(error){}
+});
 SwoleCatRuntime.events.addEventListener('app:ready',()=>{initializeCloudIdentity()},{once:true});
