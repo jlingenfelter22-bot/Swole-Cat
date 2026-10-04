@@ -293,11 +293,13 @@ function parseBackupText(text){
  }
  return normalizeState(payload);
 }
-function createBackupEnvelope(exportedAt=new Date().toISOString()){
+function createBackupEnvelope(exportedAt=new Date().toISOString(),recordLocal=true){
  state.schemaVersion=DATA_SCHEMA_VERSION;
  state.meta=isPlainObject(state.meta)?state.meta:{};
- state.meta.lastBackupAt=exportedAt;
- save();
+ if(recordLocal){
+   state.meta.lastBackupAt=exportedAt;
+   save();
+ }
  return {format:BACKUP_FORMAT,formatVersion:BACKUP_FORMAT_VERSION,exportedAt,schemaVersion:DATA_SCHEMA_VERSION,state:cloneData(state)};
 }
 function createPreImportSnapshot(){
