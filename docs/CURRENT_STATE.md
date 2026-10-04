@@ -26,8 +26,8 @@ Checkpoint date: **2026-10-03 (America/Chicago)**
 
 - Branch: `main`
 - Functional code baseline before this docs-only checkpoint: `2441ac604fddc4c852fa4a62ba75c3ad63a6cc43`
-- App version: **v0.67.4**
-- Android version code: **87**
+- App version: **v0.67.5**
+- Android version code: **88**
 - Android app name: **Swole Cat Testing**
 - Android package ID: `com.jlingenfelter.swolecat.testing`
 - Purpose: cloud/account work, new features, architecture experiments, and risky development
@@ -180,6 +180,8 @@ The Testing channel is now configured to require one persistent Testing-only sig
 
 Because earlier Testing APKs used ephemeral GitHub runner debug certificates, one uninstall/reinstall is required when moving to the first permanently signed Testing APK. Updates after that should install in place.
 
+The four required GitHub Actions repository secrets have now been installed by the project owner. **v0.67.5 is the first permanent-signature candidate build.**
+
 Canonical instructions: `docs/TESTING_SIGNING.md`.
 
 ## 8. Next unfinished work
@@ -278,4 +280,4 @@ Before changing code:
 
 If context is lost, the safest continuation is:
 
-> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 Google identity works on web/PWA and Swole Cat Testing Android, and Android auth sessions are Keystore-backed as of v0.67.4. Next finish account deletion/re-auth lifecycle, then begin Phase 8.2 Cloud Backup. Keep beta v0.66.1 frozen.
+> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 Google identity works on web/PWA and Swole Cat Testing Android, Android auth sessions are Keystore-backed, and v0.67.5 is the first permanent-signature Testing candidate. Verify its signed Android build/certificate, then finish account deletion/re-auth lifecycle before Phase 8.2 Cloud Backup. Keep beta v0.66.1 frozen.
