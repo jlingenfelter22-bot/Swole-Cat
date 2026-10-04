@@ -168,6 +168,20 @@ Do not create these merely because account login works:
 
 There are currently **zero public application tables** by design.
 
+## 7.1 Permanent Testing APK signing
+
+The Testing channel is now configured to require one persistent Testing-only signing identity.
+
+- package: `com.jlingenfelter.swolecat.testing`
+- certificate SHA-256: `D5:3F:27:7C:5B:92:31:1D:78:E9:EB:3B:DB:69:2A:D4:89:73:47:97:F2:43:08:27:40:02:13:F3:8B:7C:EE:53`
+- private key material belongs only in GitHub Actions repository secrets and the owner's private backup
+- the Android workflow hard-fails if signing secrets are unavailable
+- production / Play Store signing remains a separate future identity
+
+Because earlier Testing APKs used ephemeral GitHub runner debug certificates, one uninstall/reinstall is required when moving to the first permanently signed Testing APK. Updates after that should install in place.
+
+Canonical instructions: `docs/TESTING_SIGNING.md`.
+
 ## 8. Next unfinished work
 
 ### Immediate next step: finish Phase 8.1 account lifecycle

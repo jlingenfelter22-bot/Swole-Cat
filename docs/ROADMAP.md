@@ -859,6 +859,8 @@ Core decisions:
 - [x] Add Android OAuth deep-link return handling and verify a real Google login returns successfully to the installed app.
 - [x] Keep the experimental `main` Android build installable side-by-side with the field beta as **Swole Cat Testing** using package ID `com.jlingenfelter.swolecat.testing` and callback `com.jlingenfelter.swolecat.testing://auth/callback`.
 - [x] Preserve the field-beta package ID `com.jlingenfelter.swolecat` so beta workout data and experimental lab data remain in separate Android app sandboxes.
+- [x] Define and wire a persistent Testing-only Android signing identity so future Testing APKs can update in place.
+- [ ] Add the four Testing signing values as GitHub Actions repository secrets and produce the first permanently signed Testing APK.
 - [x] Verify the live Supabase account state after real-device login: one Google Auth identity and zero public Swole Cat application tables as of 2026-10-03.
 - [x] Move Android auth session secrets from the temporary namespaced lab store to Keystore-backed AES-GCM storage protected by Android Keystore.
 - [ ] Add account recovery path and cloud-account deletion.
