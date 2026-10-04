@@ -14,6 +14,48 @@ function json(status: number, body: Record<string, unknown>) {
   });
 }
 
+const SWOLE_CAT_BACKUP_BUCKET = "swole-cat-backups";
+
+async function deleteUserCloudBackups(admin: any, userId: string) {
+  for (let pass = 0; pass < 50; pass++) {
+    const { data, error } = await admin.storage
+      .from(SWOLE_CAT_BACKUP_BUCKET)
+      .list(userId, { limit: 100, offset: 0 });
+
+    if (error) {
+      console.error("Could not list cloud backups during account deletion:", error.message);
+      throw new Error("Could not remove cloud backup files.");
+    }
+
+    const paths = (data || [])
+      .filter((item: { name?: string }) => item?.name)
+      .map((item: { name: string }) => `${userId}/${item.name}`);
+
+    if (!paths.length) break;
+
+    const { error: removeError } = await admin.storage
+      .from(SWOLE_CAT_BACKUP_BUCKET)
+      .remove(paths);
+
+    if (removeError) {
+      console.error("Could not remove cloud backups during account deletion:", removeError.message);
+      throw new Error("Could not remove cloud backup files.");
+    }
+
+    if (paths.length < 100) break;
+  }
+
+  const { error: metadataError } = await admin
+    .from("backup_metadata")
+    .delete()
+    .eq("owner_id", userId);
+
+  if (metadataError) {
+    console.error("Could not remove cloud backup metadata during account deletion:", metadataError.message);
+    throw new Error("Could not remove cloud backup metadata.");
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
@@ -53,6 +95,13 @@ Deno.serve(async (req: Request) => {
   const user = userData?.user;
   if (userError || !user?.id) {
     return json(401, { error: "Your session is no longer valid. Sign in again and retry." });
+  }
+
+  try {
+    await deleteUserCloudBackups(admin, user.id);
+  } catch (cleanupError) {
+    console.error("Swole Cat cloud cleanup failed:", cleanupError);
+    return json(500, { error: "Could not fully remove cloud account data." });
   }
 
   const { error: deleteError } = await admin.auth.admin.deleteUser(user.id, false);
