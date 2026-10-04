@@ -656,3 +656,52 @@ Verified:
 - public Swole Cat application tables remained at 0
 
 This closes the identity-only phase. The next cloud capability is Phase 8.2 Cloud Backup.
+
+
+## 27. Phase 8.2 live backup design
+
+Phase 8.2 begins with Swole Cat Testing v0.68.0.
+
+Live backend:
+- private Storage bucket: `swole-cat-backups`
+- metadata table: `public.backup_metadata`
+- migration: `20261004150339_phase_8_2_cloud_backup`
+- bucket file limit: 5 MB
+- allowed object MIME type: `application/json`
+- retention: latest + previous snapshot
+- backup object path: `<auth.uid()>/<timestamp>-<nonce>.json`
+
+`backup_metadata` stores:
+- owner ID
+- object path
+- canonical backup format/version
+- Swole Cat data schema version
+- app version
+- export timestamp
+- SHA-256
+- size in bytes
+- non-secret source installation ID
+- server creation timestamp
+
+Security:
+- bucket remains private
+- unauthenticated users receive no metadata-table grants
+- authenticated metadata SELECT/INSERT/DELETE policies require `auth.uid() = owner_id`
+- Storage SELECT/INSERT/DELETE policies require the first object-path folder to equal `auth.uid()`
+- the publishable key remains the only cloud credential in client builds
+- cloud backup transport never receives a service-role/secret key
+- account deletion removes backup Storage objects and metadata server-side before deleting the Auth identity
+
+Client behavior:
+- backup is manual in the first release
+- merely signing in does not start backup traffic
+- the exact existing `swole-cat-backup` envelope is uploaded
+- SHA-256 and byte size are recorded at upload time
+- restore downloads a private object with the current user JWT
+- size and SHA-256 must match metadata before parsing
+- the existing backup parser/schema migration path remains authoritative
+- restore always shows a preview and requires explicit confirmation
+- the existing pre-import local snapshot is created before local replacement
+- backup or restore network errors never block ordinary workouts
+
+Phase 8.2 is disaster recovery only. It is not multi-device synchronization.
