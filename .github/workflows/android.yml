@@ -59,8 +59,37 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
+      - name: Check persistent Testing signing secrets
+        env:
+          KEYSTORE_B64: ${{ secrets.SWOLE_CAT_TESTING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.SWOLE_CAT_TESTING_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SWOLE_CAT_TESTING_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.SWOLE_CAT_TESTING_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_B64" || { echo "::error::Missing SWOLE_CAT_TESTING_KEYSTORE_B64"; exit 1; }
+          test -n "$STORE_PASSWORD" || { echo "::error::Missing SWOLE_CAT_TESTING_STORE_PASSWORD"; exit 1; }
+          test -n "$KEY_ALIAS" || { echo "::error::Missing SWOLE_CAT_TESTING_KEY_ALIAS"; exit 1; }
+          test -n "$KEY_PASSWORD" || { echo "::error::Missing SWOLE_CAT_TESTING_KEY_PASSWORD"; exit 1; }
+
       - name: Prepare Android project
         run: npm run android:prepare
+
+      - name: Install persistent Testing signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.SWOLE_CAT_TESTING_KEYSTORE_B64 }}
+        run: |
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > android/app/swole-cat-testing.jks
+          test -s android/app/swole-cat-testing.jks
+
+      - name: Configure persistent Testing signing
+        env:
+          SWOLE_CAT_ENABLE_SIGNING: "1"
+          SWOLE_CAT_SIGNING_BUILD_TYPE: "debug"
+          SWOLE_CAT_SIGNING_STORE_FILE: "swole-cat-testing.jks"
+          SWOLE_CAT_SIGNING_STORE_PASSWORD: ${{ secrets.SWOLE_CAT_TESTING_STORE_PASSWORD }}
+          SWOLE_CAT_SIGNING_KEY_ALIAS: ${{ secrets.SWOLE_CAT_TESTING_KEY_ALIAS }}
+          SWOLE_CAT_SIGNING_KEY_PASSWORD: ${{ secrets.SWOLE_CAT_TESTING_KEY_PASSWORD }}
+        run: node scripts/configure-android.mjs
 
       - name: Verify Android version metadata
         run: |
@@ -80,6 +109,9 @@ jobs:
           grep -F 'AndroidKeyStore' "$SECURE_PLUGIN"
           grep -F 'AES/GCM/NoPadding' "$SECURE_PLUGIN"
           grep -F 'registerPlugin(SwoleCatSecureStoragePlugin.class);' "$MAIN_ACTIVITY"
+          grep -F 'signingConfigs {' android/app/build.gradle
+          grep -F 'swoleCat {' android/app/build.gradle
+          grep -F 'signingConfig signingConfigs.swoleCat' android/app/build.gradle
 
       - name: Build debug APK
         working-directory: android
@@ -87,13 +119,18 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
 
+      - name: Verify persistent Testing signature
+        run: |
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/debug/app-debug.apk | tee testing-signature.txt
+          grep -Fi 'Signer #1 certificate SHA-256 digest: d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53' testing-signature.txt
+
       - name: Name APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk "swole-cat-testing-v${{ steps.meta.outputs.version }}-debug.apk"
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk "swole-cat-testing-v${{ steps.meta.outputs.version }}-signed.apk"
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: Swole-Cat-Testing-Android-v${{ steps.meta.outputs.version }}-debug
-          path: swole-cat-testing-v${{ steps.meta.outputs.version }}-debug.apk
+          name: Swole-Cat-Testing-Android-v${{ steps.meta.outputs.version }}-signed
+          path: swole-cat-testing-v${{ steps.meta.outputs.version }}-signed.apk
           if-no-files-found: error
           retention-days: 30
