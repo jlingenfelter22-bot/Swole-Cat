@@ -130,7 +130,7 @@ async function cloudBackUpNow(){
   setCloudBackupState({status:'backing_up',lastError:''});
   try{
     const exportedAt=new Date().toISOString();
-    const envelope=createBackupEnvelope(exportedAt);
+    const envelope=createBackupEnvelope(exportedAt,false);
     const json=JSON.stringify(envelope);
     const sizeBytes=cloudBackupByteLength(json);
     if(sizeBytes>SWOLE_CAT_CLOUD_BACKUP_MAX_BYTES)throw new Error('This backup is larger than the current 5 MB cloud-backup limit.');
@@ -149,6 +149,9 @@ async function cloudBackUpNow(){
       source_device:cloudBackupDeviceId()
     };
     await swoleCatCloudBackupProvider.uploadBackup({ownerId:user.id,objectPath,json,metadata});
+    state.meta=isPlainObject(state.meta)?state.meta:{};
+    state.meta.lastBackupAt=exportedAt;
+    if(!save())throw new Error(lastStorageError||'Cloud backup uploaded, but the local backup timestamp could not be saved.');
     const rows=await swoleCatCloudBackupProvider.listBackups({ownerId:user.id});
     const normalized=rows.map(cloudBackupPublicMetadata).filter(Boolean)
       .sort((a,b)=>String(b.createdAt||b.exportedAt).localeCompare(String(a.createdAt||a.exportedAt)));
