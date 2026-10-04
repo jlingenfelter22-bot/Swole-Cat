@@ -273,8 +273,9 @@ Automated Phase 8.2 verification:
 Remaining Phase 8.2 exit work:
 - [ ] install the permanently signed v0.68.0 Testing APK over v0.67.6 without uninstalling
 - [ ] confirm existing local workout data survives the update
-- [ ] sign in again after the Phase 8.1 account-deletion test
-- [ ] create three backups and verify only latest + previous remain
+- [x] sign in again after the Phase 8.1 account-deletion test
+- [x] create the first real-device v0.68.0 cloud backup and verify matching private Storage object + metadata row
+- [ ] create two more backups and verify only latest + previous remain
 - [ ] change local data and restore the previous snapshot
 - [ ] verify the pre-restore local rollback snapshot exists and can recover the replaced state
 - [ ] verify local workout flow still works with cloud unavailable
@@ -343,3 +344,22 @@ Before changing code:
 If context is lost, the safest continuation is:
 
 > Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 is complete. Phase 8.2 Cloud Backup is merged on `main` as Swole Cat Testing v0.68.0. Branch validation 608, main validation 609, Pages 602, and signed Android build 330 are green. The live backend uses private owner-only `swole-cat-backups` Storage plus RLS-protected `backup_metadata`, exact canonical backup envelopes, SHA-256 verification, latest+previous retention, restore preview, and local rollback snapshots. Next perform real-device backup/restore/account-deletion verification before Phase 8.3. Keep beta v0.66.1 frozen.
+
+
+### Phase 8.2 real-device checkpoint: first cloud backup
+
+Verified on 2026-10-04 from Swole Cat Testing v0.68.0:
+- authenticated user count: 1
+- `backup_metadata` rows: 1
+- private `swole-cat-backups` objects: 1
+- backup format: `swole-cat-backup`
+- format version: 1
+- data schema version: 1
+- app version recorded by backup: 0.68.0
+- metadata size: 9,266 bytes
+- Storage object size: 9,266 bytes
+- metadata SHA-256: `d2e16a9e70c9569282ca1d56ea652644201cb8584d21d278ae59842260c5392c`
+- Storage owner, metadata owner, and first object-path folder matched the same authenticated user
+- MIME type: `application/json`
+
+This confirms the first real Android **Back Up Now** reached private Supabase Storage and wrote the matching owner-scoped metadata record.
