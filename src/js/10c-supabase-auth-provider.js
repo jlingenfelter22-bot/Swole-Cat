@@ -34,30 +34,30 @@ function loadPinnedSupabaseJs(){
   return swoleCatSupabaseLoadPromise;
 }
 
-function swoleCatWebAuthRedirectUrl({reauth=false}={}){
+const swoleCatInitialWebAuthReturn=(()=>{
+  if(isNativeApp())return {hasCode:false,error:''};
+  try{
+    const url=new URL(window.location.href);
+    return {
+      hasCode:!!url.searchParams.get('code'),
+      error:url.searchParams.get('error_description')||url.searchParams.get('error')||''
+    };
+  }catch(error){
+    return {hasCode:false,error:''};
+  }
+})();
+function swoleCatWebAuthRedirectUrl(){
   const url=new URL(window.location.href);
   url.search='';
   url.hash='';
   if(url.pathname.endsWith('/index.html'))url.pathname=url.pathname.slice(0,-'index.html'.length);
-  if(reauth)url.searchParams.set('swolecat_reauth','1');
   return url.toString();
-}
-function isSwoleCatWebReauthReturn(){
-  if(isNativeApp())return false;
-  try{return new URL(window.location.href).searchParams.get('swolecat_reauth')==='1'}catch(error){return false}
-}
-function swoleCatWebAuthReturnError(){
-  if(isNativeApp())return '';
-  try{
-    const url=new URL(window.location.href);
-    return url.searchParams.get('error_description')||url.searchParams.get('error')||'';
-  }catch(error){return ''}
 }
 function clearSwoleCatWebAuthReturnParams(){
   if(isNativeApp())return;
   try{
     const url=new URL(window.location.href);
-    for(const key of ['swolecat_reauth','code','error','error_code','error_description'])url.searchParams.delete(key);
+    for(const key of ['code','error','error_code','error_description'])url.searchParams.delete(key);
     window.history.replaceState(window.history.state,'',url.toString());
   }catch(error){}
 }
@@ -132,13 +132,13 @@ const swoleCatSupabaseIdentityProvider={
     const user=data?.session?.user||null;
     let reauthenticated=false;
     let reauthError='';
-    if(user&&isSwoleCatWebReauthReturn()){
-      reauthError=swoleCatWebAuthReturnError();
-      if(reauthError){
-        await clearSwoleCatReauth(authStorage);
-      }else{
-        reauthenticated=await finishPendingSwoleCatReauth(client,authStorage,user);
-      }
+    const hasPendingReauth=!!(await authStorage?.getItem?.(SWOLE_CAT_CLOUD_REAUTH_PENDING_KEY));
+    if(hasPendingReauth&&swoleCatInitialWebAuthReturn.error){
+      reauthError=swoleCatInitialWebAuthReturn.error;
+      await clearSwoleCatReauth(authStorage);
+      clearSwoleCatWebAuthReturnParams();
+    }else if(user&&hasPendingReauth&&swoleCatInitialWebAuthReturn.hasCode){
+      reauthenticated=await finishPendingSwoleCatReauth(client,authStorage,user);
       clearSwoleCatWebAuthReturnParams();
     }
     return {user,reauthenticated,reauthError};
@@ -182,7 +182,7 @@ const swoleCatSupabaseIdentityProvider={
     const {data,error}=await client.auth.signInWithOAuth({
       provider:'google',
       options:{
-        redirectTo:native?SWOLE_CAT_ANDROID_AUTH_REDIRECT:swoleCatWebAuthRedirectUrl({reauth:true}),
+        redirectTo:native?SWOLE_CAT_ANDROID_AUTH_REDIRECT:swoleCatWebAuthRedirectUrl(),
         scopes:'openid email profile',
         queryParams:{prompt:'select_account'},
         ...(native?{skipBrowserRedirect:true}:{})
