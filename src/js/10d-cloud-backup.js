@@ -243,7 +243,7 @@ function cloudBackupSettingsHtml(){
   const latest=backup.backups[0];
   const latestText=latest?.exportedAt
     ?new Date(latest.exportedAt).toLocaleString()
-    :'No cloud backup yet';
+    :(backup.status==='ready'?'No cloud backup yet':'Not checked this session');
   const errorText=backup.lastError?'<br><br><span class="mini">'+esc(backup.lastError)+'</span>':'';
   return '<div class="notice"><b>Private cloud recovery</b><br>Latest: '+esc(latestText)+'<br><span class="mini">Swole Cat keeps at most the latest two snapshots. Cloud backup is separate from multi-device sync.</span>'+errorText+'</div>'+
     '<div class="actions"><button class="btn" onclick="cloudBackUpNowFromUi()">Back Up Now</button><button class="btn secondary" onclick="cloudOpenRestorePickerFromUi()">Restore from Cloud</button></div>';
