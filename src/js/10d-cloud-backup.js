@@ -151,7 +151,8 @@ async function cloudBackUpNow(){
     await swoleCatCloudBackupProvider.uploadBackup({ownerId:user.id,objectPath,json,metadata});
     state.meta=isPlainObject(state.meta)?state.meta:{};
     state.meta.lastBackupAt=exportedAt;
-    if(!save())throw new Error(lastStorageError||'Cloud backup uploaded, but the local backup timestamp could not be saved.');
+    const localTimestampSaved=save();
+    const localWarning=localTimestampSaved?'':'Cloud backup saved, but the local backup timestamp could not be recorded.';
     const rows=await swoleCatCloudBackupProvider.listBackups({ownerId:user.id});
     const normalized=rows.map(cloudBackupPublicMetadata).filter(Boolean)
       .sort((a,b)=>String(b.createdAt||b.exportedAt).localeCompare(String(a.createdAt||a.exportedAt)));
@@ -161,7 +162,7 @@ async function cloudBackUpNow(){
       :(await swoleCatCloudBackupProvider.listBackups({ownerId:user.id}))
         .map(cloudBackupPublicMetadata).filter(Boolean)
         .sort((a,b)=>String(b.createdAt||b.exportedAt).localeCompare(String(a.createdAt||a.exportedAt)));
-    const warning=pruneFailures.length?'Backup saved, but an older snapshot could not be pruned yet.':'';
+    const warning=[localWarning,pruneFailures.length?'An older cloud snapshot could not be pruned yet.':''].filter(Boolean).join(' ');
     setCloudBackupState({
       status:'ready',
       backups:finalRows,
