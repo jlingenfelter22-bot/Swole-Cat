@@ -1,9 +1,9 @@
-// v0.67.1 real Supabase Auth provider for the optional account shell.
+// v0.67.3 Supabase Auth provider for the optional account shell.
 // Supabase JS is pinned and lazy-loaded only when auth is actually needed.
 const SWOLE_CAT_SUPABASE_JS_VERSION='2.117.2';
 const SWOLE_CAT_SUPABASE_JS_URL='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@'+SWOLE_CAT_SUPABASE_JS_VERSION;
 const SWOLE_CAT_SUPABASE_STORAGE_KEY='swolecat-auth-session-v1';
-const SWOLE_CAT_ANDROID_AUTH_REDIRECT='com.jlingenfelter.swolecat://auth/callback';
+const SWOLE_CAT_ANDROID_AUTH_REDIRECT='com.jlingenfelter.swolecat.testing://auth/callback';
 let swoleCatSupabaseLoadPromise=null;
 let swoleCatSupabaseClient=null;
 let swoleCatSupabaseProviderRegistered=false;
@@ -112,7 +112,7 @@ SwoleCatRuntime.registerService('identityProviderLoader',{
 function isSwoleCatAndroidAuthUrl(rawUrl){
   try{
     const url=new URL(String(rawUrl||''));
-    return url.protocol==='com.jlingenfelter.swolecat:' &&
+    return url.protocol==='com.jlingenfelter.swolecat.testing:' &&
       url.hostname==='auth' &&
       (url.pathname==='/callback'||url.pathname.startsWith('/callback/'));
   }catch(error){

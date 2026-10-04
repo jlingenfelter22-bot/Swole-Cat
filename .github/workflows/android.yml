@@ -1,4 +1,4 @@
-name: Build Swole Cat Android
+name: Build Swole Cat Testing Android
 
 on:
   workflow_dispatch:
@@ -67,9 +67,11 @@ jobs:
           grep -Eq "versionCode[[:space:]]+${{ steps.meta.outputs.version_code }}" android/app/build.gradle
           grep -Eq "versionName[[:space:]]+\"${{ steps.meta.outputs.version }}\"" android/app/build.gradle
           grep -F "const APP_VERSION='${{ steps.meta.outputs.version }}';" www/app.js
-          grep -F 'android:scheme="com.jlingenfelter.swolecat"' android/app/src/main/AndroidManifest.xml
+          grep -F 'android:scheme="com.jlingenfelter.swolecat.testing"' android/app/src/main/AndroidManifest.xml
           grep -F 'android:host="auth"' android/app/src/main/AndroidManifest.xml
           grep -F 'android:pathPrefix="/callback"' android/app/src/main/AndroidManifest.xml
+          grep -F 'applicationId "com.jlingenfelter.swolecat.testing"' android/app/build.gradle
+          grep -F '<string name="app_name">Swole Cat Testing</string>' android/app/src/main/res/values/strings.xml
 
       - name: Build debug APK
         working-directory: android
@@ -78,12 +80,12 @@ jobs:
           ./gradlew assembleDebug --stacktrace
 
       - name: Name APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk "swole-cat-v${{ steps.meta.outputs.version }}-debug.apk"
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk "swole-cat-testing-v${{ steps.meta.outputs.version }}-debug.apk"
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: Swole-Cat-Android-v${{ steps.meta.outputs.version }}-debug
-          path: swole-cat-v${{ steps.meta.outputs.version }}-debug.apk
+          name: Swole-Cat-Testing-Android-v${{ steps.meta.outputs.version }}-debug
+          path: swole-cat-testing-v${{ steps.meta.outputs.version }}-debug.apk
           if-no-files-found: error
           retention-days: 30

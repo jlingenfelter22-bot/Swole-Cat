@@ -1,6 +1,6 @@
 # Swole Cat Architecture
 
-Swole Cat is a local-first web application packaged for Android with Capacitor. Beginning with v0.56, the source is organized by domain while the production build remains intentionally small and framework-free.
+Swole Cat is a local-first web application packaged for Android with Capacitor. The experimental `main` Android channel is intentionally packaged as `com.jlingenfelter.swolecat.testing` / **Swole Cat Testing**, while the frozen field beta retains `com.jlingenfelter.swolecat` / **Swole Cat** so both installs have isolated Android storage. Beginning with v0.56, the source is organized by domain while the production build remains intentionally small and framework-free.
 
 ## Source layout
 

@@ -196,7 +196,9 @@ Start with **Google sign-in** for early cloud testing.
 
 **v0.67.1:** Web/PWA Google OAuth is connected through a provider-neutral identity loader. Supabase JS is pinned to 2.117.2 and lazy-loaded only when the user initiates account sign-in or when namespaced auth state exists and a prior session needs restoration. Signed-out workout usage does not load the SDK.
 
-**v0.67.2:** Android uses the same Supabase PKCE Google OAuth flow through the system browser and returns via `com.jlingenfelter.swolecat://auth/callback`. The generated Android manifest is patched during `android:prepare`, and the Capacitor App API handles both warm `appUrlOpen` events and cold-start launch URLs. The official Capacitor Browser plugin is pinned for browser handoff/close. Android secure Keystore-backed auth storage remains required before public production use.
+**v0.67.2:** Android uses the same Supabase PKCE Google OAuth flow through the system browser and returns via `com.jlingenfelter.swolecat.testing://auth/callback`. The generated Android manifest is patched during `android:prepare`, and the Capacitor App API handles both warm `appUrlOpen` events and cold-start launch URLs. The official Capacitor Browser plugin is pinned for browser handoff/close. Android secure Keystore-backed auth storage remains required before public production use.
+
+**v0.67.3 lab-channel isolation:** Android builds from `main` now install as **Swole Cat Testing** with package ID `com.jlingenfelter.swolecat.testing`. The frozen field beta remains `com.jlingenfelter.swolecat`. Android therefore gives each app its own local storage/database sandbox, allowing both versions to be installed simultaneously without sharing `overload_v3`, auth state, or other device data.
 
 Reason:
 - Android users already have a Google identity available

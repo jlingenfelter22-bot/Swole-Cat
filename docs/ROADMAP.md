@@ -848,7 +848,9 @@ Core decisions:
 - [x] Connect the actual Supabase Auth provider adapter for web/PWA Google OAuth with pinned lazy-loaded Supabase JS.
 - [x] Provision the dedicated Supabase Free project and connect the lab build to its public URL/publishable key without adding application-data tables.
 - [x] Start with Google sign-in for production-facing web/PWA testing so the project does not depend on Supabase's built-in low-volume email sender.
-- [x] Add Android OAuth deep-link return handling using the app scheme `com.jlingenfelter.swolecat://auth/callback`.
+- [x] Add Android OAuth deep-link return handling.
+- [x] Keep the experimental `main` Android build installable side-by-side with the field beta as **Swole Cat Testing** using package ID `com.jlingenfelter.swolecat.testing` and callback `com.jlingenfelter.swolecat.testing://auth/callback`.
+- [x] Preserve the field-beta package ID `com.jlingenfelter.swolecat` so beta workout data and experimental lab data remain in separate Android app sandboxes.
 - [ ] Move Android auth session secrets from the temporary namespaced lab store to Keystore-backed secure storage before public production use.
 - [ ] Add account recovery path and cloud-account deletion.
 - [ ] Store auth tokens separately from workout state using Android Keystore-backed secure storage before public production use.

@@ -5,7 +5,7 @@ const versionName = String(pkg.version || '').trim();
 const versionCode = Number(pkg.swoleCat?.androidVersionCode);
 const gradleUrl = new URL('../android/app/build.gradle', import.meta.url);
 const manifestUrl = new URL('../android/app/src/main/AndroidManifest.xml', import.meta.url);
-const ANDROID_AUTH_SCHEME='com.jlingenfelter.swolecat';
+const ANDROID_AUTH_SCHEME='com.jlingenfelter.swolecat.testing';
 const ANDROID_AUTH_HOST='auth';
 const ANDROID_AUTH_PATH='/callback';
 
