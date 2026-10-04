@@ -3,6 +3,9 @@
 const SWOLE_CAT_SUPABASE_JS_VERSION='2.117.2';
 const SWOLE_CAT_SUPABASE_JS_URL='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@'+SWOLE_CAT_SUPABASE_JS_VERSION;
 const SWOLE_CAT_SUPABASE_STORAGE_KEY='swolecat-auth-session-v1';
+const SWOLE_CAT_CLOUD_REAUTH_PENDING_KEY='swolecat-reauth-pending-v1';
+const SWOLE_CAT_CLOUD_REAUTH_VERIFIED_KEY='swolecat-reauth-verified-v1';
+const SWOLE_CAT_CLOUD_REAUTH_MAX_AGE_MS=10*60*1000;
 const SWOLE_CAT_ANDROID_AUTH_REDIRECT='com.jlingenfelter.swolecat.testing://auth/callback';
 let swoleCatSupabaseLoadPromise=null;
 let swoleCatSupabaseClient=null;
@@ -39,6 +42,48 @@ function swoleCatWebAuthRedirectUrl(){
   return url.toString();
 }
 
+function parseSwoleCatAuthJson(raw){
+  try{return JSON.parse(String(raw||''))}catch(error){return null}
+}
+async function clearSwoleCatReauth(authStorage){
+  await authStorage?.removeItem?.(SWOLE_CAT_CLOUD_REAUTH_PENDING_KEY);
+  await authStorage?.removeItem?.(SWOLE_CAT_CLOUD_REAUTH_VERIFIED_KEY);
+}
+async function finishPendingSwoleCatReauth(client,authStorage,user){
+  const raw=await authStorage?.getItem?.(SWOLE_CAT_CLOUD_REAUTH_PENDING_KEY);
+  if(!raw)return false;
+  const pending=parseSwoleCatAuthJson(raw);
+  const startedAt=Number(pending?.startedAt||0);
+  const stale=!startedAt||Date.now()-startedAt>15*60*1000;
+  if(stale){
+    await clearSwoleCatReauth(authStorage);
+    return false;
+  }
+  if(!user?.id||String(user.id)!==String(pending?.userId||'')){
+    await clearSwoleCatReauth(authStorage);
+    try{await client.auth.signOut({scope:'local'})}catch(error){}
+    throw new Error('That Google account does not match the Swole Cat account you are trying to verify.');
+  }
+  await authStorage.setItem(SWOLE_CAT_CLOUD_REAUTH_VERIFIED_KEY,JSON.stringify({
+    userId:String(user.id),
+    verifiedAt:Date.now()
+  }));
+  await authStorage.removeItem(SWOLE_CAT_CLOUD_REAUTH_PENDING_KEY);
+  return true;
+}
+async function requireFreshSwoleCatReauth(client,authStorage){
+  const {data,error}=await client.auth.getSession();
+  if(error)throw error;
+  const user=data?.session?.user;
+  if(!user?.id)throw new Error('Your cloud session is no longer available. Sign in again.');
+  const verified=parseSwoleCatAuthJson(await authStorage?.getItem?.(SWOLE_CAT_CLOUD_REAUTH_VERIFIED_KEY));
+  const age=Date.now()-Number(verified?.verifiedAt||0);
+  if(String(verified?.userId||'')!==String(user.id)||age<0||age>SWOLE_CAT_CLOUD_REAUTH_MAX_AGE_MS){
+    throw new Error('Verify your Google account again before deleting the cloud account.');
+  }
+  return user;
+}
+
 async function getSwoleCatSupabaseClient(){
   if(swoleCatSupabaseClient)return swoleCatSupabaseClient;
   const config=SwoleCatRuntime.getService('cloudConfig')?.read?.();
@@ -60,14 +105,17 @@ async function getSwoleCatSupabaseClient(){
 }
 
 const swoleCatSupabaseIdentityProvider={
-  async restoreSession(){
+  async restoreSession({authStorage}){
     const client=await getSwoleCatSupabaseClient();
     const {data,error}=await client.auth.getSession();
     if(error)throw error;
-    return {user:data?.session?.user||null};
+    const user=data?.session?.user||null;
+    const reauthenticated=user?await finishPendingSwoleCatReauth(client,authStorage,user):false;
+    return {user,reauthenticated};
   },
-  async signInWithGoogle(){
+  async signInWithGoogle({authStorage}){
     const client=await getSwoleCatSupabaseClient();
+    await clearSwoleCatReauth(authStorage);
     const native=isNativeApp();
     const {data,error}=await client.auth.signInWithOAuth({
       provider:'google',
@@ -87,10 +135,58 @@ const swoleCatSupabaseIdentityProvider={
     }
     return {redirecting:!!data?.url,user:null};
   },
-  async signOut(){
+  async reauthenticateWithGoogle({authStorage,user}){
+    const client=await getSwoleCatSupabaseClient();
+    const {data:sessionData,error:sessionError}=await client.auth.getSession();
+    if(sessionError)throw sessionError;
+    const currentUser=sessionData?.session?.user;
+    if(!currentUser?.id||String(currentUser.id)!==String(user?.id||'')){
+      throw new Error('Your cloud session changed. Sign in again before verifying.');
+    }
+    await authStorage.setItem(SWOLE_CAT_CLOUD_REAUTH_PENDING_KEY,JSON.stringify({
+      userId:String(currentUser.id),
+      startedAt:Date.now()
+    }));
+    await authStorage.removeItem(SWOLE_CAT_CLOUD_REAUTH_VERIFIED_KEY);
+    const native=isNativeApp();
+    const {data,error}=await client.auth.signInWithOAuth({
+      provider:'google',
+      options:{
+        redirectTo:native?SWOLE_CAT_ANDROID_AUTH_REDIRECT:swoleCatWebAuthRedirectUrl(),
+        scopes:'openid email profile',
+        queryParams:{prompt:'select_account'},
+        ...(native?{skipBrowserRedirect:true}:{})
+      }
+    });
+    if(error){
+      await authStorage.removeItem(SWOLE_CAT_CLOUD_REAUTH_PENDING_KEY);
+      throw error;
+    }
+    if(native){
+      if(!data?.url)throw new Error('Supabase did not return a Google verification URL.');
+      const browser=capacitorPlugin('Browser');
+      if(!browser?.open)throw new Error('Android browser handoff is unavailable.');
+      await browser.open({url:data.url});
+      return {redirecting:true};
+    }
+    return {redirecting:!!data?.url};
+  },
+  async deleteAccount({authStorage}){
+    const client=await getSwoleCatSupabaseClient();
+    await requireFreshSwoleCatReauth(client,authStorage);
+    const {data,error}=await client.functions.invoke('delete-account',{body:{confirm:true}});
+    if(error)throw new Error(error?.message||'Could not delete the cloud account.');
+    if(!data?.ok)throw new Error(data?.error||'Could not delete the cloud account.');
+    try{await client.auth.signOut({scope:'local'})}catch(error){}
+    await authStorage.removeItem(SWOLE_CAT_SUPABASE_STORAGE_KEY);
+    await clearSwoleCatReauth(authStorage);
+    return {ok:true};
+  },
+  async signOut({authStorage}){
     const client=await getSwoleCatSupabaseClient();
     const {error}=await client.auth.signOut({scope:'local'});
     if(error)throw error;
+    await clearSwoleCatReauth(authStorage);
     return {ok:true};
   }
 };
@@ -130,13 +226,16 @@ async function finishSwoleCatAndroidAuth(rawUrl){
 
     await ensureSupabaseIdentityProviderReady();
     const client=await getSwoleCatSupabaseClient();
+    const authStorage=SwoleCatRuntime.getService('identity')?.authStorage?.();
+    const hadPendingReauth=!!(await authStorage?.getItem?.(SWOLE_CAT_CLOUD_REAUTH_PENDING_KEY));
     const {error}=await client.auth.exchangeCodeForSession(code);
     if(error)throw error;
 
     try{await capacitorPlugin('Browser')?.close?.()}catch(error){}
-    await initializeCloudIdentity();
     try{closeModal()}catch(error){}
-    try{showToast('Cloud account connected')}catch(error){}
+    const state=await initializeCloudIdentity();
+    if(!state?.signedIn)throw new Error(state?.lastError||'Google sign-in could not be completed.');
+    try{showToast(hadPendingReauth?'Google verification complete':'Cloud account connected')}catch(error){}
     return true;
   }catch(error){
     try{await capacitorPlugin('Browser')?.close?.()}catch(closeError){}
