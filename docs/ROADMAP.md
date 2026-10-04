@@ -833,7 +833,7 @@ Core decisions:
 
 ### Phase 8.1 - Optional account foundation
 
-**Status: In progress through v0.67.5. Identity works end-to-end, Android auth sessions are Keystore-backed, and permanent Testing signing is being verified.**
+**Status: In progress through v0.67.6. Identity, Google-only recovery/re-auth, authenticated account deletion, Keystore-backed Android sessions, and permanent Testing signing are implemented. Real-device lifecycle verification is the remaining Phase 8.1 exit check.**
 
 **v0.67.0 Cloud Shell Foundation** established the provider-neutral identity boundary without uploading workout data.
 
@@ -844,6 +844,10 @@ Core decisions:
 **v0.67.3** split experimental Android development into the separate **Swole Cat Testing** app so it can coexist with the frozen field beta without sharing local data.
 
 **v0.67.4** moves Android Supabase session persistence behind an app-local Capacitor bridge using AES-256-GCM with its secret key generated and held by Android Keystore. Existing Testing auth values migrate once from the old namespaced WebView storage and are removed only after secure write/read verification.
+
+**v0.67.5** establishes the first verified permanently signed Swole Cat Testing APK so later Testing builds can update in place.
+
+**v0.67.6** completes the Phase 8.1 account-lifecycle implementation: Google-only recovery, fresh same-account Google re-auth before destructive deletion, an authenticated server-side `delete-account` Edge Function, safe cancellation/failure behavior, and regression coverage proving local workout state remains untouched.
 
 - [x] Add provider-neutral `identity`, `cloudConfig`, and namespaced `cloudAuthStorage` runtime services.
 - [x] Make cloud configuration disabled by default and injectable at build/runtime without committing backend credentials.
@@ -864,7 +868,8 @@ Core decisions:
 - [x] Produce and verify the first permanently signed Testing APK (v0.67.5, Android run 328).
 - [x] Verify the live Supabase account state after real-device login: one Google Auth identity and zero public Swole Cat application tables as of 2026-10-03.
 - [x] Move Android auth session secrets from the temporary namespaced lab store to Keystore-backed AES-GCM storage protected by Android Keystore.
-- [ ] Add account recovery path and cloud-account deletion.
+- [x] Add Google-only account recovery/re-auth and authenticated cloud-account deletion.
+- [ ] Verify sign-out, recovery, in-place update continuity, and account deletion on real Android hardware.
 - [x] Keep local-only mode fully supported.
 
 **Resume checkpoint:** see `docs/CURRENT_STATE.md` before continuing Phase 8 work.

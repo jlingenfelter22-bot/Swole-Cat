@@ -6,7 +6,7 @@ This is the **resume-first checkpoint** for Swole Cat.
 
 If chat history, assistant context, or a development session is lost, read this file before making changes. It records the current working baseline, branch contract, cloud state, tested account behavior, and the next unfinished work.
 
-Checkpoint date: **2026-10-03 (America/Chicago)**
+Checkpoint date: **2026-10-04 (America/Chicago)**
 
 ## 1. Branches and safe development model
 
@@ -25,9 +25,9 @@ Checkpoint date: **2026-10-03 (America/Chicago)**
 ### Experimental development
 
 - Branch: `main`
-- Functional code baseline before this docs-only checkpoint: `2441ac604fddc4c852fa4a62ba75c3ad63a6cc43`
-- App version: **v0.67.5**
-- Android version code: **88**
+- Functional code baseline before this docs-only checkpoint: `2e5bdb4199691a1839cbcb03e7cb3b4c14184d53`
+- App version: **v0.67.6**
+- Android version code: **89**
 - Android app name: **Swole Cat Testing**
 - Android package ID: `com.jlingenfelter.swolecat.testing`
 - Purpose: cloud/account work, new features, architecture experiments, and risky development
@@ -45,12 +45,15 @@ Do not change the `main` package ID back to `com.jlingenfelter.swolecat` while t
 
 ## 2. Latest green development gate
 
-For functional baseline `2441ac604fddc4c852fa4a62ba75c3ad63a6cc43`:
+For functional baseline `2e5bdb4199691a1839cbcb03e7cb3b4c14184d53`:
 
-- Validate Swole Cat: run **577**, success
-- Deploy Swole Cat to GitHub Pages: run **582**, success
-- Build Swole Cat Testing Android: run **321**, success
-- Android artifact: `Swole-Cat-Testing-Android-v0.67.3-debug`
+- Final pre-merge validation: run **594**, success
+- Validate Swole Cat on `main`: run **595**, success
+- Deploy Swole Cat to GitHub Pages: run **593**, success
+- Build Swole Cat Testing Android: run **329**, success
+- Android artifact: `Swole-Cat-Testing-Android-v0.67.6-signed`
+- Android artifact digest: `sha256:53bb9378d7a9e4a7888089a82ef557435719836e04a0e06b1c52c8c82d2f0db0`
+- Extracted APK SHA-256: `31d8f2df05d0b93d65a091912f1fca645061c799dbcb573dfaa88121f4e363f0`
 
 The build verifies the generated Android application ID, visible app name, OAuth callback scheme, version metadata, and the full regression wall.
 
@@ -197,21 +200,28 @@ Canonical instructions: `docs/TESTING_SIGNING.md`.
 
 ## 8. Next unfinished work
 
-### Immediate next step: finish Phase 8.1 account lifecycle
+### Immediate next step: real-device verification of Phase 8.1 lifecycle
 
-Android auth storage is now Keystore-backed in v0.67.4:
-- Swole Cat-owned native Capacitor bridge
-- AES-256-GCM for stored auth values
-- encryption key generated/held by Android Keystore
-- one-time migration from the former namespaced WebView auth storage
-- legacy plaintext auth entry removed only after secure read-back verification
-- `overload_v3` is never involved in the migration
-- web/PWA keeps its existing browser auth storage behavior
+Phase 8.1 implementation is complete in **v0.67.6**:
+- Google-only recovery uses the same Google identity, with no separate Swole Cat password
+- destructive account deletion requires a fresh Google verification
+- re-auth must return the same Supabase user identity
+- failed/cancelled re-auth preserves the existing signed-in session
+- a fresh verification is valid for only 10 minutes
+- cloud-account deletion runs through the authenticated `delete-account` Supabase Edge Function
+- the function derives the user from the caller JWT and does not accept a client-selected user ID
+- service-role credentials remain server-side only
+- deleting or signing out never mutates `overload_v3`
+- Android auth/session material remains Keystore-backed
+- the v0.67.6 regression wall passed, including lifecycle and local-data preservation coverage
 
-Remaining Phase 8.1 work:
-- add explicit cloud-account deletion behavior
-- define the Google-only recovery/re-auth path
-- verify sign-out/delete lifecycle on real Android hardware
+Remaining Phase 8.1 verification:
+- install v0.67.6 over permanently signed v0.67.5 without uninstalling
+- confirm the existing Google/Supabase session survives the in-place update
+- verify sign-out keeps local workout data
+- sign back in with the same Google account to verify recovery
+- verify the delete-account Google re-auth and final deletion flow on real Android hardware
+- confirm local workout data remains after cloud-account deletion
 - then mark Phase 8.1 complete
 
 ### Then Phase 8.2: Cloud Backup
@@ -291,4 +301,4 @@ Before changing code:
 
 If context is lost, the safest continuation is:
 
-> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 Google identity works on web/PWA and Swole Cat Testing Android, Android auth sessions are Keystore-backed, and v0.67.5 is the first verified permanently signed Testing build. Next finish account deletion/re-auth lifecycle, then begin Phase 8.2 Cloud Backup. Keep beta v0.66.1 frozen.
+> Resume Swole Cat from `docs/CURRENT_STATE.md`. Swole Cat Testing v0.67.6 implements the Phase 8.1 Google recovery/re-auth and authenticated cloud-account deletion lifecycle, and Android run 329 produced a permanently signed update APK. Next verify the v0.67.6 lifecycle on real Android hardware, then mark Phase 8.1 complete and begin Phase 8.2 Cloud Backup. Keep beta v0.66.1 frozen.

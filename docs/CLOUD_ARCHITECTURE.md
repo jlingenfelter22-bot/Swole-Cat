@@ -202,6 +202,10 @@ Start with **Google sign-in** for early cloud testing.
 
 **v0.67.4:** Android Supabase session persistence is moved behind Swole Cat's provider-neutral `cloudAuthStorage` service and an app-local Capacitor plugin. Stored values use AES-256-GCM; the AES key is generated and retained by Android Keystore. Existing v0.67.3 namespaced WebView auth values migrate item-by-item only after a secure write/read verification succeeds, then the legacy auth copy is removed. Workout state is never part of this migration.
 
+**v0.67.5:** The Testing channel receives its first verified persistent signing certificate, making future `com.jlingenfelter.swolecat.testing` APKs eligible for in-place updates without replacing the Testing app sandbox.
+
+**v0.67.6:** Google-only account recovery/re-auth and cloud-account deletion are implemented. Destructive deletion requires a fresh same-account Google OAuth round trip. The client then invokes an authenticated `delete-account` Edge Function. The function derives the account from the caller JWT, performs the privileged Auth deletion server-side, accepts no client-selected user ID, and keeps service-role credentials out of the APK/PWA. Sign-out, failed re-auth, successful deletion, and recovery do not mutate `overload_v3`.
+
 Reason:
 - Android users already have a Google identity available
 - Supabase supports Google OAuth
@@ -233,7 +237,18 @@ Signing out should:
 - stop sync
 - leave local workout data intact
 
-Deleting an account should delete cloud-owned account data but must not silently erase local workout history. Local erasure remains a separate explicit action.
+Deleting an account deletes the cloud-owned identity/data but must not silently erase local workout history. Local erasure remains a separate explicit action.
+
+Phase 8.1 deletion contract:
+- require an already signed-in account
+- require fresh Google re-authentication before the destructive confirmation
+- require the re-authenticated identity to match the current Supabase user
+- keep the verification window short (10 minutes in v0.67.6)
+- perform Auth deletion only in an authenticated server-side Edge Function
+- derive the target user from the verified caller token, never from a client-supplied user ID
+- clear local auth material after success
+- preserve local workout/routine/history/settings data
+- keep deletion failure or cancelled re-auth non-destructive
 
 ## 7. Cloud backup and sync are different systems
 
