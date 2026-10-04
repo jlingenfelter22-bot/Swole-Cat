@@ -97,6 +97,11 @@ async function configuredShellCase(){
       await authStorage.setItem('fake-session','token');
       return {user:{id:'user-123',email:'tester@example.com',provider:'google'}};
     },
+    async reauthenticateWithGoogle(){return {redirecting:true};},
+    async deleteAccount({authStorage}){
+      await authStorage.removeItem('fake-session');
+      return {ok:true};
+    },
     async signOut({authStorage}){
       signedOut++;
       await authStorage.removeItem('fake-session');
