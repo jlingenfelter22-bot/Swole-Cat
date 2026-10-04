@@ -88,9 +88,6 @@ function cloudBackupObjectPath(userId,exportedAt){
 }
 async function registerCloudBackupProvider(provider){
   swoleCatCloudBackupProvider=validateCloudBackupProvider(provider);
-  if(cloudBackupCanUse()){
-    try{return await cloudListBackups()}catch(error){}
-  }
   return cloudBackupSnapshot();
 }
 async function cloudListBackups(){
@@ -322,8 +319,5 @@ SwoleCatRuntime.events.addEventListener('identity:changed',event=>{
     swoleCatCloudRestoreCandidate=null;
     setCloudBackupState({status:'idle',backups:[],lastError:''});
     return;
-  }
-  if(swoleCatCloudBackupProvider){
-    setTimeout(()=>cloudListBackups().catch(()=>{}),0);
   }
 });
