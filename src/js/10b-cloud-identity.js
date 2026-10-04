@@ -118,7 +118,7 @@ function cloudIdentityConfig(){
 }
 function validateCloudIdentityProvider(provider){
   if(!provider||typeof provider!=='object')throw new Error('Cloud identity provider is required.');
-  for(const name of ['restoreSession','signInWithGoogle','signOut']){
+  for(const name of ['restoreSession','signInWithGoogle','reauthenticateWithGoogle','deleteAccount','signOut']){
     if(typeof provider[name]!=='function')throw new Error('Cloud identity provider is missing '+name+'().');
   }
   return provider;
@@ -152,12 +152,24 @@ async function initializeCloudIdentity(){
       authStorage:swoleCatCloudAuthStorage
     });
     const user=cloudIdentityPublicUser(result?.user);
-    return setCloudIdentityState({
+    const reauthError=result?.reauthError?String(result.reauthError):'';
+    const next=setCloudIdentityState({
       status:user?'signed_in':'signed_out',
       signedIn:!!user,
       user,
-      lastError:''
+      lastError:reauthError
     });
+    if(reauthError){
+      setTimeout(()=>SwoleCatRuntime.events.dispatchEvent(
+        new CustomEvent('identity:reauthentication_failed',{detail:{message:reauthError}})
+      ),0);
+    }
+    if(result?.reauthenticated){
+      setTimeout(()=>SwoleCatRuntime.events.dispatchEvent(
+        new CustomEvent('identity:reauthenticated',{detail:{provider:user?.provider||'google'}})
+      ),0);
+    }
+    return next;
   }catch(error){
     return setCloudIdentityState({
       status:'signed_out',
@@ -206,6 +218,57 @@ async function cloudSignInWithGoogle(){
     throw error;
   }
 }
+async function cloudReauthenticateWithGoogle(){
+  const current=cloudIdentitySnapshot();
+  if(!current.signedIn||!current.user?.id)throw new Error('Sign in before verifying your Google account.');
+  await ensureCloudIdentityProvider();
+  setCloudIdentityState({status:'reauthenticating',lastError:''});
+  try{
+    const result=await swoleCatIdentityProvider.reauthenticateWithGoogle({
+      config:cloudIdentityConfig(),
+      authStorage:swoleCatCloudAuthStorage,
+      user:current.user
+    });
+    if(result?.redirecting)return cloudIdentitySnapshot();
+    SwoleCatRuntime.events.dispatchEvent(new CustomEvent('identity:reauthenticated',{detail:{provider:'google'}}));
+    return setCloudIdentityState({status:'signed_in',lastError:''});
+  }catch(error){
+    setCloudIdentityState({
+      status:'signed_in',
+      signedIn:true,
+      user:current.user,
+      lastError:error?.message||String(error)
+    });
+    throw error;
+  }
+}
+async function cloudDeleteAccount(){
+  const current=cloudIdentitySnapshot();
+  if(!current.signedIn||!current.user?.id)throw new Error('No cloud account is signed in.');
+  await ensureCloudIdentityProvider();
+  setCloudIdentityState({status:'deleting_account',lastError:''});
+  try{
+    await swoleCatIdentityProvider.deleteAccount({
+      config:cloudIdentityConfig(),
+      authStorage:swoleCatCloudAuthStorage,
+      user:current.user
+    });
+    return setCloudIdentityState({
+      status:'signed_out',
+      signedIn:false,
+      user:null,
+      lastError:''
+    });
+  }catch(error){
+    setCloudIdentityState({
+      status:'signed_in',
+      signedIn:true,
+      user:current.user,
+      lastError:error?.message||String(error)
+    });
+    throw error;
+  }
+}
 async function cloudSignOut(){
   if(swoleCatIdentityProvider){
     try{
@@ -234,6 +297,8 @@ const swoleCatIdentityService=SwoleCatRuntime.registerService('identity',{
   initialize:initializeCloudIdentity,
   registerProvider:registerCloudIdentityProvider,
   signInWithGoogle:cloudSignInWithGoogle,
+  reauthenticateWithGoogle:cloudReauthenticateWithGoogle,
+  deleteAccount:cloudDeleteAccount,
   signOut:cloudSignOut,
   isSignedIn(){return cloudIdentitySnapshot().signedIn},
   canUseCloud(){return cloudAccountAllowsRemoteFeatures()},
@@ -262,7 +327,7 @@ function openCloudAccount(){
   }
   if(info.signedIn){
     const label=info.user?.email||info.user?.displayName||'Swole Cat account';
-    openModal('Swole Cat Cloud','<div class="notice"><b>'+esc(label)+'</b><br><br>Account connection is active. Workout backup and multi-device sync are not enabled in Phase 8.1, so your training data is still local-only.</div><div class="actions"><button class="btn secondary" onclick="cloudSignOutFromUi()">Sign out</button><button class="btn secondary" onclick="closeModal()">Done</button></div>');
+    openModal('Swole Cat Cloud','<div class="notice"><b>'+esc(label)+'</b><br><br>Account connection is active. Workout backup and multi-device sync are not enabled in Phase 8.1, so your training data is still local-only.<br><br><span class="mini">Account recovery and identity verification use your Google account. Swole Cat does not have a separate password.</span></div><div class="actions"><button class="btn secondary" onclick="cloudSignOutFromUi()">Sign out</button><button class="btn danger" onclick="cloudBeginDeleteAccountFromUi()">Delete cloud account</button><button class="btn secondary" onclick="closeModal()">Done</button></div>');
     return;
   }
   const providerNote=info.providerReady
@@ -270,7 +335,7 @@ function openCloudAccount(){
     :(isNativeApp()
       ?'Google sign-in will open in the system browser and return directly to Swole Cat.'
       :'Google sign-in will load only when you choose to continue.');
-  openModal('Swole Cat Cloud','<div class="notice"><b>Optional account</b><br><br>'+esc(providerNote)+'<br><br>Creating an account will not upload workout data in this phase. Cloud backup and sync are separate opt-in capabilities that come later.</div><div class="actions"><button class="btn" onclick="cloudSignInWithGoogleFromUi()">Continue with Google</button><button class="btn secondary" onclick="closeModal()">Stay local-only</button></div>');
+  openModal('Swole Cat Cloud','<div class="notice"><b>Optional account</b><br><br>'+esc(providerNote)+'<br><br>Creating an account will not upload workout data in this phase. Cloud backup and sync are separate opt-in capabilities that come later.<br><br><span class="mini">Returning user? Choose the same Google account to recover access. There is no separate Swole Cat password.</span></div><div class="actions"><button class="btn" onclick="cloudSignInWithGoogleFromUi()">Continue with Google</button><button class="btn secondary" onclick="closeModal()">Stay local-only</button></div>');
 }
 async function cloudSignInWithGoogleFromUi(){
   try{
@@ -283,6 +348,33 @@ async function cloudSignInWithGoogleFromUi(){
     alert('Could not sign in: '+(error?.message||error));
   }
 }
+function cloudBeginDeleteAccountFromUi(){
+  const info=cloudIdentitySnapshot();
+  if(!info.signedIn)return openCloudAccount();
+  openModal('Delete cloud account?','<div class="notice"><b>This permanently deletes your Swole Cat cloud identity.</b><br><br>Your workouts, routines, history, settings, and other local training data on this device will stay exactly where they are.<br><br>Cloud backup and sync are not active yet, so Phase 8.1 has no workout data stored in the cloud.<br><br><span class="mini">To prevent an accidental deletion, verify the same Google account first.</span></div><div class="actions"><button class="btn danger" onclick="cloudReauthenticateForDeletionFromUi()">Verify with Google</button><button class="btn secondary" onclick="openCloudAccount()">Cancel</button></div>');
+}
+async function cloudReauthenticateForDeletionFromUi(){
+  try{
+    const result=await cloudReauthenticateWithGoogle();
+    if(result?.status==='reauthenticating')return;
+  }catch(error){
+    alert('Could not verify your Google account: '+(error?.message||error));
+  }
+}
+function openCloudDeleteFinalConfirmation(){
+  const info=cloudIdentitySnapshot();
+  if(!info.signedIn)return;
+  openModal('Delete cloud account','<div class="notice"><b>Google verification complete.</b><br><br>Deleting the cloud account is permanent. Your local Swole Cat workout data will remain on this device and can still be used without an account.</div><div class="actions"><button class="btn danger" onclick="cloudDeleteAccountFromUi()">Permanently delete cloud account</button><button class="btn secondary" onclick="openCloudAccount()">Cancel</button></div>');
+}
+async function cloudDeleteAccountFromUi(){
+  try{
+    await cloudDeleteAccount();
+    closeModal();
+    showToast('Cloud account deleted · local data kept');
+  }catch(error){
+    alert('Could not delete cloud account: '+(error?.message||error));
+  }
+}
 async function cloudSignOutFromUi(){
   try{
     await cloudSignOut();
@@ -293,4 +385,9 @@ async function cloudSignOutFromUi(){
   }
 }
 
+SwoleCatRuntime.events.addEventListener('identity:reauthenticated',()=>openCloudDeleteFinalConfirmation());
+SwoleCatRuntime.events.addEventListener('identity:reauthentication_failed',event=>{
+  const message=event?.detail?.message||'Google verification was not completed.';
+  try{alert('Could not verify your Google account: '+message)}catch(error){}
+});
 SwoleCatRuntime.events.addEventListener('app:ready',()=>{initializeCloudIdentity()},{once:true});
