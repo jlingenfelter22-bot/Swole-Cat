@@ -32,6 +32,9 @@ assert.match(providerSource,/scope:'local'/);
 assert.match(deleteFunction,/SUPABASE_SERVICE_ROLE_KEY/);
 assert.match(deleteFunction,/admin\.auth\.getUser\(token\)/);
 assert.match(deleteFunction,/admin\.auth\.admin\.deleteUser\(user\.id, false\)/);
+assert.match(deleteFunction,/deleteUserCloudBackups/,'account deletion must clean private cloud backups');
+assert.match(deleteFunction,/\.from\(SWOLE_CAT_BACKUP_BUCKET\)[\s\S]*\.remove\(paths\)/,'account deletion must remove Storage objects');
+assert(deleteFunction.indexOf('await deleteUserCloudBackups')<deleteFunction.indexOf('admin.auth.admin.deleteUser'),'cloud backups must be removed before Auth user deletion');
 assert.match(deleteFunction,/body\.confirm !== true/);
 assert.doesNotMatch(deleteFunction,/body\.userId|body\.user_id|body\.id/,'caller must never choose which user is deleted');
 
