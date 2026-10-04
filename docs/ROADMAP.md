@@ -870,7 +870,7 @@ Core decisions:
 - [x] Move Android auth session secrets from the temporary namespaced lab store to Keystore-backed AES-GCM storage protected by Android Keystore.
 - [x] Add Google-only account recovery/re-auth and authenticated cloud-account deletion.
 - [x] Verify permanently signed v0.67.6 updates in place over v0.67.5 and preserves the existing Google/Supabase session on real Android hardware.
-- [ ] Verify sign-out keeps local data and same-Google-account recovery works on real Android hardware.
+- [x] Verify sign-out keeps local data and same-Google-account recovery works on real Android hardware.
 - [ ] Verify Google re-auth plus final cloud-account deletion keeps local workout data on real Android hardware.
 - [x] Keep local-only mode fully supported.
 
