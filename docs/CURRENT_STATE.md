@@ -225,12 +225,17 @@ Additional real-device verification completed on 2026-10-04:
 - [x] signing back in with the same Google account restored the cloud identity
 - [x] local workout data remained unchanged after recovery/sign-in
 
-Remaining Phase 8.1 verification:
-- [ ] verify the delete-account Google re-auth and final deletion flow on real Android hardware
-- [ ] confirm local workout data remains after cloud-account deletion
-- [ ] then mark Phase 8.1 complete
+Final real-device Phase 8.1 verification completed on 2026-10-04:
+- [x] destructive delete flow required Google verification
+- [x] final permanent-delete confirmation completed successfully
+- [x] cloud account disappeared from Swole Cat after deletion
+- [x] local workout/routine/history data remained unchanged after deletion
+- [x] Supabase backend verification showed 0 Auth users after deletion
+- [x] Supabase still had 0 public Swole Cat application tables
 
-### Then Phase 8.2: Cloud Backup
+**Phase 8.1 is complete.**
+
+### Immediate next step: Phase 8.2 Cloud Backup
 
 First actual user-owned Swole Cat cloud data.
 
@@ -307,4 +312,4 @@ Before changing code:
 
 If context is lost, the safest continuation is:
 
-> Resume Swole Cat from `docs/CURRENT_STATE.md`. Swole Cat Testing v0.67.6 implements the Phase 8.1 Google recovery/re-auth and authenticated cloud-account deletion lifecycle, and Android run 329 produced a permanently signed update APK. Next verify the v0.67.6 lifecycle on real Android hardware, then mark Phase 8.1 complete and begin Phase 8.2 Cloud Backup. Keep beta v0.66.1 frozen.
+> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 is complete and verified on real Android hardware through Swole Cat Testing v0.67.6, including in-place signed updates, session continuity, sign-out preservation, Google recovery/re-auth, server-side account deletion, and preservation of local workout data. Supabase shows 0 Auth users and 0 public app tables after the deletion test. Begin Phase 8.2 Cloud Backup. Keep beta v0.66.1 frozen.
