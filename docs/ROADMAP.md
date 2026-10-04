@@ -833,9 +833,15 @@ Core decisions:
 
 ### Phase 8.1 - Optional account foundation
 
-**Status: In progress through v0.67.0.**
+**Status: In progress through v0.67.3. Identity works end-to-end on web/PWA and Android Testing.**
 
-**v0.67.0 Cloud Shell Foundation** establishes the identity boundary without uploading any workout data.
+**v0.67.0 Cloud Shell Foundation** established the provider-neutral identity boundary without uploading workout data.
+
+**v0.67.1** connected real Google OAuth on web/PWA.
+
+**v0.67.2** added Android PKCE OAuth browser return/deep-link handling.
+
+**v0.67.3** split experimental Android development into the separate **Swole Cat Testing** app so it can coexist with the frozen field beta without sharing local data.
 
 - [x] Add provider-neutral `identity`, `cloudConfig`, and namespaced `cloudAuthStorage` runtime services.
 - [x] Make cloud configuration disabled by default and injectable at build/runtime without committing backend credentials.
@@ -845,16 +851,18 @@ Core decisions:
 - [x] Explicitly keep workout sync OFF in the identity phase.
 - [x] Avoid creating Swole Cat database rows merely because an Auth account exists.
 - [x] Add production-bundle regression coverage proving local saves never wake the cloud shell.
-- [x] Connect the actual Supabase Auth provider adapter for web/PWA Google OAuth with pinned lazy-loaded Supabase JS.
 - [x] Provision the dedicated Supabase Free project and connect the lab build to its public URL/publishable key without adding application-data tables.
-- [x] Start with Google sign-in for production-facing web/PWA testing so the project does not depend on Supabase's built-in low-volume email sender.
-- [x] Add Android OAuth deep-link return handling.
+- [x] Connect the actual Supabase Auth provider adapter with pinned lazy-loaded Supabase JS.
+- [x] Configure and verify Google OAuth on the live web/PWA build.
+- [x] Add Android OAuth deep-link return handling and verify a real Google login returns successfully to the installed app.
 - [x] Keep the experimental `main` Android build installable side-by-side with the field beta as **Swole Cat Testing** using package ID `com.jlingenfelter.swolecat.testing` and callback `com.jlingenfelter.swolecat.testing://auth/callback`.
 - [x] Preserve the field-beta package ID `com.jlingenfelter.swolecat` so beta workout data and experimental lab data remain in separate Android app sandboxes.
+- [x] Verify the live Supabase account state after real-device login: one Google Auth identity and zero public Swole Cat application tables as of 2026-10-03.
 - [ ] Move Android auth session secrets from the temporary namespaced lab store to Keystore-backed secure storage before public production use.
 - [ ] Add account recovery path and cloud-account deletion.
-- [ ] Store auth tokens separately from workout state using Android Keystore-backed secure storage before public production use.
 - [x] Keep local-only mode fully supported.
+
+**Resume checkpoint:** see `docs/CURRENT_STATE.md` before continuing Phase 8 work.
 
 ### Phase 8.2 - Cloud backup
 - [ ] Upload a validated cloud copy of the existing Swole Cat backup envelope.
