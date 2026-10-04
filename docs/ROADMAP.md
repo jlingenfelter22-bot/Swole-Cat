@@ -833,7 +833,7 @@ Core decisions:
 
 ### Phase 8.1 - Optional account foundation
 
-**Status: In progress through v0.67.6. Identity, Google-only recovery/re-auth, authenticated account deletion, Keystore-backed Android sessions, and permanent Testing signing are implemented. Real-device lifecycle verification is the remaining Phase 8.1 exit check.**
+**Status: Phase 8.1 complete through v0.67.6. Identity, Google-only recovery/re-auth, authenticated account deletion, Keystore-backed Android sessions, permanent Testing signing, and the full real-device lifecycle are verified. Phase 8.2 Cloud Backup is next.**
 
 **v0.67.0 Cloud Shell Foundation** established the provider-neutral identity boundary without uploading workout data.
 
@@ -871,8 +871,11 @@ Core decisions:
 - [x] Add Google-only account recovery/re-auth and authenticated cloud-account deletion.
 - [x] Verify permanently signed v0.67.6 updates in place over v0.67.5 and preserves the existing Google/Supabase session on real Android hardware.
 - [x] Verify sign-out keeps local data and same-Google-account recovery works on real Android hardware.
-- [ ] Verify Google re-auth plus final cloud-account deletion keeps local workout data on real Android hardware.
+- [x] Verify Google re-auth plus final cloud-account deletion keeps local workout data on real Android hardware.
+- [x] Verify backend Auth user removal after deletion and confirm public application-table count remains zero.
 - [x] Keep local-only mode fully supported.
+
+**Phase 8.1 complete: 2026-10-04.**
 
 **Resume checkpoint:** see `docs/CURRENT_STATE.md` before continuing Phase 8 work.
 
