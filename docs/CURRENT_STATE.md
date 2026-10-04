@@ -276,8 +276,9 @@ Remaining Phase 8.2 exit work:
 - [x] sign in again after the Phase 8.1 account-deletion test
 - [x] create the first real-device v0.68.0 cloud backup and verify matching private Storage object + metadata row
 - [x] create two more backups and verify only latest + previous remain
-- [ ] change local data and restore the previous snapshot
-- [ ] verify the pre-restore local rollback snapshot exists and can recover the replaced state
+- [x] change local data and restore the previous snapshot
+- [x] verify the pre-restore local rollback snapshot is created and exposed in Settings
+- [ ] verify the pre-restore local rollback snapshot can recover the replaced state
 - [ ] verify local workout flow still works with cloud unavailable
 - [ ] verify account deletion also clears backup objects/metadata while preserving local workout data
 - [ ] then mark Phase 8.2 complete
@@ -376,3 +377,16 @@ Verified on 2026-10-04 after three total manual cloud backups:
 - both surviving metadata rows and Storage objects share the same authenticated owner and source installation ID
 
 This confirms the live Android retention path keeps exactly **latest + previous** instead of growing cloud storage indefinitely.
+
+
+### Phase 8.2 real-device checkpoint: cloud restore + local safety snapshot
+
+Verified on 2026-10-04 from Swole Cat Testing v0.68.0:
+- latest local marker before restore: `Cloud Test 3`
+- previous cloud backup selected for restore
+- restore completed successfully
+- local profile marker rolled back to `Cloud Test 2`, proving the previous cloud snapshot replaced local state
+- Settings shows **Restore pre-import snapshot** after the cloud restore
+- this confirms the required local safety snapshot was created before cloud state replacement
+
+Remaining rollback verification: restore the pre-import snapshot and confirm the local profile marker returns to `Cloud Test 3`.
