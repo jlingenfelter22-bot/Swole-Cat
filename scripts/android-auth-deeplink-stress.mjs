@@ -12,7 +12,7 @@ assert.equal(pkg.dependencies['@capacitor/browser'],'8.0.5','Android OAuth shoul
 assert.equal(capacitor.appId,'com.jlingenfelter.swolecat.testing');
 assert.equal(capacitor.appName,'Swole Cat Testing','main branch Android lab build must be visually distinct from field beta');
 
-assert.match(provider,/com\.jlingenfelter\.swolecat:\/\/auth\/callback/);
+assert.match(provider,/com\.jlingenfelter\.swolecat\.testing:\/\/auth\/callback/);
 assert.match(provider,/skipBrowserRedirect:true/);
 assert.match(provider,/exchangeCodeForSession\(code\)/);
 assert.match(provider,/addListener\?\.\('appUrlOpen'/);
@@ -21,7 +21,7 @@ assert.match(provider,/capacitorPlugin\('Browser'\)/);
 assert.match(provider,/scope:'local'/,'sign-out must remain device-local');
 assert.match(provider,/detectSessionInUrl:!isNativeApp\(\)/);
 
-assert.match(configure,/ANDROID_AUTH_SCHEME='com\.jlingenfelter\.swolecat'/);
+assert.match(configure,/ANDROID_AUTH_SCHEME='com\.jlingenfelter\.swolecat\.testing'/);
 assert.match(configure,/ANDROID_AUTH_HOST='auth'/);
 assert.match(configure,/ANDROID_AUTH_PATH='\/callback'/);
 assert.match(configure,/android\.intent\.action\.VIEW/);
