@@ -34,12 +34,25 @@ function loadPinnedSupabaseJs(){
   return swoleCatSupabaseLoadPromise;
 }
 
-function swoleCatWebAuthRedirectUrl(){
+function swoleCatWebAuthRedirectUrl({reauth=false}={}){
   const url=new URL(window.location.href);
   url.search='';
   url.hash='';
   if(url.pathname.endsWith('/index.html'))url.pathname=url.pathname.slice(0,-'index.html'.length);
+  if(reauth)url.searchParams.set('swolecat_reauth','1');
   return url.toString();
+}
+function isSwoleCatWebReauthReturn(){
+  if(isNativeApp())return false;
+  try{return new URL(window.location.href).searchParams.get('swolecat_reauth')==='1'}catch(error){return false}
+}
+function clearSwoleCatWebAuthReturnParams(){
+  if(isNativeApp())return;
+  try{
+    const url=new URL(window.location.href);
+    for(const key of ['swolecat_reauth','code','error','error_code','error_description'])url.searchParams.delete(key);
+    window.history.replaceState(window.history.state,'',url.toString());
+  }catch(error){}
 }
 
 function parseSwoleCatAuthJson(raw){
@@ -110,7 +123,11 @@ const swoleCatSupabaseIdentityProvider={
     const {data,error}=await client.auth.getSession();
     if(error)throw error;
     const user=data?.session?.user||null;
-    const reauthenticated=user?await finishPendingSwoleCatReauth(client,authStorage,user):false;
+    let reauthenticated=false;
+    if(user&&isSwoleCatWebReauthReturn()){
+      reauthenticated=await finishPendingSwoleCatReauth(client,authStorage,user);
+      clearSwoleCatWebAuthReturnParams();
+    }
     return {user,reauthenticated};
   },
   async signInWithGoogle({authStorage}){
@@ -152,7 +169,7 @@ const swoleCatSupabaseIdentityProvider={
     const {data,error}=await client.auth.signInWithOAuth({
       provider:'google',
       options:{
-        redirectTo:native?SWOLE_CAT_ANDROID_AUTH_REDIRECT:swoleCatWebAuthRedirectUrl(),
+        redirectTo:native?SWOLE_CAT_ANDROID_AUTH_REDIRECT:swoleCatWebAuthRedirectUrl({reauth:true}),
         scopes:'openid email profile',
         queryParams:{prompt:'select_account'},
         ...(native?{skipBrowserRedirect:true}:{})
@@ -228,14 +245,20 @@ async function finishSwoleCatAndroidAuth(rawUrl){
     const client=await getSwoleCatSupabaseClient();
     const authStorage=SwoleCatRuntime.getService('identity')?.authStorage?.();
     const hadPendingReauth=!!(await authStorage?.getItem?.(SWOLE_CAT_CLOUD_REAUTH_PENDING_KEY));
-    const {error}=await client.auth.exchangeCodeForSession(code);
+    const {data,error}=await client.auth.exchangeCodeForSession(code);
     if(error)throw error;
+    const reauthenticated=hadPendingReauth
+      ?await finishPendingSwoleCatReauth(client,authStorage,data?.session?.user||null)
+      :false;
 
     try{await capacitorPlugin('Browser')?.close?.()}catch(error){}
     try{closeModal()}catch(error){}
     const state=await initializeCloudIdentity();
     if(!state?.signedIn)throw new Error(state?.lastError||'Google sign-in could not be completed.');
-    try{showToast(hadPendingReauth?'Google verification complete':'Cloud account connected')}catch(error){}
+    if(reauthenticated){
+      SwoleCatRuntime.events.dispatchEvent(new CustomEvent('identity:reauthenticated',{detail:{provider:'google'}}));
+    }
+    try{showToast(reauthenticated?'Google verification complete':'Cloud account connected')}catch(error){}
     return true;
   }catch(error){
     try{await capacitorPlugin('Browser')?.close?.()}catch(closeError){}
