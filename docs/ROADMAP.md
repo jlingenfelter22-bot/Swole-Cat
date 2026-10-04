@@ -833,7 +833,7 @@ Core decisions:
 
 ### Phase 8.1 - Optional account foundation
 
-**Status: Phase 8.1 complete through v0.67.6. Identity, Google-only recovery/re-auth, authenticated account deletion, Keystore-backed Android sessions, permanent Testing signing, and the full real-device lifecycle are verified. Phase 8.2 Cloud Backup is next.**
+**Status: Phase 8.1 complete. Phase 8.2 Cloud Backup is implemented on the v0.68.0 Testing branch and awaiting full CI plus real-device backup/restore verification.**
 
 **v0.67.0 Cloud Shell Foundation** established the provider-neutral identity boundary without uploading workout data.
 
@@ -880,11 +880,17 @@ Core decisions:
 **Resume checkpoint:** see `docs/CURRENT_STATE.md` before continuing Phase 8 work.
 
 ### Phase 8.2 - Cloud backup
-- [ ] Upload a validated cloud copy of the existing Swole Cat backup envelope.
-- [ ] Keep a small bounded number of recovery snapshots per user.
-- [ ] Allow manual Back Up Now and Restore from Cloud.
-- [ ] Never erase or replace local data automatically during restore.
-- [ ] Keep cloud failure non-blocking for workouts.
+- [x] Create private `swole-cat-backups` Storage bucket with owner-folder RLS.
+- [x] Create RLS-protected `backup_metadata` table with schema/app version, SHA-256, timestamp, source installation ID, object path, and size.
+- [x] Upload the existing validated `swole-cat-backup` envelope without creating a second backup format.
+- [x] Keep a bounded latest + previous recovery snapshot set per user.
+- [x] Add manual **Back Up Now** and **Restore from Cloud** controls.
+- [x] Verify SHA-256 and size before a downloaded snapshot can reach restore.
+- [x] Show restore preview before replacement and create the normal local pre-import safety snapshot first.
+- [x] Keep cloud failure non-blocking for workouts and keep backup traffic explicitly user initiated.
+- [x] Extend account deletion to remove private backup objects/metadata before deleting the Auth user.
+- [ ] Pass the full v0.68.0 regression/build wall on `main`.
+- [ ] Verify backup creation, two-snapshot retention, restore, and account deletion with cloud backups on real Android hardware.
 
 ### Phase 8.3 - Multi-device sync
 - [ ] Add stable per-device identity and separate local sync metadata.
