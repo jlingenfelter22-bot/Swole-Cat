@@ -236,6 +236,7 @@ gradle = gradle.replace(/\bversionCode\s+\d+/, `versionCode ${versionCode}`);
 gradle = gradle.replace(/\bversionName\s+["'][^"']+["']/, `versionName "${versionName}"`);
 
 const signingEnabled = process.env.SWOLE_CAT_ENABLE_SIGNING === '1';
+const signingBuildType = String(process.env.SWOLE_CAT_SIGNING_BUILD_TYPE || 'release').trim().toLowerCase();
 
 if (signingEnabled) {
   const required = [
@@ -245,14 +246,13 @@ if (signingEnabled) {
     'SWOLE_CAT_SIGNING_KEY_PASSWORD'
   ];
   const missing = required.filter(name => !String(process.env[name] || '').trim());
-  if (missing.length) {
-    throw new Error(`Signing enabled but required environment variables are missing: ${missing.join(', ')}`);
-  }
+  if (missing.length) throw new Error('Signing enabled but required environment variables are missing: '+missing.join(', '));
+  if (!['debug','release'].includes(signingBuildType)) throw new Error('SWOLE_CAT_SIGNING_BUILD_TYPE must be debug or release');
 
   if (!gradle.includes('signingConfigs {')) {
     const signingBlock = `
     signingConfigs {
-        release {
+        swoleCat {
             storeFile file(System.getenv("SWOLE_CAT_SIGNING_STORE_FILE"))
             storePassword System.getenv("SWOLE_CAT_SIGNING_STORE_PASSWORD")
             keyAlias System.getenv("SWOLE_CAT_SIGNING_KEY_ALIAS")
@@ -260,21 +260,23 @@ if (signingEnabled) {
         }
     }
 `;
-
-    if (!/\n\s*buildTypes\s*\{/.test(gradle)) {
-      throw new Error('Could not find buildTypes block in android/app/build.gradle');
-    }
+    if (!/\n\s*buildTypes\s*\{/.test(gradle)) throw new Error('Could not find buildTypes block in android/app/build.gradle');
     gradle = gradle.replace(/\n(\s*)buildTypes\s*\{/, `\n${signingBlock}\n$1buildTypes {`);
   }
 
-  if (!/release\s*\{/.test(gradle)) {
-    throw new Error('Could not find release build type in android/app/build.gradle');
-  }
-  if (!gradle.includes('signingConfig signingConfigs.release')) {
-    gradle = gradle.replace(
-      /release\s*\{/,
-      'release {\n            signingConfig signingConfigs.release'
-    );
+  const signingLine='signingConfig signingConfigs.swoleCat';
+  if (signingBuildType === 'debug') {
+    if (!/debug\s*\{/.test(gradle)) {
+      if (!/release\s*\{/.test(gradle)) throw new Error('Could not find release build type in android/app/build.gradle');
+      gradle = gradle.replace(/release\s*\{/, `debug {\n            ${signingLine}\n        }\n        release {`);
+    } else if (!/debug\s*\{[\s\S]*?signingConfig signingConfigs\.swoleCat[\s\S]*?\}/.test(gradle)) {
+      gradle = gradle.replace(/debug\s*\{/, `debug {\n            ${signingLine}`);
+    }
+  } else {
+    if (!/release\s*\{/.test(gradle)) throw new Error('Could not find release build type in android/app/build.gradle');
+    if (!/release\s*\{[\s\S]*?signingConfig signingConfigs\.swoleCat[\s\S]*?\}/.test(gradle)) {
+      gradle = gradle.replace(/release\s*\{/, `release {\n            ${signingLine}`);
+    }
   }
 }
 
@@ -303,6 +305,6 @@ const secureAuth=await configureAndroidSecureAuthStorage();
 
 console.log(
   `Configured Android versionName=${versionName}, versionCode=${versionCode}, authRedirect=${ANDROID_AUTH_SCHEME}://${ANDROID_AUTH_HOST}${ANDROID_AUTH_PATH}, secureAuth=AndroidKeyStore` +
-  (signingEnabled ? ', release signing enabled' : '')
+  (signingEnabled ? `, ${signingBuildType} signing enabled` : '')
 );
 console.log(`Secure auth plugin: ${secureAuth.pluginUrl.pathname}`);
