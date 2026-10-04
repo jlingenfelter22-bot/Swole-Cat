@@ -219,9 +219,13 @@ Real-device verification completed on 2026-10-04:
 - [x] installed v0.67.6 directly over permanently signed v0.67.5 without uninstalling
 - [x] existing Google/Supabase session survived the in-place update and remained signed in
 
+Additional real-device verification completed on 2026-10-04:
+- [x] sign-out preserved existing routines and workout history
+- [x] a test workout completed while signed out remained saved locally
+- [x] signing back in with the same Google account restored the cloud identity
+- [x] local workout data remained unchanged after recovery/sign-in
+
 Remaining Phase 8.1 verification:
-- [ ] verify sign-out keeps local workout data
-- [ ] sign back in with the same Google account to verify recovery
 - [ ] verify the delete-account Google re-auth and final deletion flow on real Android hardware
 - [ ] confirm local workout data remains after cloud-account deletion
 - [ ] then mark Phase 8.1 complete
