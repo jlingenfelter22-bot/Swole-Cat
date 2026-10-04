@@ -26,8 +26,8 @@ Checkpoint date: **2026-10-03 (America/Chicago)**
 
 - Branch: `main`
 - Functional code baseline before this docs-only checkpoint: `2441ac604fddc4c852fa4a62ba75c3ad63a6cc43`
-- App version: **v0.67.3**
-- Android version code: **86**
+- App version: **v0.67.4**
+- Android version code: **87**
 - Android app name: **Swole Cat Testing**
 - Android package ID: `com.jlingenfelter.swolecat.testing`
 - Purpose: cloud/account work, new features, architecture experiments, and risky development
@@ -170,23 +170,22 @@ There are currently **zero public application tables** by design.
 
 ## 8. Next unfinished work
 
-### Immediate next step: finish Phase 8.1 security hardening
+### Immediate next step: finish Phase 8.1 account lifecycle
 
-Move Android Supabase auth session secrets from the current temporary namespaced app storage into **Android Keystore-backed secure storage** before public production use.
+Android auth storage is now Keystore-backed in v0.67.4:
+- Swole Cat-owned native Capacitor bridge
+- AES-256-GCM for stored auth values
+- encryption key generated/held by Android Keystore
+- one-time migration from the former namespaced WebView auth storage
+- legacy plaintext auth entry removed only after secure read-back verification
+- `overload_v3` is never involved in the migration
+- web/PWA keeps its existing browser auth storage behavior
 
-Requirements:
-- preserve the provider-neutral `cloudAuthStorage` interface
-- keep web/PWA auth behavior working
-- use secure native storage only on Android
-- migration must not touch `overload_v3`
-- sign-out must clear the secure session
-- existing local workout data must remain untouched
-- add regression coverage
-- run full validation + Pages + Swole Cat Testing Android build
-
-After secure storage:
-- add account recovery/deletion behavior appropriate for Google-only accounts
-- then consider Phase 8.1 complete
+Remaining Phase 8.1 work:
+- add explicit cloud-account deletion behavior
+- define the Google-only recovery/re-auth path
+- verify sign-out/delete lifecycle on real Android hardware
+- then mark Phase 8.1 complete
 
 ### Then Phase 8.2: Cloud Backup
 
@@ -265,4 +264,4 @@ Before changing code:
 
 If context is lost, the safest continuation is:
 
-> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 Google identity is working on web/PWA and the side-by-side Swole Cat Testing Android app. The next task is Android Keystore-backed secure auth storage, followed by Phase 8.2 Cloud Backup. Keep beta v0.66.1 frozen.
+> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 Google identity works on web/PWA and Swole Cat Testing Android, and Android auth sessions are Keystore-backed as of v0.67.4. Next finish account deletion/re-auth lifecycle, then begin Phase 8.2 Cloud Backup. Keep beta v0.66.1 frozen.

@@ -133,6 +133,9 @@ jobs:
       - name: Stress test v0.67.2 Android OAuth deep-link contract
         run: node scripts/android-auth-deeplink-stress.mjs
 
+      - name: Stress test v0.67.4 Android Keystore auth storage
+        run: node scripts/android-secure-auth-stress.mjs
+
       - name: Smoke test active workouts, set types, progression, and supersets
         run: |
           node <<'JS'

@@ -11,25 +11,78 @@ let swoleCatIdentityState={
   lastError:''
 };
 
+function cloudAuthLegacyKey(key){
+  return SWOLE_CAT_CLOUD_AUTH_PREFIX+String(key||'');
+}
+function cloudAuthNativeSecurePlugin(){
+  if(!isNativeApp()||nativePlatform()!=='android')return null;
+  return capacitorPlugin('SwoleCatSecureStorage');
+}
+function cloudAuthLegacyHasAny(){
+  try{
+    for(let i=0;i<window.localStorage.length;i++){
+      const key=window.localStorage.key(i);
+      if(key?.startsWith(SWOLE_CAT_CLOUD_AUTH_PREFIX))return true;
+    }
+  }catch(error){}
+  return false;
+}
+async function migrateLegacyCloudAuthItem(key,nativeStore){
+  const legacyKey=cloudAuthLegacyKey(key);
+  const legacy=swoleCatStorage.getItem(legacyKey);
+  if(legacy==null)return null;
+  await nativeStore.setItem({key:String(key||''),value:String(legacy)});
+  const verify=await nativeStore.getItem({key:String(key||'')});
+  if(String(verify?.value??'')!==String(legacy)){
+    throw new Error('Secure auth migration verification failed.');
+  }
+  swoleCatStorage.removeItem(legacyKey);
+  return String(legacy);
+}
+
 const swoleCatCloudAuthStorage=SwoleCatRuntime.registerService('cloudAuthStorage',{
   async getItem(key){
-    return swoleCatStorage.getItem(SWOLE_CAT_CLOUD_AUTH_PREFIX+String(key||''));
+    const normalized=String(key||'');
+    const nativeStore=cloudAuthNativeSecurePlugin();
+    if(nativeStore?.getItem){
+      const result=await nativeStore.getItem({key:normalized});
+      if(result?.value!=null)return String(result.value);
+      return migrateLegacyCloudAuthItem(normalized,nativeStore);
+    }
+    return swoleCatStorage.getItem(cloudAuthLegacyKey(normalized));
   },
   async setItem(key,value){
-    if(value==null)return this.removeItem(key);
-    swoleCatStorage.setItem(SWOLE_CAT_CLOUD_AUTH_PREFIX+String(key||''),String(value));
+    const normalized=String(key||'');
+    if(value==null)return this.removeItem(normalized);
+    const nativeStore=cloudAuthNativeSecurePlugin();
+    if(nativeStore?.setItem){
+      await nativeStore.setItem({key:normalized,value:String(value)});
+      swoleCatStorage.removeItem(cloudAuthLegacyKey(normalized));
+      return;
+    }
+    swoleCatStorage.setItem(cloudAuthLegacyKey(normalized),String(value));
   },
   async removeItem(key){
-    swoleCatStorage.removeItem(SWOLE_CAT_CLOUD_AUTH_PREFIX+String(key||''));
+    const normalized=String(key||'');
+    const nativeStore=cloudAuthNativeSecurePlugin();
+    if(nativeStore?.removeItem)await nativeStore.removeItem({key:normalized});
+    swoleCatStorage.removeItem(cloudAuthLegacyKey(normalized));
   },
   hasAny(){
-    try{
-      for(let i=0;i<window.localStorage.length;i++){
-        const key=window.localStorage.key(i);
-        if(key?.startsWith(SWOLE_CAT_CLOUD_AUTH_PREFIX))return true;
-      }
-    }catch(error){}
-    return false;
+    if(cloudAuthNativeSecurePlugin())return cloudAuthLegacyHasAny();
+    return cloudAuthLegacyHasAny();
+  },
+  async hasAnyAsync(){
+    const nativeStore=cloudAuthNativeSecurePlugin();
+    if(nativeStore?.keys){
+      const result=await nativeStore.keys();
+      if(Array.isArray(result?.keys)&&result.keys.length)return true;
+      return cloudAuthLegacyHasAny();
+    }
+    return cloudAuthLegacyHasAny();
+  },
+  backend(){
+    return cloudAuthNativeSecurePlugin()?'android_keystore':'browser_local_storage';
   }
 });
 

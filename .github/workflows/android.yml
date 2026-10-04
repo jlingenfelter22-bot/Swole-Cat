@@ -72,6 +72,14 @@ jobs:
           grep -F 'android:pathPrefix="/callback"' android/app/src/main/AndroidManifest.xml
           grep -F 'applicationId "com.jlingenfelter.swolecat.testing"' android/app/build.gradle
           grep -F '<string name="app_name">Swole Cat Testing</string>' android/app/src/main/res/values/strings.xml
+          SECURE_PLUGIN="$(find android/app/src/main/java -name SwoleCatSecureStoragePlugin.java -print -quit)"
+          MAIN_ACTIVITY="$(find android/app/src/main/java -name MainActivity.java -print -quit)"
+          test -n "$SECURE_PLUGIN"
+          test -n "$MAIN_ACTIVITY"
+          grep -F '@CapacitorPlugin(name = "SwoleCatSecureStorage")' "$SECURE_PLUGIN"
+          grep -F 'AndroidKeyStore' "$SECURE_PLUGIN"
+          grep -F 'AES/GCM/NoPadding' "$SECURE_PLUGIN"
+          grep -F 'registerPlugin(SwoleCatSecureStoragePlugin.class);' "$MAIN_ACTIVITY"
 
       - name: Build debug APK
         working-directory: android

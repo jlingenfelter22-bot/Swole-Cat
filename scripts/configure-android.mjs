@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, readdir } from 'node:fs/promises';
 
 const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 const versionName = String(pkg.version || '').trim();
@@ -8,6 +8,215 @@ const manifestUrl = new URL('../android/app/src/main/AndroidManifest.xml', impor
 const ANDROID_AUTH_SCHEME='com.jlingenfelter.swolecat.testing';
 const ANDROID_AUTH_HOST='auth';
 const ANDROID_AUTH_PATH='/callback';
+
+async function findFileRecursive(dirUrl,fileName){
+  const entries=await readdir(dirUrl,{withFileTypes:true});
+  for(const entry of entries){
+    const child=new URL(entry.name+(entry.isDirectory()?'/':''),dirUrl);
+    if(entry.isFile()&&entry.name===fileName)return child;
+    if(entry.isDirectory()){
+      const found=await findFileRecursive(child,fileName);
+      if(found)return found;
+    }
+  }
+  return null;
+}
+
+async function configureAndroidSecureAuthStorage(){
+  const javaRoot=new URL('../android/app/src/main/java/',import.meta.url);
+  const mainActivityUrl=await findFileRecursive(javaRoot,'MainActivity.java');
+  if(!mainActivityUrl)throw new Error('Could not find generated MainActivity.java');
+
+  let activity=await readFile(mainActivityUrl,'utf8');
+  const packageMatch=activity.match(/package\s+([A-Za-z0-9_.]+)\s*;/);
+  if(!packageMatch)throw new Error('Could not determine Android package from MainActivity.java');
+  const packageName=packageMatch[1];
+  const pluginUrl=new URL('SwoleCatSecureStoragePlugin.java',mainActivityUrl);
+
+  const pluginSource=`package ${packageName};
+
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyProperties;
+import android.util.Base64;
+
+import com.getcapacitor.JSArray;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+
+import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
+
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+
+@CapacitorPlugin(name = "SwoleCatSecureStorage")
+public class SwoleCatSecureStoragePlugin extends Plugin {
+    private static final String PREFS_NAME = "swole_cat_secure_auth_v1";
+    private static final String KEY_ALIAS = "swole_cat_auth_aes_gcm_v1";
+    private static final String ANDROID_KEYSTORE = "AndroidKeyStore";
+    private static final String CIPHER = "AES/GCM/NoPadding";
+    private SharedPreferences preferences;
+
+    @Override
+    public void load() {
+        preferences = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+    }
+
+    private SecretKey getOrCreateSecretKey() throws Exception {
+        KeyStore keyStore = KeyStore.getInstance(ANDROID_KEYSTORE);
+        keyStore.load(null);
+        if (keyStore.containsAlias(KEY_ALIAS)) {
+            KeyStore.SecretKeyEntry entry =
+                (KeyStore.SecretKeyEntry) keyStore.getEntry(KEY_ALIAS, null);
+            return entry.getSecretKey();
+        }
+
+        KeyGenerator generator =
+            KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE);
+        KeyGenParameterSpec spec = new KeyGenParameterSpec.Builder(
+            KEY_ALIAS,
+            KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT
+        )
+            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            .setKeySize(256)
+            .build();
+        generator.init(spec);
+        return generator.generateKey();
+    }
+
+    private String encrypt(String value) throws Exception {
+        Cipher cipher = Cipher.getInstance(CIPHER);
+        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateSecretKey());
+        byte[] ciphertext = cipher.doFinal(value.getBytes(StandardCharsets.UTF_8));
+        String iv = Base64.encodeToString(cipher.getIV(), Base64.NO_WRAP);
+        String body = Base64.encodeToString(ciphertext, Base64.NO_WRAP);
+        return iv + "." + body;
+    }
+
+    private String decrypt(String encoded) throws Exception {
+        String[] parts = encoded.split("\\.", 2);
+        if (parts.length != 2) throw new IllegalArgumentException("Invalid secure value");
+        byte[] iv = Base64.decode(parts[0], Base64.NO_WRAP);
+        byte[] ciphertext = Base64.decode(parts[1], Base64.NO_WRAP);
+        Cipher cipher = Cipher.getInstance(CIPHER);
+        cipher.init(
+            Cipher.DECRYPT_MODE,
+            getOrCreateSecretKey(),
+            new GCMParameterSpec(128, iv)
+        );
+        return new String(cipher.doFinal(ciphertext), StandardCharsets.UTF_8);
+    }
+
+    private String requireKey(PluginCall call) {
+        String key = call.getString("key");
+        if (key == null || key.trim().isEmpty()) {
+            call.reject("Secure storage key is required.");
+            return null;
+        }
+        return key;
+    }
+
+    @PluginMethod
+    public void getItem(PluginCall call) {
+        String key = requireKey(call);
+        if (key == null) return;
+        try {
+            JSObject result = new JSObject();
+            String encoded = preferences.getString(key, null);
+            if (encoded != null) result.put("value", decrypt(encoded));
+            call.resolve(result);
+        } catch (Exception error) {
+            call.reject("Could not read secure auth storage.", error);
+        }
+    }
+
+    @PluginMethod
+    public void setItem(PluginCall call) {
+        String key = requireKey(call);
+        if (key == null) return;
+        String value = call.getString("value");
+        if (value == null) {
+            call.reject("Secure storage value is required.");
+            return;
+        }
+        try {
+            boolean saved = preferences.edit().putString(key, encrypt(value)).commit();
+            if (!saved) throw new IllegalStateException("Secure preferences commit failed");
+            call.resolve();
+        } catch (Exception error) {
+            call.reject("Could not write secure auth storage.", error);
+        }
+    }
+
+    @PluginMethod
+    public void removeItem(PluginCall call) {
+        String key = requireKey(call);
+        if (key == null) return;
+        try {
+            boolean saved = preferences.edit().remove(key).commit();
+            if (!saved) throw new IllegalStateException("Secure preferences commit failed");
+            call.resolve();
+        } catch (Exception error) {
+            call.reject("Could not remove secure auth storage.", error);
+        }
+    }
+
+    @PluginMethod
+    public void keys(PluginCall call) {
+        try {
+            JSArray keys = new JSArray();
+            for (String key : preferences.getAll().keySet()) keys.put(key);
+            JSObject result = new JSObject();
+            result.put("keys", keys);
+            call.resolve(result);
+        } catch (Exception error) {
+            call.reject("Could not inspect secure auth storage.", error);
+        }
+    }
+}
+`;
+  await writeFile(pluginUrl,pluginSource);
+
+  if(!activity.includes('registerPlugin(SwoleCatSecureStoragePlugin.class);')){
+    if(!activity.includes('import android.os.Bundle;')){
+      activity=activity.replace(
+        /package\s+[A-Za-z0-9_.]+\s*;/,
+        match=>match+'\n\nimport android.os.Bundle;'
+      );
+    }
+    if(/public class MainActivity extends BridgeActivity\s*\{\s*\}/s.test(activity)){
+      activity=activity.replace(
+        /public class MainActivity extends BridgeActivity\s*\{\s*\}/s,
+        `public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(SwoleCatSecureStoragePlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+}`
+      );
+    }else if(/super\.onCreate\(savedInstanceState\);/.test(activity)){
+      activity=activity.replace(
+        /super\.onCreate\(savedInstanceState\);/,
+        'registerPlugin(SwoleCatSecureStoragePlugin.class);\n        super.onCreate(savedInstanceState);'
+      );
+    }else{
+      throw new Error('Could not safely register SwoleCatSecureStoragePlugin in MainActivity');
+    }
+    await writeFile(mainActivityUrl,activity);
+  }
+
+  return {mainActivityUrl,pluginUrl};
+}
+
 
 if (!versionName) throw new Error('package.json is missing version');
 if (!Number.isInteger(versionCode) || versionCode < 1) {
@@ -90,7 +299,10 @@ if(!manifest.includes(`android:scheme="${ANDROID_AUTH_SCHEME}"`)){
 }
 await writeFile(manifestUrl,manifest);
 
+const secureAuth=await configureAndroidSecureAuthStorage();
+
 console.log(
-  `Configured Android versionName=${versionName}, versionCode=${versionCode}, authRedirect=${ANDROID_AUTH_SCHEME}://${ANDROID_AUTH_HOST}${ANDROID_AUTH_PATH}` +
+  `Configured Android versionName=${versionName}, versionCode=${versionCode}, authRedirect=${ANDROID_AUTH_SCHEME}://${ANDROID_AUTH_HOST}${ANDROID_AUTH_PATH}, secureAuth=AndroidKeyStore` +
   (signingEnabled ? ', release signing enabled' : '')
 );
+console.log(`Secure auth plugin: ${secureAuth.pluginUrl.pathname}`);

@@ -1,4 +1,4 @@
-// v0.67.3 Supabase Auth provider for the optional account shell.
+// v0.67.4 Supabase Auth provider for the optional account shell.
 // Supabase JS is pinned and lazy-loaded only when auth is actually needed.
 const SWOLE_CAT_SUPABASE_JS_VERSION='2.117.2';
 const SWOLE_CAT_SUPABASE_JS_URL='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@'+SWOLE_CAT_SUPABASE_JS_VERSION;
@@ -173,8 +173,13 @@ SwoleCatRuntime.events.addEventListener('app:ready',()=>{
   const authStorage=SwoleCatRuntime.getService('identity')?.authStorage?.();
   if(!config?.configured)return;
   if(isNativeApp())installSwoleCatAndroidAuthHandlers();
-  if(!authStorage?.hasAny?.())return;
-  ensureSupabaseIdentityProviderReady().catch(error=>{
+  const hasAuth=typeof authStorage?.hasAnyAsync==='function'
+    ?authStorage.hasAnyAsync()
+    :Promise.resolve(!!authStorage?.hasAny?.());
+  Promise.resolve(hasAuth).then(found=>{
+    if(!found)return;
+    return ensureSupabaseIdentityProviderReady();
+  }).catch(error=>{
     console.warn('Swole Cat cloud session restore unavailable:',error?.message||error);
   });
 },{once:true});

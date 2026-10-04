@@ -93,7 +93,7 @@ The app must remain usable when offline. Cloud sync should be optional infrastru
 Current Phase 8.1 services include:
 
 - `cloudConfig`: disabled-by-default provider configuration
-- `cloudAuthStorage`: auth-only namespaced storage, separate from workout state
+- `cloudAuthStorage`: auth-only storage, separate from workout state; browser storage on web/PWA and AES-GCM Android storage protected by Android Keystore on native Android
 - `identity`: provider-neutral account/session state
 
 The identity shell performs no sync and makes no provider network calls by itself. A configured provider adapter must be registered explicitly.

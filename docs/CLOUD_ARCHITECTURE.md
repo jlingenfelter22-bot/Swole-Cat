@@ -200,6 +200,8 @@ Start with **Google sign-in** for early cloud testing.
 
 **v0.67.3 lab-channel isolation:** Android builds from `main` now install as **Swole Cat Testing** with package ID `com.jlingenfelter.swolecat.testing`. The frozen field beta remains `com.jlingenfelter.swolecat`. Android therefore gives each app its own local storage/database sandbox, allowing both versions to be installed simultaneously without sharing `overload_v3`, auth state, or other device data.
 
+**v0.67.4:** Android Supabase session persistence is moved behind Swole Cat's provider-neutral `cloudAuthStorage` service and an app-local Capacitor plugin. Stored values use AES-256-GCM; the AES key is generated and retained by Android Keystore. Existing v0.67.3 namespaced WebView auth values migrate item-by-item only after a secure write/read verification succeeds, then the legacy auth copy is removed. Workout state is never part of this migration.
+
 Reason:
 - Android users already have a Google identity available
 - Supabase supports Google OAuth

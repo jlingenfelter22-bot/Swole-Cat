@@ -833,7 +833,7 @@ Core decisions:
 
 ### Phase 8.1 - Optional account foundation
 
-**Status: In progress through v0.67.3. Identity works end-to-end on web/PWA and Android Testing.**
+**Status: In progress through v0.67.4. Identity works end-to-end, and Android auth sessions are Keystore-backed.**
 
 **v0.67.0 Cloud Shell Foundation** established the provider-neutral identity boundary without uploading workout data.
 
@@ -842,6 +842,8 @@ Core decisions:
 **v0.67.2** added Android PKCE OAuth browser return/deep-link handling.
 
 **v0.67.3** split experimental Android development into the separate **Swole Cat Testing** app so it can coexist with the frozen field beta without sharing local data.
+
+**v0.67.4** moves Android Supabase session persistence behind an app-local Capacitor bridge using AES-256-GCM with its secret key generated and held by Android Keystore. Existing Testing auth values migrate once from the old namespaced WebView storage and are removed only after secure write/read verification.
 
 - [x] Add provider-neutral `identity`, `cloudConfig`, and namespaced `cloudAuthStorage` runtime services.
 - [x] Make cloud configuration disabled by default and injectable at build/runtime without committing backend credentials.
@@ -858,7 +860,7 @@ Core decisions:
 - [x] Keep the experimental `main` Android build installable side-by-side with the field beta as **Swole Cat Testing** using package ID `com.jlingenfelter.swolecat.testing` and callback `com.jlingenfelter.swolecat.testing://auth/callback`.
 - [x] Preserve the field-beta package ID `com.jlingenfelter.swolecat` so beta workout data and experimental lab data remain in separate Android app sandboxes.
 - [x] Verify the live Supabase account state after real-device login: one Google Auth identity and zero public Swole Cat application tables as of 2026-10-03.
-- [ ] Move Android auth session secrets from the temporary namespaced lab store to Keystore-backed secure storage before public production use.
+- [x] Move Android auth session secrets from the temporary namespaced lab store to Keystore-backed AES-GCM storage protected by Android Keystore.
 - [ ] Add account recovery path and cloud-account deletion.
 - [x] Keep local-only mode fully supported.
 
