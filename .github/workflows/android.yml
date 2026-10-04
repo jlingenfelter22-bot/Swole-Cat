@@ -115,6 +115,13 @@ jobs:
 
       - name: Build debug APK
         working-directory: android
+        env:
+          SWOLE_CAT_ENABLE_SIGNING: "1"
+          SWOLE_CAT_SIGNING_BUILD_TYPE: "debug"
+          SWOLE_CAT_SIGNING_STORE_FILE: "swole-cat-testing.jks"
+          SWOLE_CAT_SIGNING_STORE_PASSWORD: ${{ secrets.SWOLE_CAT_TESTING_STORE_PASSWORD }}
+          SWOLE_CAT_SIGNING_KEY_ALIAS: ${{ secrets.SWOLE_CAT_TESTING_KEY_ALIAS }}
+          SWOLE_CAT_SIGNING_KEY_PASSWORD: ${{ secrets.SWOLE_CAT_TESTING_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
