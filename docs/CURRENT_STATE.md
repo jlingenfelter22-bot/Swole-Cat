@@ -215,14 +215,16 @@ Phase 8.1 implementation is complete in **v0.67.6**:
 - Android auth/session material remains Keystore-backed
 - the v0.67.6 regression wall passed, including lifecycle and local-data preservation coverage
 
+Real-device verification completed on 2026-10-04:
+- [x] installed v0.67.6 directly over permanently signed v0.67.5 without uninstalling
+- [x] existing Google/Supabase session survived the in-place update and remained signed in
+
 Remaining Phase 8.1 verification:
-- install v0.67.6 over permanently signed v0.67.5 without uninstalling
-- confirm the existing Google/Supabase session survives the in-place update
-- verify sign-out keeps local workout data
-- sign back in with the same Google account to verify recovery
-- verify the delete-account Google re-auth and final deletion flow on real Android hardware
-- confirm local workout data remains after cloud-account deletion
-- then mark Phase 8.1 complete
+- [ ] verify sign-out keeps local workout data
+- [ ] sign back in with the same Google account to verify recovery
+- [ ] verify the delete-account Google re-auth and final deletion flow on real Android hardware
+- [ ] confirm local workout data remains after cloud-account deletion
+- [ ] then mark Phase 8.1 complete
 
 ### Then Phase 8.2: Cloud Backup
 
