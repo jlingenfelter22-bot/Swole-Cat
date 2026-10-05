@@ -437,6 +437,17 @@ function cloudSyncApplyIncoming(records){
       if(remote.sourceDeviceId===swoleCatSyncMeta.deviceId&&remote.recordVersion>=pending.baseVersion){
         swoleCatSyncMeta.versions[remote.key]=remote.recordVersion;
         swoleCatSyncMeta.hashes[remote.key]=remoteHash;
+        if(pending.hash===remoteHash){
+          // A previous write from this installation reached the server but its
+          // response may have been lost. Treat the matching remote row as the ack.
+          cloudSyncRemovePendingKey(remote.key);
+          pendingByKey.delete(remote.key);
+        }else{
+          // This device made another local edit after that write. Advance the
+          // optimistic base version and keep the newer local change queued.
+          pending.baseVersion=remote.recordVersion;
+          pendingByKey.set(remote.key,pending);
+        }
         continue;
       }
       cloudSyncUpsertConflict(cloudSyncCreateConflict(pending,remote));
