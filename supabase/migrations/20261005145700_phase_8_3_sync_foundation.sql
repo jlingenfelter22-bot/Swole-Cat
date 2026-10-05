@@ -57,6 +57,7 @@ create table if not exists public.sync_records (
   ),
   record_id text not null check (char_length(record_id) between 1 and 180),
   payload_json jsonb,
+  schema_version integer not null default 1 check (schema_version >= 1),
   record_version bigint not null default 1 check (record_version >= 1),
   server_change_seq bigint not null default nextval('public.swolecat_sync_change_seq'),
   source_device_id uuid references public.devices(id) on delete set null,
