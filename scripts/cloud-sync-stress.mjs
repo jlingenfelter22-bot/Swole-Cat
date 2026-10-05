@@ -8,6 +8,8 @@ const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
 const syncSource=fs.readFileSync('src/js/10f-cloud-sync.js','utf8');
 const providerSource=fs.readFileSync('src/js/10g-supabase-sync-provider.js','utf8');
 const migrationSource=fs.readFileSync('supabase/migrations/20261005_phase_8_3_sync_foundation.sql','utf8');
+const settingsSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8');
+const coreSource=fs.readFileSync('src/js/01-core-runtime.js','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
 assert.equal(pkg.version,'0.69.0');
@@ -40,6 +42,9 @@ assert.match(migrationSource,/revoke all on table public\.sync_records from anon
 assert.match(migrationSource,/grant update \(\s*payload_json/);
 assert.doesNotMatch(migrationSource,/grant all on table public\.sync_records to authenticated/i);
 assert.doesNotMatch(migrationSource,/grant truncate[^;]*authenticated/i);
+assert.match(syncSource,/resetLocalMetadata:cloudSyncResetLocalMetadata/);
+assert.match(settingsSource,/resetLocalMetadata/,'Erase all local data must clear local sync bookkeeping');
+assert.match(coreSource,/resetLocalMetadata/,'corrupt-local-data erase must clear local sync bookkeeping');
 
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
