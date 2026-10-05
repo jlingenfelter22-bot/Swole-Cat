@@ -263,6 +263,16 @@ await b.sync.syncNow();
 assert.equal(b.sync.snapshot().queued,0);
 assert.equal(backend.records.get(recordKey('sync-user-1','profile','singleton')).payload_json.name,'Offline B');
 
+b.w.eval("state.routines.push({id:'never-synced',name:'Temporary',description:'',trainingMode:'progressive',archivedAt:null,exercises:[]});save()");
+await b.sync.captureLocalChanges();
+assert(b.sync.snapshot().queued>0,'new unsynced record should queue');
+b.w.eval("state.routines=state.routines.filter(r=>r.id!=='never-synced');save()");
+await b.sync.captureLocalChanges();
+const bLocalAfterCreateDelete=JSON.parse(b.w.localStorage.getItem('swolecat-sync-local-v1'));
+assert(!bLocalAfterCreateDelete.queue.some(item=>item.key==='routine:never-synced'),'create-then-delete before first sync must cancel the pending insert');
+await b.sync.syncNow();
+assert(!backend.records.has(recordKey('sync-user-1','routine','never-synced')),'deleted unsynced record must never be resurrected remotely');
+
 a.dom.window.close();
 b.dom.window.close();
 console.log('Swole Cat v0.69.0 record-level multi-device sync PASS');
