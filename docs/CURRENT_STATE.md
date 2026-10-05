@@ -538,3 +538,25 @@ v0.69.1 hotfix:
 - regression-test concurrent Sync Now calls and stale/copied device-ID collisions
 
 Do not continue the Device B -> Device A propagation test on v0.69.0. Resume after v0.69.1 passes CI and is deployed.
+
+
+### Phase 8.3 real-device checkpoint: Device B hotfix + conflict resolution
+
+Verified on 2026-10-05:
+- v0.69.0 Device B exposed a repeated-registration failure: `devices_pkey`
+- v0.69.1 hotfix deployed to the live PWA
+- Device B retained its queued local profile edit
+- Device B showed one real profile conflict after refresh
+- choosing **Keep this device** resolved the conflict without data loss
+- the live cloud profile advanced to record version 2
+- server change sequence advanced to 25
+- the winning cloud profile value is `synced from b`
+- the winning source device is the Web/PWA installation
+- Device B registration now reports app version 0.69.1
+- main validation run 652, Pages run 618, and signed Android Testing run 332 all passed
+
+Next:
+- install v0.69.1 over Android Device A
+- Sync Now on Device A
+- verify the profile edit from Device B appears on Android
+- then reverse direction for Device A -> Device B
