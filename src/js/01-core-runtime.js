@@ -344,6 +344,7 @@ function clearUnreadableLocalData(){
      swoleCatStorage.removeItem(RECOVERYKEY);
      swoleCatStorage.removeItem(IMPORTSNAPSHOTKEY);
    }catch(e){}
+   SwoleCatRuntime.getService('cloudSync')?.resetLocalMetadata?.();
    storageWriteBlocked=false;recoveredFromSnapshot=false;startupStorageNotice='';lastStorageError='';recoverySnapshotWritten=false;
    state=freshState();save();renderHome();populateMuscles();updateActiveWorkoutChrome();showToast('Started with fresh local data');setTimeout(onboarding,180);
  });
