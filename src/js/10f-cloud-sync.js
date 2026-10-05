@@ -69,7 +69,10 @@ function syncEnsureOwner(ownerId){
   const local=syncLoadLocal();
   syncDeviceId(local);
   if(String(local.ownerId||'')!==String(ownerId||'')){
-    const deviceId=local.deviceId;
+    const hadOwner=!!local.ownerId;
+    const deviceId=hadOwner
+      ?(globalThis.crypto?.randomUUID?.()||uid())
+      :local.deviceId;
     return syncSaveLocal({
       ...syncDefaultLocal(),
       deviceId,
