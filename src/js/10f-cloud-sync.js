@@ -601,10 +601,14 @@ function cloudSyncDisable(){
 }
 async function cloudSyncNow(){
   if(swoleCatSyncRunPromise){
-    // A save/manual request that lands while another pass is in flight must not
-    // disappear behind the older promise. Guarantee one more pass afterward.
+    // Never satisfy a new sync request with work that began before the request.
+    // Wait for the older pass to release its lock, then guarantee a fresh pass.
     swoleCatSyncRerunRequested=true;
-    return swoleCatSyncRunPromise;
+    const olderRun=swoleCatSyncRunPromise;
+    try{await olderRun}catch(error){}
+    if(!swoleCatSyncMeta.enabled)throw new Error('Multi-device sync is not enabled on this device.');
+    if(!cloudSyncCanUse())throw new Error('Sign in before syncing.');
+    return cloudSyncNow();
   }
   if(!swoleCatSyncMeta.enabled)throw new Error('Multi-device sync is not enabled on this device.');
   if(!cloudSyncCanUse())throw new Error('Sign in before syncing.');
