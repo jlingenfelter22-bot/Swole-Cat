@@ -12,8 +12,8 @@ const deleteFunction=fs.readFileSync('supabase/functions/delete-account/index.ts
 const settingsSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.69.2');
-assert.equal(pkg.swoleCat.androidVersionCode,93);
+assert.equal(pkg.version,'0.69.3');
+assert.equal(pkg.swoleCat.androidVersionCode,94);
 
 assert.match(cloudSource,/SWOLE_CAT_CLOUD_BACKUP_RETENTION=2/);
 assert.match(cloudSource,/SWOLE_CAT_CLOUD_BACKUP_MAX_BYTES=5000000/);
@@ -202,4 +202,4 @@ await assert.rejects(()=>cloud.backUpNow(),/Sign in/i);
 assert.equal(w.localStorage.getItem('overload_v3'),localBeforeFailure,'signed-out cloud backup attempts must leave local data untouched');
 
 dom.window.close();
-console.log('Swole Cat v0.69.2 cloud backup and restore PASS');
+console.log('Swole Cat v0.69.3 cloud backup and restore PASS');
