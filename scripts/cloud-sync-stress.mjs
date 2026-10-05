@@ -23,7 +23,7 @@ assert.doesNotMatch(syncSource,/put\('active_workout'/,'active workout must stay
 assert.match(syncSource,/record-level sync/i);
 assert.match(syncSource,/syncPullRemote/);
 assert.match(syncSource,/syncPushQueue/);
-assert.match(syncSource,/syncResolveConflict/);
+assert.match(syncSource,/cloudSyncResolveConflict/);
 assert.match(syncSource,/deleted/);
 assert.doesNotMatch(syncSource,/service_role|SUPABASE_SERVICE_ROLE_KEY/);
 
