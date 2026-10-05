@@ -833,7 +833,7 @@ Core decisions:
 
 ### Phase 8.1 - Optional account foundation
 
-**Status: Phase 8.1 complete. Phase 8.2 Cloud Backup is merged as v0.68.0, the full regression/build wall is green, and real-device backup/restore verification is next.**
+**Status: Phase 8.1 and Phase 8.2 are complete through v0.68.0. Cloud Backup is verified on real Android hardware. Phase 8.3 Multi-device Sync is next.**
 
 **v0.67.0 Cloud Shell Foundation** established the provider-neutral identity boundary without uploading workout data.
 
@@ -890,7 +890,10 @@ Core decisions:
 - [x] Keep cloud failure non-blocking for workouts and keep backup traffic explicitly user initiated.
 - [x] Extend account deletion to remove private backup objects/metadata before deleting the Auth user.
 - [x] Pass the full v0.68.0 regression/build wall on `main` (branch Validate 608, main Validate 609, Pages 602, Android Testing 330).
-- [ ] Verify backup creation, two-snapshot retention, restore, rollback snapshot, offline safety, and account deletion with cloud backups on real Android hardware.
+- [x] Verify backup creation, two-snapshot retention, restore, rollback snapshot, offline safety, and account deletion with cloud backups on real Android hardware.
+- [x] Verify the final backup-aware account deletion leaves 0 Auth users, 0 backup metadata rows, and 0 private backup objects.
+
+**Phase 8.2 complete: 2026-10-05.**
 
 ### Phase 8.3 - Multi-device sync
 - [ ] Add stable per-device identity and separate local sync metadata.
@@ -914,10 +917,10 @@ Core decisions:
 - [ ] Never convert an existing lifetime buyer into a recurring subscriber.
 
 ### Locked: Optional Swole Cat accounts
-- [ ] Account creation/sign-in
-- [ ] Cloud backup
+- [x] Account creation/sign-in
+- [x] Cloud backup
 - [ ] Multi-device sync
-- [ ] Account recovery
+- [x] Account recovery
 - [ ] Conflict-safe sync strategy
 - [x] Local-first/offline behavior remains the architectural requirement
 
