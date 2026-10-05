@@ -333,19 +333,22 @@ async function syncRegisterCurrentDevice(ownerId,local){
   return deviceId;
 }
 async function syncPullRemote(ownerId,local){
-  const rows=await swoleCatSyncProvider.pullChanges({
-    ownerId,
-    afterSeq:Number(local.lastCursor)||0,
-    limit:SWOLE_CAT_SYNC_PULL_LIMIT
-  });
-  if(!Array.isArray(rows)||!rows.length)return {applied:0,conflicts:0};
-
   const projection=await syncProjectionWithHashes();
   const freshLocal=Number(local.lastCursor||0)===0&&
-    Object.keys(local.manifest).length===0&&local.queue.length===0&&syncLocalTrainingIsFresh();
+    Object.keys(local.manifest).length===0&&syncLocalTrainingIsFresh();
   let applied=0,conflictCount=0,changedState=false;
+  let pageCount=0;
 
-  for(const raw of rows){
+  while(pageCount<100){
+    const rows=await swoleCatSyncProvider.pullChanges({
+      ownerId,
+      afterSeq:Number(local.lastCursor)||0,
+      limit:SWOLE_CAT_SYNC_PULL_LIMIT
+    });
+    if(!Array.isArray(rows)||!rows.length)break;
+    pageCount++;
+
+    for(const raw of rows){
     const remote=syncNormalizeRemoteRow(raw);
     if(!remote?.type||!remote.id)continue;
     const key=syncKey(remote.type,remote.id);
@@ -380,8 +383,13 @@ async function syncPullRemote(ownerId,local){
       local.queue=local.queue.filter(item=>item.key!==key);
       applied++;
     }
-    if(remote.changeSeq>Number(local.lastCursor||0))local.lastCursor=remote.changeSeq;
+      if(remote.changeSeq>Number(local.lastCursor||0))local.lastCursor=remote.changeSeq;
+    }
+
+    if(rows.length<SWOLE_CAT_SYNC_PULL_LIMIT)break;
   }
+
+  if(pageCount>=100)throw new Error('Sync pull exceeded the safety page limit.');
 
   if(changedState){
     swoleCatSyncApplyingRemote=true;
