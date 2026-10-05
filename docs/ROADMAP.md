@@ -896,13 +896,33 @@ Core decisions:
 **Phase 8.2 complete: 2026-10-05.**
 
 ### Phase 8.3 - Multi-device sync
-- [ ] Add stable per-device identity and separate local sync metadata.
-- [ ] Represent user-owned sync data as individual records with server version, change sequence, tombstones, and source-device metadata.
-- [ ] Diff local state against the last synced manifest so ordinary saves only enqueue changed records.
-- [ ] Batch/debounce network writes rather than syncing each keystroke or set edit.
-- [ ] Pull changes by server change sequence.
-- [ ] Surface true edit conflicts instead of silently discarding one device's changes.
-- [ ] Treat simultaneous active-workout editing conservatively rather than attempting unsafe set-by-set merging.
+
+**Status: v0.69.0 sync foundation in development on `phase-8.3-multi-device-sync`.**
+
+- [x] Add stable per-account/per-installation device identity and separate local `swolecat_sync_v1` metadata.
+- [x] Add owner-private `devices` and `sync_records` backend tables with RLS.
+- [x] Represent user-owned sync data as individual records with server version, change sequence, tombstones, and source-device metadata.
+- [x] Diff local state against the last synced manifest so ordinary saves only enqueue changed records.
+- [x] Batch/debounce network writes rather than syncing each keystroke or set edit.
+- [x] Pull changes by server change sequence.
+- [x] Surface true edit conflicts instead of silently discarding one device's changes.
+- [x] Treat simultaneous active-workout editing conservatively rather than attempting unsafe set-by-set merging.
+- [ ] Pass the full v0.69.0 regression/build wall.
+- [ ] Verify initial-device seed, second-device pull, offline queue/reconnect, tombstones, and conflict handling across real devices.
+- [ ] Verify account deletion cascades device/sync rows while preserving local workout data.
+
+### Post-Phase 8.3 - Beta feedback hardening gate
+
+Before adding more broad feature scope, pause and work directly from feedback from real beta users.
+
+Locked focus areas:
+- [ ] **Coach Swolecat intelligence pass:** improve workout selection, generated workout quality, context awareness, exercise choices, and response quality based on beta feedback.
+- [ ] **Body heat map pass:** revisit mapping accuracy, visual clarity, highlighted muscle behavior, and any misleading/awkward presentation.
+- [ ] **UI feedback pass:** polish confusing flows, missing affordances, visual rough edges, and requested small elements discovered during real use.
+- [ ] Re-run performance/snappiness profiling after those changes.
+- [ ] Preserve the current feature set unless a beta issue reveals a genuine missing core capability.
+
+This is primarily a **quality and intelligence pass**, not a feature-expansion phase.
 
 ### Phase 8.4 - Cloud sharing transport
 - [ ] Add short human-friendly codes and share URLs that resolve to stored canonical `SWOLECAT1` payloads.

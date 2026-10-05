@@ -6,8 +6,8 @@ const identity=fs.readFileSync('src/js/10b-cloud-identity.js','utf8');
 const provider=fs.readFileSync('src/js/10c-supabase-auth-provider.js','utf8');
 const configure=fs.readFileSync('scripts/configure-android.mjs','utf8');
 
-assert.equal(pkg.version,'0.68.0');
-assert.equal(pkg.swoleCat.androidVersionCode,90);
+assert.equal(pkg.version,'0.69.0');
+assert.equal(pkg.swoleCat.androidVersionCode,91);
 
 assert.match(identity,/capacitorPlugin\('SwoleCatSecureStorage'\)/);
 assert.match(identity,/android_keystore/);
@@ -30,4 +30,4 @@ assert.match(configure,/registerPlugin\(SwoleCatSecureStoragePlugin\.class\);\\n
 assert.match(configure,/swole_cat_secure_auth_v1/);
 assert.match(configure,/encoded\.split\("\\\\\\\\.", 2\)/,'generator must emit a Java-safe escaped dot regex');
 
-console.log('Swole Cat v0.68.0 Android Keystore auth storage contract PASS');
+console.log('Swole Cat v0.69.0 Android Keystore auth storage contract PASS');
