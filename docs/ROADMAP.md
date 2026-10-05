@@ -897,7 +897,7 @@ Core decisions:
 
 ### Phase 8.3 - Multi-device sync
 
-**Status: v0.69.0 manual sync foundation implemented on the Testing branch; CI/build and real-device two-installation verification remain.**
+**Status: v0.69.0 manual sync foundation is merged to `main`, the full regression/build wall is green, and real-device two-installation verification is next.**
 
 - [x] Add stable per-device identity and separate local sync metadata.
 - [x] Represent user-owned sync data as individual records with server version, change sequence, tombstones, and source-device metadata.
@@ -908,7 +908,7 @@ Core decisions:
 - [x] Add explicit **Keep this device** / **Use cloud** conflict resolution.
 - [x] Treat simultaneous active-workout editing conservatively by leaving active workouts local-only in the first pass.
 - [x] Harden `devices` and `sync_records` Data API grants to least privilege with owner-only RLS.
-- [ ] Pass the full v0.69.0 regression/build wall.
+- [x] Pass the full v0.69.0 regression/build wall (branch Validate 642, main Validate 643, Pages 612, Android Testing 331).
 - [ ] Verify fresh-device pull, bidirectional edits, conflicts, tombstones, and offline queued changes on real installations.
 - [ ] After proven stable, enable automatic background-safe batch sync at documented safe moments.
 
