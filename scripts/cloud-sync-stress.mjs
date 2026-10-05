@@ -201,6 +201,7 @@ assert.equal(JSON.parse(w.localStorage.getItem('overload_v3')).routines[0].name,
 w.__setOnline(true);
 await sync.syncNow();
 info=sync.snapshot();
+if(info.pendingCount!==0)console.log('[SYNC DEBUG pending after reconnect]',w.localStorage.getItem('swolecat_sync_v1'));
 assert.equal(info.pendingCount,0);
 assert.equal(records.get(keyOf('routine','r1')).payload_json.name,'Offline Local Edit','queued offline change must push after reconnect');
 assert.equal(records.get(keyOf('routine','r1')).record_version,2);
