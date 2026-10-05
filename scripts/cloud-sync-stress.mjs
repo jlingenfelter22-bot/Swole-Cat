@@ -217,6 +217,11 @@ assert.equal(collisionAttempts.length,2,'device collision should retry exactly o
 assert.notEqual(collisionAttempts[0],collisionAttempts[1],'device collision must rotate to a fresh installation ID');
 collisionApp.dom.window.close();
 
+backend.devices.clear();
+backend.records.clear();
+backend.seq=0;
+backend.fail=false;
+
 const stateA=baseState('Device A');
 stateA.routines=[{id:'routine-1',name:'Shared Push',description:'',trainingMode:'progressive',archivedAt:null,exercises:[]}];
 stateA.sessions=[{id:'session-1',date:'2026-10-05T12:00:00.000Z',routineName:'Shared Push',exercises:[]}];
