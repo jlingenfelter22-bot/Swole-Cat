@@ -91,7 +91,7 @@ const fakeProvider={
 
 await identity.registerProvider(fakeProvider);
 assert.equal(identity.snapshot().signedIn,true);
-assert.match(w.cloudSettingsHtml(),/Workout sync is intentionally OFF/i);
+assert.match(w.cloudSettingsHtml(),/Multi-device sync is in Phase 8\.3 testing/i);
 w.openCloudAccount();
 assert.match(w.document.body.textContent,/Delete cloud account/i);
 
