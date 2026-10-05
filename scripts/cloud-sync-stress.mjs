@@ -107,6 +107,7 @@ assert.equal(sync.snapshot().enabled,false);
 assert.equal(hiddenFetchCalls,0,'signing in alone must not start workout sync traffic');
 
 let seq=0;
+let syncInsertCalls=0,syncUpdateCalls=0,syncPullCalls=0;
 const records=new Map();
 const devices=new Map();
 const keyOf=(type,id)=>type+'::'+id;
@@ -132,6 +133,7 @@ const fakeSyncProvider={
     return clone(devices.get(device.id));
   },
   async pullChanges({afterSeq,limit}){
+    syncPullCalls++;
     return [...records.values()]
       .filter(row=>row.server_change_seq>afterSeq)
       .sort((a,b)=>a.server_change_seq-b.server_change_seq)
@@ -142,6 +144,7 @@ const fakeSyncProvider={
     return clone(records.get(keyOf(type,id))||null);
   },
   async insertRecord(change){
+    syncInsertCalls++;
     const key=keyOf(change.type,change.id);
     if(records.has(key))return {conflict:true,record:clone(records.get(key))};
     const row=toRow(change,1,change.deviceId);
@@ -149,6 +152,7 @@ const fakeSyncProvider={
     return {conflict:false,record:clone(row)};
   },
   async updateRecord(change){
+    syncUpdateCalls++;
     const key=keyOf(change.type,change.id);
     const current=records.get(key);
     if(!current||current.record_version!==change.expectedVersion){
@@ -201,6 +205,7 @@ assert.equal(JSON.parse(w.localStorage.getItem('overload_v3')).routines[0].name,
 w.__setOnline(true);
 await sync.syncNow();
 info=sync.snapshot();
+if(info.pendingCount!==0)console.log('[SYNC PUSH DEBUG]',JSON.stringify({syncInsertCalls,syncUpdateCalls,syncPullCalls,info,meta:JSON.parse(w.localStorage.getItem('swolecat_sync_v1'))}));
 assert.equal(info.pendingCount,0);
 assert.equal(records.get(keyOf('routine','r1')).payload_json.name,'Offline Local Edit','queued offline change must push after reconnect');
 assert.equal(records.get(keyOf('routine','r1')).record_version,2);
