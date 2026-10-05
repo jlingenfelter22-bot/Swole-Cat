@@ -1,5 +1,5 @@
 // Phase 8.3 Supabase transport for record-level multi-device sync.
-const SWOLE_CAT_SYNC_RECORD_SELECT='owner_id,record_type,record_id,payload_json,record_version,server_change_seq,source_device_id,client_updated_at,server_updated_at,deleted_at';
+const SWOLE_CAT_SYNC_RECORD_SELECT='owner_id,record_type,record_id,payload_json,schema_version,record_version,server_change_seq,source_device_id,client_updated_at,server_updated_at,deleted_at';
 
 async function swoleCatSyncGetRemoteRecord(client,{ownerId,type,id}){
   const {data,error}=await client
@@ -58,6 +58,7 @@ const swoleCatSupabaseSyncProvider={
       record_type:type,
       record_id:id,
       payload_json:payload,
+      schema_version:DATA_SCHEMA_VERSION,
       source_device_id:deviceId,
       client_updated_at:clientUpdatedAt,
       deleted_at:deletedAt||null
@@ -83,6 +84,7 @@ const swoleCatSupabaseSyncProvider={
     const client=await getSwoleCatSupabaseClient();
     const patch={
       payload_json:payload,
+      schema_version:DATA_SCHEMA_VERSION,
       source_device_id:deviceId,
       client_updated_at:clientUpdatedAt,
       deleted_at:deletedAt||null
