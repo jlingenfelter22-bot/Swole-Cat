@@ -215,6 +215,7 @@ function cloudSyncNormalizeRemote(row){
     type,
     id,
     payload:row.payload_json??row.payload??null,
+    schemaVersion:Number(row.schema_version??row.schemaVersion??1),
     recordVersion:Number(row.record_version??row.recordVersion??0),
     serverChangeSeq:Number(row.server_change_seq??row.serverChangeSeq??0),
     sourceDeviceId:String(row.source_device_id||row.sourceDeviceId||''),
@@ -225,6 +226,12 @@ function cloudSyncNormalizeRemote(row){
 }
 function cloudSyncRemoteHash(row){
   return row?.deletedAt?SWOLE_CAT_SYNC_DELETED_HASH:cloudSyncFingerprint(row?.payload);
+}
+function cloudSyncAssertCompatibleRecord(row){
+  const version=Number(row?.schemaVersion)||1;
+  if(version>DATA_SCHEMA_VERSION){
+    throw new Error('This cloud record was created by a newer Swole Cat data format (v'+version+'). Update Swole Cat before syncing this device.');
+  }
 }
 function cloudSyncUpsertById(list,id,payload){
   const rows=Array.isArray(list)?list:[];
@@ -412,6 +419,7 @@ function cloudSyncApplyIncoming(records){
   const pendingByKey=new Map(swoleCatSyncMeta.pending.map(row=>[row.key,row]));
 
   for(const remote of normalized){
+    cloudSyncAssertCompatibleRecord(remote);
     swoleCatSyncMeta.lastServerCursor=Math.max(swoleCatSyncMeta.lastServerCursor,remote.serverChangeSeq);
     const remoteHash=cloudSyncRemoteHash(remote);
     const knownVersion=Number(swoleCatSyncMeta.versions[remote.key])||0;
@@ -471,6 +479,7 @@ async function cloudSyncBootstrap(remoteRows){
   if(!meaningful){
     let draft=cloneData(state);
     for(const row of remote){
+      cloudSyncAssertCompatibleRecord(row);
       cloudSyncApplyRecordToDraft(draft,row);
       swoleCatSyncMeta.hashes[row.key]=cloudSyncRemoteHash(row);
       swoleCatSyncMeta.versions[row.key]=row.recordVersion;
@@ -486,6 +495,7 @@ async function cloudSyncBootstrap(remoteRows){
   let draft=cloneData(state),draftChanged=false;
   const seen=new Set();
   for(const row of remote){
+    cloudSyncAssertCompatibleRecord(row);
     seen.add(row.key);
     const local=localProjection.get(row.key);
     const remoteHash=cloudSyncRemoteHash(row);
