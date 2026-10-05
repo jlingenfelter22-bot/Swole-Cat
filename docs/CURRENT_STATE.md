@@ -6,7 +6,7 @@ This is the **resume-first checkpoint** for Swole Cat.
 
 If chat history, assistant context, or a development session is lost, read this file before making changes. It records the current working baseline, branch contract, cloud state, tested account behavior, and the next unfinished work.
 
-Checkpoint date: **2026-10-04 (America/Chicago)**
+Checkpoint date: **2026-10-05 (America/Chicago)**
 
 ## 1. Branches and safe development model
 
@@ -270,20 +270,41 @@ Automated Phase 8.2 verification:
 - [x] Android Testing run 330 passed with the persistent Testing signature
 - [x] Supabase security advisor reports zero findings
 
-Remaining Phase 8.2 exit work:
-- [ ] install the permanently signed v0.68.0 Testing APK over v0.67.6 without uninstalling
-- [ ] confirm existing local workout data survives the update
+Phase 8.2 real-device verification:
+- [x] permanently signed v0.68.0 Testing build installed and used without resetting the existing local training state
 - [x] sign in again after the Phase 8.1 account-deletion test
 - [x] create the first real-device v0.68.0 cloud backup and verify matching private Storage object + metadata row
 - [x] create two more backups and verify only latest + previous remain
 - [x] change local data and restore the previous snapshot
 - [x] verify the pre-restore local rollback snapshot is created and exposed in Settings
 - [x] verify the pre-restore local rollback snapshot can recover the replaced state
-- [ ] verify local workout flow still works with cloud unavailable
-- [ ] verify account deletion also clears backup objects/metadata while preserving local workout data
-- [ ] then mark Phase 8.2 complete
+- [x] verify local workout flow still works with cloud unavailable
+- [x] reconnect and delete the cloud account while live backups are attached
+- [x] verify account deletion clears Auth, backup metadata, and private backup Storage objects
+- [x] re-run the Supabase security advisor after the final destructive test with zero findings
 
-Do not jump directly to multi-device sync before proving backup.
+Final backend state after the destructive Phase 8.2 test on 2026-10-05:
+- Supabase Auth users: **0**
+- `backup_metadata` rows: **0**
+- private `swole-cat-backups` Storage objects: **0**
+- Supabase security advisor findings: **0**
+
+**Phase 8.2 is complete.**
+
+### Immediate next step: Phase 8.3 Multi-device Sync
+
+Phase 8.3 should remain local-first and record-based:
+- add a stable per-installation device identity outside `overload_v3`
+- project local Swole Cat state into sync records instead of uploading the whole state blob
+- add server-controlled versions and a monotonically increasing change sequence
+- queue local changes and batch/debounce network writes
+- pull remote changes by server cursor
+- use tombstones for deletions
+- surface true edit conflicts rather than silently overwriting one side
+- treat simultaneous active-workout editing conservatively
+- keep ordinary workouts fully usable while offline
+
+Do not introduce realtime/per-set network writes just because sync exists.
 
 ## 9. Phase 8 sequence after identity
 
@@ -344,7 +365,7 @@ Before changing code:
 
 If context is lost, the safest continuation is:
 
-> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 is complete. Phase 8.2 Cloud Backup is merged on `main` as Swole Cat Testing v0.68.0. Branch validation 608, main validation 609, Pages 602, and signed Android build 330 are green. The live backend uses private owner-only `swole-cat-backups` Storage plus RLS-protected `backup_metadata`, exact canonical backup envelopes, SHA-256 verification, latest+previous retention, restore preview, and local rollback snapshots. Next perform real-device backup/restore/account-deletion verification before Phase 8.3. Keep beta v0.66.1 frozen.
+> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 Identity and Phase 8.2 Cloud Backup are complete and verified on real Android hardware through Swole Cat Testing v0.68.0. Backup creation, latest+previous retention, SHA-256/size verification, previous-snapshot restore, local rollback recovery, offline workout safety, and backup-aware account deletion all passed. The final destructive test left 0 Auth users, 0 `backup_metadata` rows, 0 private backup objects, and 0 Supabase security findings. Begin Phase 8.3 record-level multi-device sync. Keep beta v0.66.1 frozen.
 
 
 ### Phase 8.2 real-device checkpoint: first cloud backup
@@ -400,3 +421,17 @@ Verified on 2026-10-04:
 - the local marker returned to `Cloud Test 3`
 
 This confirms the cloud-restore safety snapshot is not only created, but can successfully recover the local state that was replaced.
+
+
+### Phase 8.2 real-device checkpoint: final offline + destructive cleanup
+
+Verified on 2026-10-05:
+- Swole Cat Testing remained usable offline and local workout changes saved successfully without cloud connectivity
+- the device reconnected normally afterward
+- the cloud account was deleted while the two retained backup snapshots were still attached
+- post-delete backend verification showed 0 Supabase Auth users
+- post-delete backend verification showed 0 `backup_metadata` rows
+- post-delete backend verification showed 0 private `swole-cat-backups` Storage objects
+- Supabase security advisor returned zero findings
+
+This closes Phase 8.2. Cloud backup is now proven as a bounded, owner-private disaster-recovery layer that does not block local training.
