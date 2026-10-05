@@ -486,6 +486,17 @@ async function cloudSyncNow(){
     throw error;
   }
 }
+function cloudSyncResetLocalMetadata(){
+  const local=syncLoadLocal();
+  const next=syncSaveLocal({
+    ...syncDefaultLocal(),
+    deviceId:local.deviceId||'',
+    ownerId:local.ownerId||null
+  });
+  syncSetState({status:'idle',lastError:'',lastSyncAt:null});
+  return next;
+}
+
 async function cloudSyncResolveConflict(key,choice){
   const user=syncIdentityUser();
   if(!user?.id)throw new Error('Sign in before resolving sync conflicts.');
@@ -597,7 +608,8 @@ const swoleCatCloudSyncService=SwoleCatRuntime.registerService('cloudSync',{
   canUse:syncCanUse,
   captureLocalChanges:syncCaptureLocalChanges,
   syncNow:cloudSyncNow,
-  resolveConflict:cloudSyncResolveConflict
+  resolveConflict:cloudSyncResolveConflict,
+  resetLocalMetadata:cloudSyncResetLocalMetadata
 });
 
 SwoleCatRuntime.events.addEventListener('state:saved',()=>syncScheduleCapture());
