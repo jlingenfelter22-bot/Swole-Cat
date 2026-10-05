@@ -146,7 +146,7 @@ jobs:
       - name: Stress test v0.68.0 cloud backup and restore
         run: node scripts/cloud-backup-stress.mjs
 
-      - name: Stress test v0.69.2 record-level multi-device sync
+      - name: Stress test v0.69.3 record-level multi-device sync
         run: node scripts/cloud-sync-stress.mjs
 
       - name: Smoke test active workouts, set types, progression, and supersets
