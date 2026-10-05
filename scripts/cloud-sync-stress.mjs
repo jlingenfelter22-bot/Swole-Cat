@@ -16,6 +16,7 @@ assert.equal(pkg.swoleCat.androidVersionCode,91);
 assert.match(syncSource,/SWOLE_CAT_SYNC_STORAGE_KEY='swolecat_sync_v1'/);
 assert.match(syncSource,/state:saved/);
 assert.match(syncSource,/lastServerCursor/);
+assert.match(syncSource,/newer Swole Cat data format/);
 assert.match(syncSource,/pending/);
 assert.match(syncSource,/conflicts/);
 assert.match(syncSource,/SWOLE_CAT_SYNC_DELETED_HASH/);
@@ -25,6 +26,7 @@ assert.match(syncSource,/active_workout/);
 assert.doesNotMatch(syncSource,/service_role|SUPABASE_SERVICE_ROLE_KEY/);
 assert.doesNotMatch(providerSource,/service_role|SUPABASE_SERVICE_ROLE_KEY/);
 
+assert.match(providerSource,/schema_version:DATA_SCHEMA_VERSION/);
 assert.match(providerSource,/\.gt\('server_change_seq'/);
 assert.match(providerSource,/\.eq\('record_version',Number\(expectedVersion\)\|\|0\)/);
 assert.match(providerSource,/String\(error\.code\|\|''\)==='23505'/);
@@ -36,6 +38,7 @@ assert.match(migrationSource,/create table if not exists public\.sync_records/i)
 assert.match(migrationSource,/alter table public\.devices enable row level security/i);
 assert.match(migrationSource,/alter table public\.sync_records enable row level security/i);
 assert.match(migrationSource,/server_change_seq bigint/i);
+assert.match(migrationSource,/schema_version integer/i);
 assert.match(migrationSource,/record_version bigint/i);
 assert.match(migrationSource,/deleted_at timestamptz/i);
 assert.match(migrationSource,/sync records select own/);
@@ -108,6 +111,7 @@ assert.equal(hiddenFetchCalls,0,'signing in alone must not start workout sync tr
 
 let seq=0;
 let syncInsertCalls=0,syncUpdateCalls=0,syncPullCalls=0;
+let loseNextUpdateAck=false;
 const records=new Map();
 const devices=new Map();
 const keyOf=(type,id)=>type+'::'+id;
@@ -119,6 +123,7 @@ const toRow=(change,version,sourceDeviceId)=>{
     record_type:change.type,
     record_id:change.id,
     payload_json:clone(change.payload),
+    schema_version:Number(change.schemaVersion)||1,
     record_version:version,
     server_change_seq:seq,
     source_device_id:sourceDeviceId,
@@ -160,14 +165,19 @@ const fakeSyncProvider={
     }
     const row=toRow(change,current.record_version+1,change.deviceId);
     records.set(key,row);
+    if(loseNextUpdateAck){
+      loseNextUpdateAck=false;
+      throw new Error('simulated lost write acknowledgement');
+    }
     return {conflict:false,record:clone(row)};
   }
 };
-const remoteWrite=(type,id,payload,{deleted=false,source='device-b'}={})=>{
+const remoteWrite=(type,id,payload,{deleted=false,source='device-b',schemaVersion=1}={})=>{
   const key=keyOf(type,id);
   const current=records.get(key);
   const change={
     type,id,payload:deleted?null:clone(payload),
+    schemaVersion,
     deletedAt:deleted?new Date().toISOString():null,
     clientUpdatedAt:new Date().toISOString()
   };
@@ -205,10 +215,20 @@ assert.equal(JSON.parse(w.localStorage.getItem('overload_v3')).routines[0].name,
 w.__setOnline(true);
 await sync.syncNow();
 info=sync.snapshot();
-if(info.pendingCount!==0)console.log('[SYNC PUSH DEBUG]',JSON.stringify({syncInsertCalls,syncUpdateCalls,syncPullCalls,info,meta:JSON.parse(w.localStorage.getItem('swolecat_sync_v1'))}));
 assert.equal(info.pendingCount,0);
+assert.equal(syncUpdateCalls,1,'reconnecting must push the queued routine with one optimistic update');
 assert.equal(records.get(keyOf('routine','r1')).payload_json.name,'Offline Local Edit','queued offline change must push after reconnect');
 assert.equal(records.get(keyOf('routine','r1')).record_version,2);
+
+w.eval("state.routines[0].name='Ack Can Get Lost';save()");
+await wait(20);
+loseNextUpdateAck=true;
+await assert.rejects(()=>sync.syncNow(),/simulated lost write acknowledgement/);
+assert.equal(sync.snapshot().pendingCount,1,'a lost response must leave the local change durably queued');
+assert.equal(records.get(keyOf('routine','r1')).payload_json.name,'Ack Can Get Lost','the simulated server write must still have landed');
+await sync.syncNow();
+assert.equal(sync.snapshot().pendingCount,0,'the next pull should recognize this device\'s matching server write as the acknowledgement');
+assert.equal(sync.snapshot().conflictCount,0,'an acknowledgement lost in transit must never become a false multi-device conflict');
 
 remoteWrite('session','s-remote',{id:'s-remote',date:'2026-10-05T13:00:00.000Z',routineName:'Remote Session',exercises:[]});
 await sync.syncNow();
@@ -259,6 +279,13 @@ remoteWrite('custom_exercise','custom-1',null,{deleted:true});
 await sync.syncNow();
 local=JSON.parse(w.localStorage.getItem('overload_v3'));
 assert(!local.customExercises.some(row=>row.id==='custom-1'),'remote tombstone must remove the corresponding local record');
+
+remoteWrite('session','future-schema',{id:'future-schema',date:'2026-10-05T14:00:00.000Z',routineName:'Future Schema',exercises:[]},{schemaVersion:99});
+const beforeFutureSchema=w.localStorage.getItem('overload_v3');
+await assert.rejects(()=>sync.syncNow(),/newer Swole Cat data format/i);
+assert.equal(w.localStorage.getItem('overload_v3'),beforeFutureSchema,'an incompatible future-schema record must never mutate local training data');
+assert(!JSON.parse(w.localStorage.getItem('overload_v3')).sessions.some(row=>row.id==='future-schema'));
+records.delete(keyOf('session','future-schema'));
 
 const localBeforeSignOut=w.localStorage.getItem('overload_v3');
 await identity.signOut();
