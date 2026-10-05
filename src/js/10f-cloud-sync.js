@@ -310,6 +310,11 @@ async function syncCaptureLocalChanges(){
     syncQueueMutation(local,record,manifest.serverVersion,true);
   }
 
+  // A record created and then deleted before its first successful sync has no
+  // remote identity to tombstone. Drop that stale pending insert instead of
+  // resurrecting something the user already removed.
+  local.queue=local.queue.filter(item=>projection.has(item.key)||!!local.manifest[item.key]);
+
   syncSaveLocal(local);
   return syncEmitChange();
 }
