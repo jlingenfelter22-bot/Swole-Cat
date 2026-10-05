@@ -326,10 +326,10 @@ Automated Phase 8.3 verification:
 - [x] Supabase security advisor reports zero findings
 
 Remaining Phase 8.3 real-device work:
-- install the permanently signed v0.69.0 Testing APK over v0.68.0 without uninstalling
-- confirm existing local workout data remains unchanged
-- sign in and seed Device A
-- connect a second installation/device to the same Google account
+- [x] install the permanently signed v0.69.0 Testing APK over v0.68.0 without uninstalling
+- [ ] confirm existing local workout data remains unchanged after the update
+- [x] sign in and seed Device A
+- [ ] connect a second installation/device to the same Google account
 - verify clean pull onto a fresh device
 - verify edits propagate both directions
 - verify same-record concurrent edits create a conflict instead of data loss
@@ -469,3 +469,28 @@ Verified on 2026-10-05:
 - Supabase security advisor returned zero findings
 
 This closes Phase 8.2. Cloud backup is now proven as a bounded, owner-private disaster-recovery layer that does not block local training.
+
+
+### Phase 8.3 real-device checkpoint: Device A seed
+
+Verified on 2026-10-05 from Swole Cat Testing v0.69.0:
+- authenticated users: 1
+- registered sync devices: 1
+- registered device platform: Android
+- registered device app version: 0.69.0
+- sync records: 10
+- tombstones: 0
+- seeded record types:
+  - profile: 1
+  - settings: 1
+  - favorites: 1
+  - exercise_preferences: 1
+  - bodyweight: 1
+  - app_state: 1
+  - routine: 1
+  - session: 3
+- all seeded records are version 1
+- all seeded records use the same authenticated owner and source device
+- active workout was not uploaded, as intentionally designed for the first sync pass
+
+This confirms the first real Android **Sync Now** registered Device A and seeded the expected owner-scoped record set.
