@@ -331,6 +331,7 @@ Remaining Phase 8.3 real-device work:
 - [x] sign in and seed Device A
 - [x] connect a second installation/device to the same Google account
 - [x] verify clean pull onto a fresh device without duplicate sync records
+- [x] verify Device B renders the synced routine/history correctly after the pull
 - [ ] verify edits propagate both directions
 - verify same-record concurrent edits create a conflict instead of data loss
 - verify conflict resolution
@@ -509,3 +510,13 @@ Verified on 2026-10-05:
 - existing server records still show Device A as the source of the original seeded data
 
 This confirms a fresh second installation can register independently and pull the existing cloud state without duplicating records.
+
+
+### Phase 8.3 real-device checkpoint: Device B UI parity
+
+Verified on 2026-10-05:
+- Device B displayed the expected synced Swole Cat data after its first Sync Now
+- the routine and workout-history data from Device A appeared correctly
+- no duplicate cloud records were created during the pull
+
+This confirms the fresh-device sync path works both at the backend-record level and in the actual Swole Cat UI.
