@@ -649,3 +649,22 @@ This confirms explicit cloud-wins conflict resolution converges the losing devic
 ### CI infrastructure note for v0.69.3 hotfix
 
 On 2026-10-05, GitHub Actions experienced a hosted-runner assignment incident while PR #7 was awaiting validation. Three validation attempts ended before checkout with no runner assigned and zero workflow steps executed. This note intentionally triggers a fresh PR synchronization run so v0.69.3 can receive a new workflow run ID once hosted runners recover.
+
+
+### Phase 8.3 real-device checkpoint: v0.69.3 browser pull fix
+
+Verified on 2026-10-05:
+- Device A had already uploaded routine `Tombstone Test` as routine record version 1, server change sequence 38
+- Device B on v0.69.2 repeatedly stalled after device registration and never requested `sync_records`
+- v0.69.3 changed Sync Now ordering so inbound remote pull happens before device registration
+- v0.69.3 removed representation-returning device registration writes
+- branch validation run 662 passed
+- PR #7 merged to main as `b25a9ef174523a86fdf558cdc57bc17c885d1272`
+- main validation run 663 passed
+- Pages run 626 passed
+- signed Android Testing run 334 passed
+- Device B hard-refreshed to v0.69.3 and Sync Now successfully pulled `Tombstone Test`
+- Device B now registers as Web v0.69.3
+- cloud routine remained a single live record at version 1 / sequence 38
+
+This confirms the exact browser pull failure is fixed on the real two-device setup. Next complete the tombstone deletion half of the test.
