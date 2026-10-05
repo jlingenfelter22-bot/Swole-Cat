@@ -644,3 +644,8 @@ Additional normal Device B records were flushed during the later convergence syn
 - no tombstones existed afterward
 
 This confirms explicit cloud-wins conflict resolution converges the losing device without rewriting the already-authoritative cloud record.
+
+
+### CI infrastructure note for v0.69.3 hotfix
+
+On 2026-10-05, GitHub Actions experienced a hosted-runner assignment incident while PR #7 was awaiting validation. Three validation attempts ended before checkout with no runner assigned and zero workflow steps executed. This note intentionally triggers a fresh PR synchronization run so v0.69.3 can receive a new workflow run ID once hosted runners recover.

@@ -12,8 +12,8 @@ const settingsSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8'
 const coreSource=fs.readFileSync('src/js/01-core-runtime.js','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.69.2');
-assert.equal(pkg.swoleCat.androidVersionCode,93);
+assert.equal(pkg.version,'0.69.3');
+assert.equal(pkg.swoleCat.androidVersionCode,94);
 
 assert.match(syncSource,/SWOLE_CAT_SYNC_LOCAL_KEY='swolecat-sync-local-v1'/);
 assert.match(syncSource,/state:saved/);
@@ -33,6 +33,8 @@ assert.match(providerSource,/last_mutation_id/);
 assert.match(providerSource,/23505/);
 assert.match(providerSource,/collision:true/,'device registration must recover from primary-key collisions');
 assert.match(syncSource,/swoleCatSyncInFlight/,'Sync Now must be single-flight');
+const syncNowSource=syncSource.slice(syncSource.indexOf('async function cloudSyncNow'),syncSource.indexOf('function cloudSyncResetLocalMetadata'));
+assert(syncNowSource.indexOf('syncPullRemote')<syncNowSource.indexOf('syncRegisterCurrentDevice'),'Sync Now must pull remote changes before device registration');
 assert.doesNotMatch(syncSource,/crypto\.subtle/,'record sync must not depend on async Web Crypto hashing');
 const pullFunctionSource=syncSource.slice(syncSource.indexOf('async function syncPullRemote'),syncSource.indexOf('async function syncPushQueue'));
 assert(pullFunctionSource.indexOf('pullChanges')<pullFunctionSource.indexOf('syncProjectionWithHashes'),'remote pull must start before local projection hashing');
@@ -192,6 +194,29 @@ function backendProvider(){
     }
   };
 }
+
+// Inbound pull must happen before device registration so a browser registration
+// stall can never hide an already-existing cloud change.
+const pullFirstApp=await makeApp(baseState(''));
+const pullFirstEvents=[];
+const pullFirstProvider=backendProvider();
+const pullFirstBasePull=pullFirstProvider.pullChanges;
+const pullFirstBaseRegister=pullFirstProvider.registerDevice;
+pullFirstProvider.pullChanges=async args=>{
+  pullFirstEvents.push('pull');
+  return pullFirstBasePull(args);
+};
+pullFirstProvider.registerDevice=async args=>{
+  pullFirstEvents.push('register-start');
+  await wait(25);
+  const result=await pullFirstBaseRegister(args);
+  pullFirstEvents.push('register-end');
+  return result;
+};
+await pullFirstApp.sync.registerProvider(pullFirstProvider);
+await pullFirstApp.sync.syncNow();
+assert.equal(pullFirstEvents[0],'pull','remote pull must start before device registration');
+pullFirstApp.dom.window.close();
 
 // Repeated/two-click Sync Now must share one in-flight operation instead of racing device registration.
 const lockApp=await makeApp(baseState(''));

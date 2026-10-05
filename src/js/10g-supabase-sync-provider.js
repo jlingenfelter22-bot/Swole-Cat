@@ -12,20 +12,19 @@ const swoleCatSupabaseSyncProvider={
       if(!samePlatform(existing?.platform,device.platform)){
         return {collision:true,existing};
       }
-      const {data,error}=await client
+      const patch={
+        device_name:device.device_name,
+        platform:device.platform,
+        app_version:device.app_version,
+        last_seen_at:device.last_seen_at
+      };
+      const {error}=await client
         .from('devices')
-        .update({
-          device_name:device.device_name,
-          platform:device.platform,
-          app_version:device.app_version,
-          last_seen_at:device.last_seen_at
-        })
+        .update(patch)
         .eq('id',device.id)
-        .eq('owner_id',ownerId)
-        .select(columns)
-        .single();
+        .eq('owner_id',ownerId);
       if(error)throw error;
-      return data;
+      return {...existing,...patch};
     };
 
     const {data:existing,error:selectError}=await client
@@ -36,20 +35,19 @@ const swoleCatSupabaseSyncProvider={
     if(selectError)throw selectError;
     if(existing)return updateExisting(existing);
 
-    const {data,error}=await client
+    const inserted={
+      id:device.id,
+      owner_id:ownerId,
+      device_name:device.device_name,
+      platform:device.platform,
+      app_version:device.app_version,
+      last_seen_at:device.last_seen_at
+    };
+    const {error}=await client
       .from('devices')
-      .insert({
-        id:device.id,
-        owner_id:ownerId,
-        device_name:device.device_name,
-        platform:device.platform,
-        app_version:device.app_version,
-        last_seen_at:device.last_seen_at
-      })
-      .select(columns)
-      .single();
+      .insert(inserted);
 
-    if(!error&&data)return data;
+    if(!error)return inserted;
     if(error?.code!=='23505')throw error;
 
     // Registration is intentionally idempotent. A second Sync Now can race the
