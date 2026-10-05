@@ -335,8 +335,8 @@ Remaining Phase 8.3 real-device work:
 - [x] verify edits propagate both directions
   - [x] Device B -> Device A
   - [x] Device A -> Device B
-- verify same-record concurrent edits create a conflict instead of data loss
-- verify conflict resolution
+- [x] verify same-record concurrent edits create a conflict instead of data loss
+- [ ] verify conflict resolution
 - verify tombstone deletion propagation
 - verify queued offline changes survive reconnect/restart
 - then decide when to promote manual sync into automatic background-safe batching
@@ -605,3 +605,22 @@ Next real-device tests:
 - conflict resolution in both directions
 - tombstone deletion propagation
 - offline queued changes surviving reconnect/restart
+
+
+### Phase 8.3 real-device checkpoint: deliberate same-record conflict
+
+Verified on 2026-10-05 with both installations on v0.69.2:
+- both devices first converged on profile value `Synced From A`
+- Device A changed the profile locally to `Conflict A`
+- Device B independently changed the same profile locally to `Conflict B`
+- neither device pulled the other's edit before the concurrent changes were created
+- Device A synced first
+- cloud profile advanced to record version 4 and server change sequence 27
+- cloud winner is `Conflict A`
+- cloud source device is Android Device A
+- Device B synced afterward
+- Device B surfaced exactly 1 profile conflict
+- Device B did not silently overwrite the cloud winner
+- total sync-row count remained stable and no tombstone was created
+
+This confirms optimistic concurrency detects a real same-record edit collision and preserves both sides for explicit user resolution.
