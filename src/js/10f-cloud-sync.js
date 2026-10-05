@@ -532,7 +532,6 @@ async function cloudSyncRegisterDevice(){
 }
 async function cloudSyncPushPending(){
   const queue=[...swoleCatSyncMeta.pending];
-  console.log('[SYNC TRACE push-start]',queue.map(row=>({key:row.key,baseVersion:row.baseVersion,deleted:row.deleted})));
   for(const pending of queue){
     if(cloudSyncConflictForKey(pending.key))continue;
     let result;
@@ -611,21 +610,21 @@ function cloudSyncDisable(){
   return cloudSyncSnapshot();
 }
 async function cloudSyncNow(){
-  console.log('[SYNC TRACE now-entry]',{hasRun:!!swoleCatSyncRunPromise,pending:swoleCatSyncMeta.pending.length,status:swoleCatSyncStatus.status});
   if(swoleCatSyncRunPromise){
-    // Never satisfy a new sync request with work that began before the request.
-    // Wait for the older pass to release its lock, then guarantee a fresh pass.
+    // A caller arriving during an older pass waits for that exact pass to finish,
+    // then starts a fresh pass so its request cannot be satisfied by stale work.
     swoleCatSyncRerunRequested=true;
     const olderRun=swoleCatSyncRunPromise;
     try{await olderRun}catch(error){}
     if(!swoleCatSyncMeta.enabled)throw new Error('Multi-device sync is not enabled on this device.');
     if(!cloudSyncCanUse())throw new Error('Sign in before syncing.');
-    return cloudSyncNow();
+    return await cloudSyncNow();
   }
   if(!swoleCatSyncMeta.enabled)throw new Error('Multi-device sync is not enabled on this device.');
   if(!cloudSyncCanUse())throw new Error('Sign in before syncing.');
   if(swoleCatSyncTimer){clearTimeout(swoleCatSyncTimer);swoleCatSyncTimer=null}
-  cloudSyncRunPromise=(async()=>{
+
+  const run=(async()=>{
     cloudSyncSetStatus('syncing','');
     try{
       cloudSyncEnsureAccount();
@@ -635,13 +634,10 @@ async function cloudSyncNow(){
         swoleCatSyncRerunRequested=false;
         passes++;
         cloudSyncQueueLocalChanges();
-        console.log('[SYNC TRACE pass-before-pull]',{passes,pending:swoleCatSyncMeta.pending.length,cursor:swoleCatSyncMeta.lastServerCursor});
         const incoming=await cloudSyncPullAll(swoleCatSyncMeta.lastServerCursor);
-        console.log('[SYNC TRACE pass-after-pull]',{passes,incoming:incoming.length,pending:swoleCatSyncMeta.pending.length});
         cloudSyncApplyIncoming(incoming);
         // Capture saves that occurred while the pull was in flight.
         cloudSyncQueueLocalChanges();
-        console.log('[SYNC TRACE pass-before-push]',{passes,pending:swoleCatSyncMeta.pending.length});
         await cloudSyncPushPending();
       }while(
         swoleCatSyncRerunRequested&&
@@ -657,11 +653,15 @@ async function cloudSyncNow(){
     }catch(error){
       cloudSyncSetStatus('error',error?.message||String(error));
       throw error;
-    }finally{
-      swoleCatSyncRunPromise=null;
     }
   })();
-  return swoleCatSyncRunPromise;
+
+  swoleCatSyncRunPromise=run;
+  try{
+    return await run;
+  }finally{
+    if(swoleCatSyncRunPromise===run)swoleCatSyncRunPromise=null;
+  }
 }
 function cloudSyncSchedule(delay=SWOLE_CAT_SYNC_AUTO_DELAY_MS){
   if(!swoleCatSyncMeta.enabled||!cloudSyncIdentityUser()?.id)return;
