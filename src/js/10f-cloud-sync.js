@@ -5,6 +5,7 @@ const SWOLE_CAT_SYNC_META_VERSION=1;
 const SWOLE_CAT_SYNC_DELETED_HASH='__deleted__';
 const SWOLE_CAT_SYNC_PULL_LIMIT=500;
 const SWOLE_CAT_SYNC_AUTO_DELAY_MS=1800;
+const SWOLE_CAT_SYNC_ACTIVE_WORKOUT_DELAY_MS=5*60*1000;
 
 let swoleCatSyncProvider=null;
 let swoleCatSyncApplyingRemote=false;
@@ -831,7 +832,9 @@ SwoleCatRuntime.events.addEventListener('state:saved',()=>{
   if(swoleCatSyncApplyingRemote||!swoleCatSyncMeta.enabled)return;
   try{cloudSyncQueueLocalChanges()}catch(error){}
   if(swoleCatSyncRunPromise)swoleCatSyncRerunRequested=true;
-  cloudSyncSchedule();
+  // Active workouts can save after every set. Keep those changes durable locally,
+  // but batch cloud traffic instead of turning normal gym use into per-set requests.
+  cloudSyncSchedule(state?.activeWorkout?SWOLE_CAT_SYNC_ACTIVE_WORKOUT_DELAY_MS:SWOLE_CAT_SYNC_AUTO_DELAY_MS);
 });
 SwoleCatRuntime.events.addEventListener('identity:changed',event=>{
   const detail=event?.detail;
@@ -849,6 +852,11 @@ SwoleCatRuntime.events.addEventListener('identity:changed',event=>{
   if(swoleCatSyncMeta.enabled)cloudSyncSchedule(500);
 });
 window.addEventListener('online',()=>{if(swoleCatSyncMeta.enabled)cloudSyncSchedule(250)});
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'&&swoleCatSyncMeta.enabled&&navigator.onLine!==false){
+    cloudSyncSchedule(150);
+  }
+});
 setTimeout(()=>{
   const user=cloudSyncIdentityUser();
   if(user?.id&&swoleCatSyncMeta.enabled&&(!swoleCatSyncMeta.accountId||swoleCatSyncMeta.accountId===user.id))cloudSyncSchedule(700);
