@@ -313,10 +313,10 @@ function cloudSettingsHtml(){
   }
   if(info.signedIn){
     const label=info.user?.email||info.user?.displayName||'Signed in';
-    return '<div class="notice"><b>Cloud account connected</b><br>'+esc(label)+'<br><br><span class="mini">Workout sync is intentionally OFF in this phase. Signing in does not upload routines, sessions, sets, Coach data, or analytics.</span></div>'+
+    return '<div class="notice"><b>Cloud account connected</b><br>'+esc(label)+'<br><br><span class="mini">Cloud backup is available. Multi-device sync is in Phase 8.3 testing and only sends training records when you explicitly choose Sync Now.</span></div>'+
       '<div class="actions"><button class="btn secondary" onclick="openCloudAccount()">Manage account</button></div>';
   }
-  return '<div class="notice"><b>Cloud account available</b><br>Signing in enables the account shell only. Workout data remains local until a later cloud feature is explicitly implemented.</div>'+
+  return '<div class="notice"><b>Cloud account available</b><br>Signing in enables private cloud backup and the Phase 8.3 manual sync test. Local workouts still work without an account or network.</div>'+
     '<div class="actions"><button class="btn secondary" onclick="openCloudAccount()">Cloud account</button></div>';
 }
 function openCloudAccount(){
@@ -327,7 +327,7 @@ function openCloudAccount(){
   }
   if(info.signedIn){
     const label=info.user?.email||info.user?.displayName||'Swole Cat account';
-    openModal('Swole Cat Cloud','<div class="notice"><b>'+esc(label)+'</b><br><br>Account connection is active. Workout backup and multi-device sync are not enabled in Phase 8.1, so your training data is still local-only.<br><br><span class="mini">Account recovery and identity verification use your Google account. Swole Cat does not have a separate password.</span></div><div class="actions"><button class="btn secondary" onclick="cloudSignOutFromUi()">Sign out</button><button class="btn danger" onclick="cloudBeginDeleteAccountFromUi()">Delete cloud account</button><button class="btn secondary" onclick="closeModal()">Done</button></div>');
+    openModal('Swole Cat Cloud','<div class="notice"><b>'+esc(label)+'</b><br><br>Account connection is active. Private backup is available, and Phase 8.3 record-level sync runs only when you explicitly choose Sync Now during testing.<br><br><span class="mini">Account recovery and identity verification use your Google account. Swole Cat does not have a separate password.</span></div><div class="actions"><button class="btn secondary" onclick="cloudSignOutFromUi()">Sign out</button><button class="btn danger" onclick="cloudBeginDeleteAccountFromUi()">Delete cloud account</button><button class="btn secondary" onclick="closeModal()">Done</button></div>');
     return;
   }
   const providerNote=info.providerReady
