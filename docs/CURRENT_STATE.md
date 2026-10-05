@@ -333,6 +333,8 @@ Remaining Phase 8.3 real-device work:
 - [x] verify clean pull onto a fresh device without duplicate sync records
 - [x] verify Device B renders the synced routine/history correctly after the pull
 - [ ] verify edits propagate both directions
+  - [x] Device B -> Device A
+  - [ ] Device A -> Device B
 - verify same-record concurrent edits create a conflict instead of data loss
 - verify conflict resolution
 - verify tombstone deletion propagation
@@ -560,3 +562,16 @@ Next:
 - Sync Now on Device A
 - verify the profile edit from Device B appears on Android
 - then reverse direction for Device A -> Device B
+
+
+### Phase 8.3 real-device checkpoint: Device B -> Device A propagation
+
+Verified on 2026-10-05 after both installations were updated to v0.69.1:
+- Device B/Web had already won the profile conflict with `synced from b`
+- Device A/Android ran **Sync Now**
+- Android displayed `synced from b` after the pull
+- Android device registration refreshed successfully on v0.69.1
+- cloud profile remained version 2 with Device B as the source
+- Android pulling the change did not rewrite the cloud winner or create a profile duplicate
+
+This confirms real Device B -> Device A propagation works end-to-end after the v0.69.1 registration hotfix.
