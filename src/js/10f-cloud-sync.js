@@ -532,6 +532,7 @@ async function cloudSyncRegisterDevice(){
 }
 async function cloudSyncPushPending(){
   const queue=[...swoleCatSyncMeta.pending];
+  console.log('[SYNC TRACE push-start]',queue.map(row=>({key:row.key,baseVersion:row.baseVersion,deleted:row.deleted})));
   for(const pending of queue){
     if(cloudSyncConflictForKey(pending.key))continue;
     let result;
@@ -610,6 +611,7 @@ function cloudSyncDisable(){
   return cloudSyncSnapshot();
 }
 async function cloudSyncNow(){
+  console.log('[SYNC TRACE now-entry]',{hasRun:!!swoleCatSyncRunPromise,pending:swoleCatSyncMeta.pending.length,status:swoleCatSyncStatus.status});
   if(swoleCatSyncRunPromise){
     // Never satisfy a new sync request with work that began before the request.
     // Wait for the older pass to release its lock, then guarantee a fresh pass.
@@ -633,10 +635,13 @@ async function cloudSyncNow(){
         swoleCatSyncRerunRequested=false;
         passes++;
         cloudSyncQueueLocalChanges();
+        console.log('[SYNC TRACE pass-before-pull]',{passes,pending:swoleCatSyncMeta.pending.length,cursor:swoleCatSyncMeta.lastServerCursor});
         const incoming=await cloudSyncPullAll(swoleCatSyncMeta.lastServerCursor);
+        console.log('[SYNC TRACE pass-after-pull]',{passes,incoming:incoming.length,pending:swoleCatSyncMeta.pending.length});
         cloudSyncApplyIncoming(incoming);
         // Capture saves that occurred while the pull was in flight.
         cloudSyncQueueLocalChanges();
+        console.log('[SYNC TRACE pass-before-push]',{passes,pending:swoleCatSyncMeta.pending.length});
         await cloudSyncPushPending();
       }while(
         swoleCatSyncRerunRequested&&
