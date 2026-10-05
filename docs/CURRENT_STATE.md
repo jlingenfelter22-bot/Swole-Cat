@@ -329,9 +329,9 @@ Remaining Phase 8.3 real-device work:
 - [x] install the permanently signed v0.69.0 Testing APK over v0.68.0 without uninstalling
 - [ ] confirm existing local workout data remains unchanged after the update
 - [x] sign in and seed Device A
-- [ ] connect a second installation/device to the same Google account
-- verify clean pull onto a fresh device
-- verify edits propagate both directions
+- [x] connect a second installation/device to the same Google account
+- [x] verify clean pull onto a fresh device without duplicate sync records
+- [ ] verify edits propagate both directions
 - verify same-record concurrent edits create a conflict instead of data loss
 - verify conflict resolution
 - verify tombstone deletion propagation
@@ -494,3 +494,18 @@ Verified on 2026-10-05 from Swole Cat Testing v0.69.0:
 - active workout was not uploaded, as intentionally designed for the first sync pass
 
 This confirms the first real Android **Sync Now** registered Device A and seeded the expected owner-scoped record set.
+
+
+### Phase 8.3 real-device checkpoint: Device B fresh pull
+
+Verified on 2026-10-05:
+- registered sync devices: 2
+- Device A: Android, app version 0.69.0
+- Device B: Web/PWA, app version 0.69.0
+- both devices belong to the same authenticated owner
+- sync record rows remained at 10 after Device B Sync Now
+- tombstones remained at 0
+- no duplicate routine/session/profile/settings rows were created
+- existing server records still show Device A as the source of the original seeded data
+
+This confirms a fresh second installation can register independently and pull the existing cloud state without duplicating records.
