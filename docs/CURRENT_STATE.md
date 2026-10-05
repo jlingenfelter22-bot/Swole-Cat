@@ -291,18 +291,45 @@ Final backend state after the destructive Phase 8.2 test on 2026-10-05:
 
 **Phase 8.2 is complete.**
 
-### Immediate next step: Phase 8.3 Multi-device Sync
+### Immediate next step: validate Phase 8.3 Multi-device Sync v0.69.0
 
-Phase 8.3 should remain local-first and record-based:
-- add a stable per-installation device identity outside `overload_v3`
-- project local Swole Cat state into sync records instead of uploading the whole state blob
-- add server-controlled versions and a monotonically increasing change sequence
-- queue local changes and batch/debounce network writes
-- pull remote changes by server cursor
-- use tombstones for deletions
-- surface true edit conflicts rather than silently overwriting one side
-- treat simultaneous active-workout editing conservatively
-- keep ordinary workouts fully usable while offline
+Phase 8.3 foundation now exists on `phase-8.3-multidevice-sync`:
+- Swole Cat Testing version: **v0.69.0**, Android version code **91**
+- stable per-installation sync identity stored outside `overload_v3`
+- provider-neutral `cloudSync` runtime service
+- Supabase `devices` registry with owner-only RLS
+- Supabase `sync_records` with owner-only RLS
+- server-managed record versions and monotonically increasing change sequence
+- local pending queue survives cloud/network failure
+- local saves may queue changes but do not initiate network traffic
+- explicit **Sync Now** performs pull → merge/conflict detection → push → final pull
+- optimistic concurrency prevents silent same-record overwrites
+- tombstones propagate deletions
+- explicit conflict UI supports **Keep this device** or **Use cloud**
+- active workouts intentionally remain local-only in this first pass
+- no Realtime subscriptions and no per-set network writes
+- client grants were hardened to least-privilege column access; authenticated clients no longer have TRUNCATE/trigger/table-wide mutation privileges
+- Supabase security advisor reports zero findings
+
+Current server state before real-device sync testing:
+- Auth users: 0
+- device rows: 0
+- sync record rows: 0
+- backup metadata rows: 0
+- backup Storage objects: 0
+
+Remaining Phase 8.3 foundation work:
+- pass the v0.69.0 full regression wall
+- produce the permanently signed v0.69.0 Testing APK
+- sign in and seed Device A
+- connect a second installation/device to the same Google account
+- verify clean pull onto a fresh device
+- verify edits propagate both directions
+- verify same-record concurrent edits create a conflict instead of data loss
+- verify conflict resolution
+- verify tombstone deletion propagation
+- verify queued offline changes survive reconnect/restart
+- then decide when to promote manual sync into automatic background-safe batching
 
 Do not introduce realtime/per-set network writes just because sync exists.
 
@@ -365,7 +392,7 @@ Before changing code:
 
 If context is lost, the safest continuation is:
 
-> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 Identity and Phase 8.2 Cloud Backup are complete and verified on real Android hardware through Swole Cat Testing v0.68.0. Backup creation, latest+previous retention, SHA-256/size verification, previous-snapshot restore, local rollback recovery, offline workout safety, and backup-aware account deletion all passed. The final destructive test left 0 Auth users, 0 `backup_metadata` rows, 0 private backup objects, and 0 Supabase security findings. Begin Phase 8.3 record-level multi-device sync. Keep beta v0.66.1 frozen.
+> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 Identity and Phase 8.2 Cloud Backup are complete. Phase 8.3 record-level sync is implemented on `phase-8.3-multidevice-sync` as Testing v0.69.0 with stable device identity, versioned owner-private records, change cursors, offline queueing, tombstones, explicit conflict handling, and manual Sync Now. Active workouts remain local-only. Finish CI/build and real-device two-installation testing before automating sync. Keep beta v0.66.1 frozen.
 
 
 ### Phase 8.2 real-device checkpoint: first cloud backup
