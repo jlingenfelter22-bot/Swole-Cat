@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import {webcrypto} from 'node:crypto';
+import {webcrypto,createHash} from 'node:crypto';
 import {TextEncoder} from 'node:util';
 import {JSDOM} from 'jsdom';
 
@@ -12,8 +12,8 @@ const settingsSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8'
 const coreSource=fs.readFileSync('src/js/01-core-runtime.js','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.69.1');
-assert.equal(pkg.swoleCat.androidVersionCode,92);
+assert.equal(pkg.version,'0.69.2');
+assert.equal(pkg.swoleCat.androidVersionCode,93);
 
 assert.match(syncSource,/SWOLE_CAT_SYNC_LOCAL_KEY='swolecat-sync-local-v1'/);
 assert.match(syncSource,/state:saved/);
@@ -33,6 +33,9 @@ assert.match(providerSource,/last_mutation_id/);
 assert.match(providerSource,/23505/);
 assert.match(providerSource,/collision:true/,'device registration must recover from primary-key collisions');
 assert.match(syncSource,/swoleCatSyncInFlight/,'Sync Now must be single-flight');
+assert.doesNotMatch(syncSource,/crypto\.subtle/,'record sync must not depend on async Web Crypto hashing');
+const pullFunctionSource=syncSource.slice(syncSource.indexOf('async function syncPullRemote'),syncSource.indexOf('async function syncPushQueue'));
+assert(pullFunctionSource.indexOf('pullChanges')<pullFunctionSource.indexOf('syncProjectionWithHashes'),'remote pull must start before local projection hashing');
 assert.doesNotMatch(providerSource,/service_role|SUPABASE_SERVICE_ROLE_KEY/);
 
 assert.match(migrationSource,/alter table public\.devices enable row level security/i);
@@ -104,6 +107,10 @@ async function makeApp(initial){
     async signOut(){return {ok:true};}
   });
   assert.equal(identity.snapshot().signedIn,true);
+  const probe={z:2,a:'hash compatibility'};
+  const canonical=w.syncCanonical(probe);
+  const expected=createHash('sha256').update(canonical).digest('hex');
+  assert.equal(w.syncHashPayload(probe),expected,'synchronous sync SHA-256 must remain compatible with existing manifests');
   return {dom,w,identity,sync};
 }
 
