@@ -293,6 +293,21 @@ Final backend state after the destructive Phase 8.2 test on 2026-10-05:
 
 ### Immediate next step: Phase 8.3 Multi-device Sync
 
+v0.69.0 sync-foundation work is underway on `phase-8.3-multi-device-sync`.
+
+Current implementation direction:
+- owner-private `devices` + `sync_records` tables with RLS
+- `swolecat_sync_v1` local metadata outside `overload_v3`
+- opt-in sync per device
+- stable device identity after sync is enabled
+- record-level projection for routines, Programs, sessions, custom exercises, profile, training settings, favorites, exercise preferences, bodyweight, app state, and the complete active-workout record
+- device-only UI settings such as haptics and keep-awake do not sync
+- server-controlled record version + monotonic change cursor
+- durable local queue for offline edits
+- tombstones instead of hard client deletes
+- explicit conflict review with **Keep This Device** / **Use Cloud**
+- active workouts are never merged set-by-set
+
 Phase 8.3 should remain local-first and record-based:
 - add a stable per-installation device identity outside `overload_v3`
 - project local Swole Cat state into sync records instead of uploading the whole state blob
