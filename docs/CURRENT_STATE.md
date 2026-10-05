@@ -25,9 +25,9 @@ Checkpoint date: **2026-10-05 (America/Chicago)**
 ### Experimental development
 
 - Branch: `main`
-- Functional code baseline before this docs-only checkpoint: `12c3cfbfef1bbade89d1185ab2fc496410aea0d4`
-- App version: **v0.68.0**
-- Android version code: **90**
+- Functional code baseline before this docs-only checkpoint: `001a1c4c25e51beab7d97b5a45f79b9843962cc9`
+- App version: **v0.69.0**
+- Android version code: **91**
 - Android app name: **Swole Cat Testing**
 - Android package ID: `com.jlingenfelter.swolecat.testing`
 - Purpose: cloud/account work, new features, architecture experiments, and risky development
@@ -45,18 +45,18 @@ Do not change the `main` package ID back to `com.jlingenfelter.swolecat` while t
 
 ## 2. Latest green development gate
 
-For functional baseline `12c3cfbfef1bbade89d1185ab2fc496410aea0d4`:
+For functional baseline `001a1c4c25e51beab7d97b5a45f79b9843962cc9`:
 
-- Final pre-merge validation: run **608**, success
-- Validate Swole Cat on `main`: run **609**, success
-- Deploy Swole Cat to GitHub Pages: run **602**, success
-- Build Swole Cat Testing Android: run **330**, success
+- Final pre-merge validation: run **642**, success
+- Validate Swole Cat on `main`: run **643**, success
+- Deploy Swole Cat to GitHub Pages: run **612**, success
+- Build Swole Cat Testing Android: run **331**, success
 - permanent Testing certificate verification: success
-- Android artifact: `Swole-Cat-Testing-Android-v0.68.0-signed`
-- Android artifact digest: `sha256:678233feb44c5e34cc8e051497c236407a47982c147ca762d6ba6bab7a0630c0`
-- Extracted APK SHA-256: `c5bcc1fbb3f88590f472a96a7d8d52b9cde773a0838f62e7b6f8a5aa4e858828`
+- Android artifact: `Swole-Cat-Testing-Android-v0.69.0-signed`
+- Android artifact digest: `sha256:dcc4e7357e67c9ed8e9c09edbe0a18e787db5e2bbc73033f38b3a6bf6283faba`
+- Extracted APK SHA-256: `6082f95a5d7fc24d3ddb76458580ab571ac043abfa58d59b10dd3967332f62dc`
 
-The build verifies the generated Android application ID, visible app name, OAuth callback scheme, version metadata, and the full regression wall.
+The build verifies the generated Android application ID, visible app name, OAuth callback scheme, version metadata, persistent Testing signature, the Phase 8.3 two-device sync battle test, and the full regression wall.
 
 ## 3. Phase 8 cloud architecture
 
@@ -318,9 +318,16 @@ Current server state before real-device sync testing:
 - backup metadata rows: 0
 - backup Storage objects: 0
 
-Remaining Phase 8.3 foundation work:
-- pass the v0.69.0 full regression wall
-- produce the permanently signed v0.69.0 Testing APK
+Automated Phase 8.3 verification:
+- [x] branch validation run 642 passed, including the two-device sync battle test
+- [x] main validation run 643 passed
+- [x] Pages run 612 passed
+- [x] Android Testing run 331 passed with the persistent Testing signature
+- [x] Supabase security advisor reports zero findings
+
+Remaining Phase 8.3 real-device work:
+- install the permanently signed v0.69.0 Testing APK over v0.68.0 without uninstalling
+- confirm existing local workout data remains unchanged
 - sign in and seed Device A
 - connect a second installation/device to the same Google account
 - verify clean pull onto a fresh device
@@ -392,7 +399,7 @@ Before changing code:
 
 If context is lost, the safest continuation is:
 
-> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 Identity and Phase 8.2 Cloud Backup are complete. Phase 8.3 record-level sync is implemented on `phase-8.3-multidevice-sync` as Testing v0.69.0 with stable device identity, versioned owner-private records, change cursors, offline queueing, tombstones, explicit conflict handling, and manual Sync Now. Active workouts remain local-only. Finish CI/build and real-device two-installation testing before automating sync. Keep beta v0.66.1 frozen.
+> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 Identity and Phase 8.2 Cloud Backup are complete. Phase 8.3 manual record-level sync is merged on `main` as Swole Cat Testing v0.69.0. Branch validation 642, main validation 643, Pages 612, and permanently signed Android build 331 are green. Sync uses stable device identity, owner-private versioned records, change cursors, offline queueing, tombstones, explicit conflict handling, and manual Sync Now; active workouts remain local-only. Next perform real-device two-installation testing before automating sync. Keep beta v0.66.1 frozen.
 
 
 ### Phase 8.2 real-device checkpoint: first cloud backup
