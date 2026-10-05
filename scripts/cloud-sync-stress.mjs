@@ -12,8 +12,8 @@ const settingsSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8'
 const coreSource=fs.readFileSync('src/js/01-core-runtime.js','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.69.0');
-assert.equal(pkg.swoleCat.androidVersionCode,91);
+assert.equal(pkg.version,'0.69.1');
+assert.equal(pkg.swoleCat.androidVersionCode,92);
 
 assert.match(syncSource,/SWOLE_CAT_SYNC_LOCAL_KEY='swolecat-sync-local-v1'/);
 assert.match(syncSource,/state:saved/);
@@ -31,6 +31,8 @@ assert.match(providerSource,/\.gt\('server_change_seq'/);
 assert.match(providerSource,/\.eq\('record_version',mutation\.expectedVersion\)/);
 assert.match(providerSource,/last_mutation_id/);
 assert.match(providerSource,/23505/);
+assert.match(providerSource,/collision:true/,'device registration must recover from primary-key collisions');
+assert.match(syncSource,/swoleCatSyncInFlight/,'Sync Now must be single-flight');
 assert.doesNotMatch(providerSource,/service_role|SUPABASE_SERVICE_ROLE_KEY/);
 
 assert.match(migrationSource,/alter table public\.devices enable row level security/i);
@@ -183,6 +185,42 @@ function backendProvider(){
     }
   };
 }
+
+// Repeated/two-click Sync Now must share one in-flight operation instead of racing device registration.
+const lockApp=await makeApp(baseState(''));
+let lockRegisterCalls=0;
+const lockProvider=backendProvider();
+const lockBaseRegister=lockProvider.registerDevice;
+lockProvider.registerDevice=async args=>{
+  lockRegisterCalls++;
+  await wait(35);
+  return lockBaseRegister(args);
+};
+await lockApp.sync.registerProvider(lockProvider);
+await Promise.all([lockApp.sync.syncNow(),lockApp.sync.syncNow()]);
+assert.equal(lockRegisterCalls,1,'concurrent Sync Now calls must register the device only once');
+lockApp.dom.window.close();
+
+// A copied/stale device ID that collides with another installation must rotate locally and retry.
+const collisionApp=await makeApp(baseState(''));
+let collisionAttempts=[];
+const collisionProvider=backendProvider();
+const collisionBaseRegister=collisionProvider.registerDevice;
+collisionProvider.registerDevice=async args=>{
+  collisionAttempts.push(args.device.id);
+  if(collisionAttempts.length===1)return {collision:true};
+  return collisionBaseRegister(args);
+};
+await collisionApp.sync.registerProvider(collisionProvider);
+await collisionApp.sync.syncNow();
+assert.equal(collisionAttempts.length,2,'device collision should retry exactly once');
+assert.notEqual(collisionAttempts[0],collisionAttempts[1],'device collision must rotate to a fresh installation ID');
+collisionApp.dom.window.close();
+
+backend.devices.clear();
+backend.records.clear();
+backend.seq=0;
+backend.fail=false;
 
 const stateA=baseState('Device A');
 stateA.routines=[{id:'routine-1',name:'Shared Push',description:'',trainingMode:'progressive',archivedAt:null,exercises:[]}];

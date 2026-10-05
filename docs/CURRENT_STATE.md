@@ -520,3 +520,21 @@ Verified on 2026-10-05:
 - no duplicate cloud records were created during the pull
 
 This confirms the fresh-device sync path works both at the backend-record level and in the actual Swole Cat UI.
+
+
+### Phase 8.3 real-device incident: repeated Device B sync registration
+
+Observed on 2026-10-05 during the first Device B -> Device A propagation test:
+- Device B had already registered successfully and completed its initial fresh pull
+- after editing the profile name and choosing **Sync Now** again, the Web/PWA showed `duplicate key value violates unique constraint "devices_pkey"`
+- the profile edit had not reached the server; the cloud profile remained at its prior version
+- no sync-record duplication or cloud data loss occurred
+
+v0.69.1 hotfix:
+- make **Sync Now** single-flight so repeated/double clicks share one operation
+- make device registration idempotent after a `23505` primary-key race
+- detect a device-ID collision with an incompatible installation platform and rotate to a fresh local device ID
+- retry registration exactly once after collision rotation
+- regression-test concurrent Sync Now calls and stale/copied device-ID collisions
+
+Do not continue the Device B -> Device A propagation test on v0.69.0. Resume after v0.69.1 passes CI and is deployed.

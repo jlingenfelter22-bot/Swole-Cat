@@ -2,14 +2,16 @@
 const swoleCatSupabaseSyncProvider={
   async registerDevice({ownerId,device}){
     const client=await getSwoleCatSupabaseClient();
-    const {data:existing,error:selectError}=await client
-      .from('devices')
-      .select('id,owner_id,device_name,platform,app_version,last_seen_at')
-      .eq('id',device.id)
-      .maybeSingle();
-    if(selectError)throw selectError;
-
-    if(existing){
+    const columns='id,owner_id,device_name,platform,app_version,last_seen_at';
+    const samePlatform=(a,b)=>{
+      const left=String(a||''),right=String(b||'');
+      if(left===right)return true;
+      return ['web','pwa'].includes(left)&&['web','pwa'].includes(right);
+    };
+    const updateExisting=async existing=>{
+      if(!samePlatform(existing?.platform,device.platform)){
+        return {collision:true,existing};
+      }
       const {data,error}=await client
         .from('devices')
         .update({
@@ -20,11 +22,19 @@ const swoleCatSupabaseSyncProvider={
         })
         .eq('id',device.id)
         .eq('owner_id',ownerId)
-        .select('id,owner_id,device_name,platform,app_version,last_seen_at')
+        .select(columns)
         .single();
       if(error)throw error;
       return data;
-    }
+    };
+
+    const {data:existing,error:selectError}=await client
+      .from('devices')
+      .select(columns)
+      .eq('id',device.id)
+      .maybeSingle();
+    if(selectError)throw selectError;
+    if(existing)return updateExisting(existing);
 
     const {data,error}=await client
       .from('devices')
@@ -36,10 +46,23 @@ const swoleCatSupabaseSyncProvider={
         app_version:device.app_version,
         last_seen_at:device.last_seen_at
       })
-      .select('id,owner_id,device_name,platform,app_version,last_seen_at')
+      .select(columns)
       .single();
-    if(error)throw error;
-    return data;
+
+    if(!error&&data)return data;
+    if(error?.code!=='23505')throw error;
+
+    // Registration is intentionally idempotent. A second Sync Now can race the
+    // first insert, and stale/copied local metadata can also collide with an
+    // existing installation ID. Re-read after a unique-key collision.
+    const {data:afterCollision,error:collisionReadError}=await client
+      .from('devices')
+      .select(columns)
+      .eq('id',device.id)
+      .maybeSingle();
+    if(collisionReadError)throw collisionReadError;
+    if(!afterCollision)return {collision:true};
+    return updateExisting(afterCollision);
   },
 
   async pullChanges({ownerId,afterSeq,limit=500}){
