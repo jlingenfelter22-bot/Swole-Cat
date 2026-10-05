@@ -529,8 +529,11 @@ async function cloudSyncNow(){
     syncSetState({status:'syncing',lastError:''});
     const local=syncEnsureOwner(user.id);
     try{
-      const deviceId=await syncRegisterCurrentDevice(user.id,local);
+      // Always pull first. Reading remote changes does not depend on this
+      // installation's device row, so a browser-specific registration issue
+      // must never block inbound cloud data from reaching the local app.
       await syncPullRemote(user.id,local);
+      const deviceId=await syncRegisterCurrentDevice(user.id,syncEnsureOwner(user.id));
       await syncCaptureLocalChanges();
       const refreshed=syncEnsureOwner(user.id);
       const pushResult=await syncPushQueue(user.id,refreshed,deviceId);
