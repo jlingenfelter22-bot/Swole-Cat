@@ -10,6 +10,7 @@ let swoleCatSyncProvider=null;
 let swoleCatSyncApplyingRemote=false;
 let swoleCatSyncTimer=null;
 let swoleCatSyncRunPromise=null;
+let swoleCatSyncRerunRequested=false;
 let swoleCatSyncStatus={status:'disabled',lastError:''};
 
 function cloudSyncFreshMeta(accountId=''){
@@ -347,6 +348,13 @@ function cloudSyncQueueLocalChanges(){
     if(!parsed.type||!parsed.id)continue;
     const existing=pendingByKey.get(key);
     if(existing?.deleted)continue;
+    const baseVersion=Number(swoleCatSyncMeta.versions[key])||0;
+    if(existing&&baseVersion<=0){
+      // A record created and deleted locally before ever reaching the server
+      // should disappear from the queue instead of creating a meaningless tombstone.
+      pendingByKey.delete(key);
+      continue;
+    }
     pendingByKey.set(key,{
       key,
       type:parsed.type,
@@ -354,7 +362,7 @@ function cloudSyncQueueLocalChanges(){
       payload:null,
       deleted:true,
       hash:SWOLE_CAT_SYNC_DELETED_HASH,
-      baseVersion:Number(swoleCatSyncMeta.versions[key])||0,
+      baseVersion,
       clientUpdatedAt:state?.meta?.lastSavedAt||new Date().toISOString()
     });
   }
@@ -547,8 +555,13 @@ async function cloudSyncPushPending(){
         swoleCatSyncMeta.versions[pending.key]=remote.recordVersion;
         swoleCatSyncMeta.hashes[pending.key]=cloudSyncRemoteHash(remote);
         swoleCatSyncMeta.lastServerCursor=Math.max(swoleCatSyncMeta.lastServerCursor,remote.serverChangeSeq);
+        cloudSyncRemovePendingKey(pending.key);
+      }else{
+        // The record disappeared between our conditional write and conflict lookup.
+        // Keep the local change queued and retry it as a fresh insert next pass.
+        pending.baseVersion=0;
+        swoleCatSyncRerunRequested=true;
       }
-      cloudSyncRemovePendingKey(pending.key);
       cloudSyncPersistMeta();
       continue;
     }
@@ -587,18 +600,37 @@ function cloudSyncDisable(){
   return cloudSyncSnapshot();
 }
 async function cloudSyncNow(){
-  if(swoleCatSyncRunPromise)return swoleCatSyncRunPromise;
+  if(swoleCatSyncRunPromise){
+    // A save/manual request that lands while another pass is in flight must not
+    // disappear behind the older promise. Guarantee one more pass afterward.
+    swoleCatSyncRerunRequested=true;
+    return swoleCatSyncRunPromise;
+  }
   if(!swoleCatSyncMeta.enabled)throw new Error('Multi-device sync is not enabled on this device.');
   if(!cloudSyncCanUse())throw new Error('Sign in before syncing.');
+  if(swoleCatSyncTimer){clearTimeout(swoleCatSyncTimer);swoleCatSyncTimer=null}
   cloudSyncRunPromise=(async()=>{
     cloudSyncSetStatus('syncing','');
     try{
       cloudSyncEnsureAccount();
       await cloudSyncRegisterDevice();
-      cloudSyncQueueLocalChanges();
-      const incoming=await cloudSyncPullAll(swoleCatSyncMeta.lastServerCursor);
-      cloudSyncApplyIncoming(incoming);
-      await cloudSyncPushPending();
+      let passes=0;
+      do{
+        swoleCatSyncRerunRequested=false;
+        passes++;
+        cloudSyncQueueLocalChanges();
+        const incoming=await cloudSyncPullAll(swoleCatSyncMeta.lastServerCursor);
+        cloudSyncApplyIncoming(incoming);
+        // Capture saves that occurred while the pull was in flight.
+        cloudSyncQueueLocalChanges();
+        await cloudSyncPushPending();
+      }while(
+        swoleCatSyncRerunRequested&&
+        swoleCatSyncMeta.enabled&&
+        cloudSyncCanUse()&&
+        passes<6
+      );
+      if(swoleCatSyncRerunRequested)cloudSyncSchedule(150);
       swoleCatSyncMeta.lastSyncAt=new Date().toISOString();
       swoleCatSyncMeta.lastError='';
       cloudSyncSetStatus(swoleCatSyncMeta.conflicts.length?'conflict':'ready','');
@@ -768,6 +800,7 @@ const swoleCatCloudSyncService=SwoleCatRuntime.registerService('sync',{
 SwoleCatRuntime.events.addEventListener('state:saved',()=>{
   if(swoleCatSyncApplyingRemote||!swoleCatSyncMeta.enabled)return;
   try{cloudSyncQueueLocalChanges()}catch(error){}
+  if(swoleCatSyncRunPromise)swoleCatSyncRerunRequested=true;
   cloudSyncSchedule();
 });
 SwoleCatRuntime.events.addEventListener('identity:changed',event=>{
