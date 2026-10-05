@@ -705,3 +705,27 @@ Client behavior:
 - backup or restore network errors never block ordinary workouts
 
 Phase 8.2 is disaster recovery only. It is not multi-device synchronization.
+
+
+## 28. Phase 8.2 completion verification
+
+Phase 8.2 was completed and verified on 2026-10-05 using Swole Cat Testing v0.68.0 on real Android hardware.
+
+Verified:
+- first manual **Back Up Now** created one owner-scoped metadata row and one private Storage object
+- metadata/object ownership matched the authenticated user and the object path was scoped under that user's folder
+- backup metadata recorded the canonical `swole-cat-backup` format, app/data schema versions, SHA-256, byte size, and source installation ID
+- three manual backups resulted in exactly two retained snapshots: latest + previous
+- the oldest snapshot was removed from both `backup_metadata` and private Storage
+- restoring the previous snapshot correctly replaced local state after preview/confirmation
+- the existing local pre-import snapshot was created before replacement
+- restoring that pre-import snapshot successfully recovered the local state that had been replaced
+- ordinary workout/local saves continued to work with the device offline
+- reconnecting did not affect the saved local state
+- account deletion while two cloud backups existed removed the backup Storage objects and metadata before deleting the Auth user
+- final backend state after deletion: 0 Auth users, 0 `backup_metadata` rows, 0 private backup objects
+- Supabase security advisor reported zero findings after the final destructive test
+
+Phase 8.2 is therefore complete as a bounded disaster-recovery layer.
+
+Phase 8.3 can now begin. Multi-device sync must remain a separate record-level system with stable device identity, server-controlled versions, change cursors, queued writes, tombstones, explicit conflict handling, and no dependency in the live workout path.
