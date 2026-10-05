@@ -337,7 +337,7 @@ Remaining Phase 8.3 real-device work:
   - [x] Device A -> Device B
 - [x] verify same-record concurrent edits create a conflict instead of data loss
 - [x] verify conflict resolution
-- verify tombstone deletion propagation
+- [x] verify tombstone deletion propagation
 - verify queued offline changes survive reconnect/restart
 - then decide when to promote manual sync into automatic background-safe batching
 
@@ -668,3 +668,30 @@ Verified on 2026-10-05:
 - cloud routine remained a single live record at version 1 / sequence 38
 
 This confirms the exact browser pull failure is fixed on the real two-device setup. Next complete the tombstone deletion half of the test.
+
+
+### Phase 8.3 real-device checkpoint: tombstone deletion propagation
+
+Verified on 2026-10-05:
+- Device A on v0.69.3 deleted routine `Tombstone Test`
+- cloud converted the existing routine record into a tombstone rather than hard-deleting it
+- tombstone record remains present with:
+  - record id `id_muvml0lvjmiac`
+  - record version 3
+  - server change sequence 40
+  - null payload
+  - non-null `deleted_at`
+  - Android Device A as source
+- Device B on v0.69.3 initially failed to remove the routine because the PWA service worker cached an earlier empty Supabase sync response
+- v0.69.4 changed the service worker so non-whitelisted cross-origin/API traffic is network-only and cannot be served from the app-shell cache
+- v0.69.4 added a dedicated service-worker cloud-cache boundary regression test
+- branch validation run 665 passed
+- PR #8 merged to main as `f513c1efac50594de46c9eecb8d6cbcc0c7dfd03`
+- main validation run 666 passed
+- Pages run 628 passed
+- signed Android Testing run 335 passed
+- Device B hard-refreshed to v0.69.4 and Sync Now removed `Tombstone Test` locally
+- Device B now registers as Web v0.69.4
+- cloud still retains exactly one tombstone record rather than deleting or resurrecting it
+
+This confirms real tombstone propagation works end-to-end after the v0.69.4 service-worker cache fix.
