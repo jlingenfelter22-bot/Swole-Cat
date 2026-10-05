@@ -10,6 +10,7 @@ const SWOLE_CAT_SYNC_CAPTURE_DELAY_MS=850;
 let swoleCatSyncProvider=null;
 let swoleCatSyncCaptureTimer=null;
 let swoleCatSyncApplyingRemote=false;
+let swoleCatSyncInFlight=null;
 let swoleCatSyncState={
   status:'idle',
   lastError:'',
@@ -327,18 +328,24 @@ function syncScheduleCapture(){
   },SWOLE_CAT_SYNC_CAPTURE_DELAY_MS);
 }
 async function syncRegisterCurrentDevice(ownerId,local){
-  const deviceId=syncDeviceId(local);
-  await swoleCatSyncProvider.registerDevice({
-    ownerId,
-    device:{
-      id:deviceId,
-      device_name:syncDeviceName(deviceId),
-      platform:syncPlatform(),
-      app_version:APP_VERSION,
-      last_seen_at:new Date().toISOString()
-    }
-  });
-  return deviceId;
+  for(let attempt=0;attempt<2;attempt++){
+    const deviceId=syncDeviceId(local);
+    const result=await swoleCatSyncProvider.registerDevice({
+      ownerId,
+      device:{
+        id:deviceId,
+        device_name:syncDeviceName(deviceId),
+        platform:syncPlatform(),
+        app_version:APP_VERSION,
+        last_seen_at:new Date().toISOString()
+      }
+    });
+    if(!result?.collision)return deviceId;
+
+    local.deviceId=globalThis.crypto?.randomUUID?.()||uid();
+    syncSaveLocal(local);
+  }
+  throw new Error('Could not establish a unique sync identity for this installation.');
 }
 async function syncPullRemote(ownerId,local){
   const projection=await syncProjectionWithHashes();
@@ -459,31 +466,41 @@ async function syncPushQueue(ownerId,local,deviceId){
   return {pushed,conflicts};
 }
 async function cloudSyncNow(){
-  if(storageWriteBlocked)throw new Error('Sync is paused while local storage write protection is active.');
-  const user=syncIdentityUser();
-  if(!user?.id||!syncCanUse())throw new Error('Sign in to your Swole Cat cloud account before syncing.');
-  syncSetState({status:'syncing',lastError:''});
-  const local=syncEnsureOwner(user.id);
+  if(swoleCatSyncInFlight)return swoleCatSyncInFlight;
+
+  swoleCatSyncInFlight=(async()=>{
+    if(storageWriteBlocked)throw new Error('Sync is paused while local storage write protection is active.');
+    const user=syncIdentityUser();
+    if(!user?.id||!syncCanUse())throw new Error('Sign in to your Swole Cat cloud account before syncing.');
+    syncSetState({status:'syncing',lastError:''});
+    const local=syncEnsureOwner(user.id);
+    try{
+      const deviceId=await syncRegisterCurrentDevice(user.id,local);
+      await syncPullRemote(user.id,local);
+      await syncCaptureLocalChanges();
+      const refreshed=syncEnsureOwner(user.id);
+      const pushResult=await syncPushQueue(user.id,refreshed,deviceId);
+      const afterPush=syncEnsureOwner(user.id);
+      await syncPullRemote(user.id,afterPush);
+      const finalLocal=syncEnsureOwner(user.id);
+      finalLocal.lastSyncAt=new Date().toISOString();
+      syncSaveLocal(finalLocal);
+      syncSetState({
+        status:Object.keys(finalLocal.conflicts).length?'conflict':'ready',
+        lastError:'',
+        lastSyncAt:finalLocal.lastSyncAt
+      });
+      return {...syncPublicSnapshot(),pushed:pushResult.pushed};
+    }catch(error){
+      syncSetState({status:'error',lastError:error?.message||String(error)});
+      throw error;
+    }
+  })();
+
   try{
-    const deviceId=await syncRegisterCurrentDevice(user.id,local);
-    await syncPullRemote(user.id,local);
-    await syncCaptureLocalChanges();
-    const refreshed=syncEnsureOwner(user.id);
-    const pushResult=await syncPushQueue(user.id,refreshed,deviceId);
-    const afterPush=syncEnsureOwner(user.id);
-    await syncPullRemote(user.id,afterPush);
-    const finalLocal=syncEnsureOwner(user.id);
-    finalLocal.lastSyncAt=new Date().toISOString();
-    syncSaveLocal(finalLocal);
-    syncSetState({
-      status:Object.keys(finalLocal.conflicts).length?'conflict':'ready',
-      lastError:'',
-      lastSyncAt:finalLocal.lastSyncAt
-    });
-    return {...syncPublicSnapshot(),pushed:pushResult.pushed};
-  }catch(error){
-    syncSetState({status:'error',lastError:error?.message||String(error)});
-    throw error;
+    return await swoleCatSyncInFlight;
+  }finally{
+    swoleCatSyncInFlight=null;
   }
 }
 function cloudSyncResetLocalMetadata(){
