@@ -8,8 +8,8 @@ const providerSource=fs.readFileSync('src/js/10c-supabase-auth-provider.js','utf
 const deleteFunction=fs.readFileSync('supabase/functions/delete-account/index.ts','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.68.0');
-assert.equal(pkg.swoleCat.androidVersionCode,90);
+assert.equal(pkg.version,'0.69.0');
+assert.equal(pkg.swoleCat.androidVersionCode,91);
 
 assert.match(identitySource,/reauthenticateWithGoogle/);
 assert.match(identitySource,/deleteAccount/);
@@ -91,7 +91,7 @@ const fakeProvider={
 
 await identity.registerProvider(fakeProvider);
 assert.equal(identity.snapshot().signedIn,true);
-assert.match(w.cloudSettingsHtml(),/Workout sync is intentionally OFF/i);
+assert.match(w.cloudSettingsHtml(),/Multi-device sync is in Phase 8\.3 testing/i);
 w.openCloudAccount();
 assert.match(w.document.body.textContent,/Delete cloud account/i);
 
@@ -105,4 +105,4 @@ assert.equal(identity.snapshot().signedIn,false);
 assert.equal(w.localStorage.getItem('overload_v3'),before,'deleting the cloud account must not alter local workout data');
 
 dom.window.close();
-console.log('Swole Cat v0.68.0 Phase 8.1 account lifecycle PASS');
+console.log('Swole Cat v0.69.0 Phase 8.1 account lifecycle PASS');

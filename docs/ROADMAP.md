@@ -896,13 +896,21 @@ Core decisions:
 **Phase 8.2 complete: 2026-10-05.**
 
 ### Phase 8.3 - Multi-device sync
-- [ ] Add stable per-device identity and separate local sync metadata.
-- [ ] Represent user-owned sync data as individual records with server version, change sequence, tombstones, and source-device metadata.
-- [ ] Diff local state against the last synced manifest so ordinary saves only enqueue changed records.
-- [ ] Batch/debounce network writes rather than syncing each keystroke or set edit.
-- [ ] Pull changes by server change sequence.
-- [ ] Surface true edit conflicts instead of silently discarding one device's changes.
-- [ ] Treat simultaneous active-workout editing conservatively rather than attempting unsafe set-by-set merging.
+
+**Status: v0.69.0 manual sync foundation implemented on the Testing branch; CI/build and real-device two-installation verification remain.**
+
+- [x] Add stable per-device identity and separate local sync metadata.
+- [x] Represent user-owned sync data as individual records with server version, change sequence, tombstones, and source-device metadata.
+- [x] Diff local state against the last synced manifest so ordinary saves only enqueue changed records.
+- [x] Keep ordinary local saves network-free; first release uses explicit **Sync Now** while queueing/debounce behavior is battle-tested.
+- [x] Pull changes by server change sequence with paging.
+- [x] Surface true edit conflicts instead of silently discarding one device's changes.
+- [x] Add explicit **Keep this device** / **Use cloud** conflict resolution.
+- [x] Treat simultaneous active-workout editing conservatively by leaving active workouts local-only in the first pass.
+- [x] Harden `devices` and `sync_records` Data API grants to least privilege with owner-only RLS.
+- [ ] Pass the full v0.69.0 regression/build wall.
+- [ ] Verify fresh-device pull, bidirectional edits, conflicts, tombstones, and offline queued changes on real installations.
+- [ ] After proven stable, enable automatic background-safe batch sync at documented safe moments.
 
 ### Phase 8.4 - Cloud sharing transport
 - [ ] Add short human-friendly codes and share URLs that resolve to stored canonical `SWOLECAT1` payloads.
