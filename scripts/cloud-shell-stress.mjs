@@ -127,7 +127,7 @@ async function configuredShellCase(){
   assert.deepEqual(cloudKeys(w),['swolecat_cloud_auth_v1:fake-session'],'only namespaced auth storage may appear after sign-in');
   assert.deepEqual(workoutSnapshot(w),before,'sign-in must not modify workout state');
   assert.equal(fetchCalls,0,'provider-neutral shell must not perform hidden network work');
-  assert.match(w.cloudSettingsHtml(),/Workout sync is intentionally OFF/i);
+  assert.match(w.cloudSettingsHtml(),/Nothing syncs between devices until you explicitly enable sync/i);
   await identity.signOut();
   assert.equal(signedOut,1);
   assert.equal(identity.snapshot().signedIn,false);
