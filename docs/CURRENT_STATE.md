@@ -25,9 +25,9 @@ Checkpoint date: **2026-10-05 (America/Chicago)**
 ### Experimental development
 
 - Branch: `main`
-- Functional code baseline before this docs-only checkpoint: `001a1c4c25e51beab7d97b5a45f79b9843962cc9`
-- App version: **v0.69.0**
-- Android version code: **91**
+- Functional code baseline before this docs-only checkpoint: `ea1fc6958ec6ba7c84b42f19d79bf48cb895f727`
+- App version: **v0.69.2**
+- Android version code: **93**
 - Android app name: **Swole Cat Testing**
 - Android package ID: `com.jlingenfelter.swolecat.testing`
 - Purpose: cloud/account work, new features, architecture experiments, and risky development
@@ -332,9 +332,9 @@ Remaining Phase 8.3 real-device work:
 - [x] connect a second installation/device to the same Google account
 - [x] verify clean pull onto a fresh device without duplicate sync records
 - [x] verify Device B renders the synced routine/history correctly after the pull
-- [ ] verify edits propagate both directions
+- [x] verify edits propagate both directions
   - [x] Device B -> Device A
-  - [ ] Device A -> Device B
+  - [x] Device A -> Device B
 - verify same-record concurrent edits create a conflict instead of data loss
 - verify conflict resolution
 - verify tombstone deletion propagation
@@ -402,7 +402,7 @@ Before changing code:
 
 If context is lost, the safest continuation is:
 
-> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 Identity and Phase 8.2 Cloud Backup are complete. Phase 8.3 manual record-level sync is merged on `main` as Swole Cat Testing v0.69.0. Branch validation 642, main validation 643, Pages 612, and permanently signed Android build 331 are green. Sync uses stable device identity, owner-private versioned records, change cursors, offline queueing, tombstones, explicit conflict handling, and manual Sync Now; active workouts remain local-only. Next perform real-device two-installation testing before automating sync. Keep beta v0.66.1 frozen.
+> Resume Swole Cat from `docs/CURRENT_STATE.md`. Phase 8.1 Identity and Phase 8.2 Cloud Backup are complete. Phase 8.3 manual record-level sync is on `main` as Swole Cat Testing v0.69.2. Bidirectional real-device propagation is verified between Android Device A and Web/PWA Device B. v0.69.1 fixed duplicate device registration and v0.69.2 fixed the PWA pull stall. Branch validation 655, main validation 656, Pages 621, and signed Android build 333 are green. Next verify deliberate concurrent conflicts, tombstones, and offline queued changes before automating sync. Keep beta v0.66.1 frozen.
 
 
 ### Phase 8.2 real-device checkpoint: first cloud backup
@@ -575,3 +575,33 @@ Verified on 2026-10-05 after both installations were updated to v0.69.1:
 - Android pulling the change did not rewrite the cloud winner or create a profile duplicate
 
 This confirms real Device B -> Device A propagation works end-to-end after the v0.69.1 registration hotfix.
+
+
+### Phase 8.3 real-device checkpoint: Device A -> Device B propagation
+
+Verified on 2026-10-05:
+- Device A/Android changed the profile marker to `Synced From A`
+- Device A Sync Now advanced the cloud profile to record version 3 and server change sequence 26
+- Android remained the cloud source of the winning profile
+- Device B/Web on v0.69.1 initially stalled after device registration and did not request `sync_records`
+- v0.69.2 removed async Web Crypto hashing from the record-sync hot path while preserving SHA-256 manifest compatibility
+- v0.69.2 starts the remote pull before local projection hashing
+- after refreshing Device B to v0.69.2 and running Sync Now, Device B displayed `Synced From A`
+- Device B registered successfully as Web v0.69.2 without rewriting the cloud profile
+- bidirectional real-device profile propagation is now verified both directions
+
+v0.69.2 automated gates:
+- branch validation run 655: success
+- main validation run 656: success
+- Pages run 621: success
+- signed Android Testing run 333: success
+- persistent Testing signature verification: success
+- Android artifact: `Swole-Cat-Testing-Android-v0.69.2-signed`
+- Android artifact digest: `sha256:9e3a5729557d30a0a6b89e680eb9ca2be61406073d0aecdcc562be1ba07bd1c6`
+- extracted APK SHA-256: `71539febda264f3ebf3871d5d86ad980f63ee495224a8fbd65584dd210f9b032`
+
+Next real-device tests:
+- deliberate same-record concurrent edit conflict
+- conflict resolution in both directions
+- tombstone deletion propagation
+- offline queued changes surviving reconnect/restart
