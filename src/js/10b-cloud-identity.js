@@ -313,10 +313,10 @@ function cloudSettingsHtml(){
   }
   if(info.signedIn){
     const label=info.user?.email||info.user?.displayName||'Signed in';
-    return '<div class="notice"><b>Cloud account connected</b><br>'+esc(label)+'<br><br><span class="mini">Workout sync is intentionally OFF in this phase. Signing in does not upload routines, sessions, sets, Coach data, or analytics.</span></div>'+
+    return '<div class="notice"><b>Cloud account connected</b><br>'+esc(label)+'<br><br><span class="mini">Cloud backup and multi-device sync are separate opt-in features. Nothing syncs between devices until you explicitly enable sync on that device.</span></div>'+
       '<div class="actions"><button class="btn secondary" onclick="openCloudAccount()">Manage account</button></div>';
   }
-  return '<div class="notice"><b>Cloud account available</b><br>Signing in enables the account shell only. Workout data remains local until a later cloud feature is explicitly implemented.</div>'+
+  return '<div class="notice"><b>Cloud account available</b><br>Signing in connects your cloud identity. Backup and multi-device sync remain opt-in, and ordinary workouts still save locally first.</div>'+
     '<div class="actions"><button class="btn secondary" onclick="openCloudAccount()">Cloud account</button></div>';
 }
 function openCloudAccount(){
@@ -327,7 +327,7 @@ function openCloudAccount(){
   }
   if(info.signedIn){
     const label=info.user?.email||info.user?.displayName||'Swole Cat account';
-    openModal('Swole Cat Cloud','<div class="notice"><b>'+esc(label)+'</b><br><br>Account connection is active. Workout backup and multi-device sync are not enabled in Phase 8.1, so your training data is still local-only.<br><br><span class="mini">Account recovery and identity verification use your Google account. Swole Cat does not have a separate password.</span></div><div class="actions"><button class="btn secondary" onclick="cloudSignOutFromUi()">Sign out</button><button class="btn danger" onclick="cloudBeginDeleteAccountFromUi()">Delete cloud account</button><button class="btn secondary" onclick="closeModal()">Done</button></div>');
+    openModal('Swole Cat Cloud','<div class="notice"><b>'+esc(label)+'</b><br><br>Account connection is active. Cloud backup and multi-device sync are controlled separately in Settings, and disabling them never removes local workout data.<br><br><span class="mini">Account recovery and identity verification use your Google account. Swole Cat does not have a separate password.</span></div><div class="actions"><button class="btn secondary" onclick="cloudSignOutFromUi()">Sign out</button><button class="btn danger" onclick="cloudBeginDeleteAccountFromUi()">Delete cloud account</button><button class="btn secondary" onclick="closeModal()">Done</button></div>');
     return;
   }
   const providerNote=info.providerReady
@@ -335,7 +335,7 @@ function openCloudAccount(){
     :(isNativeApp()
       ?'Google sign-in will open in the system browser and return directly to Swole Cat.'
       :'Google sign-in will load only when you choose to continue.');
-  openModal('Swole Cat Cloud','<div class="notice"><b>Optional account</b><br><br>'+esc(providerNote)+'<br><br>Creating an account will not upload workout data in this phase. Cloud backup and sync are separate opt-in capabilities that come later.<br><br><span class="mini">Returning user? Choose the same Google account to recover access. There is no separate Swole Cat password.</span></div><div class="actions"><button class="btn" onclick="cloudSignInWithGoogleFromUi()">Continue with Google</button><button class="btn secondary" onclick="closeModal()">Stay local-only</button></div>');
+  openModal('Swole Cat Cloud','<div class="notice"><b>Optional account</b><br><br>'+esc(providerNote)+'<br><br>Creating an account does not automatically upload workout data. Cloud backup and multi-device sync are separate opt-in capabilities.<br><br><span class="mini">Returning user? Choose the same Google account to recover access. There is no separate Swole Cat password.</span></div><div class="actions"><button class="btn" onclick="cloudSignInWithGoogleFromUi()">Continue with Google</button><button class="btn secondary" onclick="closeModal()">Stay local-only</button></div>');
 }
 async function cloudSignInWithGoogleFromUi(){
   try{
@@ -351,7 +351,7 @@ async function cloudSignInWithGoogleFromUi(){
 function cloudBeginDeleteAccountFromUi(){
   const info=cloudIdentitySnapshot();
   if(!info.signedIn)return openCloudAccount();
-  openModal('Delete cloud account?','<div class="notice"><b>This permanently deletes your Swole Cat cloud identity.</b><br><br>Your workouts, routines, history, settings, and other local training data on this device will stay exactly where they are.<br><br>Cloud backup and sync are not active yet, so Phase 8.1 has no workout data stored in the cloud.<br><br><span class="mini">To prevent an accidental deletion, verify the same Google account first.</span></div><div class="actions"><button class="btn danger" onclick="cloudReauthenticateForDeletionFromUi()">Verify with Google</button><button class="btn secondary" onclick="openCloudAccount()">Cancel</button></div>');
+  openModal('Delete cloud account?','<div class="notice"><b>This permanently deletes your Swole Cat cloud identity.</b><br><br>Your workouts, routines, history, settings, and other local training data on this device will stay exactly where they are.<br><br>Deleting the cloud account removes cloud backup and sync data owned by this account. Local workouts, routines, history, and settings on this device remain separate.<br><br><span class="mini">To prevent an accidental deletion, verify the same Google account first.</span></div><div class="actions"><button class="btn danger" onclick="cloudReauthenticateForDeletionFromUi()">Verify with Google</button><button class="btn secondary" onclick="openCloudAccount()">Cancel</button></div>');
 }
 async function cloudReauthenticateForDeletionFromUi(){
   try{
