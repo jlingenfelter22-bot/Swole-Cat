@@ -25,9 +25,9 @@ Checkpoint date: **2026-10-06 (America/Chicago)**
 ### Experimental development
 
 - Branch: `main`
-- Current main merge commit: `6016c8b29f9cd69084065193df82b9df55bf56ac`
-- App version: **v0.72.1**
-- Android version code: **100**
+- Current main merge commit: `b24d27dca66b8e923cef7be3c8b7989ac1153790`
+- App version: **v0.72.2**
+- Android version code: **101**
 - Android app name: **Swole Cat Testing**
 - Android package ID: `com.jlingenfelter.swolecat.testing`
 - Purpose: current Testing build for cloud/account work, sharing, new features, architecture experiments, and risky development
@@ -45,36 +45,35 @@ Do not change the `main` package ID back to `com.jlingenfelter.swolecat` while t
 
 ## 2. Latest green development gate
 
-Current main baseline: **v0.72.1 / Android versionCode 100**
+Current main baseline: **v0.72.2 / Android versionCode 101**
 
-- Main merge commit: `6016c8b29f9cd69084065193df82b9df55bf56ac`
-- PR: **#13, v0.72.1 workout feedback and transition polish**
-- PR validation: run **717**, success, all 73 validation steps passed
-- Validate Swole Cat on `main`: run **718**, success, all 73 validation steps passed
-- Deploy Swole Cat to GitHub Pages: run **645**, success
-- Build Swole Cat Testing Android: run **340**, success
+- Main merge commit: `b24d27dca66b8e923cef7be3c8b7989ac1153790`
+- PR: **#14, v0.72.2 exercise header composition**
+- Final PR validation: run **723**, success, all 74 validation steps passed
+- Validate Swole Cat on `main`: run **724**, success, all 74 validation steps passed
+- Deploy Swole Cat to GitHub Pages: run **649**, success
+- Build Swole Cat Testing Android: run **341**, success
 - permanent Testing certificate verification: success
-- Android artifact: `Swole-Cat-Testing-Android-v0.72.1-signed`
-- Android artifact ID: `11439396486`
-- Android artifact digest: `sha256:5464a49e6d59b1b5a64523e3595ecaf005754fa8e04b561856650ac158da92b9`
+- Android artifact: `Swole-Cat-Testing-Android-v0.72.2-signed`
+- Android artifact ID: `11441549231`
+- Android artifact digest: `sha256:2711fccb0d23412623c330c7ff2733f1b45c49df07dd9feb31c6b0c9a85a68a7`
 - Artifact expires from GitHub Actions on **2026-11-05** unless rebuilt sooner
 - beta branch remains untouched at v0.66.1
 
-v0.72.1 is a polish follow-up to the v0.72.0 workout-console hierarchy, driven by a second narrated real-device review.
+v0.72.2 is a surgical exercise-header composition pass from the third narrated real-device review.
 
-Primary feedback behavior now:
-- the in-flow `Today’s structure changed` block is retired
-- the first structural edit shows a floating `Workout modified` notice for about five seconds
-- the notice overlays the interface and does not increase page height or scroll distance
-- it appears only once per active workout, even if more structural edits are made later
-- final routine-update confirmation remains authoritative at finish
-- `Switch exercise` stays explicit but is now a lightweight single-line affordance rather than a cramped pill
-- crossing exercise boundaries uses a short directional card transition
-- forward movement enters from the right; backward manual movement reverses direction
-- normal set progression stays in-place and uses only a brief active-set pulse + set-card settle
-- regular automatic exercise advance no longer emits the redundant `Up next: ...` toast
-- superset-specific status feedback remains
-- `prefers-reduced-motion` suppresses workout movement without changing navigation or state
+Header behavior now:
+- How To `i` is inline immediately after the exercise name
+- its position follows short, long, and wrapped exercise names naturally through CSS text flow
+- no JavaScript pixel measurement is used
+- the old independently positioned How To button is retired
+- opening the exercise list cannot move the help control
+- tapping How To consumes its own event and never toggles the switcher
+- the dropdown chevron is removed
+- `Switch exercise` is a compact cyan-outline pill in the lower-right row
+- exercise/set metadata remains on the lower-left
+- the rest of the header remains a large forgiving switch target
+- no workout UI below the exercise header was changed
 
 ## 3. Phase 8 cloud architecture
 
@@ -968,4 +967,55 @@ Immediate phone feel test:
 Outstanding independent cloud check:
 - v0.71.0 real-device short-share sender/recipient verification is still pending
 - this does not block workout-screen polish
+
+
+
+## 2026-10-06 v0.72.2 exercise-header checkpoint
+
+Source:
+- third narrated real-device walkthrough focused on the remaining awkward composition in the exercise header
+- user wanted How To visually attached to the exercise it explains
+- user wanted the dropdown chevron removed
+- user wanted Switch Exercise in a properly composed pill on the lower-right instead of floating at the top
+- user specifically observed the old How To control drifting when the exercise list opened
+
+Implementation:
+- version 0.72.2
+- Android versionCode 101
+- feature branch `workout-header-v0.72.2`
+- PR #14
+- merge `b24d27dca66b8e923cef7be3c8b7989ac1153790`
+- PR validation run 722 exposed one stale legacy selector only
+- stale Focus Mode regression was updated to the new intentional inline-help contract
+- final PR validation run 723: PASS, 74 steps
+- main validation run 724: PASS, 74 steps
+- Pages run 649: PASS
+- signed Android Testing build run 341: PASS
+- artifact ID `11441549231`
+- artifact digest `sha256:2711fccb0d23412623c330c7ff2733f1b45c49df07dd9feb31c6b0c9a85a68a7`
+
+Dedicated regression:
+- `scripts/workout-header-stress.mjs`
+- verifies How To immediately follows the exercise name in DOM flow
+- verifies help stays inside the stable summary/title row
+- verifies the old absolute help control is absent
+- verifies Switch Exercise lives beside metadata in the lower row
+- forbids the legacy dropdown chevron
+- verifies tapping How To does not toggle the switcher
+- verifies the rest of the header still toggles the exercise list
+- verifies opening the list does not relocate help/switch controls
+- verifies long exercise names retain inline help placement
+
+Immediate phone test:
+1. inspect short names such as Back Squat and confirm the `i` sits naturally immediately after the title
+2. inspect longer names such as Sumo Deadlift and calf-raise variants
+3. find a genuinely long/wrapped exercise name and confirm the help control follows it naturally
+4. tap `i` repeatedly and confirm only How To opens
+5. open/close Switch Exercise and confirm the `i` never drops into the expanded list
+6. judge whether the lower-right Switch Exercise pill feels visually balanced with metadata on the left
+7. confirm tapping elsewhere on the exercise header remains an easy switch target
+8. do not redesign the logging controls below the header unless new real-device feedback identifies a specific issue
+
+Outstanding independent cloud check:
+- v0.71.0 real-device short-share sender/recipient verification is still pending
 
