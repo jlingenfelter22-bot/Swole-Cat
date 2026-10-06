@@ -36,9 +36,8 @@ assert(state.activeWorkout.exercises.length>=4,'beta-flow regression needs a mul
 assert.equal(state.activeWorkout.focusExerciseIndex,0,'fresh workout should focus exercise one');
 assert.equal(state.activeWorkout.focusSetIndex,0,'fresh workout should focus set one');
 
-const cancel=w.document.querySelector('#workout .workout-cancel-btn');
-assert(cancel,'active workout should render dedicated Cancel control');
-assert.equal(cancel.textContent.trim(),'Cancel');
+assert.equal(w.document.querySelector('#workout .workout-cancel-btn'),null,'destructive Cancel should not occupy the normal workout surface');
+assert(w.document.querySelector('#workout .focus-session-strip'),'active workout should use the compact session strip');
 
 function focusState(){
   return w.eval('({ei:state.activeWorkout.focusExerciseIndex,si:state.activeWorkout.focusSetIndex})');
@@ -102,13 +101,17 @@ state=read();
 assert.equal(state.activeWorkout.focusExerciseIndex,deferredIndex,'navigator jump should restore deferred exercise');
 assert(!state.activeWorkout.deferredExerciseIndexes.includes(deferredIndex),'restored exercise should leave pending list');
 assert(w.document.querySelector('#workout .focus-exercise-actions'),'focused exercise should expose gym-first actions');
-assert([...w.document.querySelectorAll('#workout .focus-exercise-actions button')].some(b=>/Substitute/i.test(b.textContent)),'Substitute should stay directly visible');
-assert([...w.document.querySelectorAll('#workout .focus-exercise-actions button')].some(b=>/Next Exercise/i.test(b.textContent)),'Next Exercise should stay directly visible');
+const visibleActions=[...w.document.querySelectorAll('#workout .focus-exercise-actions button')].map(b=>b.textContent.trim());
+assert(visibleActions.some(x=>/Substitute/i.test(x)),'Substitute should stay directly visible');
+assert(visibleActions.some(x=>/More/i.test(x)),'More should stay directly visible');
+assert(!visibleActions.some(x=>/Next Exercise/i.test(x)),'redundant Next Exercise should not occupy the normal workout surface');
+assert(w.document.querySelector('#workout .focus-nav-add'),'exercise switcher should own Add Exercise');
+assert(w.document.querySelector('#workout .focus-set-add'),'set rail should own Add Set');
 
 state=read();
 assert.equal(JSON.stringify(state.sessions),sessionsBefore,'Focus Mode navigation must not mutate completed history');
 assert.equal(JSON.stringify(state.routines.find(r=>r.id===rid)),routineBefore,'Focus Mode navigation must not rewrite saved routine');
 assert(state.activeWorkout,'workout should remain active throughout navigation');
 
-console.log('Swole Cat Focus Mode live flow PASS: single-set canvas, in-place set advance, exercise auto-advance, pending/defer, direct navigation, and history integrity');
+console.log('Swole Cat live workout flow PASS: compact session chrome, automatic exercise advance, switcher navigation, set rail actions, pending/defer integrity, and history integrity');
 dom.window.close();
