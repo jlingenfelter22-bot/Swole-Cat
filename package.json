@@ -1,6 +1,6 @@
 {
   "name": "swole-cat",
-  "version": "0.72.2",
+  "version": "0.72.3",
   "private": true,
   "description": "Swole Cat workout tracker PWA and Android app",
   "scripts": {
@@ -12,7 +12,7 @@
     "android:release": "node scripts/build-android.mjs release"
   },
   "swoleCat": {
-    "androidVersionCode": 101
+    "androidVersionCode": 102
   },
   "dependencies": {
     "@capacitor/android": "8.5.2",
