@@ -17,118 +17,76 @@ function convertStoredUnits(fromUnit,toUnit){
  }
 }
 
+function cloudHubHtml(){
+ const info=cloudIdentitySnapshot();
+ const accountState=!info.configured
+   ?'Local-only build'
+   :(info.signedIn?(info.user?.email||info.user?.displayName||'Connected'):'Not signed in');
+ const cloudState=info.signedIn?'Backup, sync & recovery':'Backup, sync & recovery';
+ return `
+ <div class="card cloud-hub-card">
+   <button type="button" class="cloud-hub-tile" onclick="openCloudAccount()">
+     <span class="cloud-hub-kicker">ACCOUNT</span>
+     <b>Cloud account</b>
+     <span class="mini">${esc(accountState)}</span>
+     <span class="cloud-hub-arrow" aria-hidden="true">›</span>
+   </button>
+   <button type="button" class="cloud-hub-tile" onclick="openCloudSettings()">
+     <span class="cloud-hub-kicker">SETTINGS</span>
+     <b>Cloud settings</b>
+     <span class="mini">${esc(cloudState)}</span>
+     <span class="cloud-hub-arrow" aria-hidden="true">›</span>
+   </button>
+ </div>`;
+}
+
+function openCloudSettings(){
+ openModal('Cloud settings',`
+ <div class="cloud-settings-menu">
+   <div class="notice"><b>Local-first by design.</b><br>Cloud features are optional. Normal workouts and active workout autosave continue to work locally without an account or network.</div>
+
+   <div class="section-title"><h2>Cloud backup</h2></div>
+   ${cloudBackupSettingsHtml()}
+
+   <div class="section-title"><h2>Multi-device sync</h2></div>
+   ${cloudSyncSettingsHtml()}
+
+   <div class="section-title"><h2>Data safety</h2></div>
+   <div class="notice"><b>App:</b> ${isNativeApp()?'Android package':'Web / PWA'}<br><b>Version:</b> ${esc(APP_VERSION)}<br><b>Storage:</b> ${esc(storageHealthText())}<br><b>Data schema:</b> v${DATA_SCHEMA_VERSION}<br><b>Last local backup created:</b> ${state.meta?.lastBackupAt?new Date(state.meta.lastBackupAt).toLocaleString():'Never on this device'}</div>
+   <div class="actions"><button class="btn secondary" onclick="exportBackup()">Export backup</button><label class="btn secondary" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0],this)" style="display:none"></label>${preImportSnapshotInfo()?'<button class="btn secondary" onclick="restorePreImportSnapshot()">Restore pre-import snapshot</button>':''}</div>
+   <div class="native-note" style="margin-top:8px">Imports are validated before replacing your current state. A safety snapshot is created before every successful import so you can roll back if you picked the wrong file.</div>
+
+   <div class="actions cloud-settings-back"><button class="btn secondary" onclick="openSettings()">Back to Settings</button></div>
+ </div>
+ `);
+}
+
 function openSettings(){
  openModal('Settings',`
- <div class="settings-page">
-   <section class="settings-section">
-     <div class="settings-section-head">
-       <div class="settings-section-kicker">PROFILE</div>
-       <h2>Profile</h2>
-       <div class="mini">Your basic training identity and measurement preference.</div>
-     </div>
-     <div class="card settings-card">
-       <div class="field"><label>Your name</label><input id="pName" value="${escAttr(state.profile.name||'')}" placeholder="Jake"></div>
-       <div class="field"><label>Units</label><select id="pUnit"><option value="lb" ${state.profile.unit==='lb'?'selected':''}>Pounds (lb)</option><option value="kg" ${state.profile.unit==='kg'?'selected':''}>Kilograms (kg)</option></select><div class="native-note" style="margin-top:6px">Changing units converts stored workout weights, bodyweight entries, and progression increments.</div></div>
-     </div>
-   </section>
-
-   <section class="settings-section">
-     <div class="settings-section-head">
-       <div class="settings-section-kicker">TRAINING</div>
-       <h2>Training defaults</h2>
-       <div class="mini">Starting values used when Swole Cat creates a new exercise setup.</div>
-     </div>
-     <div class="card settings-card">
-       <div class="form-grid three">
-         <div><label>Default sets</label><input type="number" id="dSets" value="${state.settings.defaultSets}"></div>
-         <div><label>Minimum reps</label><input type="number" id="dMin" value="${state.settings.defaultMin}"></div>
-         <div><label>Maximum reps</label><input type="number" id="dMax" value="${state.settings.defaultMax}"></div>
-       </div>
-       <div class="field"><label>Default weight increase</label><input type="number" step=".5" id="dInc" value="${state.settings.defaultIncrement}"><div class="native-note" style="margin-top:6px">Used as the configured load step for progressive overload.</div></div>
-     </div>
-     <div class="notice settings-inline-note"><b>Progression rule</b><br>Double progression is rep-driven. Add reps first, then one configured load step after every programmed working set reaches the top of its rep range. Optional RIR never blocks that earned load increase.</div>
-   </section>
-
-   <section class="settings-section">
-     <div class="settings-section-head">
-       <div class="settings-section-kicker">EXPERIENCE</div>
-       <h2>Workout experience</h2>
-       <div class="mini">Device behavior while you train.</div>
-     </div>
-     <div class="card settings-card settings-toggle-card">
-       <div class="setting-toggle"><div><b>Haptic feedback</b><div class="mini">Short vibrations for completed sets, PRs, and timers.</div></div><button id="hapticToggle" class="toggle ${state.ui?.haptics!==false?'on':''}" onclick="this.classList.toggle('on')"></button></div>
-       <div class="setting-toggle" style="border-bottom:0"><div><b>Keep screen awake</b><div class="mini">Ask Android to keep the screen awake during an active workout when supported.</div></div><button id="awakeToggle" class="toggle ${state.ui?.keepAwake!==false?'on':''}" onclick="this.classList.toggle('on')"></button></div>
-     </div>
-     <div class="actions settings-save-row"><button class="btn" onclick="saveSettings()">Save changes</button></div>
-   </section>
-
-   <section class="settings-section">
-     <div class="settings-section-head">
-       <div class="settings-section-kicker">COACH</div>
-       <h2>Coach Swolecat</h2>
-       <div class="mini">How local coaching recommendations are interpreted.</div>
-     </div>
-     <div class="notice">Coach uses repeated logged performance, optional RIR entries, and each exercise's selected goal. Stall and reset flags are intentionally conservative. Recommendations never remove your ability to set manual session targets.</div>
-   </section>
-
-   <section class="settings-section">
-     <div class="settings-section-head">
-       <div class="settings-section-kicker">CLOUD</div>
-       <h2>Account & cloud</h2>
-       <div class="mini">Optional account features. Normal workouts remain local-first.</div>
-     </div>
-     <div class="card settings-cloud-card">
-       <div class="settings-subsection">
-         <div class="settings-subsection-title">Account</div>
-         ${cloudSettingsHtml()}
-       </div>
-       <div class="settings-subsection">
-         <div class="settings-subsection-title">Multi-device sync</div>
-         ${cloudSyncSettingsHtml()}
-       </div>
-       <div class="settings-subsection">
-         <div class="settings-subsection-title">Cloud backup</div>
-         ${cloudBackupSettingsHtml()}
-       </div>
-     </div>
-   </section>
-
-   <section class="settings-section">
-     <div class="settings-section-head">
-       <div class="settings-section-kicker">LOCAL DATA</div>
-       <h2>Data & recovery</h2>
-       <div class="mini">Back up, restore, and verify the data stored on this device.</div>
-     </div>
-     <div class="notice settings-data-status"><b>Storage:</b> ${esc(storageHealthText())}<br><b>Last local backup created:</b> ${state.meta?.lastBackupAt?new Date(state.meta.lastBackupAt).toLocaleString():'Never on this device'}</div>
-     <div class="actions"><button class="btn secondary" onclick="exportBackup()">Export backup</button><label class="btn secondary" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0],this)" style="display:none"></label>${preImportSnapshotInfo()?'<button class="btn secondary" onclick="restorePreImportSnapshot()">Restore pre-import snapshot</button>':''}</div>
-     <div class="native-note" style="margin-top:8px">Imports are validated before replacing your current state. A safety snapshot is created before every successful import so you can roll back if you picked the wrong file.</div>
-   </section>
-
-   <section class="settings-section">
-     <div class="settings-section-head">
-       <div class="settings-section-kicker">ABOUT</div>
-       <h2>About Swole Cat</h2>
-     </div>
-     <div class="card settings-about-card">
-       <div class="settings-about-row"><span>App</span><b>${isNativeApp()?'Android package':'Web / PWA'}</b></div>
-       <div class="settings-about-row"><span>Version</span><b>${esc(APP_VERSION)}</b></div>
-       <div class="settings-about-row"><span>Data schema</span><b>v${DATA_SCHEMA_VERSION}</b></div>
-     </div>
-     <div class="notice settings-license-note"><b>Exercise illustrations</b><br>Exercise thumbnail illustrations are provided by <a href="https://github.com/bryllim/workout-guide" target="_blank" rel="noopener">Workout Guide by Bryl Lim</a>, based in part on Everkinetic artwork, and are licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.</div>
-   </section>
-
-   <section class="settings-section settings-danger-section">
-     <div class="settings-section-head">
-       <div class="settings-section-kicker">DANGER ZONE</div>
-       <h2>Erase local data</h2>
-       <div class="mini">This affects only data stored by this installation. Cloud account controls are managed separately above.</div>
-     </div>
-     <div class="card settings-danger-card">
-       <div class="mini">Permanently removes local workouts, routines, history, preferences, recovery snapshots, and local sync metadata from this device.</div>
-       <div class="actions"><button class="btn danger" onclick="resetAll()">Erase all local data</button></div>
-     </div>
-   </section>
+ <div class="field"><label>Your name</label><input id="pName" value="${escAttr(state.profile.name||'')}" placeholder="Jake"></div>
+ <div class="field"><label>Units</label><select id="pUnit"><option value="lb" ${state.profile.unit==='lb'?'selected':''}>Pounds (lb)</option><option value="kg" ${state.profile.unit==='kg'?'selected':''}>Kilograms (kg)</option></select><div class="native-note" style="margin-top:6px">Changing units converts your stored workout weights, bodyweight entries, and progression increments.</div></div>
+ <div class="form-grid three">
+   <div><label>Default sets</label><input type="number" id="dSets" value="${state.settings.defaultSets}"></div>
+   <div><label>Min reps</label><input type="number" id="dMin" value="${state.settings.defaultMin}"></div>
+   <div><label>Max reps</label><input type="number" id="dMax" value="${state.settings.defaultMax}"></div>
  </div>
+ <div class="field"><label>Default weight jump</label><input type="number" step=".5" id="dInc" value="${state.settings.defaultIncrement}"></div>
+ <div class="section-title"><h2>App feel</h2></div>
+ <div class="card">
+   <div class="setting-toggle"><div><b>Haptic feedback</b><div class="mini">Short vibrations for completed sets, PRs, and timers.</div></div><button id="hapticToggle" class="toggle ${state.ui?.haptics!==false?'on':''}" onclick="this.classList.toggle('on')"></button></div>
+   <div class="setting-toggle" style="border-bottom:0"><div><b>Keep screen awake</b><div class="mini">Ask Android to keep the screen awake during an active workout when supported.</div></div><button id="awakeToggle" class="toggle ${state.ui?.keepAwake!==false?'on':''}" onclick="this.classList.toggle('on')"></button></div>
+ </div>
+ <div class="actions"><button class="btn" onclick="saveSettings()">Save settings</button></div>
+
+ <div class="section-title"><h2>Coach behavior</h2></div>
+ <div class="notice">The coach uses repeated logged performance, your optional RIR entries, and each exercise's selected goal. Stall and reset flags are intentionally conservative. They are suggestions, and manual session targets always remain available.<br><br><b>Progression rule:</b> Double progression is rep-driven. Add reps first, then one configured load step after every programmed working set reaches the top of its rep range. Optional RIR never blocks that earned load increase.</div>
+
+ <div class="section-title"><h2>Cloud account</h2></div>
+ ${cloudHubHtml()}
+
+ <div class="section-title"><h2>Exercise illustrations</h2></div>
+ <div class="notice">Exercise thumbnail illustrations are provided by <a href="https://github.com/bryllim/workout-guide" target="_blank" rel="noopener">Workout Guide by Bryl Lim</a>, based in part on Everkinetic artwork, and are licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>. Swole Cat presents the licensed movement artwork as compact retro-futurist training-schematic thumbnails.</div>
+ <div class="actions"><button class="btn danger" onclick="resetAll()">Erase all local data</button></div>
  `);
 }
 function saveSettings(){
