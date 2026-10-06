@@ -1368,3 +1368,110 @@
  .section-title-actions{gap:5px}
  .share-code-field textarea,.share-import-input{min-height:116px;font-size:.68rem}
 }
+
+
+  /* SETTINGS V0.70 INFORMATION ARCHITECTURE */
+  .settings-page{
+    display:grid;
+    gap:2px;
+    padding-bottom:6px;
+  }
+  .settings-section{
+    margin-top:24px;
+    min-width:0;
+  }
+  .settings-section:first-child{margin-top:2px}
+  .settings-section-head{
+    margin:0 2px 10px;
+    min-width:0;
+  }
+  .settings-section-kicker{
+    margin-bottom:4px;
+    color:var(--cyan);
+    font-size:.58rem;
+    font-weight:950;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    opacity:.82;
+  }
+  .settings-section-head h2{
+    margin:0 0 4px;
+    font-size:1.02rem;
+    line-height:1.2;
+  }
+  .settings-section-head>.mini{
+    max-width:44rem;
+    color:#8f9caf;
+  }
+  .settings-card{
+    display:grid;
+    gap:12px;
+  }
+  .settings-card>.field{margin:0}
+  .settings-toggle-card{gap:0}
+  .settings-inline-note,
+  .settings-license-note,
+  .settings-data-status{margin-top:9px}
+  .settings-save-row{margin-top:10px}
+  .settings-save-row .btn{min-width:150px}
+  .settings-cloud-card{
+    padding:14px;
+  }
+  .settings-subsection{
+    min-width:0;
+  }
+  .settings-subsection+.settings-subsection{
+    margin-top:16px;
+    padding-top:16px;
+    border-top:1px solid rgba(75,94,124,.32);
+  }
+  .settings-subsection-title{
+    margin:0 2px 8px;
+    color:#dbe9fb;
+    font-size:.72rem;
+    font-weight:950;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+  .settings-cloud-card .notice{margin:0}
+  .settings-cloud-card .actions{margin-top:9px}
+  .settings-about-card{
+    padding:4px 14px;
+  }
+  .settings-about-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    min-height:46px;
+    border-bottom:1px solid rgba(75,94,124,.26);
+    font-size:.84rem;
+  }
+  .settings-about-row:last-child{border-bottom:0}
+  .settings-about-row span{color:#92a0b4}
+  .settings-about-row b{
+    color:#e8f1ff;
+    text-align:right;
+    overflow-wrap:anywhere;
+  }
+  .settings-danger-section .settings-section-kicker{color:#fb7185}
+  .settings-danger-card{
+    border-color:rgba(251,113,133,.34);
+    background:
+      linear-gradient(135deg,rgba(251,113,133,.055),transparent 48%),
+      var(--panel);
+  }
+  .settings-danger-card .actions{margin-top:12px}
+
+  @media(max-width:430px){
+    .settings-section{margin-top:21px}
+    .settings-cloud-card{padding:12px}
+    .settings-about-row{
+      align-items:flex-start;
+      flex-direction:column;
+      gap:3px;
+      padding:10px 0;
+    }
+    .settings-about-row b{text-align:left}
+    .settings-save-row .btn{width:100%}
+  }
