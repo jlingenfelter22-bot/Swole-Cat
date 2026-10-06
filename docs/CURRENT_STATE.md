@@ -695,3 +695,25 @@ Verified on 2026-10-05:
 - cloud still retains exactly one tombstone record rather than deleting or resurrecting it
 
 This confirms real tombstone propagation works end-to-end after the v0.69.4 service-worker cache fix.
+
+
+### Phase 8.3 real-device checkpoint: offline queue persistence
+
+Verified on 2026-10-06:
+- both Device A and Device B were on v0.69.4
+- Device A was taken offline
+- profile name changed locally to `Offline queue A`
+- the local sync queue retained the pending change while offline
+- offline Sync Now failed without losing local state or the queued mutation
+- the queued change survived a force-close / app restart
+- after connectivity returned, Device A Sync Now flushed the queued mutation
+- Device B Sync Now received the change successfully with no conflict
+- cloud profile is now:
+  - record version 5
+  - server change sequence 44
+  - source Device A `5c1ebbd6-fc77-42ca-9bbf-3ea7212c4ab3`
+  - payload name `Offline queue A`
+  - non-deleted
+- Device B checked in after the cloud update on Web v0.69.4
+
+This confirms queued sync mutations survive offline operation and app restart, then flush and propagate correctly after reconnect.
