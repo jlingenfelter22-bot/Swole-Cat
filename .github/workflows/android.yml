@@ -19,7 +19,7 @@ on:
       - ".github/workflows/android.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   debug-apk:
@@ -109,6 +109,17 @@ jobs:
           grep -F 'AndroidKeyStore' "$SECURE_PLUGIN"
           grep -F 'AES/GCM/NoPadding' "$SECURE_PLUGIN"
           grep -F 'registerPlugin(SwoleCatSecureStoragePlugin.class);' "$MAIN_ACTIVITY"
+          UPDATER_PLUGIN="$(find android/app/src/main/java -name SwoleCatUpdaterPlugin.java -print -quit)"
+          UPDATE_RECEIVER="$(find android/app/src/main/java -name SwoleCatUpdateReceiver.java -print -quit)"
+          test -n "$UPDATER_PLUGIN"
+          test -n "$UPDATE_RECEIVER"
+          grep -F '@CapacitorPlugin(name = "SwoleCatUpdater")' "$UPDATER_PLUGIN"
+          grep -F 'PackageInstaller.SessionParams.USER_ACTION_REQUIRED' "$UPDATER_PLUGIN"
+          grep -F 'Downloaded APK failed SHA-256 verification.' "$UPDATER_PLUGIN"
+          grep -F 'Downloaded APK signing certificate does not match the installed app.' "$UPDATER_PLUGIN"
+          grep -F 'registerPlugin(SwoleCatUpdaterPlugin.class);' "$MAIN_ACTIVITY"
+          grep -F 'android.permission.REQUEST_INSTALL_PACKAGES' android/app/src/main/AndroidManifest.xml
+          grep -F 'SwoleCatUpdateReceiver' android/app/src/main/AndroidManifest.xml
           grep -F 'signingConfigs {' android/app/build.gradle
           grep -F 'swoleCat {' android/app/build.gradle
           grep -F 'signingConfig signingConfigs.swoleCat' android/app/build.gradle
@@ -133,6 +144,70 @@ jobs:
 
       - name: Name APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk "swole-cat-testing-v${{ steps.meta.outputs.version }}-signed.apk"
+
+      - name: Compute Testing APK SHA-256
+        id: checksum
+        run: |
+          APK="swole-cat-testing-v${{ steps.meta.outputs.version }}-signed.apk"
+          echo "sha256=$(sha256sum "$APK" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Publish versioned Testing prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          TAG="testing-v$VERSION"
+          APK="swole-cat-testing-v$VERSION-signed.apk"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" --clobber
+          else
+            gh release create "$TAG" "$APK" \
+              --target "$GITHUB_SHA" \
+              --prerelease \
+              --title "Swole Cat Testing v$VERSION" \
+              --notes "Validated Swole Cat Testing build v$VERSION."
+          fi
+
+      - name: Advance Testing update channel manifest
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          VERSION_CODE: ${{ steps.meta.outputs.version_code }}
+          APK_SHA256: ${{ steps.checksum.outputs.sha256 }}
+          TESTING_CERT_SHA256: d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53
+        run: |
+          git config user.name "swole-cat-release-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+          mkdir -p updates
+          node <<'NODE'
+          const fs=require('fs');
+          const version=process.env.VERSION;
+          const apk=`swole-cat-testing-v${version}-signed.apk`;
+          const manifest={
+            schema:1,
+            enabled:true,
+            channel:'testing',
+            packageId:'com.jlingenfelter.swolecat.testing',
+            version,
+            versionCode:Number(process.env.VERSION_CODE),
+            apkUrl:`https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v${version}/${apk}`,
+            sha256:process.env.APK_SHA256,
+            signingCertSha256:process.env.TESTING_CERT_SHA256,
+            notes:`Swole Cat Testing v${version}`,
+            publishedAt:new Date().toISOString(),
+            required:false
+          };
+          fs.writeFileSync('updates/testing.json',JSON.stringify(manifest,null,2)+'\n');
+          NODE
+          git add updates/testing.json
+          if git diff --cached --quiet; then
+            echo "Testing channel already points to v$VERSION"
+          else
+            git commit -m "Publish Testing update v$VERSION"
+            git push origin main
+          fi
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
