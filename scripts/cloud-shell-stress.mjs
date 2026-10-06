@@ -127,7 +127,7 @@ async function configuredShellCase(){
   assert.deepEqual(cloudKeys(w),['swolecat_cloud_auth_v1:fake-session'],'only namespaced auth storage may appear after sign-in');
   assert.deepEqual(workoutSnapshot(w),before,'sign-in must not modify workout state');
   assert.equal(fetchCalls,0,'provider-neutral shell must not perform hidden network work');
-  assert.match(w.cloudSettingsHtml(),/Multi-device sync is in Phase 8\.3 testing/i);
+  assert.match(w.cloudSettingsHtml(),/manual multi-device sync/i,'connected cloud copy should describe the current manual sync behavior without stale phase language');
   assert.equal(w.SwoleCatRuntime.getService('cloudSync').snapshot().queued,0,'sign-in alone must not queue workout sync records');
   await identity.signOut();
   assert.equal(signedOut,1);
