@@ -1073,3 +1073,38 @@ Immediate phone test:
 Outstanding independent cloud check:
 - v0.71.0 real-device short-share sender/recipient verification is still pending
 
+
+
+## 2026-10-06 update-distribution architecture locked
+
+Canonical contract:
+- `docs/UPDATE_DISTRIBUTION.md`
+
+Release model:
+- `main` / Swole Cat Testing is the only place active development occurs
+- Testing package: `com.jlingenfelter.swolecat.testing`
+- Testing update channel may advance after validated signed Testing releases
+- `beta` / Swole Cat moves only after explicit user approval to promote
+- Beta package: `com.jlingenfelter.swolecat`
+- ordinary `main` work must never advance the Beta update feed
+- updater/distribution must not require a Swole Cat cloud account
+- preferred initial distribution: versioned signed APKs on GitHub Releases + tiny public Testing/Beta channel manifests
+- Supabase remains user-data/cloud infrastructure rather than update authority
+- updater verifies versionCode/channel/package and APK SHA-256 before handing installation to Android
+- Android may require one-time Allow from this source / install approval; silent install is not assumed
+- active workouts must never be interrupted by the installation flow
+
+One-time Beta bootstrap:
+- implement and prove updater entirely on Testing first
+- then create a new Beta baseline containing the updater and signed with the permanent Beta/release key
+- current v0.66.1 beta testers may need one final manual/fresh-install migration
+- protect tester local data with cloud sync/backup or export before any uninstall
+- once the new Beta baseline is installed, future Beta releases should arrive through the in-app updater
+
+Immediate next engineering task:
+1. implement update manifest + native updater in Testing only
+2. install Testing version N on the real Android phone
+3. publish signed Testing N+1
+4. prove in-app N -> N+1 update with local data/auth/workout state preserved
+5. test bad hash, wrong package/channel, offline, and active-workout deferral
+6. only then create/promote the new Beta baseline
