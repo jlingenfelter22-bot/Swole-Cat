@@ -717,3 +717,30 @@ Verified on 2026-10-06:
 - Device B checked in after the cloud update on Web v0.69.4
 
 This confirms queued sync mutations survive offline operation and app restart, then flush and propagate correctly after reconnect.
+
+
+### Phase 8.3 COMPLETE: Multi-device Sync exit criteria passed
+
+Final real-device exit verification completed on 2026-10-06.
+
+Passed:
+- initial Device A cloud seed
+- fresh Device B pull with no redundant writes
+- bidirectional propagation A -> B and B -> A
+- deliberate same-record concurrent conflict detection
+- cloud-wins conflict resolution with no redundant rewrite
+- browser pull stall fixed in v0.69.3
+- tombstone deletion propagation fixed end-to-end in v0.69.4
+- offline queued mutation survived failed offline sync and force-close/restart
+- queued mutation flushed after reconnect and propagated to the other device
+- account deletion cleanup removed all cloud-owned data:
+  - auth users: 0
+  - devices: 0
+  - sync records: 0
+  - backup metadata: 0
+  - backup Storage objects: 0
+- local workout state remained intact after cloud account deletion, including routines, workout history, and profile data
+
+Current stable Testing baseline for this phase is v0.69.4, with service-worker cloud/API requests excluded from PWA caching.
+
+Phase 8.3 is complete. Do not expand cloud scope by default. Next product work should return to Coach Swolecat intelligence, heat-map refinement, UI polish, and general performance/smoothing unless a new cloud requirement becomes necessary.
