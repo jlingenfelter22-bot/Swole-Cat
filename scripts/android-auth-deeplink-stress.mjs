@@ -6,8 +6,8 @@ const provider=fs.readFileSync('src/js/10c-supabase-auth-provider.js','utf8');
 const configure=fs.readFileSync('scripts/configure-android.mjs','utf8');
 const capacitor=JSON.parse(fs.readFileSync('capacitor.config.json','utf8'));
 
-assert.equal(pkg.version,'0.72.0');
-assert.equal(pkg.swoleCat.androidVersionCode,99);
+assert.equal(pkg.version,'0.72.1');
+assert.equal(pkg.swoleCat.androidVersionCode,100);
 assert.equal(pkg.dependencies['@capacitor/browser'],'8.0.5','Android OAuth should use the pinned official Browser plugin');
 assert.equal(capacitor.appId,'com.jlingenfelter.swolecat.testing');
 assert.equal(capacitor.appName,'Swole Cat Testing','main branch Android lab build must be visually distinct from field beta');

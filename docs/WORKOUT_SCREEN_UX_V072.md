@@ -89,3 +89,44 @@ Finish early must use the existing unfinished-work reconciliation rather than si
 - existing automatic exercise advance remains
 - old unfinished-work review still protects early finish
 - full production regression wall passes
+
+
+## v0.72.1 feedback polish
+
+This follow-up pass comes from a second narrated real-device review of the v0.72.0 workout console.
+
+### One-time structure-change notice
+- the permanent in-flow `Today’s structure changed` block is removed
+- the first structural edit in an active workout triggers a floating overlay notice
+- the overlay does not move workout content or increase scroll distance
+- copy: `Workout modified` + reminder that the saved routine stays unchanged unless updated at finish
+- visible for about five seconds with a shrinking progress line
+- tap/keyboard activation dismisses it immediately
+- shown only once per active workout, regardless of how many later structural edits occur
+- the final structure-update confirmation remains authoritative
+
+### Switch Exercise visual refinement
+- retain explicit `Switch exercise` wording for discoverability
+- render it as a single-line, lightweight affordance rather than a cramped bordered pill
+- keep the full exercise header tappable
+- keep the form-help info control available but visually subordinate it
+
+### Exercise transition language
+- crossing from one exercise to another gets a short card-deck transition
+- forward navigation moves the outgoing card slightly left and brings the next card from the right
+- backward manual navigation reverses the direction
+- normal duration target: about 180 ms out / 230 ms in
+- prefer the browser View Transitions API when available
+- fall back to a lightweight incoming transform/opacity animation
+- do not animate expensive filters, blur, or large shadow effects
+- remove the redundant regular `Up next: ...` toast for normal auto-advance
+
+### Set transition language
+- Set 1 → Set 2 → Set 3 remains an in-place update, not a card transition
+- the newly active set pill gets a brief cyan pulse/ring
+- the focused set card gets a tiny vertical/opacity settle
+- the cue exists only to confirm the new active set and should not delay interaction
+
+### Motion accessibility
+- respect `prefers-reduced-motion: reduce`
+- navigation and state changes must remain instant and fully functional when motion is disabled

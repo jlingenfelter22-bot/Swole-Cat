@@ -545,7 +545,7 @@ function advanceSupersetAfterSet(ei,si){
      w.focusExerciseIndex=oi;w.focusSetIndex=targetSi;
      w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==oi});
      w.exercises.forEach(function(x,i){x.expanded=i===oi});
-     saveActiveWorkout();renderWorkout();
+     saveActiveWorkout();renderWorkoutExerciseTransition(ei,oi);
      showToast('Superset '+meta.label+': '+((exById(oe.exerciseId)&&exById(oe.exerciseId).name)||'next exercise'));
      return true;
    }
@@ -557,7 +557,7 @@ function advanceSupersetAfterSet(ei,si){
    w.focusExerciseIndex=next;w.focusSetIndex=workoutFirstIncompleteSetIndex(w.exercises[next]);
    w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==next});
    w.exercises.forEach(function(x,i){x.expanded=i===next});
-   saveActiveWorkout();renderWorkout();showToast('Superset '+meta.label+' round complete · rest');return true;
+   saveActiveWorkout();renderWorkoutExerciseTransition(ei,next);showToast('Superset '+meta.label+' round complete · rest');return true;
  }
  if(workoutHasRemainingProgrammedWork())startRestTimer(e.config.restSeconds||120);else stopRestTimer();
  if(advanceFromCompletedExercise(ei))return true;
@@ -796,6 +796,77 @@ function compactTargetText(e,ex,prev){
  if((Number(t.weight)||0)<=0)return ex?.equipment==='bodyweight'?`${t.reps} reps · bodyweight`:`Choose starting weight · ${t.reps} reps`;
  return `${t.weight} ${state.profile.unit} × ${t.reps} target`;
 }
+
+let workoutIncomingExerciseCue=null,workoutSetAdvanceCue=null,workoutStructureNoticeTimer=null;
+function workoutReducedMotion(){
+ try{return !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches}catch(e){return false}
+}
+function dismissWorkoutStructureNotice(){
+ clearTimeout(workoutStructureNoticeTimer);workoutStructureNoticeTimer=null;
+ const el=document.getElementById('workoutStructureNotice');if(!el)return;
+ el.classList.remove('show');
+ setTimeout(()=>el.remove(),180);
+}
+function showWorkoutStructureNotice(){
+ if(!state.activeWorkout)return;
+ document.getElementById('workoutStructureNotice')?.remove();
+ clearTimeout(workoutStructureNoticeTimer);
+ const el=document.createElement('div');
+ el.id='workoutStructureNotice';
+ el.className='workout-structure-toast';
+ el.setAttribute('role','status');
+ el.setAttribute('aria-live','polite');
+ el.setAttribute('tabindex','0');
+ el.innerHTML='<div class="workout-structure-toast-copy"><b>Workout modified</b><span>Your saved routine stays unchanged unless you update it when finishing.</span></div><span class="workout-structure-toast-close" aria-hidden="true">×</span><span class="workout-structure-toast-progress" aria-hidden="true"></span>';
+ el.addEventListener('click',dismissWorkoutStructureNotice);
+ el.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();dismissWorkoutStructureNotice()}});
+ document.body.appendChild(el);
+ requestAnimationFrame(()=>el.classList.add('show'));
+ workoutStructureNoticeTimer=setTimeout(dismissWorkoutStructureNotice,5000);
+}
+SwoleCatRuntime.events.addEventListener('workout:structure-changed',()=>setTimeout(showWorkoutStructureNotice,0));
+
+function queueWorkoutSetAdvanceCue(ei,si){
+ if(workoutReducedMotion())return;
+ workoutSetAdvanceCue={ei,si};
+}
+function applyWorkoutMotionCues(){
+ const exerciseCue=workoutIncomingExerciseCue;
+ if(exerciseCue){
+   workoutIncomingExerciseCue=null;
+   const stage=document.querySelector('#workout .focus-exercise-stage[data-exercise-index="'+exerciseCue.ei+'"]');
+   if(stage){
+     const cls='workout-exercise-enter-'+exerciseCue.direction;
+     stage.classList.add(cls);
+     setTimeout(()=>stage.classList.remove(cls),320);
+   }
+ }
+ const setCue=workoutSetAdvanceCue;
+ if(setCue){
+   workoutSetAdvanceCue=null;
+   const pill=document.querySelector('#workout .focus-set-pill.current');
+   const card=document.querySelector('#workout .focus-set-card[data-set-index="'+setCue.si+'"]');
+   if(pill)pill.classList.add('set-advance-pulse');
+   if(card)card.classList.add('set-advance-settle');
+   setTimeout(()=>{pill?.classList.remove('set-advance-pulse');card?.classList.remove('set-advance-settle')},520);
+ }
+}
+function renderWorkoutExerciseTransition(fromEi,toEi){
+ if(fromEi===toEi||workoutReducedMotion()){renderWorkout();return}
+ const direction=toEi>fromEi?'forward':'back';
+ if(typeof document.startViewTransition==='function'){
+   const root=document.documentElement;
+   root.dataset.workoutTransition=direction;
+   let transition=null;
+   try{transition=document.startViewTransition(()=>renderWorkout())}catch(e){delete root.dataset.workoutTransition;renderWorkout();return}
+   Promise.resolve(transition?.finished).catch(()=>{}).finally(()=>{
+     if(root.dataset.workoutTransition===direction)delete root.dataset.workoutTransition;
+   });
+   return;
+ }
+ workoutIncomingExerciseCue={ei:toEi,direction};
+ renderWorkout();
+}
 function advanceFromCompletedExercise(ei){
  const w=state.activeWorkout;if(!w)return false;
  const e=w.exercises[ei],p=exerciseSetProgress(e);
@@ -807,8 +878,7 @@ function advanceFromCompletedExercise(ei){
    w.focusExerciseIndex=next;w.focusSetIndex=workoutFirstIncompleteSetIndex(w.exercises[next]);
    w.deferredExerciseIndexes=w.deferredExerciseIndexes.filter(function(i){return i!==next});
    w.exercises.forEach(function(x,i){x.expanded=i===next});
-   const ex=exById(w.exercises[next].exerciseId);
-   saveActiveWorkout();renderWorkout();showToast('Up next: '+((ex&&ex.name)||'next exercise'));
+   saveActiveWorkout();renderWorkoutExerciseTransition(ei,next);
  }else{
    stopRestTimer();w.focusExerciseIndex=ei;w.focusSetIndex=Math.max(0,e.sets.length-1);
    saveActiveWorkout();renderWorkout();showToast('All programmed sets complete');
@@ -876,7 +946,7 @@ function selectWorkoutExercise(ei){
  const currentName=exById(w.exercises[current]&&w.exercises[current].exerciseId);
  const wasIncomplete=current!==ei&&current>=0&&!exerciseSetProgress(w.exercises[current]).complete&&!w.exercises[current].skipped;
  if(!setWorkoutFocus(ei,null,{deferCurrent:true,render:false}))return;
- saveActiveWorkout();renderWorkout();
+ saveActiveWorkout();renderWorkoutExerciseTransition(current,ei);
  if(wasIncomplete)showToast(((currentName&&currentName.name)||'Exercise')+' saved as pending');
 }
 function selectWorkoutSet(ei,si){
@@ -890,7 +960,7 @@ function deferFocusedExercise(){
  if(next<0){showToast('No other unfinished exercise');return}
  const ex=exById(w.exercises[ei].exerciseId),name=ex&&ex.name||'Exercise';
  setWorkoutFocus(next,null,{deferCurrent:true,render:false});
- saveActiveWorkout();renderWorkout();showToast(name+' saved as pending');
+ saveActiveWorkout();renderWorkoutExerciseTransition(ei,next);showToast(name+' saved as pending');
 }
 function focusedSetRailHtml(e,ei,si){
  const setPills=e.sets.map(function(set,i){
@@ -963,7 +1033,7 @@ function focusedSetCardHtml(e,ei,si,ex,prev){
 function focusedExerciseCanvasHtml(w,ei){
  const e=w.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),si=workoutFocusedSetIndex(w),prog=exerciseSetProgress(e),superset=supersetMeta(ei);
  const next=nextWorkoutExerciseIndex(ei,w),allDone=!workoutHasRemainingProgrammedWork(w);
- return workoutExerciseNavigatorHtml(w,ei)+
+ return '<div class="focus-exercise-stage" data-exercise-index="'+ei+'">'+workoutExerciseNavigatorHtml(w,ei)+
   '<div id="workoutExercise-'+ei+'" class="focus-exercise-canvas tone-'+(ei%4)+' '+(prog.complete?'complete-block':'')+'">'+
   '<div class="focus-exercise-actions"><button class="btn secondary" onclick="openWorkoutSubstitute('+ei+')">⇄ Substitute</button>'+
   '<button class="btn secondary focus-more-btn" onclick="openFocusedExerciseMore('+ei+')">More ···</button></div>'+
@@ -972,7 +1042,7 @@ function focusedExerciseCanvasHtml(w,ei){
   focusedSetRailHtml(e,ei,si)+focusedSetCardHtml(e,ei,si,ex,prev)+
   (allDone?'<div class="focus-workout-complete"><div><div class="eyebrow">SESSION READY</div><b>All programmed sets complete.</b></div><button class="btn green" onclick="finishWorkout()">Finish Workout</button></div>':
    (prog.complete&&next>=0?'<div class="focus-exercise-footer"><button class="btn secondary" onclick="deferFocusedExercise()">Go to unfinished exercise</button></div>':''))+
-  '</div>';
+  '</div></div>';
 }
 
 let workoutKeyboardAnchorBound=false;
@@ -1010,12 +1080,12 @@ function renderWorkout(){
   '<div class="focus-session-primary"><span class="focus-session-label"><span class="active-pulse"></span>ACTIVE</span><b class="focus-session-name" title="'+escAttr(w.routineName)+'">'+esc(w.routineName)+'</b></div>'+
   '<div class="focus-session-stats"><span>'+counts.done+'/'+counts.total+' sets</span><span>'+pct+'%</span><span>'+workoutElapsed()+'</span></div></div>'+
   '<div class="focus-session-progress"><div style="width:'+pct+'%"></div></div>';
- if(w.structureDirty)html+='<div class="workout-structure-note"><b>Today’s structure changed.</b> Your saved routine stays untouched unless you choose to update it when finishing.</div>';
  if(workoutCoach)html+='<details class="focus-session-coach"><summary>Coach session note</summary><div class="coachbox '+workoutCoach.level+'"><div class="coach-text">'+esc(workoutCoach.text)+'</div>'+
   (workoutCoach.level==='reset'?'<div class="actions"><button class="btn small secondary" onclick="applyLightSession()">Use a 7.5% lighter session</button></div>':'')+'</div></details>';
  html+=focus>=0?focusedExerciseCanvasHtml(w,focus):'<div class="empty">No available exercise.</div>';
  document.getElementById('workoutArea').innerHTML=html;
  bindWorkoutKeyboardAnchor();
+ applyWorkoutMotionCues();
  requestAnimationFrame(syncWorkoutStickyOffsets);
 }
 
@@ -1089,6 +1159,7 @@ function toggleSet(ei,si){
    if(workoutHasRemainingProgrammedWork())startRestTimer(e.config.restSeconds||120);else stopRestTimer();
    if(advanceFromCompletedExercise(ei))return;
    w.focusSetIndex=workoutFirstIncompleteSetIndex(e);
+   queueWorkoutSetAdvanceCue(ei,w.focusSetIndex);
  }else{
    set.pr='';w.focusSetIndex=si;
    w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==ei});
@@ -1139,7 +1210,8 @@ function unfinishedWorkoutExercises(w){
  }).filter(function(row){return !row.e.skipped&&row.undone>0});
 }
 function focusUnfinishedWorkoutExercise(ei){
- closeModal();setWorkoutFocus(ei,null,{deferCurrent:false,render:false});saveActiveWorkout();renderWorkout();
+ const w=state.activeWorkout,from=normalizeWorkoutFocusState(w);
+ closeModal();setWorkoutFocus(ei,null,{deferCurrent:false,render:false});saveActiveWorkout();renderWorkoutExerciseTransition(from,ei);
  const ex=exById(state.activeWorkout.exercises[ei].exerciseId);showToast('Back to '+((ex&&ex.name)||'unfinished exercise'));
 }
 function skipUnfinishedWorkoutExercise(ei){
