@@ -10,7 +10,7 @@ Do not begin a new cloud phase by default.
 
 The next product task is:
 
-**Real-device validate the v0.72.2 exercise-header composition, then continue only with surgical workout-screen polish from actual phone feedback. The v0.71.0 short-share real-device check remains an independent outstanding cloud exit test.**
+**Real-device validate the v0.72.3 numeric-entry readability pass, then continue only with surgical workout-screen polish from actual phone feedback. The v0.71.0 short-share real-device check remains an independent outstanding cloud exit test.**
 
 The user wants to review the Settings screen, clean up all settings, decide where each setting belongs, improve grouping/order/labels, and make the Settings menu feel intentional and easy to scan.
 
@@ -35,28 +35,28 @@ Main product/testing branch:
 `main`
 
 Current Testing version:
-`0.72.2`
+`0.72.3`
 
 Android versionCode:
-`101`
+`102`
 
 Current main merge:
-`b24d27dca66b8e923cef7be3c8b7989ac1153790`
+`2184e0d4951053f775ddb1c7fa93f9fda3c54688`
 
 Latest completed gates:
-- PR #14 final validation run 723: PASS, all 74 validation steps
-- main validation run 724: PASS, all 74 validation steps
-- Pages run 649: PASS
-- signed Testing Android build run 341: PASS
-- artifact ID: `11441549231`
-- artifact name: `Swole-Cat-Testing-Android-v0.72.2-signed`
-- artifact digest: `sha256:2711fccb0d23412623c330c7ff2733f1b45c49df07dd9feb31c6b0c9a85a68a7`
+- PR #15 validation run 728: PASS, all 75 validation steps
+- main validation run 729: PASS, all 75 validation steps
+- Pages run 653: PASS
+- signed Testing Android build run 342: PASS
+- artifact ID: `11443243011`
+- artifact name: `Swole-Cat-Testing-Android-v0.72.3-signed`
+- artifact digest: `sha256:e0785c21b00c8e0f405596d478c8a16f64cb8d45359a4579f22b5566b733b750`
 
 Live PWA:
 `https://jlingenfelter22-bot.github.io/Swole-Cat/`
 
 Important branches:
-- `main`: experimental Testing, current v0.72.2
+- `main`: experimental Testing, current v0.72.3
 - `beta`: field beta used for real workouts
 - `beta-v0.66.1`: frozen beta checkpoint
 
@@ -1039,6 +1039,60 @@ Immediate phone checks:
 - open-switcher stability
 - visual balance of metadata versus Switch Exercise pill
 - whole-header switching remains easy
+
+Still outstanding from v0.71.0:
+- real-device short cloud-share sender/recipient test
+
+Beta:
+- still frozen at v0.66.1 unless explicitly promoted
+
+
+## Latest authoritative checkpoint: 2026-10-06, v0.72.3 numeric entry readability
+
+Treat this section as newer than earlier handoff text above.
+
+Fourth real-device review:
+- overall workout hierarchy/header/motion were approved
+- remaining feedback focused on Weight/Reps labels being visually truncated beside their step controls
+- constraint: fix readability without adding vertical height
+
+Locked v0.72.3 numeric-entry layout:
+- Weight/Reps labels render in full
+- Weight includes active lb/kg unit; bodyweight can say Added weight
+- each numeric field uses one horizontal row: `[ − | value | + ]`
+- value input remains the large 52px logging target
+- decrement/increment buttons sit directly beside the value they modify
+- RIR remains a selector and does not gain step buttons
+- old micro-step label header is retired
+- new layout should be equal or shorter vertically than v0.72.2
+- do not abbreviate labels or reintroduce ellipsis to save space
+
+Files:
+- implementation: `src/js/06-workout-engine.js`
+- styling: `src/styles/03-polish.css`
+- regression: `scripts/workout-numeric-entry-stress.mjs`
+- design contract: `docs/WORKOUT_SCREEN_UX_V072.md`
+
+Release:
+- v0.72.3
+- Android code 102
+- PR #15
+- merge `2184e0d4951053f775ddb1c7fa93f9fda3c54688`
+- PR validation 728 PASS, 75 steps
+- main validation 729 PASS, 75 steps
+- Pages 653 PASS
+- Android build 342 PASS
+- artifact ID `11443243011`
+- artifact digest `sha256:e0785c21b00c8e0f405596d478c8a16f64cb8d45359a4579f22b5566b733b750`
+
+Immediate phone checks:
+- full Weight (lb/kg) label
+- full Reps label
+- intuitive `− value +` association
+- button tap comfort
+- RIR balance
+- compare set-card height against v0.72.2
+- narrow-screen and Added weight cases
 
 Still outstanding from v0.71.0:
 - real-device short cloud-share sender/recipient test
