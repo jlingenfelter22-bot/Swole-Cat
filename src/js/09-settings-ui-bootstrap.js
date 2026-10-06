@@ -45,6 +45,9 @@ function openCloudSettings(){
  <div class="cloud-settings-menu">
    <div class="notice"><b>Local-first by design.</b><br>Cloud features are optional. Normal workouts and active workout autosave continue to work locally without an account or network.</div>
 
+   <div class="section-title"><h2>Automation</h2></div>
+   ${cloudAutomationSettingsHtml()}
+
    <div class="section-title"><h2>Cloud backup</h2></div>
    ${cloudBackupSettingsHtml()}
 
