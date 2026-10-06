@@ -10,7 +10,7 @@ Do not begin a new cloud phase by default.
 
 The next product task is:
 
-**Real-device validate the new v0.72.0 workout console flow, then iterate from that phone test. The v0.71.0 short-share real-device check remains an independent outstanding cloud exit test.**
+**Real-device validate v0.72.1 workout feedback/motion polish, then tune timing/strength only if the phone feel calls for it. The v0.71.0 short-share real-device check remains an independent outstanding cloud exit test.**
 
 The user wants to review the Settings screen, clean up all settings, decide where each setting belongs, improve grouping/order/labels, and make the Settings menu feel intentional and easy to scan.
 
@@ -35,28 +35,28 @@ Main product/testing branch:
 `main`
 
 Current Testing version:
-`0.72.0`
+`0.72.1`
 
 Android versionCode:
-`99`
+`100`
 
 Current main merge:
-`b0a26d7020bd01c7c42a6771c5b1ecddda73bc68`
+`6016c8b29f9cd69084065193df82b9df55bf56ac`
 
 Latest completed gates:
-- PR #12 validation run 712: PASS, all 72 validation steps
-- main validation run 713: PASS, all 72 validation steps
-- Pages run 641: PASS
-- signed Testing Android build run 339: PASS
-- artifact ID: `11431691213`
-- artifact name: `Swole-Cat-Testing-Android-v0.72.0-signed`
-- artifact digest: `sha256:93d3bc12ed7093320ef7fe82674e20d76275ab13858cf06ec7c23aa5a8d66b41`
+- PR #13 validation run 717: PASS, all 73 validation steps
+- main validation run 718: PASS, all 73 validation steps
+- Pages run 645: PASS
+- signed Testing Android build run 340: PASS
+- artifact ID: `11439396486`
+- artifact name: `Swole-Cat-Testing-Android-v0.72.1-signed`
+- artifact digest: `sha256:5464a49e6d59b1b5a64523e3595ecaf005754fa8e04b561856650ac158da92b9`
 
 Live PWA:
 `https://jlingenfelter22-bot.github.io/Swole-Cat/`
 
 Important branches:
-- `main`: experimental Testing, current v0.72.0
+- `main`: experimental Testing, current v0.72.1
 - `beta`: field beta used for real workouts
 - `beta-v0.66.1`: frozen beta checkpoint
 
@@ -926,6 +926,70 @@ Immediate real-device UX checks:
 
 Still outstanding from v0.71.0:
 - real-device short cloud-share test between signed-in sender and preferably signed-out recipient
+
+Beta:
+- still frozen at v0.66.1 unless explicitly promoted
+
+
+## Latest authoritative checkpoint: 2026-10-06, v0.72.1 workout feedback polish
+
+Treat this section as newer than earlier handoff text above.
+
+Second real-device review feedback:
+- v0.72.0 core layout was strongly approved
+- user no longer wanted another structural rewrite
+- remaining issues were feedback/orientation polish
+
+Locked v0.72.1 behavior:
+- `Today’s structure changed` is no longer a permanent in-flow block
+- first structural edit shows one floating `Workout modified` notice per active workout
+- overlay lasts about five seconds, includes a shrinking countdown line, and does not push layout
+- later edits in the same workout do not repeat the notice
+- Switch Exercise remains explicit but is a single-line lightweight affordance
+- exercise changes use a subtle card-deck transition
+- forward target enters from the right; backward navigation reverses it
+- normal set progression stays in-place with only a brief active-set pulse and set-card settle
+- regular auto-advance does not show an additional `Up next` toast
+- superset-specific feedback remains
+- reduced-motion preference disables workout movement without disabling navigation
+
+Motion rule:
+- the user should understand that something changed without feeling that the app stopped to animate
+- current target is about 180 ms outgoing / 230 ms incoming for exercise transitions
+- if the user consciously notices every transition or feels delayed, shorten timing/translation before considering removal
+- do not add blur, expensive filter effects, or large animated shadows
+
+Files:
+- spec: `docs/WORKOUT_SCREEN_UX_V072.md`
+- runtime: `src/js/01-core-runtime.js`
+- workout behavior: `src/js/06-workout-engine.js`
+- styling/motion: `src/styles/03-polish.css`
+- regression: `scripts/workout-feedback-stress.mjs`
+
+Release:
+- v0.72.1
+- Android code 100
+- PR #13
+- merge `6016c8b29f9cd69084065193df82b9df55bf56ac`
+- PR validation 717 PASS, 73 steps
+- main validation 718 PASS, 73 steps
+- Pages 645 PASS
+- Android build 340 PASS
+- artifact ID `11439396486`
+- artifact digest `sha256:5464a49e6d59b1b5a64523e3595ecaf005754fa8e04b561856650ac158da92b9`
+
+Immediate real-device checks:
+- add one set and judge the floating structure notice
+- confirm later structural changes do not repeat it
+- judge Switch Exercise visual balance
+- complete Set 1 and verify Set 2 cue is subtle but clear
+- complete an exercise and judge card transition timing/strength
+- manually move backward and forward through exercises
+- test superset rotation
+- tune motion only if the phone feel calls for it
+
+Still outstanding from v0.71.0:
+- real-device short cloud-share sender/recipient test
 
 Beta:
 - still frozen at v0.66.1 unless explicitly promoted
