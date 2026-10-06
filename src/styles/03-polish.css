@@ -1659,3 +1659,199 @@
   #workout .focus-nav-switch{min-width:72px;width:72px;font-size:.55rem}
   #workout .focus-howto-btn{right:84px}
 }
+
+
+/* v0.72.1 WORKOUT FEEDBACK POLISH
+   Motion confirms state changes without slowing logging. */
+#workout .focus-exercise-stage{
+  view-transition-name:workout-exercise-stage;
+}
+#workout .focus-exercise-nav>summary{
+  padding-right:124px;
+}
+#workout .focus-nav-switch{
+  right:10px;
+  top:8px;
+  transform:none;
+  min-width:0;
+  min-height:26px;
+  width:auto;
+  padding:2px 0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:#7feeff;
+  white-space:nowrap;
+  font-size:.64rem;
+  letter-spacing:.015em;
+}
+#workout .focus-nav-switch b{
+  margin-left:2px;
+  color:#7feeff;
+  font-size:.82rem;
+}
+#workout .focus-howto-btn{
+  right:10px;
+  top:auto;
+  bottom:7px;
+  transform:none;
+  width:29px;
+  height:29px;
+  border-color:rgba(168,85,247,.30);
+  background:rgba(168,85,247,.055);
+  box-shadow:none;
+  color:#cfbef8;
+  font-size:.78rem;
+}
+#workout .focus-howto-btn:active{
+  transform:scale(.94);
+}
+
+.workout-structure-toast{
+  position:fixed;
+  z-index:120;
+  left:50%;
+  top:calc(var(--workout-sticky-top,72px) + 7px);
+  width:min(430px,calc(100vw - 24px));
+  transform:translate(-50%,-9px);
+  opacity:0;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:10px 11px 12px;
+  border:1px solid rgba(245,158,11,.46);
+  border-radius:6px 14px 6px 14px;
+  background:rgba(15,19,27,.985);
+  box-shadow:0 14px 34px rgba(0,0,0,.42);
+  transition:opacity 160ms var(--ease-ui),transform 160ms var(--ease-ui);
+}
+.workout-structure-toast.show{
+  opacity:1;
+  transform:translate(-50%,0);
+}
+.workout-structure-toast-copy{min-width:0}
+.workout-structure-toast-copy b{
+  display:block;
+  color:#ffe6ad;
+  font-family:var(--display);
+  font-size:.76rem;
+  letter-spacing:.02em;
+}
+.workout-structure-toast-copy span{
+  display:block;
+  margin-top:2px;
+  color:#b9c2d0;
+  font-size:.65rem;
+  line-height:1.3;
+}
+.workout-structure-toast-close{
+  align-self:start;
+  color:#7f8a9b;
+  font-size:1rem;
+  line-height:1;
+}
+.workout-structure-toast-progress{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  height:2px;
+  transform-origin:left center;
+  background:linear-gradient(90deg,#f59e0b,#facc15);
+  animation:sc-structure-notice-countdown 5s linear forwards;
+}
+@keyframes sc-structure-notice-countdown{
+  from{transform:scaleX(1)}
+  to{transform:scaleX(0)}
+}
+
+html[data-workout-transition="forward"]::view-transition-old(workout-exercise-stage){
+  animation:sc-workout-card-out-forward 180ms var(--ease-ui) both;
+}
+html[data-workout-transition="forward"]::view-transition-new(workout-exercise-stage){
+  animation:sc-workout-card-in-forward 230ms var(--ease-ui) both;
+}
+html[data-workout-transition="back"]::view-transition-old(workout-exercise-stage){
+  animation:sc-workout-card-out-back 180ms var(--ease-ui) both;
+}
+html[data-workout-transition="back"]::view-transition-new(workout-exercise-stage){
+  animation:sc-workout-card-in-back 230ms var(--ease-ui) both;
+}
+@keyframes sc-workout-card-out-forward{
+  from{opacity:1;transform:translateX(0) scale(1)}
+  to{opacity:.18;transform:translateX(-18px) scale(.985)}
+}
+@keyframes sc-workout-card-in-forward{
+  from{opacity:.28;transform:translateX(20px) scale(.99)}
+  to{opacity:1;transform:translateX(0) scale(1)}
+}
+@keyframes sc-workout-card-out-back{
+  from{opacity:1;transform:translateX(0) scale(1)}
+  to{opacity:.18;transform:translateX(18px) scale(.985)}
+}
+@keyframes sc-workout-card-in-back{
+  from{opacity:.28;transform:translateX(-20px) scale(.99)}
+  to{opacity:1;transform:translateX(0) scale(1)}
+}
+#workout .workout-exercise-enter-forward{
+  animation:sc-workout-card-in-forward 230ms var(--ease-ui) both;
+}
+#workout .workout-exercise-enter-back{
+  animation:sc-workout-card-in-back 230ms var(--ease-ui) both;
+}
+
+#workout .focus-set-pill.set-advance-pulse{
+  animation:sc-set-advance-pulse 440ms var(--ease-ui) both;
+}
+#workout .focus-set-card.set-advance-settle{
+  animation:sc-set-card-settle 220ms var(--ease-ui) both;
+}
+@keyframes sc-set-advance-pulse{
+  0%{transform:scale(.94);box-shadow:0 0 0 0 rgba(34,211,238,.02)}
+  38%{transform:scale(1.08);box-shadow:0 0 0 5px rgba(34,211,238,.14)}
+  100%{transform:scale(1);box-shadow:0 0 0 2px rgba(34,211,238,.06)}
+}
+@keyframes sc-set-card-settle{
+  from{opacity:.72;transform:translateY(4px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+@media(max-width:390px){
+  #workout .focus-exercise-nav>summary{padding-right:116px}
+  #workout .focus-nav-switch{
+    right:8px;
+    top:8px;
+    min-width:0;
+    width:auto;
+    padding:2px 0;
+    font-size:.61rem;
+  }
+  #workout .focus-nav-switch>span{display:inline}
+  #workout .focus-howto-btn{
+    right:8px;
+    bottom:7px;
+    width:28px;
+    height:28px;
+  }
+}
+@media(max-width:350px){
+  #workout .focus-exercise-nav>summary{padding-right:108px}
+  #workout .focus-nav-switch{min-width:0;width:auto;font-size:.58rem}
+  #workout .focus-howto-btn{right:8px}
+}
+@media(prefers-reduced-motion:reduce){
+  .workout-structure-toast{transition:none!important}
+  .workout-structure-toast-progress,
+  #workout .workout-exercise-enter-forward,
+  #workout .workout-exercise-enter-back,
+  #workout .focus-set-pill.set-advance-pulse,
+  #workout .focus-set-card.set-advance-settle{
+    animation:none!important;
+  }
+  html[data-workout-transition]::view-transition-old(workout-exercise-stage),
+  html[data-workout-transition]::view-transition-new(workout-exercise-stage){
+    animation:none!important;
+  }
+}
