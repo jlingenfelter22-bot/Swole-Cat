@@ -51,13 +51,13 @@ async function configureAndroidUpdater(){
     if(/public class MainActivity extends BridgeActivity\s*\{\s*\}/s.test(activity)){
       activity=activity.replace(
         /public class MainActivity extends BridgeActivity\s*\{\s*\}/s,
-        \`public class MainActivity extends BridgeActivity {
+        `public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(SwoleCatUpdaterPlugin.class);
         super.onCreate(savedInstanceState);
     }
-}\`
+}`
       );
     }else if(/super\.onCreate\(savedInstanceState\);/.test(activity)){
       activity=activity.replace(
@@ -79,10 +79,10 @@ async function configureAndroidUpdater(){
   }
 
   if(!manifest.includes('SwoleCatUpdateReceiver')){
-    const receiverBlock=\`
+    const receiverBlock=`
         <receiver
             android:name=".SwoleCatUpdateReceiver"
-            android:exported="false" />\`;
+            android:exported="false" />`;
     if(!/<\/application>/.test(manifest))throw new Error('Could not find Android application closing tag');
     manifest=manifest.replace(/\s*<\/application>/,receiverBlock+'\n    </application>');
   }
