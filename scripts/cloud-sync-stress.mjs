@@ -12,8 +12,8 @@ const settingsSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8'
 const coreSource=fs.readFileSync('src/js/01-core-runtime.js','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.70.0');
-assert.equal(pkg.swoleCat.androidVersionCode,96);
+assert.equal(pkg.version,'0.70.1');
+assert.equal(pkg.swoleCat.androidVersionCode,97);
 
 assert.match(syncSource,/SWOLE_CAT_SYNC_LOCAL_KEY='swolecat-sync-local-v1'/);
 assert.match(syncSource,/state:saved/);
