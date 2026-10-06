@@ -10,11 +10,11 @@ Do not begin a new cloud phase by default.
 
 The next product task is:
 
-**Settings cleanup and reorganization.**
+**Finish the real-device v0.71.0 short-share verification, then continue Settings cleanup/polish.**
 
 The user wants to review the Settings screen, clean up all settings, decide where each setting belongs, improve grouping/order/labels, and make the Settings menu feel intentional and easy to scan.
 
-This task has NOT started yet. The current chat intentionally stopped before making any Settings changes so the next chat can begin cleanly from this checkpoint.
+Settings cleanup has started: v0.70.0 compacted cloud/account controls into a two-tile hub, and v0.70.1 added automatic cloud behavior. The remaining Settings work is broader organization/polish after the v0.71.0 real-device sharing check.
 
 After Settings cleanup, the broader near-term product priorities are:
 1. Coach Swolecat intelligence and response quality
@@ -35,20 +35,28 @@ Main product/testing branch:
 `main`
 
 Current Testing version:
-`0.69.4`
+`0.71.0`
 
 Android versionCode:
-`95`
+`98`
 
-Current stable cloud/sync baseline commit:
-`f513c1efac50594de46c9eecb8d6cbcc0c7dfd03`
-Hotfix title:
-`Hotfix v0.69.4 prevent cloud API caching in PWA`
+Current main merge:
+`d28410f93efe1281bd29700d503ed4aff33f1de8`
 
-The documentation-only commits after that hotfix record the completed real-device validation and roadmap closure.
+Latest completed gates:
+- PR #11 final validation run 708: PASS
+- main validation run 709: PASS
+- Pages run 638: PASS
+- signed Testing Android build run 338: PASS
+- artifact ID: `11425967468`
+- artifact name: `Swole-Cat-Testing-Android-v0.71.0-signed`
+- artifact digest: `sha256:3e4be0f7cec86e4d40f1145a36a87e7ac30e69a5bb195e4a7ca760d4adc6c934`
+
+Live PWA:
+`https://jlingenfelter22-bot.github.io/Swole-Cat/`
 
 Important branches:
-- `main`: experimental Testing
+- `main`: experimental Testing, current v0.71.0
 - `beta`: field beta used for real workouts
 - `beta-v0.66.1`: frozen beta checkpoint
 
@@ -855,9 +863,9 @@ App behavior:
 - no private performance/history data is included
 
 Next verification:
-1. merge PR #11
-2. install/update Swole Cat Testing v0.71.0
-3. sender signs in and shares a real Program/routine
-4. recipient imports the short code, ideally while signed out
-5. verify imported structure and backend plan_shares metadata/hash/expiry
-6. then mark Phase 8.4 real-device complete
+1. install/update Swole Cat Testing v0.71.0
+2. sender signs in and shares a real Program/routine
+3. recipient imports the short code, ideally while signed out
+4. verify imported structure and backend plan_shares metadata/hash/expiry
+5. then mark Phase 8.4 real-device complete
+6. continue remaining Settings cleanup/polish
