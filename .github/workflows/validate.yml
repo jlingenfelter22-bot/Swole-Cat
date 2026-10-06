@@ -2,7 +2,7 @@ name: Validate Swole Cat
 
 on:
   push:
-    branches: [main]
+    branches: [main, auto-cloud-sync-v0.70.1]
   pull_request:
     branches: [main]
 
