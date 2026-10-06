@@ -8,8 +8,8 @@ const providerSource=fs.readFileSync('src/js/10c-supabase-auth-provider.js','utf
 const deleteFunction=fs.readFileSync('supabase/functions/delete-account/index.ts','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.73.0');
-assert.equal(pkg.swoleCat.androidVersionCode,103);
+assert.equal(pkg.version,'0.73.1');
+assert.equal(pkg.swoleCat.androidVersionCode,104);
 
 assert.match(identitySource,/reauthenticateWithGoogle/);
 assert.match(identitySource,/deleteAccount/);
