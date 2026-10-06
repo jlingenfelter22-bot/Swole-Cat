@@ -14,6 +14,13 @@ const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
 assert.equal(pkg.version,'0.70.1');
 assert.equal(pkg.swoleCat.androidVersionCode,97);
+assert.match(syncSource,/SWOLE_CAT_SYNC_AUTO_DELAY_MS=4000/);
+assert.match(syncSource,/SWOLE_CAT_SYNC_AUTO_REFRESH_MS=5\*60\*1000/);
+assert.match(syncSource,/syncScheduleAuto\('save'\)/,'ordinary state saves should schedule background sync');
+assert.match(syncSource,/window\.addEventListener\('online'/,'sync should retry when connectivity returns');
+assert.match(syncSource,/document\.addEventListener\('visibilitychange'/,'sync should refresh after foregrounding');
+assert.match(syncSource,/setInterval\(\(\)=>syncScheduleAuto\('periodic',250,true\),SWOLE_CAT_SYNC_AUTO_REFRESH_MS\)/,'sync should poll gently for changes from other devices');
+assert.match(syncSource,/Automatic sync:/,'Cloud settings should show automatic sync status');
 
 assert.match(syncSource,/SWOLE_CAT_SYNC_LOCAL_KEY='swolecat-sync-local-v1'/);
 assert.match(syncSource,/state:saved/);
