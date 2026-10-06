@@ -91,7 +91,7 @@ const fakeProvider={
 
 await identity.registerProvider(fakeProvider);
 assert.equal(identity.snapshot().signedIn,true);
-assert.match(w.cloudSettingsHtml(),/Multi-device sync is in Phase 8\.3 testing/i);
+assert.match(w.cloudSettingsHtml(),/manual multi-device sync/i,'account lifecycle copy should describe the current manual sync behavior');
 w.openCloudAccount();
 assert.match(w.document.body.textContent,/Delete cloud account/i);
 
