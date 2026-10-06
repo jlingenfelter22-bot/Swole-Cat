@@ -1116,3 +1116,12 @@ The following product ideas are explicitly retained on the roadmap:
 - [ ] Group progress visibility
 - [ ] Privacy controls for shared stats
 - [ ] Live group workout sessions
+
+
+## Immediate next development task
+
+**Settings cleanup and reorganization** is the next active task after completed Phase 8.3.
+
+Before changing code, inventory every current Settings control and its present section, then reorganize section grouping, order, labels, and placement while preserving behavior.
+
+Canonical resume reference: `docs/NEXT_CHAT_HANDOFF.md`.
