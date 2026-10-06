@@ -17,12 +17,32 @@ function convertStoredUnits(fromUnit,toUnit){
  }
 }
 
+function cloudHubSyncStatus(info){
+ if(!info?.configured)return 'Local-only build';
+ if(!info?.signedIn)return 'Sign in to enable';
+ const sync=SwoleCatRuntime.getService('cloudSync')?.snapshot?.()||{};
+ if(sync.status==='syncing')return 'Syncing now…';
+ if(Number(sync.conflicts)>0)return Number(sync.conflicts)+' conflict'+(Number(sync.conflicts)===1?'':'s')+' need review';
+ if(Number(sync.queued)>0)return Number(sync.queued)+' change'+(Number(sync.queued)===1?'':'s')+' queued';
+ if(sync.lastSyncAt){
+   const ms=Date.now()-Date.parse(sync.lastSyncAt);
+   if(Number.isFinite(ms)&&ms>=0){
+     const minutes=Math.floor(ms/60000);
+     if(minutes<1)return 'Synced just now';
+     if(minutes<60)return 'Synced '+minutes+'m ago';
+     const hours=Math.floor(minutes/60);
+     if(hours<24)return 'Synced '+hours+'h ago';
+   }
+   return 'Previously synced';
+ }
+ return cloudAutomationPrefs().autoSync!==false?'Automatic sync ready':'Automatic sync off';
+}
 function cloudHubHtml(){
  const info=cloudIdentitySnapshot();
  const accountState=!info.configured
    ?'Local-only build'
    :(info.signedIn?(info.user?.email||info.user?.displayName||'Connected'):'Not signed in');
- const cloudState=info.signedIn?'Backup, sync & recovery':'Backup, sync & recovery';
+ const cloudState=cloudHubSyncStatus(info);
  return `
  <div class="card cloud-hub-card">
    <button type="button" class="cloud-hub-tile" onclick="openCloudAccount()">
