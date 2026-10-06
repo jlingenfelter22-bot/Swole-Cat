@@ -744,3 +744,10 @@ Passed:
 Current stable Testing baseline for this phase is v0.69.4, with service-worker cloud/API requests excluded from PWA caching.
 
 Phase 8.3 is complete. Do not expand cloud scope by default. Next product work should return to Coach Swolecat intelligence, heat-map refinement, UI polish, and general performance/smoothing unless a new cloud requirement becomes necessary.
+
+
+## Canonical next-chat handoff
+
+Read `docs/NEXT_CHAT_HANDOFF.md` first when resuming development in a new conversation.
+
+Immediate next task: **Settings cleanup and reorganization**. This work has not started yet. Do not begin another cloud phase by default.
