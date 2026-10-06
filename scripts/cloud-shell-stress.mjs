@@ -130,8 +130,8 @@ async function configuredShellCase(){
   assert.match(w.cloudSettingsHtml(),/manual multi-device sync/i,'connected cloud copy should describe the current manual sync behavior without stale phase language');
   w.openSettings();
   await wait(20);
-  const cloudHubTiles=[...w.document.querySelectorAll('.cloud-hub-tile')];
-  assert.equal(cloudHubTiles.length,2,'main Settings should compact cloud controls into exactly two entry tiles');
+  const cloudHubTiles=[...w.document.querySelectorAll('.cloud-hub-card .cloud-hub-tile')];
+  assert.equal(cloudHubTiles.length,2,'main Settings should compact cloud controls into exactly two cloud entry tiles');
   assert.match(cloudHubTiles[0].textContent,/Cloud account/i,'first cloud tile should open account management');
   assert.match(cloudHubTiles[1].textContent,/Cloud settings/i,'second cloud tile should open the compact cloud submenu');
   assert.match(cloudHubTiles[1].textContent,/Automatic sync ready|Synced|queued|conflict|Syncing/i,'cloud settings tile should surface live sync health');
