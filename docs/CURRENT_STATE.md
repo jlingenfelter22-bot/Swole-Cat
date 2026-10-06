@@ -751,3 +751,63 @@ Phase 8.3 is complete. Do not expand cloud scope by default. Next product work s
 Read `docs/NEXT_CHAT_HANDOFF.md` first when resuming development in a new conversation.
 
 Immediate next task: **Settings cleanup and reorganization**. This work has not started yet. Do not begin another cloud phase by default.
+
+
+## 2026-10-06 cloud/settings checkpoint
+
+### v0.70.0 Settings cloud compaction
+- main Settings now shows a compact two-tile cloud hub: Cloud account + Cloud settings
+- Cloud backup, Multi-device sync, and Data safety moved into the Cloud settings submenu
+- beta branch remained untouched
+
+### v0.70.1 automatic cloud behavior
+- automatic record sync defaults on for connected accounts
+- local saves remain immediate and authoritative
+- queued changes flush after a short debounce
+- foreground/reconnect and periodic refresh pull remote changes
+- automatic recovery backup defaults on and runs roughly daily while the app is in use
+- only the latest two recovery backups are retained
+- manual Sync Now and Back Up Now remain available
+- compact Cloud settings tile surfaces live sync health
+- merged to main as `f3ff2c8ce1cd8df99df67d370390c1b143aefa51`
+
+### v0.71.0 Phase 8.4 short-lived plan sharing
+User problem:
+- the original `SWOLECAT1` code contains the entire Base64-encoded plan envelope
+- full Programs can produce extremely long text messages that are easy to truncate/corrupt
+
+New primary design:
+- signed-in sender creates a short `SC-XXXX-XXXX-XXXX-XXXX` cloud ticket
+- recipient can import it without a Swole Cat cloud account
+- recipient still sees the existing safe preview before importing
+- only the plan blueprint is shared
+- no sessions, PRs, bodyweight, profile data, analytics, active workout, or Program progress is included
+- cloud shares expire after 7 days
+- each account is capped at 25 active shares
+- expired/old rows are pruned during share traffic
+- only the SHA-256 hash of the usable code is stored
+- legacy `SWOLECAT1` remains available as Offline Code and stays import-compatible
+
+Live Supabase:
+- `public.plan_shares` created with RLS enabled
+- direct anon/authenticated table access revoked
+- explicit deny-all client RLS policy
+- `plan-share` Edge Function deployed and ACTIVE
+- function create action verifies sender JWT
+- resolve action is public-by-secret so recipients do not need an account
+- post-deploy Supabase security advisors: zero findings
+- performance advisor only reports the two brand-new share indexes as unused, expected before real traffic
+
+Automation:
+- dedicated `scripts/cloud-sharing-stress.mjs`
+- first complete v0.71.0 regression wall passed on PR #11 run 702
+- final head requires one last regression pass after documentation/security-policy checkpoint
+
+Testing still needed before calling Phase 8.4 real-device complete:
+- generate a short code from Android Testing while signed in
+- import it on the girlfriend/second installation
+- verify recipient can be signed out
+- verify imported Program/routine content and ordering
+- verify Supabase row stores only code_hash and expires_at, not the usable code
+- verify expired/not-found behavior when practical
+
