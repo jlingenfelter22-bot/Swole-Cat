@@ -918,11 +918,11 @@ function workoutExerciseNavigatorHtml(w,ei){
  return '<div class="focus-exercise-nav-shell">'+
    '<details class="focus-exercise-nav"><summary>'+
    '<div class="focus-exercise-position">EXERCISE '+(ei+1)+' OF '+w.exercises.length+'</div>'+
-   '<div class="focus-exercise-name">'+esc(ex&&ex.name||'Exercise')+'</div>'+
-   '<div class="focus-exercise-meta">'+esc(p.complete?'Complete':workoutActiveSetText(e))+' · '+esc(ex&&ex.muscle||'')+' · '+workingSetIndexes(e).length+' working sets</div>'+
-   '<span class="focus-nav-switch" aria-hidden="true"><span>Switch exercise</span><b>⌄</b></span>'+
+   '<div class="focus-exercise-title-line"><span class="focus-exercise-name">'+esc(ex&&ex.name||'Exercise')+'</span>'+
+   '<button type="button" class="focus-howto-inline" onclick="event.preventDefault();event.stopPropagation();openFocusedExerciseHowTo('+ei+')" aria-label="How to do '+esc(ex&&ex.name||'this exercise')+'" title="How to"><span aria-hidden="true">i</span></button></div>'+
+   '<div class="focus-exercise-bottom-row"><div class="focus-exercise-meta">'+esc(p.complete?'Complete':workoutActiveSetText(e))+' · '+esc(ex&&ex.muscle||'')+' · '+workingSetIndexes(e).length+' working sets</div>'+
+   '<span class="focus-nav-switch" aria-hidden="true">Switch exercise</span></div>'+
    '</summary><div class="focus-nav-list">'+rows+addRow+'</div></details>'+
-   '<button class="focus-howto-btn" onclick="event.preventDefault();event.stopPropagation();openFocusedExerciseHowTo('+ei+')" aria-label="How to do '+esc(ex&&ex.name||'this exercise')+'" title="How to"><span aria-hidden="true">i</span></button>'+
    '</div>';
 }
 function openFocusedExerciseHowTo(ei){
