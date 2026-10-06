@@ -1120,7 +1120,7 @@ The following product ideas are explicitly retained on the roadmap:
 
 ## Immediate next development task
 
-**Real-device validation of the v0.72.1 workout feedback/motion polish** is the current active task. The core v0.72.0 workout hierarchy is now stable; this follow-up is specifically validating the one-time structure notice, refined Switch Exercise affordance, set-advance cue, and subtle directional exercise-card transitions.
+**Real-device validation of the v0.72.2 exercise-header composition** is the current active task. The core workout hierarchy and v0.72.1 feedback/motion language are stable; this pass is specifically validating inline How To placement, no-chevron switching, the lower-right Switch Exercise pill, and long-name/open-switcher stability.
 
 After the phone validation/iteration, return to the remaining **Settings cleanup and reorganization** work. The v0.71.0 short-share real-device check also remains an independent cloud exit test.
 
