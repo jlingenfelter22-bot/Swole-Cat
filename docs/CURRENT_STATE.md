@@ -801,7 +801,7 @@ Live Supabase:
 Automation:
 - dedicated `scripts/cloud-sharing-stress.mjs`
 - first complete v0.71.0 regression wall passed on PR #11 run 702
-- final head requires one last regression pass after documentation/security-policy checkpoint
+- final-head PR validation run 707 passed after the documentation/security-policy checkpoint
 
 Testing still needed before calling Phase 8.4 real-device complete:
 - generate a short code from Android Testing while signed in
