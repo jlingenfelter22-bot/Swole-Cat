@@ -1120,7 +1120,7 @@ The following product ideas are explicitly retained on the roadmap:
 
 ## Immediate next development task
 
-**Real-device validation of the v0.72.3 numeric-entry readability pass** is the current active task. The core workout hierarchy, exercise header, and motion language are stable; this pass is specifically validating full Weight/Reps labels, the compact [− value +] controls, RIR balance, and preserved one-screen vertical density.
+**In-app update infrastructure on Swole Cat Testing** is the current active task. Build and prove Testing self-update first; only then create the new one-time Beta baseline. Beta must never advance from ordinary main-branch development without explicit promotion approval.
 
 After the phone validation/iteration, return to the remaining **Settings cleanup and reorganization** work. The v0.71.0 short-share real-device check also remains an independent cloud exit test.
 
