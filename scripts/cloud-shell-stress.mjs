@@ -134,6 +134,7 @@ async function configuredShellCase(){
   assert.equal(cloudHubTiles.length,2,'main Settings should compact cloud controls into exactly two entry tiles');
   assert.match(cloudHubTiles[0].textContent,/Cloud account/i,'first cloud tile should open account management');
   assert.match(cloudHubTiles[1].textContent,/Cloud settings/i,'second cloud tile should open the compact cloud submenu');
+  assert.match(cloudHubTiles[1].textContent,/Automatic sync ready|Synced|queued|conflict|Syncing/i,'cloud settings tile should surface live sync health');
   const mainSettingsHeadings=[...w.document.querySelectorAll('#modalBody .section-title h2')].map(node=>node.textContent.trim());
   assert(!mainSettingsHeadings.includes('Cloud backup'),'Cloud backup should not occupy the main Settings list');
   assert(!mainSettingsHeadings.includes('Multi-device sync'),'Multi-device sync should not occupy the main Settings list');

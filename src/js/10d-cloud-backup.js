@@ -3,7 +3,12 @@
 const SWOLE_CAT_CLOUD_BACKUP_RETENTION=2;
 const SWOLE_CAT_CLOUD_BACKUP_MAX_BYTES=5000000;
 const SWOLE_CAT_CLOUD_BACKUP_DEVICE_KEY='swolecat_cloud_backup_device_v1';
+const SWOLE_CAT_CLOUD_AUTOMATION_KEY='swolecat-cloud-automation-v1';
+const SWOLE_CAT_AUTO_BACKUP_INTERVAL_MS=24*60*60*1000;
+const SWOLE_CAT_AUTO_BACKUP_CHECK_MS=30*60*1000;
 let swoleCatCloudBackupProvider=null;
+let swoleCatAutoBackupTimer=null;
+let swoleCatAutoBackupInFlight=null;
 let swoleCatCloudRestoreCandidate=null;
 let swoleCatCloudBackupState={
   status:'idle',
@@ -11,6 +16,50 @@ let swoleCatCloudBackupState={
   lastError:'',
   lastSuccessfulBackupAt:null
 };
+function cloudAutomationPrefs(){
+  let parsed=null;
+  try{parsed=JSON.parse(swoleCatStorage.getItem(SWOLE_CAT_CLOUD_AUTOMATION_KEY)||'null')}catch(error){}
+  return {
+    autoSync:parsed?.autoSync!==false,
+    autoBackup:parsed?.autoBackup!==false,
+    lastCloudBackupAt:parsed?.lastCloudBackupAt||null
+  };
+}
+function saveCloudAutomationPrefs(patch){
+  const next={...cloudAutomationPrefs(),...patch};
+  try{swoleCatStorage.setItem(SWOLE_CAT_CLOUD_AUTOMATION_KEY,JSON.stringify(next))}catch(error){}
+  SwoleCatRuntime.events.dispatchEvent(new CustomEvent('cloudAutomation:changed',{detail:{...next}}));
+  return next;
+}
+function cloudAutoBackupEnabled(){
+  return cloudAutomationPrefs().autoBackup!==false;
+}
+function cloudAutoBackupDue(){
+  const last=cloudAutomationPrefs().lastCloudBackupAt||swoleCatCloudBackupState.lastSuccessfulBackupAt||null;
+  if(!last)return true;
+  const time=Date.parse(last);
+  return !Number.isFinite(time)||(Date.now()-time)>=SWOLE_CAT_AUTO_BACKUP_INTERVAL_MS;
+}
+function cloudAutomationSettingsHtml(){
+  const prefs=cloudAutomationPrefs();
+  return '<div class="card settings-toggle-card">'+
+    '<div class="setting-toggle"><div><b>Automatic sync</b><div class="mini">Recommended. Queued changes sync after a short delay, when connectivity returns, and during periodic cloud checks.</div></div><button class="toggle '+(prefs.autoSync?'on':'')+'" onclick="cloudToggleAutomationFromUi(\'autoSync\',this)"></button></div>'+
+    '<div class="setting-toggle" style="border-bottom:0"><div><b>Automatic cloud backup</b><div class="mini">Recommended. Creates a recovery snapshot about once a day while you use Swole Cat. Only the latest two cloud backups are kept.</div></div><button class="toggle '+(prefs.autoBackup?'on':'')+'" onclick="cloudToggleAutomationFromUi(\'autoBackup\',this)"></button></div>'+
+    '</div>';
+}
+function cloudToggleAutomationFromUi(key,button){
+  if(key!=='autoSync'&&key!=='autoBackup')return;
+  const current=cloudAutomationPrefs();
+  const next=saveCloudAutomationPrefs({[key]:!current[key]});
+  button?.classList?.toggle('on',!!next[key]);
+  if(key==='autoSync'&&next.autoSync){
+    SwoleCatRuntime.getService('cloudSync')?.scheduleAuto?.('preference',300,true);
+  }
+  if(key==='autoBackup'&&next.autoBackup){
+    cloudScheduleAutoBackup(500);
+  }
+  showToast(next[key]?(key==='autoSync'?'Automatic sync on':'Automatic cloud backup on'):(key==='autoSync'?'Automatic sync off':'Automatic cloud backup off'));
+}
 
 function cloudBackupSnapshot(){
   return {
@@ -235,6 +284,29 @@ function cloudApplyPreparedRestore(){
     throw error;
   }
 }
+async function cloudMaybeAutoBackup(reason='scheduled'){
+  if(swoleCatAutoBackupInFlight)return swoleCatAutoBackupInFlight;
+  if(!cloudAutoBackupEnabled()||!cloudBackupCanUse()||storageWriteBlocked)return null;
+  if(typeof navigator!=='undefined'&&navigator.onLine===false)return null;
+  if(typeof document!=='undefined'&&document.visibilityState==='hidden')return null;
+  if(!cloudAutoBackupDue())return null;
+
+  swoleCatAutoBackupInFlight=cloudBackUpNow()
+    .catch(error=>{
+      setCloudBackupState({status:'error',lastError:error?.message||String(error)});
+      return null;
+    })
+    .finally(()=>{swoleCatAutoBackupInFlight=null});
+  return swoleCatAutoBackupInFlight;
+}
+function cloudScheduleAutoBackup(delay=8000){
+  if(swoleCatAutoBackupTimer)clearTimeout(swoleCatAutoBackupTimer);
+  swoleCatAutoBackupTimer=setTimeout(()=>{
+    swoleCatAutoBackupTimer=null;
+    cloudMaybeAutoBackup('scheduled');
+  },Math.max(0,Number(delay)||0));
+}
+
 function cloudBackupSettingsHtml(){
   const identity=cloudBackupIdentity()?.snapshot?.();
   if(!identity?.configured){
@@ -244,12 +316,14 @@ function cloudBackupSettingsHtml(){
     return '<div class="notice"><b>Cloud backup is optional.</b><br>Sign in to your cloud account above to keep private recovery snapshots. Local workouts continue to work normally without an account.</div>';
   }
   const backup=cloudBackupSnapshot();
+  const automation=cloudAutomationPrefs();
   const latest=backup.backups[0];
   const latestText=latest?.exportedAt
     ?new Date(latest.exportedAt).toLocaleString()
     :(backup.status==='ready'?'No cloud backup yet':'Not checked this session');
   const errorText=backup.lastError?'<br><br><span class="mini">'+esc(backup.lastError)+'</span>':'';
   return '<div class="notice"><b>Private cloud recovery</b><br>Latest: '+esc(latestText)+'<br><span class="mini">Swole Cat keeps at most the latest two snapshots. Cloud backup is separate from multi-device sync.</span>'+errorText+'</div>'+
+    '<div class="mini" style="margin-top:7px">Automatic backup: '+(automation.autoBackup?'On · about once a day':'Off')+'</div>'+
     '<div class="actions"><button class="btn" onclick="cloudBackUpNowFromUi()">Back Up Now</button><button class="btn secondary" onclick="cloudOpenRestorePickerFromUi()">Restore from Cloud</button></div>';
 }
 async function cloudBackUpNowFromUi(){
@@ -313,6 +387,8 @@ const swoleCatCloudBackupService=SwoleCatRuntime.registerService('cloudBackup',{
   canUse:cloudBackupCanUse,
   list:cloudListBackups,
   backUpNow:cloudBackUpNow,
+  maybeAuto:cloudMaybeAutoBackup,
+  scheduleAuto:cloudScheduleAutoBackup,
   prepareRestore:cloudPrepareRestore,
   applyPreparedRestore:cloudApplyPreparedRestore
 });
@@ -325,3 +401,15 @@ SwoleCatRuntime.events.addEventListener('identity:changed',event=>{
     return;
   }
 });
+
+SwoleCatRuntime.events.addEventListener('identity:changed',event=>{
+  if(event?.detail?.signedIn)cloudScheduleAutoBackup(9000);
+});
+SwoleCatRuntime.events.addEventListener('cloudSync:changed',event=>{
+  if(event?.detail?.status==='ready')cloudScheduleAutoBackup(1200);
+});
+window.addEventListener('online',()=>cloudScheduleAutoBackup(1200));
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')cloudScheduleAutoBackup(2500);
+});
+setInterval(()=>cloudScheduleAutoBackup(250),SWOLE_CAT_AUTO_BACKUP_CHECK_MS);

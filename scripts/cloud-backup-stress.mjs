@@ -12,8 +12,14 @@ const deleteFunction=fs.readFileSync('supabase/functions/delete-account/index.ts
 const settingsSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.70.0');
-assert.equal(pkg.swoleCat.androidVersionCode,96);
+assert.equal(pkg.version,'0.70.1');
+assert.equal(pkg.swoleCat.androidVersionCode,97);
+assert.match(cloudSource,/SWOLE_CAT_CLOUD_AUTOMATION_KEY='swolecat-cloud-automation-v1'/);
+assert.match(cloudSource,/SWOLE_CAT_AUTO_BACKUP_INTERVAL_MS=24\*60\*60\*1000/);
+assert.match(cloudSource,/autoBackup:parsed\?\.autoBackup!==false/);
+assert.match(cloudSource,/cloudMaybeAutoBackup/);
+assert.match(cloudSource,/setInterval\(\(\)=>cloudScheduleAutoBackup\(250\),SWOLE_CAT_AUTO_BACKUP_CHECK_MS\)/);
+assert.match(settingsSource,/cloudAutomationSettingsHtml\(\)/,'Cloud settings should expose automatic cloud controls');
 
 assert.match(cloudSource,/SWOLE_CAT_CLOUD_BACKUP_RETENTION=2/);
 assert.match(cloudSource,/SWOLE_CAT_CLOUD_BACKUP_MAX_BYTES=5000000/);

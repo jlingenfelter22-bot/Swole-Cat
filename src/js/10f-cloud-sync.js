@@ -1,14 +1,18 @@
 // Phase 8.3 provider-neutral record-level multi-device sync.
-// Local workout saves always remain authoritative on-device. Network I/O happens only
-// through explicit sync operations in this first Phase 8.3 slice.
+// Local workout saves always remain authoritative on-device. Cloud I/O is asynchronous:
+ // automatic sync runs after local saves and on low-frequency refresh triggers, while
+ // manual Sync Now remains available as a recovery/control surface.
 const SWOLE_CAT_SYNC_LOCAL_KEY='swolecat-sync-local-v1';
 const SWOLE_CAT_SYNC_LOCAL_VERSION=1;
 const SWOLE_CAT_SYNC_SCHEMA_VERSION=1;
 const SWOLE_CAT_SYNC_PULL_LIMIT=500;
 const SWOLE_CAT_SYNC_CAPTURE_DELAY_MS=850;
+const SWOLE_CAT_SYNC_AUTO_DELAY_MS=4000;
+const SWOLE_CAT_SYNC_AUTO_REFRESH_MS=5*60*1000;
 
 let swoleCatSyncProvider=null;
 let swoleCatSyncCaptureTimer=null;
+let swoleCatSyncAutoTimer=null;
 let swoleCatSyncApplyingRemote=false;
 let swoleCatSyncInFlight=null;
 let swoleCatSyncState={
@@ -29,6 +33,36 @@ function syncIdentityUser(){
 function syncCanUse(){
   return !!(swoleCatSyncProvider&&syncIdentity()?.canUseCloud?.()&&syncIdentityUser()?.id);
 }
+function syncAutoEnabled(){
+  return typeof cloudAutomationPrefs==='function'?cloudAutomationPrefs().autoSync!==false:true;
+}
+function syncAutoCanRun(){
+  if(swoleCatSyncApplyingRemote||storageWriteBlocked||!syncAutoEnabled()||!syncCanUse())return false;
+  if(typeof navigator!=='undefined'&&navigator.onLine===false)return false;
+  if(typeof document!=='undefined'&&document.visibilityState==='hidden')return false;
+  return true;
+}
+function syncAutoRefreshDue(local=syncLoadLocal()){
+  if(local.queue.length)return true;
+  if(!local.lastSyncAt)return true;
+  const when=Date.parse(local.lastSyncAt);
+  return !Number.isFinite(when)||(Date.now()-when)>=SWOLE_CAT_SYNC_AUTO_REFRESH_MS;
+}
+function syncScheduleAuto(reason='save',delay=SWOLE_CAT_SYNC_AUTO_DELAY_MS,force=false){
+  if(swoleCatSyncApplyingRemote)return;
+  if(swoleCatSyncAutoTimer)clearTimeout(swoleCatSyncAutoTimer);
+  swoleCatSyncAutoTimer=setTimeout(async()=>{
+    swoleCatSyncAutoTimer=null;
+    if(!syncAutoCanRun())return;
+    const user=syncIdentityUser();
+    if(!user?.id)return;
+    const local=syncEnsureOwner(user.id);
+    if(!force&&!syncAutoRefreshDue(local))return;
+    try{await cloudSyncNow()}
+    catch(error){syncSetState({status:'error',lastError:error?.message||String(error)})}
+  },Math.max(0,Number(delay)||0));
+}
+
 function syncDefaultLocal(){
   return {
     version:SWOLE_CAT_SYNC_LOCAL_VERSION,
@@ -635,11 +669,13 @@ function cloudSyncSettingsHtml(){
   const local=syncEnsureOwner(identity.user.id);
   const conflictCount=Object.keys(local.conflicts).length;
   const last=local.lastSyncAt?new Date(local.lastSyncAt).toLocaleString():'Never';
+  const auto=syncAutoEnabled();
   const queued=local.queue.length;
   const error=swoleCatSyncState.lastError?'<br><br><span class="mini">'+esc(swoleCatSyncState.lastError)+'</span>':'';
   return '<div class="notice"><b>Record-level sync</b><br>Last sync: '+esc(last)+
     '<br>Queued local changes: '+queued+
     '<br>Conflicts waiting: '+conflictCount+
+    '<br>Automatic sync: '+(auto?'On':'Off')+
     '<br><br><span class="mini">Active workouts stay local. Sync uses versioned records, not the whole app database, and ordinary workout saves never wait on the network.</span>'+error+'</div>'+
     '<div class="actions"><button class="btn" onclick="cloudSyncNowFromUi()">Sync Now</button>'+
     (conflictCount?'<button class="btn secondary" onclick="cloudSyncOpenConflictsFromUi()">Review conflicts</button>':'')+'</div>';
@@ -682,15 +718,26 @@ const swoleCatCloudSyncService=SwoleCatRuntime.registerService('cloudSync',{
   canUse:syncCanUse,
   captureLocalChanges:syncCaptureLocalChanges,
   syncNow:cloudSyncNow,
+  scheduleAuto:syncScheduleAuto,
   resolveConflict:cloudSyncResolveConflict,
   resetLocalMetadata:cloudSyncResetLocalMetadata
 });
 
-SwoleCatRuntime.events.addEventListener('state:saved',()=>syncScheduleCapture());
+SwoleCatRuntime.events.addEventListener('state:saved',()=>{
+  syncScheduleCapture();
+  syncScheduleAuto('save');
+});
 SwoleCatRuntime.events.addEventListener('identity:changed',event=>{
   const detail=event?.detail;
   if(detail?.signedIn&&detail?.user?.id){
     syncEnsureOwner(detail.user.id);
+    syncScheduleAuto('signed_in',1500,true);
   }
   syncEmitChange();
 });
+
+window.addEventListener('online',()=>syncScheduleAuto('online',500,true));
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')syncScheduleAuto('foreground',900,true);
+});
+setInterval(()=>syncScheduleAuto('periodic',250,true),SWOLE_CAT_SYNC_AUTO_REFRESH_MS);
