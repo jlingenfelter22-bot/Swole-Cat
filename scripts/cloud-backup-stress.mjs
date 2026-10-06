@@ -12,8 +12,8 @@ const deleteFunction=fs.readFileSync('supabase/functions/delete-account/index.ts
 const settingsSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.71.0');
-assert.equal(pkg.swoleCat.androidVersionCode,98);
+assert.equal(pkg.version,'0.72.0');
+assert.equal(pkg.swoleCat.androidVersionCode,99);
 assert.match(cloudSource,/SWOLE_CAT_CLOUD_AUTOMATION_KEY='swolecat-cloud-automation-v1'/);
 assert.match(cloudSource,/SWOLE_CAT_AUTO_BACKUP_INTERVAL_MS=24\*60\*60\*1000/);
 assert.match(cloudSource,/autoBackup:parsed\?\.autoBackup!==false/);
