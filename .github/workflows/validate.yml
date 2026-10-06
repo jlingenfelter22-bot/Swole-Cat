@@ -132,6 +132,9 @@ jobs:
       - name: Stress test v0.72.2 exercise header composition
         run: node scripts/workout-header-stress.mjs
 
+      - name: Stress test v0.72.3 numeric entry readability
+        run: node scripts/workout-numeric-entry-stress.mjs
+
       - name: Stress test v0.65 Focus Mode workout flow
         run: node scripts/focus-mode-workout-stress.mjs
 
