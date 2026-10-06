@@ -25,9 +25,9 @@ Checkpoint date: **2026-10-06 (America/Chicago)**
 ### Experimental development
 
 - Branch: `main`
-- Current main merge commit: `d28410f93efe1281bd29700d503ed4aff33f1de8`
-- App version: **v0.71.0**
-- Android version code: **98**
+- Current main merge commit: `b0a26d7020bd01c7c42a6771c5b1ecddda73bc68`
+- App version: **v0.72.0**
+- Android version code: **99**
 - Android app name: **Swole Cat Testing**
 - Android package ID: `com.jlingenfelter.swolecat.testing`
 - Purpose: current Testing build for cloud/account work, sharing, new features, architecture experiments, and risky development
@@ -45,27 +45,38 @@ Do not change the `main` package ID back to `com.jlingenfelter.swolecat` while t
 
 ## 2. Latest green development gate
 
-Current main baseline: **v0.71.0 / Android versionCode 98**
+Current main baseline: **v0.72.0 / Android versionCode 99**
 
-- Main merge commit: `d28410f93efe1281bd29700d503ed4aff33f1de8`
-- PR: **#11, v0.71.0 short-lived cloud routine and program sharing**
-- Final PR validation: run **708**, success
-- Validate Swole Cat on `main`: run **709**, success
-- Deploy Swole Cat to GitHub Pages: run **638**, success
-- Build Swole Cat Testing Android: run **338**, success
+- Main merge commit: `b0a26d7020bd01c7c42a6771c5b1ecddda73bc68`
+- PR: **#12, v0.72.0 workout screen UX hierarchy**
+- PR validation: run **712**, success, all 72 validation steps passed
+- Validate Swole Cat on `main`: run **713**, success, all 72 validation steps passed
+- Deploy Swole Cat to GitHub Pages: run **641**, success
+- Build Swole Cat Testing Android: run **339**, success
 - permanent Testing certificate verification: success
-- Android artifact: `Swole-Cat-Testing-Android-v0.71.0-signed`
-- Android artifact ID: `11425967468`
-- Android artifact digest: `sha256:3e4be0f7cec86e4d40f1145a36a87e7ac30e69a5bb195e4a7ca760d4adc6c934`
+- Android artifact: `Swole-Cat-Testing-Android-v0.72.0-signed`
+- Android artifact ID: `11431691213`
+- Android artifact digest: `sha256:93d3bc12ed7093320ef7fe82674e20d76275ab13858cf06ec7c23aa5a8d66b41`
 - Artifact expires from GitHub Actions on **2026-11-05** unless rebuilt sooner
 - beta branch remains untouched at v0.66.1
 
-This build includes:
-- v0.70.0 compact cloud Settings hub
-- v0.70.1 automatic debounced record sync + bounded automatic recovery backup
-- v0.71.0 7-day short cloud routine/program sharing with accountless recipient import
-- legacy `SWOLECAT1` offline sharing fallback
-- the complete existing workout/Coach/UI regression wall
+v0.72.0 is the first full top-to-bottom workout-console UX pass based on a real narrated phone walkthrough. The design contract lives at `docs/WORKOUT_SCREEN_UX_V072.md`.
+
+Primary workout behavior now:
+- normal logging path targets one phone viewport where practical
+- accessibility/edge cases may still scroll rather than shrinking controls
+- session chrome is a compact status strip instead of a tall card
+- Cancel is removed from the permanent workout surface
+- the entire exercise header is the exercise-switching model
+- the switch affordance is explicit even on narrow phones
+- Add Exercise lives at the bottom of the exercise switcher
+- the set rail has an inline `+ Set` working-set affordance
+- visible exercise actions are intentionally sparse: Substitute + More
+- redundant visible Next Exercise is removed; automatic progression and direct switcher navigation remain
+- More separates Exercise controls from Workout controls
+- Finish Workout Early and Cancel Workout live under More
+- the large Finish Workout CTA appears only after programmed work is complete
+- existing unfinished-work review, structureDirty safeguards, autosave, progression, supersets, PRs, timers, and keyboard behavior remain intact
 
 ## 3. Phase 8 cloud architecture
 
@@ -846,3 +857,59 @@ Next real-device test:
 4. verify routine/program structure and order
 5. inspect `plan_shares` backend row for hash-only code storage and 7-day expiry
 6. then mark Phase 8.4 real-device complete
+
+
+## 2026-10-06 v0.72.0 workout-screen UX checkpoint
+
+Source of the pass:
+- user supplied a ~6.5 minute narrated real-device walkthrough of the active workout screen
+- central UX goal: the active workout should behave like an instrument panel, not a scrolling document
+- user specifically identified excess session-header height, permanent Finish/Add controls, unclear exercise switching, missing inline set-count controls, and redundant Next Exercise
+- fresh-user evidence: the user's girlfriend did not immediately understand how to switch to another exercise, so discoverability was treated as a product bug rather than user error
+
+Design rule:
+- **zero-scroll normal path**, not **never scroll**
+- common logging should fit in one viewport where practical
+- large text, supersets, long notes/names, many sets, small devices, and accessibility settings may overflow gracefully
+- never make important controls tiny merely to satisfy a no-scroll rule
+
+Implementation:
+- spec: `docs/WORKOUT_SCREEN_UX_V072.md`
+- feature branch: `workout-screen-ux-v0.72.0`
+- PR #12
+- merged to `main` as `b0a26d7020bd01c7c42a6771c5b1ecddda73bc68`
+- version: 0.72.0
+- Android versionCode: 99
+- branch validation run 712: PASS
+- main validation run 713: PASS
+- Pages run 641: PASS
+- signed Android Testing run 339: PASS
+- signed artifact ID: `11431691213`
+- signed artifact digest: `sha256:93d3bc12ed7093320ef7fe82674e20d76275ab13858cf06ec7c23aa5a8d66b41`
+
+Dedicated regression:
+- `scripts/workout-screen-ux-stress.mjs`
+- asserts compact session strip
+- asserts no permanent Cancel / Next Exercise / Add Exercise footer / early Finish CTA on the normal surface
+- asserts explicit Switch exercise affordance
+- asserts Add Exercise lives inside the switcher
+- asserts `+ Set` lives in the set rail and preserves structureDirty semantics
+- asserts More contains early finish, cancel, Manage Workout, and working-set fallback
+- asserts final completion reveals Finish Workout contextually
+
+Real-device verification still needed:
+1. install/update Swole Cat Testing v0.72.0 on the phone
+2. confirm an ordinary three-set movement can be logged with little or no page scrolling
+3. confirm the Switch exercise affordance is immediately understandable without instruction
+4. open the switcher and verify Add Exercise feels naturally placed
+5. add/remove working sets and verify the inline `+ Set` flow feels obvious
+6. verify More feels organized rather than overloaded
+7. verify Finish Workout Early opens the existing unfinished-work review when appropriate
+8. complete the final programmed set and verify Finish Workout appears naturally
+9. test keyboard entry, rest timer, long exercise names, 4-5+ sets, and a superset for graceful overflow
+10. get another fresh-user read from the girlfriend if possible, especially exercise switching
+
+Outstanding independent cloud check:
+- the v0.71.0 real-device short-share sender/recipient test is still pending
+- this does not block workout-screen UX iteration
+
