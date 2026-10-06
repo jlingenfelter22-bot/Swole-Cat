@@ -895,9 +895,9 @@ Core decisions:
 
 **Phase 8.2 complete: 2026-10-05.**
 
-### Phase 8.3 - Multi-device sync
+### Phase 8.3 Multi-device Sync — COMPLETE
 
-**Status: v0.69.2 manual sync foundation is on `main`; bidirectional Android ↔ Web/PWA propagation is real-device verified. Conflict, tombstone, and offline-queue tests remain before automatic sync.**
+**Status: COMPLETE. Real-device bidirectional sync, conflict handling, tombstones, offline queue persistence, and destructive account cleanup all passed on v0.69.4.
 
 - [x] Add stable per-device identity and separate local sync metadata.
 - [x] Represent user-owned sync data as individual records with server version, change sequence, tombstones, and source-device metadata.
