@@ -22,6 +22,75 @@ async function findFileRecursive(dirUrl,fileName){
   return null;
 }
 
+
+async function configureAndroidUpdater(){
+  const javaRoot=new URL('../android/app/src/main/java/',import.meta.url);
+  const mainActivityUrl=await findFileRecursive(javaRoot,'MainActivity.java');
+  if(!mainActivityUrl)throw new Error('Could not find generated MainActivity.java for updater');
+
+  let activity=await readFile(mainActivityUrl,'utf8');
+  const packageMatch=activity.match(/package\s+([A-Za-z0-9_.]+)\s*;/);
+  if(!packageMatch)throw new Error('Could not determine Android package for updater');
+  const packageName=packageMatch[1];
+
+  const templateRoot=new URL('./android/',import.meta.url);
+  const pluginTemplate=await readFile(new URL('SwoleCatUpdaterPlugin.java.template',templateRoot),'utf8');
+  const receiverTemplate=await readFile(new URL('SwoleCatUpdateReceiver.java.template',templateRoot),'utf8');
+  const pluginUrl=new URL('SwoleCatUpdaterPlugin.java',mainActivityUrl);
+  const receiverUrl=new URL('SwoleCatUpdateReceiver.java',mainActivityUrl);
+  await writeFile(pluginUrl,pluginTemplate.replaceAll('__PACKAGE_NAME__',packageName));
+  await writeFile(receiverUrl,receiverTemplate.replaceAll('__PACKAGE_NAME__',packageName));
+
+  if(!activity.includes('registerPlugin(SwoleCatUpdaterPlugin.class);')){
+    if(!activity.includes('import android.os.Bundle;')){
+      activity=activity.replace(
+        /package\s+[A-Za-z0-9_.]+\s*;/,
+        match=>match+'\n\nimport android.os.Bundle;'
+      );
+    }
+    if(/public class MainActivity extends BridgeActivity\s*\{\s*\}/s.test(activity)){
+      activity=activity.replace(
+        /public class MainActivity extends BridgeActivity\s*\{\s*\}/s,
+        \`public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(SwoleCatUpdaterPlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+}\`
+      );
+    }else if(/super\.onCreate\(savedInstanceState\);/.test(activity)){
+      activity=activity.replace(
+        /super\.onCreate\(savedInstanceState\);/,
+        'registerPlugin(SwoleCatUpdaterPlugin.class);\n        super.onCreate(savedInstanceState);'
+      );
+    }else{
+      throw new Error('Could not safely register SwoleCatUpdaterPlugin in MainActivity');
+    }
+    await writeFile(mainActivityUrl,activity);
+  }
+
+  let manifest=await readFile(manifestUrl,'utf8');
+  const installPermission='<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />';
+  if(!manifest.includes('android.permission.REQUEST_INSTALL_PACKAGES')){
+    const manifestOpen=manifest.match(/<manifest[^>]*>/);
+    if(!manifestOpen)throw new Error('Could not find Android manifest root');
+    manifest=manifest.replace(manifestOpen[0],manifestOpen[0]+'\n    '+installPermission);
+  }
+
+  if(!manifest.includes('SwoleCatUpdateReceiver')){
+    const receiverBlock=\`
+        <receiver
+            android:name=".SwoleCatUpdateReceiver"
+            android:exported="false" />\`;
+    if(!/<\/application>/.test(manifest))throw new Error('Could not find Android application closing tag');
+    manifest=manifest.replace(/\s*<\/application>/,receiverBlock+'\n    </application>');
+  }
+  await writeFile(manifestUrl,manifest);
+
+  return {mainActivityUrl,pluginUrl,receiverUrl};
+}
+
 async function configureAndroidSecureAuthStorage(){
   const javaRoot=new URL('../android/app/src/main/java/',import.meta.url);
   const mainActivityUrl=await findFileRecursive(javaRoot,'MainActivity.java');
@@ -302,9 +371,11 @@ if(!manifest.includes(`android:scheme="${ANDROID_AUTH_SCHEME}"`)){
 await writeFile(manifestUrl,manifest);
 
 const secureAuth=await configureAndroidSecureAuthStorage();
+const updater=await configureAndroidUpdater();
 
 console.log(
-  `Configured Android versionName=${versionName}, versionCode=${versionCode}, authRedirect=${ANDROID_AUTH_SCHEME}://${ANDROID_AUTH_HOST}${ANDROID_AUTH_PATH}, secureAuth=AndroidKeyStore` +
+  `Configured Android versionName=${versionName}, versionCode=${versionCode}, authRedirect=${ANDROID_AUTH_SCHEME}://${ANDROID_AUTH_HOST}${ANDROID_AUTH_PATH}, secureAuth=AndroidKeyStore, updater=PackageInstaller` +
   (signingEnabled ? `, ${signingBuildType} signing enabled` : '')
 );
 console.log(`Secure auth plugin: ${secureAuth.pluginUrl.pathname}`);
+console.log(`Updater plugin: ${updater.pluginUrl.pathname}`);
