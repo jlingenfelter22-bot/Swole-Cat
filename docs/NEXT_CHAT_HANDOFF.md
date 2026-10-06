@@ -10,7 +10,7 @@ Do not begin a new cloud phase by default.
 
 The next product task is:
 
-**Real-device validate v0.72.1 workout feedback/motion polish, then tune timing/strength only if the phone feel calls for it. The v0.71.0 short-share real-device check remains an independent outstanding cloud exit test.**
+**Real-device validate the v0.72.2 exercise-header composition, then continue only with surgical workout-screen polish from actual phone feedback. The v0.71.0 short-share real-device check remains an independent outstanding cloud exit test.**
 
 The user wants to review the Settings screen, clean up all settings, decide where each setting belongs, improve grouping/order/labels, and make the Settings menu feel intentional and easy to scan.
 
@@ -35,28 +35,28 @@ Main product/testing branch:
 `main`
 
 Current Testing version:
-`0.72.1`
+`0.72.2`
 
 Android versionCode:
-`100`
+`101`
 
 Current main merge:
-`6016c8b29f9cd69084065193df82b9df55bf56ac`
+`b24d27dca66b8e923cef7be3c8b7989ac1153790`
 
 Latest completed gates:
-- PR #13 validation run 717: PASS, all 73 validation steps
-- main validation run 718: PASS, all 73 validation steps
-- Pages run 645: PASS
-- signed Testing Android build run 340: PASS
-- artifact ID: `11439396486`
-- artifact name: `Swole-Cat-Testing-Android-v0.72.1-signed`
-- artifact digest: `sha256:5464a49e6d59b1b5a64523e3595ecaf005754fa8e04b561856650ac158da92b9`
+- PR #14 final validation run 723: PASS, all 74 validation steps
+- main validation run 724: PASS, all 74 validation steps
+- Pages run 649: PASS
+- signed Testing Android build run 341: PASS
+- artifact ID: `11441549231`
+- artifact name: `Swole-Cat-Testing-Android-v0.72.2-signed`
+- artifact digest: `sha256:2711fccb0d23412623c330c7ff2733f1b45c49df07dd9feb31c6b0c9a85a68a7`
 
 Live PWA:
 `https://jlingenfelter22-bot.github.io/Swole-Cat/`
 
 Important branches:
-- `main`: experimental Testing, current v0.72.1
+- `main`: experimental Testing, current v0.72.2
 - `beta`: field beta used for real workouts
 - `beta-v0.66.1`: frozen beta checkpoint
 
@@ -987,6 +987,58 @@ Immediate real-device checks:
 - manually move backward and forward through exercises
 - test superset rotation
 - tune motion only if the phone feel calls for it
+
+Still outstanding from v0.71.0:
+- real-device short cloud-share sender/recipient test
+
+Beta:
+- still frozen at v0.66.1 unless explicitly promoted
+
+
+## Latest authoritative checkpoint: 2026-10-06, v0.72.2 exercise header
+
+Treat this section as newer than earlier handoff text above.
+
+Third real-device review:
+- core workout hierarchy and v0.72.1 motion/feedback were approved
+- remaining feedback focused specifically on exercise-header composition
+
+Locked v0.72.2 header:
+- exercise title and How To `i` are one inline text-flow unit
+- help immediately follows the exercise name and naturally follows wrapping
+- do not add JS width/pixel calculations for title length
+- How To stays inside the stable summary/title row and cannot drift when the switcher opens
+- tapping How To must never toggle Switch Exercise
+- no dropdown chevron
+- lower row is metadata on the left + compact `Switch exercise` pill on the right
+- the entire remaining header is still a large switch target
+- no changes below the exercise header were part of this pass
+
+Files:
+- implementation: `src/js/06-workout-engine.js`
+- styling: `src/styles/03-polish.css`
+- dedicated regression: `scripts/workout-header-stress.mjs`
+- design contract: `docs/WORKOUT_SCREEN_UX_V072.md`
+
+Release:
+- v0.72.2
+- Android code 101
+- PR #14
+- merge `b24d27dca66b8e923cef7be3c8b7989ac1153790`
+- final PR validation 723 PASS, 74 steps
+- main validation 724 PASS, 74 steps
+- Pages 649 PASS
+- Android build 341 PASS
+- artifact ID `11441549231`
+- artifact digest `sha256:2711fccb0d23412623c330c7ff2733f1b45c49df07dd9feb31c6b0c9a85a68a7`
+
+Immediate phone checks:
+- short/medium/long exercise names
+- inline help position
+- help tap isolation
+- open-switcher stability
+- visual balance of metadata versus Switch Exercise pill
+- whole-header switching remains easy
 
 Still outstanding from v0.71.0:
 - real-device short cloud-share sender/recipient test
