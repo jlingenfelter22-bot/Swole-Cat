@@ -843,13 +843,15 @@ function workoutExerciseNavigatorHtml(w,ei){
     '<span class="focus-nav-copy"><b>'+esc(rx&&rx.name||'Exercise')+'</b><small>'+esc(status.label)+' · '+row.sets.filter(function(s){return s.done}).length+'/'+row.sets.length+' sets</small></span>'+
     '<span class="focus-nav-go">'+(i===ei?'●':'›')+'</span></button>';
  }).join('');
+ const addRow='<button class="focus-nav-add" onclick="event.preventDefault();event.stopPropagation();openAddWorkoutExercise()" aria-label="Add exercise to this workout">'+
+   '<span class="focus-nav-add-icon">＋</span><span class="focus-nav-copy"><b>Add exercise</b><small>Add another movement to today\'s workout</small></span><span class="focus-nav-go">›</span></button>';
  return '<div class="focus-exercise-nav-shell">'+
    '<details class="focus-exercise-nav"><summary>'+
    '<div class="focus-exercise-position">EXERCISE '+(ei+1)+' OF '+w.exercises.length+'</div>'+
    '<div class="focus-exercise-name">'+esc(ex&&ex.name||'Exercise')+'</div>'+
    '<div class="focus-exercise-meta">'+esc(p.complete?'Complete':workoutActiveSetText(e))+' · '+esc(ex&&ex.muscle||'')+' · '+workingSetIndexes(e).length+' working sets</div>'+
-   '<span class="focus-nav-switch" aria-hidden="true"><span>Switch</span><b>⌄</b></span>'+
-   '</summary><div class="focus-nav-list">'+rows+'</div></details>'+
+   '<span class="focus-nav-switch" aria-hidden="true"><span>Switch exercise</span><b>⌄</b></span>'+
+   '</summary><div class="focus-nav-list">'+rows+addRow+'</div></details>'+
    '<button class="focus-howto-btn" onclick="event.preventDefault();event.stopPropagation();openFocusedExerciseHowTo('+ei+')" aria-label="How to do '+esc(ex&&ex.name||'this exercise')+'" title="How to"><span aria-hidden="true">i</span></button>'+
    '</div>';
 }
@@ -891,10 +893,12 @@ function deferFocusedExercise(){
  saveActiveWorkout();renderWorkout();showToast(name+' saved as pending');
 }
 function focusedSetRailHtml(e,ei,si){
- return '<div class="focus-set-rail" aria-label="Workout sets">'+e.sets.map(function(set,i){
+ const setPills=e.sets.map(function(set,i){
    const cls=set.done?'done':i===si?'current':'future';
    return '<button class="focus-set-pill '+cls+'" onclick="selectWorkoutSet('+ei+','+i+')" aria-label="Open '+esc(setDisplayLabel(e,i))+'">'+(set.done?'✓ ':'')+(i+1)+'</button>';
- }).join('')+'</div>';
+ }).join('');
+ return '<div class="focus-set-rail" aria-label="Workout sets">'+setPills+
+  '<button class="focus-set-add" onclick="addWorkoutSet('+ei+',\'working\')" aria-label="Add working set"><span aria-hidden="true">＋</span> Set</button></div>';
 }
 function openFocusedSetOptions(ei,si){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],set=e&&e.sets&&e.sets[si];if(!e||!set)return;
@@ -909,17 +913,20 @@ function openFocusedSetOptions(ei,si){
 }
 function openFocusedExerciseMore(ei){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],ex=e?exById(e.exerciseId):null;if(!e)return;
- const prev=previousExercise(e.exerciseId),target=liveSetTarget(e,firstWorkingSetIndex(e),prev),warmups=warmupGuide(target.weight,ex),superset=supersetMeta(ei);
+ const prev=previousExercise(e.exerciseId),target=liveSetTarget(e,firstWorkingSetIndex(e),prev),warmups=warmupGuide(target.weight,ex),superset=supersetMeta(ei),hasRemaining=workoutHasRemainingProgrammedWork(w);
  openModal(esc(ex&&ex.name||'Exercise')+' · More',
-  '<div class="notice">Use these only when you need them. They do not change completed workout history unless you explicitly log or save a change.</div>'+
-  '<div class="actions">'+
+  '<div class="notice">Keep the live screen focused on logging. Everything here stays available when you need to change the exercise or the session.</div>'+
+  '<div class="workout-more-section"><div class="eyebrow">EXERCISE</div><div class="actions">'+
   (warmups.length?'<button class="btn secondary" onclick="closeModal();openWarmupGuide('+ei+')">Warm-up guide</button>':'')+
   '<button class="btn secondary" onclick="closeModal();openTargetOverride('+ei+')">Override target</button>'+
   '<button class="btn secondary" onclick="closeModal();openSupersetPicker('+ei+')">⚡ '+(superset?('Superset '+superset.label):'Superset')+'</button>'+
   '<button class="btn secondary" onclick="addWorkoutSet('+ei+',\'working\');closeModal()">+ Working set</button>'+
+  '<button class="btn danger" onclick="closeModal();toggleSkipWorkoutExercise('+ei+')">Skip exercise today</button></div></div>'+
+  '<div class="field" style="margin-top:12px"><label>Exercise notes</label><textarea oninput="updateNotes('+ei+',this.value)" placeholder="Seat setting, grip, tempo, machine used...">'+esc(e.notes||'')+'</textarea></div>'+
+  '<div class="workout-more-section"><div class="eyebrow">WORKOUT</div><div class="actions">'+
   '<button class="btn secondary" onclick="closeModal();openWorkoutStructureEditor()">Manage workout</button>'+
-  '<button class="btn danger" onclick="closeModal();toggleSkipWorkoutExercise('+ei+')">Skip exercise today</button></div>'+
-  '<div class="field" style="margin-top:14px"><label>Exercise notes</label><textarea oninput="updateNotes('+ei+',this.value)" placeholder="Seat setting, grip, tempo, machine used...">'+esc(e.notes||'')+'</textarea></div>');
+  (hasRemaining?'<button class="btn secondary" onclick="closeModal();finishWorkout()">Finish workout early</button>':'<button class="btn green" onclick="closeModal();finishWorkout()">Finish workout</button>')+
+  '<button class="btn danger" onclick="closeModal();cancelWorkout()">Cancel workout</button></div></div>');
 }
 function focusedCoachTargetHtml(e,ei,ex,prev){
  const rec=buildRecommendation(e.config,prev,e.exerciseId),coach=coachSignal(e.exerciseId,e.config);
@@ -955,16 +962,17 @@ function focusedSetCardHtml(e,ei,si,ex,prev){
 }
 function focusedExerciseCanvasHtml(w,ei){
  const e=w.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),si=workoutFocusedSetIndex(w),prog=exerciseSetProgress(e),superset=supersetMeta(ei);
- const next=nextWorkoutExerciseIndex(ei,w);
+ const next=nextWorkoutExerciseIndex(ei,w),allDone=!workoutHasRemainingProgrammedWork(w);
  return workoutExerciseNavigatorHtml(w,ei)+
   '<div id="workoutExercise-'+ei+'" class="focus-exercise-canvas tone-'+(ei%4)+' '+(prog.complete?'complete-block':'')+'">'+
   '<div class="focus-exercise-actions"><button class="btn secondary" onclick="openWorkoutSubstitute('+ei+')">⇄ Substitute</button>'+
-  '<button class="btn secondary" onclick="deferFocusedExercise()" '+(next<0?'disabled':'')+'>Next Exercise</button>'+
   '<button class="btn secondary focus-more-btn" onclick="openFocusedExerciseMore('+ei+')">More ···</button></div>'+
   focusedCoachTargetHtml(e,ei,ex,prev)+
   (superset?'<div class="superset-note"><b>Superset '+superset.label+'</b> · '+esc(supersetNames(superset.id))+'<br>Complete this set, then Swole Cat will rotate to the paired movement.</div>':'')+
   focusedSetRailHtml(e,ei,si)+focusedSetCardHtml(e,ei,si,ex,prev)+
-  '<div class="focus-exercise-footer">'+(prog.complete?'<button class="btn secondary" onclick="deferFocusedExercise()">Go to unfinished exercise</button>':'<span>'+e.sets.filter(function(s){return s.done}).length+' of '+e.sets.length+' sets complete</span>')+'</div></div>';
+  (allDone?'<div class="focus-workout-complete"><div><div class="eyebrow">SESSION READY</div><b>All programmed sets complete.</b></div><button class="btn green" onclick="finishWorkout()">Finish Workout</button></div>':
+   (prog.complete&&next>=0?'<div class="focus-exercise-footer"><button class="btn secondary" onclick="deferFocusedExercise()">Go to unfinished exercise</button></div>':''))+
+  '</div>';
 }
 
 let workoutKeyboardAnchorBound=false;
@@ -998,15 +1006,14 @@ function renderWorkout(){
  if(!w){document.getElementById('workoutArea').innerHTML='<div class="empty">No active workout.</div>';return;}
  const focus=normalizeWorkoutFocusState(w);
  const counts=workoutCounts(),pct=counts.total?Math.round(counts.done/counts.total*100):0,workoutCoach=workoutCoachSignal();
- let html='<div class="focus-workout-top"><div class="focus-session-copy"><div class="workout-console-code"><span class="active-pulse"></span>SESSION // ACTIVE</div>'+
-  '<h1>'+esc(w.routineName)+'</h1><div class="mini">'+counts.done+'/'+counts.total+' sets · '+pct+'% · '+workoutElapsed()+'</div></div>'+
-  '<button class="btn small danger workout-cancel-btn" onclick="cancelWorkout()" aria-label="Cancel active workout">Cancel</button></div>'+
+ let html='<div class="focus-session-strip">'+
+  '<div class="focus-session-primary"><span class="focus-session-label"><span class="active-pulse"></span>ACTIVE</span><b class="focus-session-name" title="'+escAttr(w.routineName)+'">'+esc(w.routineName)+'</b></div>'+
+  '<div class="focus-session-stats"><span>'+counts.done+'/'+counts.total+' sets</span><span>'+pct+'%</span><span>'+workoutElapsed()+'</span></div></div>'+
   '<div class="focus-session-progress"><div style="width:'+pct+'%"></div></div>';
  if(w.structureDirty)html+='<div class="workout-structure-note"><b>Today’s structure changed.</b> Your saved routine stays untouched unless you choose to update it when finishing.</div>';
  if(workoutCoach)html+='<details class="focus-session-coach"><summary>Coach session note</summary><div class="coachbox '+workoutCoach.level+'"><div class="coach-text">'+esc(workoutCoach.text)+'</div>'+
   (workoutCoach.level==='reset'?'<div class="actions"><button class="btn small secondary" onclick="applyLightSession()">Use a 7.5% lighter session</button></div>':'')+'</div></details>';
  html+=focus>=0?focusedExerciseCanvasHtml(w,focus):'<div class="empty">No available exercise.</div>';
- html+='<div class="focus-workout-footer"><button class="btn secondary" onclick="openAddWorkoutExercise()">+ Add Exercise</button><button class="btn green" onclick="finishWorkout()">Finish Workout</button></div>';
  document.getElementById('workoutArea').innerHTML=html;
  bindWorkoutKeyboardAnchor();
  requestAnimationFrame(syncWorkoutStickyOffsets);
