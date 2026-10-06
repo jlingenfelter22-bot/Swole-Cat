@@ -50,7 +50,13 @@ assert.equal(manifest.schema,1);
 assert.equal(manifest.channel,'testing');
 assert.equal(manifest.packageId,'com.jlingenfelter.swolecat.testing');
 assert.equal(manifest.signingCertSha256,'d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53');
-assert.equal(manifest.enabled,false,'seed feed should stay disabled until a signed build publishes');
+assert.equal(typeof manifest.enabled,'boolean','Testing feed must explicitly declare whether updates are enabled');
+if(manifest.enabled){
+  assert(manifest.versionCode>=1,'enabled Testing feed must publish a positive versionCode');
+  assert(manifest.versionCode<=pkg.swoleCat.androidVersionCode,'committed Testing feed must not point beyond the source version under validation');
+  assert.match(manifest.apkUrl,/^https:\/\/github\.com\/jlingenfelter22-bot\/Swole-Cat\/releases\/download\/testing-v/,'enabled Testing feed must point at a versioned Testing release asset');
+  assert.match(manifest.sha256,/^[a-f0-9]{64}$/i,'enabled Testing feed must include a real APK SHA-256');
+}
 
 assert.match(workflow,/permissions:\s*\n\s*contents: write/,'Testing publisher needs release/manifest write permission');
 assert.match(workflow,/gh release create "\$TAG"/,'Testing build should publish a versioned GitHub prerelease');
@@ -60,4 +66,4 @@ assert.match(workflow,/com\.jlingenfelter\.swolecat\.testing/,'published manifes
 assert.doesNotMatch(workflow,/updates\/beta\.json/,'ordinary Testing builds must never advance Beta');
 assert.match(workflow,/sha256sum/,'published APK must get an explicit SHA-256');
 
-console.log('Swole Cat v0.73.0 updater foundation PASS: explicit Android approval, signed/hash/package validation, active-workout deferral, Testing-only feed, and versioned release publication');
+console.log('Swole Cat updater foundation PASS: explicit Android approval, signed/hash/package validation, active-workout deferral, Testing-only feed, and versioned release publication');
