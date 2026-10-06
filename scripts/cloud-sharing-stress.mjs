@@ -4,6 +4,7 @@ import {JSDOM} from 'jsdom';
 
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 const migration=fs.readFileSync('supabase/migrations/20261006153500_phase_8_4_cloud_plan_sharing.sql','utf8');
+const denyMigration=fs.readFileSync('supabase/migrations/20261006155300_phase_8_4_plan_shares_explicit_deny.sql','utf8');
 const edge=fs.readFileSync('supabase/functions/plan-share/index.ts','utf8');
 const providerSource=fs.readFileSync('src/js/10h-supabase-sharing-provider.js','utf8');
 
@@ -15,6 +16,7 @@ assert.match(migration,/enable row level security/i);
 assert.match(migration,/revoke all on table public\.plan_shares from anon, authenticated/i);
 assert.match(migration,/grant all on table public\.plan_shares to service_role/i);
 assert.match(migration,/interval '7 days 5 minutes'/i);
+assert.match(denyMigration,/for all\s+to anon, authenticated\s+using \(false\)\s+with check \(false\)/i,'normal clients should have an explicit deny-all RLS policy');
 
 assert.match(edge,/SHARE_EXPIRY_MS = 7 \* 24 \* 60 \* 60 \* 1000/);
 assert.match(edge,/SHARE_ACTIVE_CAP = 25/);
