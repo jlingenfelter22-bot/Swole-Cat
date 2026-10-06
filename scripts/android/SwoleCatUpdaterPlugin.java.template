@@ -121,7 +121,15 @@ public class SwoleCatUpdaterPlugin extends Plugin {
         return connection;
     }
 
+    private void validateManifestSource(String manifestUrl) {
+        String trustedPrefix = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/main/updates/";
+        if (manifestUrl == null || !manifestUrl.startsWith(trustedPrefix)) {
+            throw new IllegalArgumentException("Update manifest host is not trusted.");
+        }
+    }
+
     private JSONObject fetchManifest(String manifestUrl) throws Exception {
+        validateManifestSource(manifestUrl);
         HttpURLConnection connection = connection(manifestUrl);
         try {
             int status = connection.getResponseCode();
@@ -330,8 +338,11 @@ public class SwoleCatUpdaterPlugin extends Plugin {
         new Thread(() -> {
             try {
                 JSONObject manifest = validateManifest(fetchManifest(manifestUrl));
-                JSObject availability = manifestResult(manifest);
-                if (!availability.getBool("available", false)) {
+                PackageInfo current = currentPackageInfo(0);
+                boolean available =
+                    manifest.optBoolean("enabled", true) &&
+                    manifest.optLong("versionCode", 0L) > packageVersionCode(current);
+                if (!available) {
                     call.reject("No newer update is available.");
                     return;
                 }
