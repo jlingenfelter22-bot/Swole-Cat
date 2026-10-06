@@ -822,7 +822,7 @@ Maintain a clean checkpoint in project docs after major milestones.
 
 Use this as the starting point:
 
-**"Swole Cat is currently targeting Testing v0.71.0 / Android code 98 on PR #11. v0.70.0 compacted cloud Settings and v0.70.1 added automatic debounced sync plus daily bounded cloud backup on main. Phase 8.4 short-lived plan sharing is implemented: signed-in senders get an SC-XXXX-XXXX-XXXX-XXXX code, recipients can resolve it without an account, shares expire after 7 days, accounts are capped at 25 active shares, only code hashes are stored, and legacy SWOLECAT1 remains the offline fallback. The plan_shares table and plan-share Edge Function are live with zero Supabase security advisor findings. Automated v0.71.0 regression run 702 passed; final-head CI and real-device share/import testing are the remaining exit checks. Beta remains frozen unless explicitly promoted."**
+**"Swole Cat is currently targeting Testing v0.71.0 / Android code 98 on PR #11. v0.70.0 compacted cloud Settings and v0.70.1 added automatic debounced sync plus daily bounded cloud backup on main. Phase 8.4 short-lived plan sharing is implemented: signed-in senders get an SC-XXXX-XXXX-XXXX-XXXX code, recipients can resolve it without an account, shares expire after 7 days, accounts are capped at 25 active shares, only code hashes are stored, and legacy SWOLECAT1 remains the offline fallback. The plan_shares table and plan-share Edge Function are live with zero Supabase security advisor findings. Automated v0.71.0 regression runs 702, 703, and final-head run 707 passed; real-device share/import testing is the remaining Phase 8.4 exit check. Beta remains frozen unless explicitly promoted."**
 
 
 ## Latest authoritative checkpoint: 2026-10-06, v0.71.0 sharing
@@ -855,10 +855,9 @@ App behavior:
 - no private performance/history data is included
 
 Next verification:
-1. finish final-head PR validation
-2. merge PR #11 if green
-3. install/update Swole Cat Testing v0.71.0
-4. sender signs in and shares a real Program/routine
-5. recipient imports the short code, ideally while signed out
-6. verify imported structure and backend plan_shares metadata/hash/expiry
-7. then mark Phase 8.4 real-device complete
+1. merge PR #11
+2. install/update Swole Cat Testing v0.71.0
+3. sender signs in and shares a real Program/routine
+4. recipient imports the short code, ideally while signed out
+5. verify imported structure and backend plan_shares metadata/hash/expiry
+6. then mark Phase 8.4 real-device complete
