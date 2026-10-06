@@ -25,9 +25,9 @@ Checkpoint date: **2026-10-06 (America/Chicago)**
 ### Experimental development
 
 - Branch: `main`
-- Current main merge commit: `b0a26d7020bd01c7c42a6771c5b1ecddda73bc68`
-- App version: **v0.72.0**
-- Android version code: **99**
+- Current main merge commit: `6016c8b29f9cd69084065193df82b9df55bf56ac`
+- App version: **v0.72.1**
+- Android version code: **100**
 - Android app name: **Swole Cat Testing**
 - Android package ID: `com.jlingenfelter.swolecat.testing`
 - Purpose: current Testing build for cloud/account work, sharing, new features, architecture experiments, and risky development
@@ -45,38 +45,36 @@ Do not change the `main` package ID back to `com.jlingenfelter.swolecat` while t
 
 ## 2. Latest green development gate
 
-Current main baseline: **v0.72.0 / Android versionCode 99**
+Current main baseline: **v0.72.1 / Android versionCode 100**
 
-- Main merge commit: `b0a26d7020bd01c7c42a6771c5b1ecddda73bc68`
-- PR: **#12, v0.72.0 workout screen UX hierarchy**
-- PR validation: run **712**, success, all 72 validation steps passed
-- Validate Swole Cat on `main`: run **713**, success, all 72 validation steps passed
-- Deploy Swole Cat to GitHub Pages: run **641**, success
-- Build Swole Cat Testing Android: run **339**, success
+- Main merge commit: `6016c8b29f9cd69084065193df82b9df55bf56ac`
+- PR: **#13, v0.72.1 workout feedback and transition polish**
+- PR validation: run **717**, success, all 73 validation steps passed
+- Validate Swole Cat on `main`: run **718**, success, all 73 validation steps passed
+- Deploy Swole Cat to GitHub Pages: run **645**, success
+- Build Swole Cat Testing Android: run **340**, success
 - permanent Testing certificate verification: success
-- Android artifact: `Swole-Cat-Testing-Android-v0.72.0-signed`
-- Android artifact ID: `11431691213`
-- Android artifact digest: `sha256:93d3bc12ed7093320ef7fe82674e20d76275ab13858cf06ec7c23aa5a8d66b41`
+- Android artifact: `Swole-Cat-Testing-Android-v0.72.1-signed`
+- Android artifact ID: `11439396486`
+- Android artifact digest: `sha256:5464a49e6d59b1b5a64523e3595ecaf005754fa8e04b561856650ac158da92b9`
 - Artifact expires from GitHub Actions on **2026-11-05** unless rebuilt sooner
 - beta branch remains untouched at v0.66.1
 
-v0.72.0 is the first full top-to-bottom workout-console UX pass based on a real narrated phone walkthrough. The design contract lives at `docs/WORKOUT_SCREEN_UX_V072.md`.
+v0.72.1 is a polish follow-up to the v0.72.0 workout-console hierarchy, driven by a second narrated real-device review.
 
-Primary workout behavior now:
-- normal logging path targets one phone viewport where practical
-- accessibility/edge cases may still scroll rather than shrinking controls
-- session chrome is a compact status strip instead of a tall card
-- Cancel is removed from the permanent workout surface
-- the entire exercise header is the exercise-switching model
-- the switch affordance is explicit even on narrow phones
-- Add Exercise lives at the bottom of the exercise switcher
-- the set rail has an inline `+ Set` working-set affordance
-- visible exercise actions are intentionally sparse: Substitute + More
-- redundant visible Next Exercise is removed; automatic progression and direct switcher navigation remain
-- More separates Exercise controls from Workout controls
-- Finish Workout Early and Cancel Workout live under More
-- the large Finish Workout CTA appears only after programmed work is complete
-- existing unfinished-work review, structureDirty safeguards, autosave, progression, supersets, PRs, timers, and keyboard behavior remain intact
+Primary feedback behavior now:
+- the in-flow `Today’s structure changed` block is retired
+- the first structural edit shows a floating `Workout modified` notice for about five seconds
+- the notice overlays the interface and does not increase page height or scroll distance
+- it appears only once per active workout, even if more structural edits are made later
+- final routine-update confirmation remains authoritative at finish
+- `Switch exercise` stays explicit but is now a lightweight single-line affordance rather than a cramped pill
+- crossing exercise boundaries uses a short directional card transition
+- forward movement enters from the right; backward manual movement reverses direction
+- normal set progression stays in-place and uses only a brief active-set pulse + set-card settle
+- regular automatic exercise advance no longer emits the redundant `Up next: ...` toast
+- superset-specific status feedback remains
+- `prefers-reduced-motion` suppresses workout movement without changing navigation or state
 
 ## 3. Phase 8 cloud architecture
 
@@ -912,4 +910,62 @@ Real-device verification still needed:
 Outstanding independent cloud check:
 - the v0.71.0 real-device short-share sender/recipient test is still pending
 - this does not block workout-screen UX iteration
+
+
+
+## 2026-10-06 v0.72.1 workout feedback polish checkpoint
+
+Source:
+- second narrated real-device walkthrough after v0.72.0
+- user confirmed the core workout hierarchy is now comfortable and asked for polish rather than another structural redesign
+- user specifically called out the persistent structure-change warning, awkward Switch Exercise visual treatment, lack of clear exercise-boundary feedback, and desire for a subtle next-set confirmation
+
+Implementation decisions:
+- structure-change feedback is once per active workout, not once per exercise
+- the warning is a fixed overlay with a five-second countdown line and can be dismissed early
+- no permanent warning block is rendered inside the workout layout
+- Switch Exercise retains explicit wording for discoverability but drops the bordered pill treatment
+- exercise changes use a card-deck metaphor with short transform/opacity motion
+- View Transitions API is preferred when available; lightweight incoming animation is the fallback
+- normal set advancement does not use the card transition
+- Set 1 → Set 2 → Set 3 gets a brief cyan pill pulse and tiny focused-card settle instead
+- reduced-motion preference disables the motion layer while preserving all state changes
+
+Release:
+- version: 0.72.1
+- Android versionCode: 100
+- PR #13
+- feature branch: `workout-feedback-v0.72.1`
+- merged to `main`: `6016c8b29f9cd69084065193df82b9df55bf56ac`
+- PR validation run 717: PASS, 73 steps
+- main validation run 718: PASS, 73 steps
+- Pages run 645: PASS
+- signed Android Testing run 340: PASS
+- artifact ID: `11439396486`
+- artifact digest: `sha256:5464a49e6d59b1b5a64523e3595ecaf005754fa8e04b561856650ac158da92b9`
+
+Regression:
+- `scripts/workout-feedback-stress.mjs`
+- verifies structure notice overlays rather than changing layout
+- verifies it appears only once per workout
+- verifies set advancement gets set-level feedback only
+- verifies automatic and manual exercise changes get directional exercise-card feedback
+- verifies the normal `Up next` toast is removed
+- verifies Switch Exercise stays explicit and single-line
+- verifies reduced-motion navigation remains functional without animation
+
+Immediate phone feel test:
+1. add a working set and verify the `Workout modified` notice is visible but does not move the workout screen
+2. verify the notice disappears naturally and does not repeat on later structural edits
+3. judge whether Switch Exercise now looks visually balanced on the phone
+4. complete Set 1 and watch the Set 2 pill/card cue; it should register subconsciously, not feel animated
+5. complete the final set of an exercise and judge the card transition timing/strength
+6. manually switch forward and backward between exercises and confirm the direction helps orientation
+7. if the card motion feels noticeable enough to slow the workout, shorten it rather than removing the model
+8. test a superset to confirm exercise rotation still reads correctly
+9. optionally enable Android Reduce Motion / equivalent accessibility setting and confirm instant navigation remains usable
+
+Outstanding independent cloud check:
+- v0.71.0 real-device short-share sender/recipient verification is still pending
+- this does not block workout-screen polish
 
