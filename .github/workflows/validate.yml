@@ -19,10 +19,10 @@ jobs:
       - name: Build modular web app
         run: npm run build:web
 
-      - name: Check app JavaScript syntax
+      - name: Check app and build-script JavaScript syntax
         run: |
           node --check www/app.js
-          for file in src/data/*.js src/js/*.js; do
+          for file in src/data/*.js src/js/*.js scripts/*.mjs; do
             node --check "$file"
           done
 
