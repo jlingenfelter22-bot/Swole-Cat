@@ -100,7 +100,7 @@ assert.match(css,/sc-workout-card-out-forward 180ms/,'outgoing card transition s
 
 // Switch Exercise stays explicit but visually simplified into one line.
 assert.match(css,/\.focus-nav-switch\{[\s\S]*white-space:nowrap/i,'Switch exercise must remain a one-line affordance');
-assert.match(css,/\.focus-nav-switch\{[\s\S]*border:0/i,'Switch exercise should no longer be a cramped bordered pill');
+assert.match(css,/\.focus-exercise-bottom-row \.focus-nav-switch\{[\s\S]*border:1px solid/i,'Switch exercise should remain a compact labeled pill in the lower action row');
 assert.match(w.document.querySelector('#workout .focus-exercise-nav')?.textContent||'',/Switch exercise/i);
 
 // Reduced motion must opt out of movement while preserving navigation.
@@ -118,4 +118,4 @@ assert.match(core,/workout:structure-changed/,'structure changes should use the 
 w.stopRestTimer();
 w.dismissWorkoutStructureNotice();
 dom.window.close();
-console.log('Swole Cat v0.72.1 workout feedback PASS: one-time overlay notice, single-line switch affordance, subtle set cue, directional exercise card transition, no redundant Up next toast, and reduced-motion safety');
+console.log('Swole Cat workout feedback PASS: one-time overlay notice, explicit switch affordance, subtle set cue, directional exercise card transition, no redundant Up next toast, and reduced-motion safety');
