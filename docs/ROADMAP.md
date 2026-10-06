@@ -1104,13 +1104,13 @@ The following product ideas are explicitly retained on the roadmap:
 - [x] Local deterministic workout-generation engine using muscle/equipment/history/preferences
 - [ ] Optional later AI-backed conversational Coach layer
 - [ ] Preserve an ad-free, no-paywall core workout experience
-- [ ] Routine sharing/import
-- [ ] Optional Swole Cat accounts
+- [x] Routine sharing/import
+- [x] Optional Swole Cat accounts
 - [ ] Free core workout experience with no ads
 - [ ] Swole Cat Pro lifetime purchase model, initially targeted at $7.99 one time
 - [ ] Lifetime entitlement guarantee for existing Pro buyers
 - [ ] Cloud-connected Pro features without making local workout tracking dependent on payment
-- [ ] Cloud backup and multi-device sync
+- [x] Cloud backup and multi-device sync
 - [ ] Shared workout groups/programs
 - [ ] Independent stats for every member on a shared program
 - [ ] Group progress visibility

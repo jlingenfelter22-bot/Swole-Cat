@@ -420,8 +420,10 @@ Existing full backup envelopes, accessible only to the owner.
 ### `entitlements` (Phase 8.5)
 Server-written paid entitlement state. Client may read its own entitlement, never grant itself Pro.
 
-### `shared_packages` (Phase 8.4)
-Cloud delivery records that map a short code/link to a canonical `SWOLECAT1` package.
+### `plan_shares` (Phase 8.4)
+Short-lived delivery records that map a hashed bearer-style share code to the canonical Swole Cat routine/program share envelope.
+
+The usable code is never stored. Direct client table access is revoked; an Edge Function handles authenticated creation and public-by-secret resolution.
 
 Future group tables should be normalized separately rather than mixed into `sync_records`.
 
@@ -487,16 +489,16 @@ Required flow:
 short code / URL
       |
       v
-shared package lookup
+plan-share Edge Function
       |
       v
-canonical SWOLECAT1 string
+canonical Swole Cat share envelope
       |
       v
-existing decode + checksum + validate + preview + import
+existing validate + preview + import
 ```
 
-The server stores/delivers the package. The current importer remains authoritative.
+The server stores/delivers the same share envelope already used inside `SWOLECAT1`. The current validation, preview, ID-remap, unit-conversion, and import path remains authoritative. Legacy `SWOLECAT1` packages remain the offline fallback.
 
 Recipients should be able to import a plan without receiving the sender's:
 - sessions
@@ -537,7 +539,9 @@ To stretch the free tier:
 - store only user-created custom exercise definitions
 - do not upload generated thumbnails or other static app assets per user
 - do not duplicate `SWOLECAT1` payloads unnecessarily
-- prune revoked/expired share packages according to a documented retention policy later
+- cloud plan shares expire after 7 days
+- cap each account at 25 active shares
+- prune expired/old shares during share traffic so storage stays bounded
 - monitor actual row size/egress before adding speculative optimization
 
 ## 20. Operational backups while on Free
@@ -613,7 +617,7 @@ Manual cloud backup and restore. No multi-device merge yet.
 Record-level multi-device sync with explicit conflict handling.
 
 ### Phase 8.4
-Short share codes/URLs resolving to `SWOLECAT1`.
+Short 7-day share codes resolving to the canonical plan-share envelope, with legacy `SWOLECAT1` retained for offline fallback.
 
 ### Phase 8.5
 Google Play Lifetime Pro verification and entitlement.
@@ -729,3 +733,40 @@ Verified:
 Phase 8.2 is therefore complete as a bounded disaster-recovery layer.
 
 Phase 8.3 can now begin. Multi-device sync must remain a separate record-level system with stable device identity, server-controlled versions, change cursors, queued writes, tombstones, explicit conflict handling, and no dependency in the live workout path.
+
+
+## 29. Phase 8.4 live plan-sharing design
+
+Phase 8.4 begins with Swole Cat Testing v0.71.0.
+
+Live backend:
+- table: `public.plan_shares`
+- Edge Function: `plan-share`
+- usable code format: `SC-XXXX-XXXX-XXXX-XXXX`
+- usable code entropy: 80 bits from a 32-character ambiguity-reduced alphabet
+- raw usable code: never persisted
+- persisted lookup key: SHA-256 hash of the normalized code
+- expiration: 7 days
+- retention cap: 25 active shares per account
+- payload cap: 250 KB
+- sender must be authenticated
+- recipient does not need an account
+
+Security:
+- RLS enabled on `plan_shares`
+- all direct anon/authenticated table grants revoked
+- explicit deny-all client RLS policy
+- service role remains Edge-Function-only
+- create verifies the bearer JWT with Supabase Auth before using the owner ID
+- resolve accepts only the high-entropy secret code and returns one matching unexpired blueprint
+- owner ID is never returned to recipients
+
+Storage discipline:
+- every create/resolve pass removes expired rows
+- every create prunes the sender's older rows so the new share never takes the account above 25 active records
+- an inactive account can therefore never accumulate unbounded share data
+
+Compatibility:
+- existing `SWOLECAT1` offline packages still import
+- the primary connected share UI no longer exposes the giant encoded payload
+- no second routine/program serialization format was introduced

@@ -822,4 +822,42 @@ Maintain a clean checkpoint in project docs after major milestones.
 
 Use this as the starting point:
 
-**"Swole Cat is currently on Testing v0.69.4 / Android code 95. Phases 8.1 Identity, 8.2 Cloud Backup, and 8.3 Multi-device Sync are complete and real-device validated. The destructive account-deletion exit test left Supabase at zero Auth users/devices/sync rows/backups while all local workout data remained intact. Do not expand cloud scope. The next task, not yet started, is Settings cleanup and reorganization: inventory every current setting, clean up section grouping/order/labels, and then implement the polished Settings structure."**
+**"Swole Cat is currently targeting Testing v0.71.0 / Android code 98 on PR #11. v0.70.0 compacted cloud Settings and v0.70.1 added automatic debounced sync plus daily bounded cloud backup on main. Phase 8.4 short-lived plan sharing is implemented: signed-in senders get an SC-XXXX-XXXX-XXXX-XXXX code, recipients can resolve it without an account, shares expire after 7 days, accounts are capped at 25 active shares, only code hashes are stored, and legacy SWOLECAT1 remains the offline fallback. The plan_shares table and plan-share Edge Function are live with zero Supabase security advisor findings. Automated v0.71.0 regression runs 702, 703, and final-head run 707 passed; real-device share/import testing is the remaining Phase 8.4 exit check. Beta remains frozen unless explicitly promoted."**
+
+
+## Latest authoritative checkpoint: 2026-10-06, v0.71.0 sharing
+
+Treat this section as newer than earlier handoff text above.
+
+Repository:
+- PR #11: `v0.71.0 short-lived cloud routine and program sharing`
+- branch: `cloud-sharing-v0.71.0`
+- version target: 0.71.0
+- Android versionCode: 98
+- beta branch untouched
+
+Live Supabase:
+- table `plan_shares`, RLS enabled
+- direct anon/authenticated grants revoked
+- explicit deny-all client policy
+- Edge Function `plan-share` ACTIVE
+- raw share codes never stored
+- 7-day expiration
+- 25 active shares/account
+- recipients may resolve without an account
+- security advisor: zero findings after explicit deny policy
+
+App behavior:
+- connected signed-in sender uses short cloud code by default
+- old giant `SWOLECAT1` package is generated only through Offline Code/fallback
+- universal Import accepts both formats
+- cloud result goes through the same existing preview/import safety path
+- no private performance/history data is included
+
+Next verification:
+1. merge PR #11
+2. install/update Swole Cat Testing v0.71.0
+3. sender signs in and shares a real Program/routine
+4. recipient imports the short code, ideally while signed out
+5. verify imported structure and backend plan_shares metadata/hash/expiry
+6. then mark Phase 8.4 real-device complete
