@@ -126,6 +126,9 @@ jobs:
       - name: Stress test v0.72.0 workout screen UX hierarchy
         run: node scripts/workout-screen-ux-stress.mjs
 
+      - name: Stress test v0.72.1 workout feedback and transition polish
+        run: node scripts/workout-feedback-stress.mjs
+
       - name: Stress test v0.65 Focus Mode workout flow
         run: node scripts/focus-mode-workout-stress.mjs
 
