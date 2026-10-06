@@ -10,7 +10,7 @@ Do not begin a new cloud phase by default.
 
 The next product task is:
 
-**Finish the real-device v0.71.0 short-share verification, then continue Settings cleanup/polish.**
+**Real-device validate the new v0.72.0 workout console flow, then iterate from that phone test. The v0.71.0 short-share real-device check remains an independent outstanding cloud exit test.**
 
 The user wants to review the Settings screen, clean up all settings, decide where each setting belongs, improve grouping/order/labels, and make the Settings menu feel intentional and easy to scan.
 
@@ -35,28 +35,28 @@ Main product/testing branch:
 `main`
 
 Current Testing version:
-`0.71.0`
+`0.72.0`
 
 Android versionCode:
-`98`
+`99`
 
 Current main merge:
-`d28410f93efe1281bd29700d503ed4aff33f1de8`
+`b0a26d7020bd01c7c42a6771c5b1ecddda73bc68`
 
 Latest completed gates:
-- PR #11 final validation run 708: PASS
-- main validation run 709: PASS
-- Pages run 638: PASS
-- signed Testing Android build run 338: PASS
-- artifact ID: `11425967468`
-- artifact name: `Swole-Cat-Testing-Android-v0.71.0-signed`
-- artifact digest: `sha256:3e4be0f7cec86e4d40f1145a36a87e7ac30e69a5bb195e4a7ca760d4adc6c934`
+- PR #12 validation run 712: PASS, all 72 validation steps
+- main validation run 713: PASS, all 72 validation steps
+- Pages run 641: PASS
+- signed Testing Android build run 339: PASS
+- artifact ID: `11431691213`
+- artifact name: `Swole-Cat-Testing-Android-v0.72.0-signed`
+- artifact digest: `sha256:93d3bc12ed7093320ef7fe82674e20d76275ab13858cf06ec7c23aa5a8d66b41`
 
 Live PWA:
 `https://jlingenfelter22-bot.github.io/Swole-Cat/`
 
 Important branches:
-- `main`: experimental Testing, current v0.71.0
+- `main`: experimental Testing, current v0.72.0
 - `beta`: field beta used for real workouts
 - `beta-v0.66.1`: frozen beta checkpoint
 
@@ -869,3 +869,63 @@ Next verification:
 4. verify imported structure and backend plan_shares metadata/hash/expiry
 5. then mark Phase 8.4 real-device complete
 6. continue remaining Settings cleanup/polish
+
+
+## Latest authoritative checkpoint: 2026-10-06, v0.72.0 workout console UX
+
+Treat this section as newer than earlier handoff text above.
+
+Why this pass happened:
+- user supplied a narrated phone recording while using the active workout
+- target experience is fast, obvious, one-screen logging wherever practical
+- do not literally forbid scrolling if accessibility or unusual workout structure needs it
+- the user's girlfriend previously struggled to discover exercise switching, which is treated as a discoverability defect
+
+Locked v0.72.0 workout hierarchy:
+1. compact session strip
+2. obvious whole-header exercise switcher
+3. Add Exercise at bottom of switcher
+4. Coach target
+5. set rail with inline `+ Set`
+6. one focused set card
+7. Complete Set
+8. only Substitute + More as persistent secondary actions
+9. early finish/cancel under More
+10. contextual Finish Workout only after programmed work is complete
+
+Do not re-add a permanent Next Exercise button unless real-user testing demonstrates a need. Automatic exercise progression remains, and manual switching through the explicit exercise switcher preserves pending/defer semantics.
+
+Do not re-add permanent bottom Add Exercise / Finish Workout controls. Their relocation is intentional to reduce vertical chrome and action competition.
+
+Files:
+- design contract: `docs/WORKOUT_SCREEN_UX_V072.md`
+- implementation: `src/js/06-workout-engine.js`
+- visual tuning: `src/styles/03-polish.css`
+- regression: `scripts/workout-screen-ux-stress.mjs`
+
+Release:
+- v0.72.0
+- Android code 99
+- PR #12
+- merge: `b0a26d7020bd01c7c42a6771c5b1ecddda73bc68`
+- PR validation 712 PASS
+- main validation 713 PASS
+- Pages 641 PASS
+- Android build 339 PASS
+- artifact ID `11431691213`
+
+Immediate real-device UX checks:
+- normal 3-set logging should require little/no page scroll on the user's phone
+- Switch exercise must be obvious at first glance
+- Add Exercise should feel naturally located inside the switcher
+- `+ Set` should feel like the obvious way to extend a movement
+- removing a set remains under set options to avoid clutter/mistaps
+- More should feel organized, with exercise actions and workout actions visually separated
+- final set should transition naturally into Finish Workout
+- supersets, long names, many sets, keyboard, and accessibility should overflow gracefully rather than compressing dangerously
+
+Still outstanding from v0.71.0:
+- real-device short cloud-share test between signed-in sender and preferably signed-out recipient
+
+Beta:
+- still frozen at v0.66.1 unless explicitly promoted
