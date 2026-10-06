@@ -12,8 +12,8 @@ const deleteFunction=fs.readFileSync('supabase/functions/delete-account/index.ts
 const settingsSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.70.0');
-assert.equal(pkg.swoleCat.androidVersionCode,96);
+assert.equal(pkg.version,'0.70.1');
+assert.equal(pkg.swoleCat.androidVersionCode,97);
 
 assert.match(cloudSource,/SWOLE_CAT_CLOUD_BACKUP_RETENTION=2/);
 assert.match(cloudSource,/SWOLE_CAT_CLOUD_BACKUP_MAX_BYTES=5000000/);
