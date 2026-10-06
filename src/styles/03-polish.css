@@ -1982,3 +1982,99 @@ html[data-workout-transition="back"]::view-transition-new(workout-exercise-stage
     font-size:.56rem;
   }
 }
+
+
+/* v0.72.3 NUMERIC ENTRY READABILITY
+   Full labels + value-centered steppers without increasing set-card height. */
+#workout .live-entry{
+  align-items:end;
+}
+#workout .numeric-entry{
+  min-width:0;
+}
+#workout .numeric-entry>label{
+  display:block;
+  min-width:0;
+  margin:0 0 4px;
+  color:#8e99aa;
+  font-size:.67rem;
+  font-weight:800;
+  line-height:1.05;
+  letter-spacing:.045em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  overflow:visible;
+  text-overflow:clip;
+}
+#workout .numeric-stepper{
+  display:grid;
+  grid-template-columns:30px minmax(0,1fr) 30px;
+  align-items:center;
+  gap:4px;
+  min-width:0;
+}
+#workout .numeric-stepper .direct-number{
+  width:100%;
+  min-width:0;
+  height:52px!important;
+  margin:0;
+  padding:6px 4px!important;
+}
+#workout .numeric-step-btn{
+  width:30px;
+  min-width:30px;
+  height:46px;
+  min-height:46px;
+  padding:0;
+  border:1px solid rgba(63,79,105,.82);
+  border-radius:9px;
+  background:rgba(20,29,43,.9);
+  color:#dbe7f4;
+  font-size:1rem;
+  font-weight:950;
+  line-height:1;
+}
+#workout .numeric-step-btn:active{
+  transform:scale(.96);
+  border-color:rgba(34,211,238,.58);
+  background:rgba(34,211,238,.08);
+}
+#workout .rir-small .input-label-row{
+  display:block;
+  min-height:0;
+  margin:0 0 4px;
+  text-align:left;
+}
+#workout .rir-small .input-label-row>label{
+  display:block;
+  margin:0;
+  line-height:1.05;
+  overflow:visible;
+  text-overflow:clip;
+}
+#workout .rir-small select{
+  height:52px;
+}
+
+@media(max-width:370px){
+  #workout .numeric-entry>label{
+    font-size:.6rem;
+    letter-spacing:.025em;
+  }
+  #workout .numeric-stepper{
+    grid-template-columns:27px minmax(0,1fr) 27px;
+    gap:3px;
+  }
+  #workout .numeric-step-btn{
+    width:27px;
+    min-width:27px;
+    height:44px;
+    min-height:44px;
+    font-size:.94rem;
+  }
+  #workout .numeric-stepper .direct-number{
+    padding-left:2px!important;
+    padding-right:2px!important;
+    font-size:1.12rem!important;
+  }
+}

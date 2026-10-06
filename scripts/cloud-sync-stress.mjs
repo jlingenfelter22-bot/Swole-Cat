@@ -12,8 +12,8 @@ const settingsSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8'
 const coreSource=fs.readFileSync('src/js/01-core-runtime.js','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.72.2');
-assert.equal(pkg.swoleCat.androidVersionCode,101);
+assert.equal(pkg.version,'0.72.3');
+assert.equal(pkg.swoleCat.androidVersionCode,102);
 assert.match(syncSource,/SWOLE_CAT_SYNC_AUTO_DELAY_MS=4000/);
 assert.match(syncSource,/SWOLE_CAT_SYNC_AUTO_REFRESH_MS=5\*60\*1000/);
 assert.match(syncSource,/syncScheduleAuto\('save'\)/,'ordinary state saves should schedule background sync');
