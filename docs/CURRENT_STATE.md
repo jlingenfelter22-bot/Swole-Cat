@@ -6,7 +6,7 @@ This is the **resume-first checkpoint** for Swole Cat.
 
 If chat history, assistant context, or a development session is lost, read this file before making changes. It records the current working baseline, branch contract, cloud state, tested account behavior, and the next unfinished work.
 
-Checkpoint date: **2026-10-05 (America/Chicago)**
+Checkpoint date: **2026-10-06 (America/Chicago)**
 
 ## 1. Branches and safe development model
 
@@ -25,12 +25,12 @@ Checkpoint date: **2026-10-05 (America/Chicago)**
 ### Experimental development
 
 - Branch: `main`
-- Functional code baseline before this docs-only checkpoint: `ea1fc6958ec6ba7c84b42f19d79bf48cb895f727`
-- App version: **v0.69.2**
-- Android version code: **93**
+- Current main merge commit: `d28410f93efe1281bd29700d503ed4aff33f1de8`
+- App version: **v0.71.0**
+- Android version code: **98**
 - Android app name: **Swole Cat Testing**
 - Android package ID: `com.jlingenfelter.swolecat.testing`
-- Purpose: cloud/account work, new features, architecture experiments, and risky development
+- Purpose: current Testing build for cloud/account work, sharing, new features, architecture experiments, and risky development
 
 The different Android package IDs are intentional. Android gives each package its own app sandbox, so Swole Cat and Swole Cat Testing can be installed simultaneously without sharing:
 - `overload_v3`
@@ -45,18 +45,27 @@ Do not change the `main` package ID back to `com.jlingenfelter.swolecat` while t
 
 ## 2. Latest green development gate
 
-For functional baseline `001a1c4c25e51beab7d97b5a45f79b9843962cc9`:
+Current main baseline: **v0.71.0 / Android versionCode 98**
 
-- Final pre-merge validation: run **642**, success
-- Validate Swole Cat on `main`: run **643**, success
-- Deploy Swole Cat to GitHub Pages: run **612**, success
-- Build Swole Cat Testing Android: run **331**, success
+- Main merge commit: `d28410f93efe1281bd29700d503ed4aff33f1de8`
+- PR: **#11, v0.71.0 short-lived cloud routine and program sharing**
+- Final PR validation: run **708**, success
+- Validate Swole Cat on `main`: run **709**, success
+- Deploy Swole Cat to GitHub Pages: run **638**, success
+- Build Swole Cat Testing Android: run **338**, success
 - permanent Testing certificate verification: success
-- Android artifact: `Swole-Cat-Testing-Android-v0.69.0-signed`
-- Android artifact digest: `sha256:dcc4e7357e67c9ed8e9c09edbe0a18e787db5e2bbc73033f38b3a6bf6283faba`
-- Extracted APK SHA-256: `6082f95a5d7fc24d3ddb76458580ab571ac043abfa58d59b10dd3967332f62dc`
+- Android artifact: `Swole-Cat-Testing-Android-v0.71.0-signed`
+- Android artifact ID: `11425967468`
+- Android artifact digest: `sha256:3e4be0f7cec86e4d40f1145a36a87e7ac30e69a5bb195e4a7ca760d4adc6c934`
+- Artifact expires from GitHub Actions on **2026-11-05** unless rebuilt sooner
+- beta branch remains untouched at v0.66.1
 
-The build verifies the generated Android application ID, visible app name, OAuth callback scheme, version metadata, persistent Testing signature, the Phase 8.3 two-device sync battle test, and the full regression wall.
+This build includes:
+- v0.70.0 compact cloud Settings hub
+- v0.70.1 automatic debounced record sync + bounded automatic recovery backup
+- v0.71.0 7-day short cloud routine/program sharing with accountless recipient import
+- legacy `SWOLECAT1` offline sharing fallback
+- the complete existing workout/Coach/UI regression wall
 
 ## 3. Phase 8 cloud architecture
 
@@ -750,7 +759,7 @@ Phase 8.3 is complete. Do not expand cloud scope by default. Next product work s
 
 Read `docs/NEXT_CHAT_HANDOFF.md` first when resuming development in a new conversation.
 
-Immediate next task: **Settings cleanup and reorganization**. This work has not started yet. Do not begin another cloud phase by default.
+Immediate verification task: **real-device v0.71.0 short-share test** between the Testing app and a second installation. After that, continue the broader Settings cleanup/polish work. Do not begin another cloud phase by default.
 
 
 ## 2026-10-06 cloud/settings checkpoint
@@ -811,3 +820,29 @@ Testing still needed before calling Phase 8.4 real-device complete:
 - verify Supabase row stores only code_hash and expires_at, not the usable code
 - verify expired/not-found behavior when practical
 
+
+
+## 2026-10-06 final v0.71.0 release checkpoint
+
+Repository and deployment:
+- PR #11 merged to `main`
+- merge commit: `d28410f93efe1281bd29700d503ed4aff33f1de8`
+- main validation run 709: PASS
+- GitHub Pages deploy run 638: PASS
+- signed Android Testing build run 338: PASS
+- artifact: `Swole-Cat-Testing-Android-v0.71.0-signed`
+- artifact ID: `11425967468`
+- artifact digest: `sha256:3e4be0f7cec86e4d40f1145a36a87e7ac30e69a5bb195e4a7ca760d4adc6c934`
+- beta branch remains frozen/untouched
+
+Live Testing URLs:
+- PWA / GitHub Pages: `https://jlingenfelter22-bot.github.io/Swole-Cat/`
+- GitHub Actions Android build run: `https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37492161724`
+
+Next real-device test:
+1. update/install Swole Cat Testing v0.71.0
+2. sender signs into cloud and shares a real Program or routine
+3. recipient imports the short `SC-...` code, preferably signed out
+4. verify routine/program structure and order
+5. inspect `plan_shares` backend row for hash-only code storage and 7-day expiry
+6. then mark Phase 8.4 real-device complete
