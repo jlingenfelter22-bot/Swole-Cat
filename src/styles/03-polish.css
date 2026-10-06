@@ -1855,3 +1855,130 @@ html[data-workout-transition="back"]::view-transition-new(workout-exercise-stage
     animation:none!important;
   }
 }
+
+
+/* v0.72.2 EXERCISE HEADER COMPOSITION
+   Help belongs to the exercise title; switching belongs to the metadata/action row. */
+#workout .focus-exercise-nav>summary{
+  min-height:0;
+  padding:9px 10px 10px;
+}
+#workout .focus-exercise-nav>summary:after{
+  display:none!important;
+  content:none!important;
+}
+#workout .focus-exercise-title-line{
+  display:block;
+  margin-top:2px;
+  min-width:0;
+  line-height:1.12;
+}
+#workout .focus-exercise-name{
+  display:inline;
+  margin:0;
+  padding:0;
+  color:#fff;
+  font-family:var(--display);
+  font-size:1.03rem;
+  font-weight:950;
+  line-height:1.12;
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  overflow-wrap:anywhere;
+}
+#workout .focus-howto-inline{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:29px;
+  height:29px;
+  margin:0 0 0 6px;
+  padding:0;
+  vertical-align:2px;
+  border:1px solid rgba(168,85,247,.34);
+  border-radius:50%;
+  background:rgba(168,85,247,.06);
+  color:#d6c8ff;
+  box-shadow:none;
+  font-family:Georgia,serif;
+  font-size:.78rem;
+  font-weight:900;
+  line-height:1;
+}
+#workout .focus-howto-inline:active{
+  transform:scale(.94);
+  border-color:rgba(168,85,247,.62);
+}
+#workout .focus-exercise-bottom-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  margin-top:5px;
+}
+#workout .focus-exercise-bottom-row .focus-exercise-meta{
+  flex:1 1 auto;
+  min-width:0;
+  margin:0;
+  padding:0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#workout .focus-exercise-bottom-row .focus-nav-switch{
+  position:static;
+  flex:0 0 auto;
+  transform:none;
+  min-width:0;
+  min-height:28px;
+  width:auto;
+  margin:0;
+  padding:0 9px;
+  border:1px solid rgba(34,211,238,.38);
+  border-radius:999px;
+  background:rgba(34,211,238,.055);
+  color:#9ff3ff;
+  white-space:nowrap;
+  font-size:.6rem;
+  font-weight:900;
+  letter-spacing:.015em;
+  line-height:26px;
+}
+#workout .focus-exercise-nav[open] .focus-nav-switch{
+  border-color:rgba(34,211,238,.58);
+  background:rgba(34,211,238,.085);
+  color:#c4f9ff;
+}
+#workout .focus-howto-btn{
+  display:none!important;
+}
+
+@media(max-width:390px){
+  #workout .focus-exercise-nav>summary{
+    padding:8px 9px 9px;
+  }
+  #workout .focus-exercise-name{
+    font-size:1rem;
+  }
+  #workout .focus-howto-inline{
+    width:28px;
+    height:28px;
+    margin-left:5px;
+  }
+  #workout .focus-exercise-bottom-row{
+    gap:6px;
+  }
+  #workout .focus-exercise-bottom-row .focus-nav-switch{
+    min-width:0;
+    width:auto;
+    padding:0 8px;
+    font-size:.58rem;
+  }
+}
+@media(max-width:350px){
+  #workout .focus-exercise-bottom-row .focus-nav-switch{
+    padding:0 7px;
+    font-size:.56rem;
+  }
+}

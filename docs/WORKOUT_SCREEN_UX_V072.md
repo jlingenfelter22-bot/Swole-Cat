@@ -130,3 +130,31 @@ This follow-up pass comes from a second narrated real-device review of the v0.72
 ### Motion accessibility
 - respect `prefers-reduced-motion: reduce`
 - navigation and state changes must remain instant and fully functional when motion is disabled
+
+
+## v0.72.2 exercise header composition
+
+This follow-up comes from a third narrated real-device review focused specifically on the exercise-switch header.
+
+### Help control placement
+- the How To `i` now belongs directly to the exercise title
+- it is rendered immediately after the exercise name in normal inline text flow
+- short names naturally place it nearby
+- longer/wrapped names naturally move it with the text
+- no JavaScript pixel measurement is used
+- opening the exercise switcher cannot move the help control because it remains inside the stable summary/title row
+- tapping How To consumes its own event and must never toggle the exercise switcher
+
+### Switch Exercise placement
+- remove the dropdown chevron entirely
+- retain explicit `Switch exercise` wording for discoverability
+- place it in a compact cyan-outline pill on the lower-right side of the exercise header
+- pair it with exercise metadata on the lower-left
+- the rest of the header remains a forgiving large tap target that opens/closes the exercise list
+- the pill is a visual affordance, not the only switch target
+
+### Layout rule
+- title/help placement and metadata/action placement are handled by normal CSS flow
+- avoid absolute-position math for controls whose location depends on exercise-name length
+- long names may wrap; metadata may truncate before the Switch exercise pill is sacrificed
+- no changes below the exercise header are part of this pass
