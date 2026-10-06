@@ -25,9 +25,9 @@ Checkpoint date: **2026-10-06 (America/Chicago)**
 ### Experimental development
 
 - Branch: `main`
-- Current main merge commit: `b24d27dca66b8e923cef7be3c8b7989ac1153790`
-- App version: **v0.72.2**
-- Android version code: **101**
+- Current main merge commit: `2184e0d4951053f775ddb1c7fa93f9fda3c54688`
+- App version: **v0.72.3**
+- Android version code: **102**
 - Android app name: **Swole Cat Testing**
 - Android package ID: `com.jlingenfelter.swolecat.testing`
 - Purpose: current Testing build for cloud/account work, sharing, new features, architecture experiments, and risky development
@@ -45,35 +45,33 @@ Do not change the `main` package ID back to `com.jlingenfelter.swolecat` while t
 
 ## 2. Latest green development gate
 
-Current main baseline: **v0.72.2 / Android versionCode 101**
+Current main baseline: **v0.72.3 / Android versionCode 102**
 
-- Main merge commit: `b24d27dca66b8e923cef7be3c8b7989ac1153790`
-- PR: **#14, v0.72.2 exercise header composition**
-- Final PR validation: run **723**, success, all 74 validation steps passed
-- Validate Swole Cat on `main`: run **724**, success, all 74 validation steps passed
-- Deploy Swole Cat to GitHub Pages: run **649**, success
-- Build Swole Cat Testing Android: run **341**, success
+- Main merge commit: `2184e0d4951053f775ddb1c7fa93f9fda3c54688`
+- PR: **#15, v0.72.3 numeric entry readability**
+- PR validation: run **728**, success, all 75 validation steps passed
+- Validate Swole Cat on `main`: run **729**, success, all 75 validation steps passed
+- Deploy Swole Cat to GitHub Pages: run **653**, success
+- Build Swole Cat Testing Android: run **342**, success
 - permanent Testing certificate verification: success
-- Android artifact: `Swole-Cat-Testing-Android-v0.72.2-signed`
-- Android artifact ID: `11441549231`
-- Android artifact digest: `sha256:2711fccb0d23412623c330c7ff2733f1b45c49df07dd9feb31c6b0c9a85a68a7`
+- Android artifact: `Swole-Cat-Testing-Android-v0.72.3-signed`
+- Android artifact ID: `11443243011`
+- Android artifact digest: `sha256:e0785c21b00c8e0f405596d478c8a16f64cb8d45359a4579f22b5566b733b750`
 - Artifact expires from GitHub Actions on **2026-11-05** unless rebuilt sooner
 - beta branch remains untouched at v0.66.1
 
-v0.72.2 is a surgical exercise-header composition pass from the third narrated real-device review.
+v0.72.3 is a surgical active-set readability pass from the fourth narrated real-device review.
 
-Header behavior now:
-- How To `i` is inline immediately after the exercise name
-- its position follows short, long, and wrapped exercise names naturally through CSS text flow
-- no JavaScript pixel measurement is used
-- the old independently positioned How To button is retired
-- opening the exercise list cannot move the help control
-- tapping How To consumes its own event and never toggles the switcher
-- the dropdown chevron is removed
-- `Switch exercise` is a compact cyan-outline pill in the lower-right row
-- exercise/set metadata remains on the lower-left
-- the rest of the header remains a large forgiving switch target
-- no workout UI below the exercise header was changed
+Numeric-entry behavior now:
+- Weight and Reps labels render in full instead of truncating beside step controls
+- Weight shows the active unit and bodyweight movements can show Added weight
+- Weight/Reps use one compact row: decrement, value, increment
+- the established 52px numeric input remains the central logging target
+- step buttons sit directly beside the value they change
+- RIR remains a selector and does not gain step buttons
+- the old artificial RIR label-row height is removed
+- the new arrangement reduces rather than increases the vertical footprint
+- no workout UI outside the active-set numeric controls was intentionally changed
 
 ## 3. Phase 8 cloud architecture
 
@@ -1015,6 +1013,62 @@ Immediate phone test:
 6. judge whether the lower-right Switch Exercise pill feels visually balanced with metadata on the left
 7. confirm tapping elsewhere on the exercise header remains an easy switch target
 8. do not redesign the logging controls below the header unless new real-device feedback identifies a specific issue
+
+Outstanding independent cloud check:
+- v0.71.0 real-device short-share sender/recipient verification is still pending
+
+
+
+## 2026-10-06 v0.72.3 numeric-entry checkpoint
+
+Source:
+- fourth narrated real-device walkthrough
+- user approved the overall workout-screen flow and focused specifically on truncated Weight/Reps labels
+- core constraint: improve readability without adding vertical height and preserve the one-screen workout goal
+
+Implementation:
+- full Weight (lb/kg) and Reps labels
+- old label + micro-step header retired for Weight/Reps
+- numeric row is now `[ − | value | + ]`
+- decrement/increment buttons remain large enough for gym use
+- central numeric input remains 52px tall
+- RIR remains a selector
+- RIR label area was compacted to match the new layout
+- no changes to exercise header, set rail, target, Complete Set, or workout motion behavior
+
+Release:
+- version 0.72.3
+- Android versionCode 102
+- feature branch `numeric-entry-v0.72.3`
+- PR #15
+- merge `2184e0d4951053f775ddb1c7fa93f9fda3c54688`
+- PR validation run 728: PASS, 75 steps
+- main validation run 729: PASS, 75 steps
+- Pages run 653: PASS
+- signed Android Testing build run 342: PASS
+- artifact ID `11443243011`
+- artifact digest `sha256:e0785c21b00c8e0f405596d478c8a16f64cb8d45359a4579f22b5566b733b750`
+
+Dedicated regression:
+- `scripts/workout-numeric-entry-stress.mjs`
+- verifies Weight/Reps remain explicit controls
+- verifies full labels and active unit
+- verifies decrement/value/increment DOM order
+- verifies old micro-step header is absent
+- verifies RIR remains a selector
+- verifies numeric labels do not use ellipsis
+- verifies the 52px value height is preserved
+- verifies no separate vertical stepper row is introduced
+
+Immediate phone test:
+1. verify Weight (lb) is fully readable with no ellipsis
+2. verify Reps is fully readable with no ellipsis
+3. confirm the `− value +` relationship is immediately obvious for both
+4. confirm buttons feel easy to hit during a workout
+5. verify RIR still reads naturally beside them
+6. compare the set-card height to v0.72.2; it should be equal or shorter
+7. check narrow-screen behavior and bodyweight `Added weight` labeling
+8. do not redesign other workout elements unless new phone feedback identifies a specific issue
 
 Outstanding independent cloud check:
 - v0.71.0 real-device short-share sender/recipient verification is still pending
