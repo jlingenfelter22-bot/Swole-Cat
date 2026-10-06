@@ -1,0 +1,451 @@
+package __PACKAGE_NAME__;
+
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageInstaller;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
+
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+
+import org.json.JSONObject;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+
+@CapacitorPlugin(name = "SwoleCatUpdater")
+public class SwoleCatUpdaterPlugin extends Plugin {
+    private static final long MAX_APK_BYTES = 100L * 1024L * 1024L;
+    private static final String UPDATE_DIR = "swole-cat-updates";
+    private static final String GITHUB_REPO = "jlingenfelter22-bot/Swole-Cat";
+    private File downloadedApk;
+    private JSONObject downloadedManifest;
+
+    private String currentPackageName() {
+        return getContext().getPackageName();
+    }
+
+    private String currentChannel() {
+        return currentPackageName().endsWith(".testing") ? "testing" : "beta";
+    }
+
+    private PackageInfo currentPackageInfo(int flags) throws Exception {
+        return getContext().getPackageManager().getPackageInfo(currentPackageName(), flags);
+    }
+
+    private long packageVersionCode(PackageInfo info) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) return info.getLongVersionCode();
+        return info.versionCode;
+    }
+
+    private boolean canRequestPackageInstalls() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true;
+        return getContext().getPackageManager().canRequestPackageInstalls();
+    }
+
+    private static String hex(byte[] bytes) {
+        StringBuilder out = new StringBuilder();
+        for (byte value : bytes) out.append(String.format(Locale.US, "%02x", value));
+        return out.toString();
+    }
+
+    private static String normalizeDigest(String value) {
+        if (value == null) return "";
+        return value.replace(":", "").trim().toLowerCase(Locale.US);
+    }
+
+    private static String sha256(byte[] bytes) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        return hex(digest.digest(bytes));
+    }
+
+    private List<String> signingDigests(PackageInfo info) throws Exception {
+        List<String> result = new ArrayList<>();
+        Signature[] signatures = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && info.signingInfo != null) {
+            signatures = info.signingInfo.hasMultipleSigners()
+                ? info.signingInfo.getApkContentsSigners()
+                : info.signingInfo.getSigningCertificateHistory();
+        } else {
+            signatures = info.signatures;
+        }
+        if (signatures != null) {
+            for (Signature signature : signatures) result.add(sha256(signature.toByteArray()));
+        }
+        return result;
+    }
+
+    private int signingFlags() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+            ? PackageManager.GET_SIGNING_CERTIFICATES
+            : PackageManager.GET_SIGNATURES;
+    }
+
+    private String currentSigningDigest() throws Exception {
+        List<String> digests = signingDigests(currentPackageInfo(signingFlags()));
+        return digests.isEmpty() ? "" : digests.get(0);
+    }
+
+    private HttpURLConnection connection(String urlText) throws Exception {
+        URL url = new URL(urlText);
+        if (!"https".equalsIgnoreCase(url.getProtocol())) {
+            throw new IllegalArgumentException("Update URLs must use HTTPS.");
+        }
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setConnectTimeout(15000);
+        connection.setReadTimeout(30000);
+        connection.setInstanceFollowRedirects(true);
+        connection.setRequestProperty("Accept", "application/json, application/vnd.android.package-archive, */*");
+        connection.setRequestProperty("Cache-Control", "no-cache");
+        connection.setRequestProperty("User-Agent", "Swole-Cat-Updater");
+        return connection;
+    }
+
+    private void validateManifestSource(String manifestUrl) {
+        String trustedPrefix = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/main/updates/";
+        if (manifestUrl == null || !manifestUrl.startsWith(trustedPrefix)) {
+            throw new IllegalArgumentException("Update manifest host is not trusted.");
+        }
+    }
+
+    private JSONObject fetchManifest(String manifestUrl) throws Exception {
+        validateManifestSource(manifestUrl);
+        HttpURLConnection connection = connection(manifestUrl);
+        try {
+            int status = connection.getResponseCode();
+            if (status < 200 || status >= 300) {
+                throw new IllegalStateException("Update server returned HTTP " + status + ".");
+            }
+            InputStream input = new BufferedInputStream(connection.getInputStream());
+            byte[] buffer = new byte[8192];
+            java.io.ByteArrayOutputStream body = new java.io.ByteArrayOutputStream();
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                body.write(buffer, 0, read);
+                if (body.size() > 1024 * 1024) throw new IllegalStateException("Update manifest is unexpectedly large.");
+            }
+            input.close();
+            return new JSONObject(body.toString("UTF-8"));
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    private JSONObject validateManifest(JSONObject manifest) throws Exception {
+        boolean enabled = manifest.optBoolean("enabled", true);
+        String channel = manifest.optString("channel", "");
+        String packageId = manifest.optString("packageId", "");
+        long versionCode = manifest.optLong("versionCode", -1L);
+        String version = manifest.optString("version", "");
+        String apkUrl = manifest.optString("apkUrl", "");
+        String hash = normalizeDigest(manifest.optString("sha256", ""));
+        String expectedCert = normalizeDigest(manifest.optString("signingCertSha256", ""));
+
+        if (!enabled) return manifest;
+        if (!currentChannel().equals(channel)) throw new IllegalStateException("Update channel mismatch.");
+        if (!currentPackageName().equals(packageId)) throw new IllegalStateException("Update package mismatch.");
+        if (versionCode < 1L || version.isEmpty()) throw new IllegalStateException("Update manifest version is invalid.");
+        if (!apkUrl.startsWith("https://github.com/" + GITHUB_REPO + "/releases/download/")) {
+            throw new IllegalStateException("Update APK host is not trusted.");
+        }
+        if (hash.length() != 64) throw new IllegalStateException("Update manifest SHA-256 is invalid.");
+        if (!expectedCert.isEmpty() && !expectedCert.equals(normalizeDigest(currentSigningDigest()))) {
+            throw new IllegalStateException("Update signing identity does not match this installed app.");
+        }
+        return manifest;
+    }
+
+    private JSObject manifestResult(JSONObject manifest) throws Exception {
+        PackageInfo current = currentPackageInfo(0);
+        long currentCode = packageVersionCode(current);
+        boolean enabled = manifest.optBoolean("enabled", true);
+        long latestCode = manifest.optLong("versionCode", 0L);
+        JSObject result = new JSObject();
+        result.put("status", enabled && latestCode > currentCode ? "available" : "up_to_date");
+        result.put("available", enabled && latestCode > currentCode);
+        result.put("channel", currentChannel());
+        result.put("packageId", currentPackageName());
+        result.put("installedVersion", current.versionName);
+        result.put("installedVersionCode", currentCode);
+        result.put("latestVersion", manifest.optString("version", current.versionName));
+        result.put("latestVersionCode", latestCode);
+        result.put("notes", manifest.optString("notes", ""));
+        result.put("publishedAt", manifest.optString("publishedAt", ""));
+        result.put("required", manifest.optBoolean("required", false));
+        result.put("canRequestInstalls", canRequestPackageInstalls());
+        return result;
+    }
+
+    @PluginMethod
+    public void getStatus(PluginCall call) {
+        try {
+            PackageInfo current = currentPackageInfo(0);
+            JSObject result = new JSObject();
+            result.put("packageId", currentPackageName());
+            result.put("channel", currentChannel());
+            result.put("version", current.versionName);
+            result.put("versionCode", packageVersionCode(current));
+            result.put("signingCertSha256", currentSigningDigest());
+            result.put("canRequestInstalls", canRequestPackageInstalls());
+            result.put("downloadReady", downloadedApk != null && downloadedApk.exists());
+            call.resolve(result);
+        } catch (Exception error) {
+            call.reject("Could not inspect the installed Swole Cat package.", error);
+        }
+    }
+
+    @PluginMethod
+    public void checkForUpdate(PluginCall call) {
+        final String manifestUrl = call.getString("manifestUrl");
+        if (manifestUrl == null || manifestUrl.trim().isEmpty()) {
+            call.reject("Update manifest URL is required.");
+            return;
+        }
+        new Thread(() -> {
+            try {
+                JSONObject manifest = validateManifest(fetchManifest(manifestUrl));
+                call.resolve(manifestResult(manifest));
+            } catch (Exception error) {
+                call.reject("Could not check for Swole Cat updates.", error);
+            }
+        }, "swole-cat-update-check").start();
+    }
+
+    private File downloadAndVerify(JSONObject manifest) throws Exception {
+        long expectedVersionCode = manifest.getLong("versionCode");
+        String apkUrl = manifest.getString("apkUrl");
+        String expectedHash = normalizeDigest(manifest.getString("sha256"));
+
+        File dir = new File(getContext().getCacheDir(), UPDATE_DIR);
+        if (!dir.exists() && !dir.mkdirs()) throw new IllegalStateException("Could not create update cache.");
+        File target = new File(dir, "swole-cat-" + currentChannel() + "-v" + expectedVersionCode + ".apk");
+        File partial = new File(dir, target.getName() + ".partial");
+        if (partial.exists()) partial.delete();
+
+        HttpURLConnection connection = connection(apkUrl);
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        long total = 0L;
+        try {
+            int status = connection.getResponseCode();
+            if (status < 200 || status >= 300) throw new IllegalStateException("APK download returned HTTP " + status + ".");
+            long declared = connection.getContentLengthLong();
+            if (declared > MAX_APK_BYTES) throw new IllegalStateException("Update APK is too large.");
+            try (
+                InputStream input = new BufferedInputStream(connection.getInputStream());
+                OutputStream output = new FileOutputStream(partial)
+            ) {
+                byte[] buffer = new byte[32768];
+                int read;
+                while ((read = input.read(buffer)) != -1) {
+                    total += read;
+                    if (total > MAX_APK_BYTES) throw new IllegalStateException("Update APK exceeded the size limit.");
+                    digest.update(buffer, 0, read);
+                    output.write(buffer, 0, read);
+                }
+            }
+        } finally {
+            connection.disconnect();
+        }
+
+        String actualHash = hex(digest.digest());
+        if (!actualHash.equals(expectedHash)) {
+            partial.delete();
+            throw new SecurityException("Downloaded APK failed SHA-256 verification.");
+        }
+
+        PackageManager pm = getContext().getPackageManager();
+        PackageInfo archive = pm.getPackageArchiveInfo(partial.getAbsolutePath(), signingFlags());
+        if (archive == null) {
+            partial.delete();
+            throw new SecurityException("Downloaded file is not a valid Android package.");
+        }
+        if (!currentPackageName().equals(archive.packageName)) {
+            partial.delete();
+            throw new SecurityException("Downloaded APK package does not match the installed app.");
+        }
+        if (packageVersionCode(archive) != expectedVersionCode) {
+            partial.delete();
+            throw new SecurityException("Downloaded APK version does not match the update manifest.");
+        }
+        long currentCode = packageVersionCode(currentPackageInfo(0));
+        if (expectedVersionCode <= currentCode) {
+            partial.delete();
+            throw new SecurityException("Updater refuses Android versionCode downgrades or reinstalls.");
+        }
+
+        Set<String> installed = new HashSet<>(signingDigests(currentPackageInfo(signingFlags())));
+        Set<String> candidate = new HashSet<>(signingDigests(archive));
+        boolean signerMatch = false;
+        for (String digestValue : candidate) {
+            if (installed.contains(digestValue)) {
+                signerMatch = true;
+                break;
+            }
+        }
+        if (!signerMatch) {
+            partial.delete();
+            throw new SecurityException("Downloaded APK signing certificate does not match the installed app.");
+        }
+
+        String manifestCert = normalizeDigest(manifest.optString("signingCertSha256", ""));
+        if (!manifestCert.isEmpty() && !candidate.contains(manifestCert)) {
+            partial.delete();
+            throw new SecurityException("Downloaded APK does not match the release signing certificate.");
+        }
+
+        if (target.exists()) target.delete();
+        if (!partial.renameTo(target)) {
+            try (
+                InputStream input = new FileInputStream(partial);
+                OutputStream output = new FileOutputStream(target)
+            ) {
+                byte[] buffer = new byte[32768];
+                int read;
+                while ((read = input.read(buffer)) != -1) output.write(buffer, 0, read);
+            }
+            partial.delete();
+        }
+        return target;
+    }
+
+    @PluginMethod
+    public void downloadUpdate(PluginCall call) {
+        final String manifestUrl = call.getString("manifestUrl");
+        if (manifestUrl == null || manifestUrl.trim().isEmpty()) {
+            call.reject("Update manifest URL is required.");
+            return;
+        }
+        new Thread(() -> {
+            try {
+                JSONObject manifest = validateManifest(fetchManifest(manifestUrl));
+                PackageInfo current = currentPackageInfo(0);
+                boolean available =
+                    manifest.optBoolean("enabled", true) &&
+                    manifest.optLong("versionCode", 0L) > packageVersionCode(current);
+                if (!available) {
+                    call.reject("No newer update is available.");
+                    return;
+                }
+                File apk = downloadAndVerify(manifest);
+                downloadedApk = apk;
+                downloadedManifest = manifest;
+                JSObject result = new JSObject();
+                result.put("status", "ready");
+                result.put("version", manifest.getString("version"));
+                result.put("versionCode", manifest.getLong("versionCode"));
+                result.put("bytes", apk.length());
+                result.put("sha256", normalizeDigest(manifest.getString("sha256")));
+                result.put("canRequestInstalls", canRequestPackageInstalls());
+                call.resolve(result);
+            } catch (Exception error) {
+                downloadedApk = null;
+                downloadedManifest = null;
+                call.reject("Could not download and verify the Swole Cat update.", error);
+            }
+        }, "swole-cat-update-download").start();
+    }
+
+    @PluginMethod
+    public void openInstallPermission(PluginCall call) {
+        try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || canRequestPackageInstalls()) {
+                JSObject result = new JSObject();
+                result.put("opened", false);
+                result.put("alreadyAllowed", true);
+                call.resolve(result);
+                return;
+            }
+            Intent intent = new Intent(
+                Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                Uri.parse("package:" + currentPackageName())
+            );
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            JSObject result = new JSObject();
+            result.put("opened", true);
+            result.put("alreadyAllowed", false);
+            call.resolve(result);
+        } catch (Exception error) {
+            call.reject("Could not open Android install permission settings.", error);
+        }
+    }
+
+    @PluginMethod
+    public void installDownloadedUpdate(PluginCall call) {
+        try {
+            if (downloadedApk == null || downloadedManifest == null || !downloadedApk.exists()) {
+                call.reject("No verified Swole Cat update is ready to install.");
+                return;
+            }
+            if (!canRequestPackageInstalls()) {
+                JSObject result = new JSObject();
+                result.put("status", "permission_required");
+                result.put("canRequestInstalls", false);
+                call.resolve(result);
+                return;
+            }
+
+            PackageInstaller installer = getContext().getPackageManager().getPackageInstaller();
+            PackageInstaller.SessionParams params =
+                new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(currentPackageName());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                params.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_REQUIRED);
+            }
+
+            int sessionId = installer.createSession(params);
+            PackageInstaller.Session session = installer.openSession(sessionId);
+            try (
+                InputStream input = new FileInputStream(downloadedApk);
+                OutputStream output = session.openWrite("swole-cat-update.apk", 0, downloadedApk.length())
+            ) {
+                byte[] buffer = new byte[32768];
+                int read;
+                while ((read = input.read(buffer)) != -1) output.write(buffer, 0, read);
+                session.fsync(output);
+            }
+
+            Intent callbackIntent = new Intent(getContext(), SwoleCatUpdateReceiver.class);
+            callbackIntent.setAction(SwoleCatUpdateReceiver.ACTION_INSTALL_STATUS);
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) flags |= PendingIntent.FLAG_MUTABLE;
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                getContext(),
+                sessionId,
+                callbackIntent,
+                flags
+            );
+            session.commit(pendingIntent.getIntentSender());
+            session.close();
+
+            JSObject result = new JSObject();
+            result.put("status", "installer_started");
+            result.put("sessionId", sessionId);
+            result.put("version", downloadedManifest.optString("version", ""));
+            result.put("versionCode", downloadedManifest.optLong("versionCode", 0L));
+            call.resolve(result);
+        } catch (Exception error) {
+            call.reject("Could not hand the verified update to Android.", error);
+        }
+    }
+}

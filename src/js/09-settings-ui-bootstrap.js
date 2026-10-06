@@ -101,6 +101,9 @@ function openSettings(){
  </div>
  <div class="actions"><button class="btn" onclick="saveSettings()">Save settings</button></div>
 
+ <div class="section-title"><h2>App & updates</h2></div>
+ ${appUpdateHubHtml()}
+
  <div class="section-title"><h2>Coach behavior</h2></div>
  <div class="notice">The coach uses repeated logged performance, your optional RIR entries, and each exercise's selected goal. Stall and reset flags are intentionally conservative. They are suggestions, and manual session targets always remain available.<br><br><b>Progression rule:</b> Double progression is rep-driven. Add reps first, then one configured load step after every programmed working set reaches the top of its rep range. Optional RIR never blocks that earned load increase.</div>
 
@@ -375,6 +378,7 @@ renderNavigationView('home');populateMuscles();updateActiveWorkoutChrome();
 SwoleCatRuntime.events.dispatchEvent(new CustomEvent('app:ready',{detail:{version:APP_VERSION}}));
 installNativeBehaviorHandlers();
 configureNativeUi();
+setTimeout(()=>maybeCheckForAppUpdate(),1800);
 if(startupStorageNotice){
  setTimeout(openStartupStorageNotice,180);
 } else if(state.activeWorkout){

@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "enabled": false,
+  "channel": "testing",
+  "packageId": "com.jlingenfelter.swolecat.testing",
+  "version": "0.0.0",
+  "versionCode": 0,
+  "apkUrl": "",
+  "sha256": "",
+  "signingCertSha256": "d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53",
+  "notes": "No Testing update has been published yet.",
+  "publishedAt": "",
+  "required": false
+}
