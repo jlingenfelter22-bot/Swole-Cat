@@ -158,3 +158,34 @@ This follow-up comes from a third narrated real-device review focused specifical
 - avoid absolute-position math for controls whose location depends on exercise-name length
 - long names may wrap; metadata may truncate before the Switch exercise pill is sacrificed
 - no changes below the exercise header are part of this pass
+
+
+## v0.72.3 numeric entry readability
+
+This follow-up comes from the fourth narrated real-device review, focused on the active-set Weight/Reps controls.
+
+### Problem
+- the old label row forced the full Weight/Reps labels to compete horizontally with the `− / +` controls
+- on phone width, labels could render as truncated copy such as `WEIG…` or `R…`
+- fixing readability must not add another vertical control row or undermine the one-screen workout goal
+
+### Layout
+- Weight and Reps each use one complete label line
+- the numeric control directly below is a single horizontal stepper: `[ − | value | + ]`
+- decrement sits immediately left of the value; increment sits immediately right
+- the existing large numeric input remains the central logging target
+- RIR remains a selector and does not gain meaningless step buttons
+- RIR sheds the old artificial label-row height that only existed to align with the previous micro-step layout
+
+### Vertical budget
+- this is a reorganization, not an added row
+- the old combined label + micro-step header is removed for Weight/Reps
+- side step buttons share the same row as the numeric input
+- the layout should be equal or shorter in vertical footprint than v0.72.2
+- do not shrink the numeric input or sacrifice usable step-button targets merely to save pixels
+
+### Readability
+- Weight label includes the active unit and must not ellipsize
+- bodyweight exercises may show `Added weight (lb/kg)`
+- Reps must render in full
+- narrow-phone tuning may reduce label typography slightly, but not replace text with abbreviations or ellipsis
