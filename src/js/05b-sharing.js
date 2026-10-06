@@ -2,7 +2,58 @@ const SHARE_FORMAT='swole-cat-share';
 const SHARE_FORMAT_VERSION=1;
 const SHARE_TOKEN_PREFIX='SWOLECAT1';
 const SHARE_MAX_CODE_CHARS=120000;
+const SHARE_CLOUD_CODE_ALPHABET='23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+const SHARE_CLOUD_CODE_BODY_CHARS=16;
 let shareExportDraft=null,shareImportDraft=null;
+let swoleCatPlanShareProvider=null;
+
+function shareNormalizeCloudCode(raw){
+ const text=String(raw||'').toUpperCase();
+ const match=text.match(/\bSC[-\s]?[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}[-\s]?[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}[-\s]?[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}[-\s]?[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}\b/);
+ if(!match)return '';
+ const compact=match[0].replace(/[^A-Z0-9]/g,'');
+ const body=compact.slice(2);
+ if(compact.slice(0,2)!=='SC'||body.length!==SHARE_CLOUD_CODE_BODY_CHARS||![...body].every(ch=>SHARE_CLOUD_CODE_ALPHABET.includes(ch)))return '';
+ return 'SC-'+body.match(/.{1,4}/g).join('-');
+}
+function shareValidateCloudProvider(provider){
+ if(!provider||typeof provider!=='object')throw new Error('Cloud sharing provider is required.');
+ for(const name of ['createShare','resolveShare']){
+  if(typeof provider[name]!=='function')throw new Error('Cloud sharing provider is missing '+name+'().');
+ }
+ return provider;
+}
+const swoleCatPlanSharingService=SwoleCatRuntime.registerService('planSharing',{
+ registerProvider(provider){
+  swoleCatPlanShareProvider=shareValidateCloudProvider(provider);
+  return this;
+ },
+ canCreate(){
+  const identity=SwoleCatRuntime.getService('identity')?.snapshot?.();
+  const config=SwoleCatRuntime.getService('cloudConfig')?.read?.();
+  return !!(swoleCatPlanShareProvider&&config?.configured&&identity?.signedIn&&identity?.user?.id&&(typeof navigator==='undefined'||navigator.onLine!==false));
+ },
+ canResolve(){
+  const config=SwoleCatRuntime.getService('cloudConfig')?.read?.();
+  return !!(swoleCatPlanShareProvider&&config?.configured&&(typeof navigator==='undefined'||navigator.onLine!==false));
+ },
+ async create(envelope){
+  shareValidateEnvelope(envelope);
+  if(!this.canCreate())throw new Error('Sign in and connect to the internet to create a short cloud share code.');
+  const result=await swoleCatPlanShareProvider.createShare({envelope});
+  const code=shareNormalizeCloudCode(result?.code);
+  if(!code)throw new Error('Cloud sharing returned an invalid share code.');
+  return {...result,code};
+ },
+ async resolve(raw){
+  const code=shareNormalizeCloudCode(raw);
+  if(!code)throw new Error('Enter a valid Swole Cat share code.');
+  if(!this.canResolve())throw new Error('Connect to the internet to open this short share code.');
+  const result=await swoleCatPlanShareProvider.resolveShare({code});
+  shareValidateEnvelope(result?.envelope);
+  return {...result,code};
+ }
+});
 
 function shareClampNumber(value,min,max,fallback=min){
  const n=Number(value);
@@ -350,35 +401,104 @@ function shareRoutinePreviewHtml(envelope,routine){
 function shareImportPreviewHtml(envelope){
  const unitNote=envelope.unit!==shareUnit(state.profile.unit)?`<div class="notice share-unit-note">This plan was created in <b>${envelope.unit}</b>. Weight jumps will be converted to <b>${state.profile.unit}</b> when you import it.</div>`:'';
  if(envelope.kind==='routine'){
-  return `<div class="share-preview-head"><div class="eyebrow">SHARED ROUTINE // LOCAL PACKAGE</div><h3>${esc(envelope.routine.name)}</h3><div class="mini">Preview everything before it touches your local routines.</div></div>${unitNote}${shareRoutinePreviewHtml(envelope,envelope.routine)}<div class="notice share-privacy-note"><b>Private data stays private.</b> This package contains the routine blueprint only. Workout history, PRs, bodyweight, profile data, active workout state, and personal analytics are not included.</div>`;
+  return `<div class="share-preview-head"><div class="eyebrow">SHARED ROUTINE // IMPORT PREVIEW</div><h3>${esc(envelope.routine.name)}</h3><div class="mini">Preview everything before it touches your local routines.</div></div>${unitNote}${shareRoutinePreviewHtml(envelope,envelope.routine)}<div class="notice share-privacy-note"><b>Private data stays private.</b> This package contains the routine blueprint only. Workout history, PRs, bodyweight, profile data, active workout state, and personal analytics are not included.</div>`;
  }
  const byKey=new Map(envelope.routines.map(r=>[r.shareKey,r]));
  const route=envelope.program.routineKeys.map((key,i)=>{
   const routine=byKey.get(key);
   return `<div class="share-program-step"><span class="program-letter">${programSlotLabel(i)}</span><div><b>${esc(routine?.name||'Routine')}</b><div class="mini">${routine?.exercises?.length||0} exercises</div></div></div>`;
  }).join('');
- return `<div class="share-preview-head"><div class="eyebrow">SHARED PROGRAM // LOCAL PACKAGE</div><h3>${esc(envelope.program.name)}</h3><div class="mini">${shareClampInteger(envelope.program.frequency,1,7,3)}×/week · ${esc(programTrainingModeLabel(envelope.program.trainingMode))} · starts fresh at Day 1</div></div>${unitNote}<div class="share-program-route">${route}</div><div class="notice share-privacy-note"><b>Private data stays private.</b> The program and its routine blueprints are included. Sender progress, completed workouts, PRs, bodyweight, profile data, active workout state, and personal analytics are not.</div>`;
+ return `<div class="share-preview-head"><div class="eyebrow">SHARED PROGRAM // IMPORT PREVIEW</div><h3>${esc(envelope.program.name)}</h3><div class="mini">${shareClampInteger(envelope.program.frequency,1,7,3)}×/week · ${esc(programTrainingModeLabel(envelope.program.trainingMode))} · starts fresh at Day 1</div></div>${unitNote}<div class="share-program-route">${route}</div><div class="notice share-privacy-note"><b>Private data stays private.</b> The program and its routine blueprints are included. Sender progress, completed workouts, PRs, bodyweight, profile data, active workout state, and personal analytics are not.</div>`;
 }
 
+function shareCloudExpiryLabel(value){
+ if(!value)return '7 days';
+ const date=new Date(value);
+ if(Number.isNaN(date.getTime()))return '7 days';
+ return date.toLocaleString();
+}
 function shareMessageForDraft(draft){
  const label=draft.kind==='program'?'Program':'Routine';
- return `Swole Cat ${label}: ${draft.name}\n\nOpen Swole Cat > Routines > Import, then paste this code:\n\n${draft.code}`;
+ if(draft.cloudCode){
+  return `Swole Cat ${label}: ${draft.name}\n\nShare code: ${draft.cloudCode}\n\nOpen Swole Cat > Routines > Import and enter the code. This share expires automatically after 7 days.`;
+ }
+ return `Swole Cat ${label}: ${draft.name}\n\nOpen Swole Cat > Routines > Import, then paste this offline code:\n\n${draft.code}`;
 }
-function openShareExport(kind,id){
+function shareCloudLoadingHtml(name){
+ return `<div class="share-export-card">
+  <div class="eyebrow">CLOUD SHARE // SECURE TICKET</div>
+  <div class="notice" style="margin-top:10px"><b>Creating a short share code…</b><br>Swole Cat is uploading only the plan blueprint. Workout history, PRs, profile data, bodyweight, analytics, and active workout data stay private.</div>
+  <div class="mini" style="margin-top:10px">${esc(name)}</div>
+ </div>`;
+}
+function renderCloudShareExport(){
+ const draft=shareExportDraft;if(!draft?.cloudCode)return;
+ const label=draft.kind==='program'?'program':'routine';
+ openModal(`Share ${esc(draft.name)}`,`
+  <div class="share-export-card">
+   <div class="eyebrow">CLOUD SHARE // ${draft.kind==='program'?'PROGRAM':'ROUTINE'}</div>
+   <div class="notice" style="margin-top:10px">Send this short code to anyone using Swole Cat. They do not need a cloud account to import it. The ${label} blueprint expires automatically after <b>7 days</b>.</div>
+   <div class="field share-code-field"><label>Swole Cat share code</label><input id="shareCodeField" readonly spellcheck="false" value="${escAttr(draft.cloudCode)}" onclick="this.select()"><div class="mini">Expires ${esc(shareCloudExpiryLabel(draft.expiresAt))} · plan blueprint only</div></div>
+   <div class="actions"><button class="btn" onclick="shareCurrentPlan()">Share</button><button class="btn secondary" onclick="copyCurrentShareCode()">Copy Code</button><button class="btn secondary" onclick="openOfflineShareForDraft()">Offline Code</button><button class="btn secondary" onclick="closeModal()">Done</button></div>
+  </div>`);
+}
+function renderOfflineShareChoice(reason=''){
+ const draft=shareExportDraft;if(!draft)return;
+ const identity=SwoleCatRuntime.getService('identity')?.snapshot?.();
+ const cloudHint=identity?.signedIn
+   ?'Cloud sharing is unavailable right now. You can retry when the connection is back, or create a self-contained offline code.'
+   :'Sign in to Swole Cat Cloud to create a short 7-day share code. You can still create a self-contained offline code without an account.';
+ openModal(`Share ${esc(draft.name)}`,`
+  <div class="share-export-card">
+   <div class="eyebrow">SHARE // FALLBACK</div>
+   <div class="notice" style="margin-top:10px">${esc(reason||cloudHint)}</div>
+   <div class="actions">${identity?.signedIn?'<button class="btn" onclick="retryCurrentCloudShare()">Retry Cloud Share</button>':''}<button class="btn secondary" onclick="openOfflineShareForDraft()">Create Offline Code</button><button class="btn secondary" onclick="closeModal()">Cancel</button></div>
+  </div>`);
+}
+function renderOfflineShareExport(){
+ const draft=shareExportDraft;if(!draft?.code)return;
+ openModal(`Share ${esc(draft.name)}`,`
+  <div class="share-export-card">
+   <div class="eyebrow">OFFLINE SHARE // ${draft.kind==='program'?'PROGRAM BUNDLE':'ROUTINE'}</div>
+   <div class="notice" style="margin-top:10px">This is the legacy self-contained fallback. It works without a server, but it is much longer than a cloud share code.</div>
+   <div class="field share-code-field"><label>Offline Swole Cat code</label><textarea id="shareCodeField" readonly spellcheck="false" onclick="this.select()">${esc(draft.code)}</textarea><div class="mini">${draft.code.length.toLocaleString()} characters · version ${SHARE_FORMAT_VERSION}</div></div>
+   <div class="actions"><button class="btn" onclick="shareCurrentPlan()">Share Offline Code</button><button class="btn secondary" onclick="copyCurrentShareCode()">Copy Code</button><button class="btn secondary" onclick="closeModal()">Done</button></div>
+  </div>`);
+}
+async function createCloudShareForDraft(){
+ const draft=shareExportDraft;if(!draft)return;
+ const service=SwoleCatRuntime.getService('planSharing');
+ if(!service?.canCreate?.()){renderOfflineShareChoice();return}
+ openModal(`Share ${esc(draft.name)}`,shareCloudLoadingHtml(draft.name));
+ try{
+  const result=await service.create(draft.envelope);
+  if(shareExportDraft!==draft)return;
+  draft.cloudCode=result.code;
+  draft.expiresAt=result.expiresAt||null;
+  renderCloudShareExport();
+ }catch(e){
+  if(shareExportDraft!==draft)return;
+  renderOfflineShareChoice(e?.message||'Could not create a short cloud share code.');
+ }
+}
+async function retryCurrentCloudShare(){await createCloudShareForDraft()}
+function openOfflineShareForDraft(){
+ const draft=shareExportDraft;if(!draft)return;
+ try{
+  draft.code=draft.code||shareEncodeEnvelope(draft.envelope);
+  draft.cloudCode='';
+  renderOfflineShareExport();
+ }catch(e){showToast(e?.message||'Could not create offline share code')}
+}
+async function openShareExport(kind,id){
  try{
   const envelope=kind==='program'?createProgramShareEnvelope(id):createRoutineShareEnvelope(id);
-  const code=shareEncodeEnvelope(envelope);
   const name=kind==='program'?envelope.program.name:envelope.routine.name;
-  shareExportDraft={kind,name,envelope,code};
-  const label=kind==='program'?'program':'routine';
-  openModal(`Share ${esc(name)}`,`
-   <div class="share-export-card">
-    <div class="eyebrow">LOCAL SHARE // ${kind==='program'?'PROGRAM BUNDLE':'ROUTINE'}</div>
-    <div class="notice" style="margin-top:10px">This ${label} is packed into a self-contained Swole Cat code. No account, server, or workout history is involved.</div>
-    <div class="field share-code-field"><label>Swole Cat share code</label><textarea id="shareCodeField" readonly spellcheck="false" onclick="this.select()">${esc(code)}</textarea><div class="mini">${code.length.toLocaleString()} characters · version ${SHARE_FORMAT_VERSION}</div></div>
-    <div class="actions"><button class="btn" onclick="shareCurrentPlan()">Share</button><button class="btn secondary" onclick="copyCurrentShareCode()">Copy Code</button><button class="btn secondary" onclick="closeModal()">Done</button></div>
-   </div>`);
- }catch(e){showToast(e?.message||'Could not create share code')}
+  shareExportDraft={kind,name,envelope,cloudCode:'',expiresAt:null,code:''};
+  const service=SwoleCatRuntime.getService('planSharing');
+  if(service?.canCreate?.())await createCloudShareForDraft();
+  else renderOfflineShareChoice();
+ }catch(e){showToast(e?.message||'Could not prepare this plan for sharing')}
 }
 function openRoutineShare(id){openShareExport('routine',id)}
 function openProgramShare(id){openShareExport('program',id)}
@@ -395,7 +515,9 @@ async function copyShareText(text){
 }
 async function copyCurrentShareCode(){
  if(!shareExportDraft)return;
- const ok=await copyShareText(shareExportDraft.code);
+ const value=shareExportDraft.cloudCode||shareExportDraft.code;
+ if(!value)return;
+ const ok=await copyShareText(value);
  showToast(ok?'Share code copied':'Select the code and copy it');
 }
 async function shareCurrentPlan(){
@@ -405,7 +527,8 @@ async function shareCurrentPlan(){
   const plugin=typeof capacitorPlugin==='function'?capacitorPlugin('Share'):null;
   if(plugin?.share){await plugin.share({title,text,dialogTitle:'Share with'});return}
   if(navigator.share){await navigator.share({title,text});return}
-  const ok=await copyShareText(shareExportDraft.code);
+  const value=shareExportDraft.cloudCode||shareExportDraft.code;
+  const ok=value?await copyShareText(value):false;
   showToast(ok?'Share code copied':'Share sheet unavailable');
  }catch(e){
   if(e?.name!=='AbortError'&&!/cancel/i.test(String(e?.message||'')))showToast('Could not open the share sheet');
@@ -417,22 +540,35 @@ function openShareImport(prefill=''){
  openModal('Import shared plan',`
   <div class="share-import-card">
    <div class="eyebrow">UNIVERSAL IMPORT // ROUTINE OR PROGRAM</div>
-   <div class="notice" style="margin-top:10px">Paste a Swole Cat code, or paste the entire message someone sent you. Swole Cat will identify the plan type and show a preview before saving anything.</div>
-   <div class="field"><label>Share code</label><textarea id="shareImportInput" class="share-import-input" spellcheck="false" placeholder="Paste SWOLECAT1... here">${esc(prefill)}</textarea></div>
+   <div class="notice" style="margin-top:10px">Enter a short Swole Cat cloud code like <b>SC-7K4M-PQ2D-X9V7-R3HT</b>, or paste an older SWOLECAT1 offline package. Short cloud shares expire after 7 days.</div>
+   <div class="field"><label>Share code</label><textarea id="shareImportInput" class="share-import-input" spellcheck="false" placeholder="SC-XXXX-XXXX-XXXX-XXXX or SWOLECAT1...">${esc(prefill)}</textarea></div>
    <div id="shareImportError" class="share-import-error" role="alert"></div>
    <div class="actions"><button class="btn" onclick="previewShareImport()">Preview Import</button><button class="btn secondary" onclick="closeModal()">Cancel</button></div>
   </div>`);
  setTimeout(()=>document.getElementById('shareImportInput')?.focus(),0);
 }
-function previewShareImport(){
+async function previewShareImport(){
  const input=document.getElementById('shareImportInput'),raw=input?.value||'';
+ const error=document.getElementById('shareImportError');
  try{
-  const envelope=decodeSwoleCatShare(raw);
-  shareImportDraft={raw,envelope};
+  if(error)error.textContent='';
+  let envelope,canonicalRaw=raw,cloudCode='',expiresAt=null;
+  if(/SWOLECAT1\./i.test(raw)){
+   envelope=decodeSwoleCatShare(raw);
+  }else{
+   cloudCode=shareNormalizeCloudCode(raw);
+   if(!cloudCode)throw new Error('Enter a valid short Swole Cat code or paste an older SWOLECAT1 offline package.');
+   if(error)error.textContent='Loading shared plan…';
+   const result=await SwoleCatRuntime.getService('planSharing')?.resolve?.(cloudCode);
+   if(!result?.envelope)throw new Error('That cloud share could not be loaded.');
+   envelope=result.envelope;
+   expiresAt=result.expiresAt||null;
+   canonicalRaw=cloudCode;
+  }
+  shareImportDraft={raw:canonicalRaw,envelope,cloudCode,expiresAt};
   const label=envelope.kind==='program'?'Add Program':'Add to My Routines';
-  openModal('Import preview',`${shareImportPreviewHtml(envelope)}<div class="actions"><button class="btn green" onclick="confirmSharedPlanImport()">${label}</button><button class="btn secondary" onclick="openShareImport(shareImportDraft?.raw||'')">Back</button><button class="btn secondary" onclick="closeModal()">Cancel</button></div>`);
+  openModal('Import preview',`${shareImportPreviewHtml(envelope)}${cloudCode?'<div class="mini" style="margin-top:10px">Cloud share '+esc(cloudCode)+(expiresAt?' · expires '+esc(shareCloudExpiryLabel(expiresAt)):'')+'</div>':''}<div class="actions"><button class="btn green" onclick="confirmSharedPlanImport()">${label}</button><button class="btn secondary" onclick="openShareImport(shareImportDraft?.raw||'')">Back</button><button class="btn secondary" onclick="closeModal()">Cancel</button></div>`);
  }catch(e){
-  const error=document.getElementById('shareImportError');
   if(error)error.textContent=e?.message||'That share code could not be read.';
  }
 }
