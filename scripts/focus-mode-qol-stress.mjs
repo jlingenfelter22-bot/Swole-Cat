@@ -38,14 +38,15 @@ const shell=w.document.querySelector('#workout .focus-exercise-nav-shell');
 const nav=w.document.querySelector('#workout .focus-exercise-nav');
 const summary=nav?.querySelector('summary');
 const switchCue=w.document.querySelector('#workout .focus-nav-switch');
-const howTo=w.document.querySelector('#workout .focus-howto-btn');
+const howTo=w.document.querySelector('#workout .focus-howto-inline');
 assert(shell&&nav&&summary,'focused exercise should render the navigator shell and tappable header');
 assert(switchCue,'exercise navigator should render a dedicated switch affordance');
 assert.match(switchCue.textContent,/Switch/i,'wide layouts should label the exercise switch action');
 assert(howTo,'focused exercise should expose one-tap form help');
 assert.match(howTo.getAttribute('aria-label')||'',/How to do/i,'form-help control should be self-describing');
-assert.match(html,/\.focus-howto-btn\{[\s\S]*?width:42px;[\s\S]*?height:42px;/i,'form-help icon should retain a gym-friendly touch target');
-assert.match(html,/#workout \.focus-howto-btn\{[\s\S]*?top:36px;/i,'form-help icon should stay anchored to the fixed exercise header when the list expands');
+assert(howTo.closest('.focus-exercise-title-line'),'form-help control should live directly beside the exercise name');
+assert.match(html,/\.focus-howto-inline\{[\s\S]*?display:inline-flex;/i,'form-help icon should participate in title text flow instead of absolute positioning');
+assert.match(html,/\.focus-howto-inline\{[\s\S]*?width:29px;[\s\S]*?height:29px;/i,'form-help icon should stay compact beside the title');
 
 // Opening the exercise list must not alter workout data.
 summary.click();
