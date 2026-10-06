@@ -10,7 +10,7 @@ Do not begin a new cloud phase by default.
 
 The next product task is:
 
-**Real-device validate the v0.72.3 numeric-entry readability pass, then continue only with surgical workout-screen polish from actual phone feedback. The v0.71.0 short-share real-device check remains an independent outstanding cloud exit test.**
+**Build and real-device validate the in-app updater on Swole Cat Testing before promoting a new Beta baseline. Testing remains the development channel; Beta must move only after explicit promotion approval.**
 
 The user wants to review the Settings screen, clean up all settings, decide where each setting belongs, improve grouping/order/labels, and make the Settings menu feel intentional and easy to scan.
 
@@ -1099,3 +1099,25 @@ Still outstanding from v0.71.0:
 
 Beta:
 - still frozen at v0.66.1 unless explicitly promoted
+
+
+## Latest authoritative checkpoint: 2026-10-06, update distribution
+
+Canonical architecture: `docs/UPDATE_DISTRIBUTION.md`.
+
+Locked rules:
+- all development stays on `main` / Swole Cat Testing
+- Testing and Beta are separate Android packages and separate update channels
+- a Testing release must never automatically become a Beta release
+- Beta moves only when the user explicitly says to promote the tested build
+- build/prove the updater on Testing before changing Beta
+- the current field beta v0.66.1 may require one final manual/fresh install
+- the replacement Beta baseline must contain the updater and use the permanent Beta/release signing identity
+- after that baseline, future Beta updates should be installed through the app with normal Android user approval
+- updates do not require a Swole Cat cloud account
+- preferred first implementation uses signed GitHub Release APK assets plus public Testing/Beta channel manifests
+- validate SHA-256, package/channel, versionCode, and signing expectations before install
+- never interrupt an active workout with an update install
+
+Immediate next task:
+**Implement the Testing updater and prove a real signed Testing version N -> N+1 in-app update before Beta promotion.**
