@@ -6,8 +6,8 @@ const identity=fs.readFileSync('src/js/10b-cloud-identity.js','utf8');
 const provider=fs.readFileSync('src/js/10c-supabase-auth-provider.js','utf8');
 const configure=fs.readFileSync('scripts/configure-android.mjs','utf8');
 
-assert.equal(pkg.version,'0.69.4');
-assert.equal(pkg.swoleCat.androidVersionCode,95);
+assert.equal(pkg.version,'0.70.0');
+assert.equal(pkg.swoleCat.androidVersionCode,96);
 
 assert.match(identity,/capacitorPlugin\('SwoleCatSecureStorage'\)/);
 assert.match(identity,/android_keystore/);

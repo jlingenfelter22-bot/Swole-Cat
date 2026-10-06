@@ -640,7 +640,7 @@ function cloudSyncSettingsHtml(){
   return '<div class="notice"><b>Record-level sync</b><br>Last sync: '+esc(last)+
     '<br>Queued local changes: '+queued+
     '<br>Conflicts waiting: '+conflictCount+
-    '<br><br><span class="mini">Active workouts stay local in this first sync pass. Sync uses versioned records, not the whole app database, and ordinary workout saves never wait on the network.</span>'+error+'</div>'+
+    '<br><br><span class="mini">Active workouts stay local. Sync uses versioned records, not the whole app database, and ordinary workout saves never wait on the network.</span>'+error+'</div>'+
     '<div class="actions"><button class="btn" onclick="cloudSyncNowFromUi()">Sync Now</button>'+
     (conflictCount?'<button class="btn secondary" onclick="cloudSyncOpenConflictsFromUi()">Review conflicts</button>':'')+'</div>';
 }

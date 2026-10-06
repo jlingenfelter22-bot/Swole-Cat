@@ -8,8 +8,8 @@ const providerSource=fs.readFileSync('src/js/10c-supabase-auth-provider.js','utf
 const deleteFunction=fs.readFileSync('supabase/functions/delete-account/index.ts','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.69.4');
-assert.equal(pkg.swoleCat.androidVersionCode,95);
+assert.equal(pkg.version,'0.70.0');
+assert.equal(pkg.swoleCat.androidVersionCode,96);
 
 assert.match(identitySource,/reauthenticateWithGoogle/);
 assert.match(identitySource,/deleteAccount/);
@@ -91,7 +91,7 @@ const fakeProvider={
 
 await identity.registerProvider(fakeProvider);
 assert.equal(identity.snapshot().signedIn,true);
-assert.match(w.cloudSettingsHtml(),/Multi-device sync is in Phase 8\.3 testing/i);
+assert.match(w.cloudSettingsHtml(),/manual multi-device sync/i,'account lifecycle copy should describe the current manual sync behavior');
 w.openCloudAccount();
 assert.match(w.document.body.textContent,/Delete cloud account/i);
 

@@ -127,7 +127,24 @@ async function configuredShellCase(){
   assert.deepEqual(cloudKeys(w),['swolecat_cloud_auth_v1:fake-session'],'only namespaced auth storage may appear after sign-in');
   assert.deepEqual(workoutSnapshot(w),before,'sign-in must not modify workout state');
   assert.equal(fetchCalls,0,'provider-neutral shell must not perform hidden network work');
-  assert.match(w.cloudSettingsHtml(),/Multi-device sync is in Phase 8\.3 testing/i);
+  assert.match(w.cloudSettingsHtml(),/manual multi-device sync/i,'connected cloud copy should describe the current manual sync behavior without stale phase language');
+  w.openSettings();
+  await wait(20);
+  const cloudHubTiles=[...w.document.querySelectorAll('.cloud-hub-tile')];
+  assert.equal(cloudHubTiles.length,2,'main Settings should compact cloud controls into exactly two entry tiles');
+  assert.match(cloudHubTiles[0].textContent,/Cloud account/i,'first cloud tile should open account management');
+  assert.match(cloudHubTiles[1].textContent,/Cloud settings/i,'second cloud tile should open the compact cloud submenu');
+  const mainSettingsHeadings=[...w.document.querySelectorAll('#modalBody .section-title h2')].map(node=>node.textContent.trim());
+  assert(!mainSettingsHeadings.includes('Cloud backup'),'Cloud backup should not occupy the main Settings list');
+  assert(!mainSettingsHeadings.includes('Multi-device sync'),'Multi-device sync should not occupy the main Settings list');
+  assert(!mainSettingsHeadings.includes('Data safety'),'Data safety should not occupy the main Settings list');
+  cloudHubTiles[1].click();
+  await wait(10);
+  assert.equal(w.document.getElementById('modalTitle').textContent.trim(),'Cloud settings');
+  const cloudSettingsHeadings=[...w.document.querySelectorAll('#modalBody .section-title h2')].map(node=>node.textContent.trim());
+  for(const expected of ['Cloud backup','Multi-device sync','Data safety']){
+    assert(cloudSettingsHeadings.includes(expected),expected+' should live under Cloud settings');
+  }
   assert.equal(w.SwoleCatRuntime.getService('cloudSync').snapshot().queued,0,'sign-in alone must not queue workout sync records');
   await identity.signOut();
   assert.equal(signedOut,1);
@@ -139,4 +156,4 @@ async function configuredShellCase(){
 
 await localOnlyCase();
 await configuredShellCase();
-console.log('Swole Cat v0.67.0 cloud shell boundaries PASS');
+console.log('Swole Cat v0.70.0 cloud shell + compact settings hub PASS');
