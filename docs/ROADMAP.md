@@ -116,7 +116,7 @@ Areas to evaluate:
 
 ## Phase 3 — Visual Identity Refresh
 
-**Status: Visual identity passes complete through v0.36.0. UI Tuning Pass 1 completed in v0.37.0 from a real-device screen-recording review, including Android system-bar integration, bottom-dock integration, and schematic exercise artwork. UI Tuning Pass 2 completed in v0.38.0 with app-owned selectors and responsive Settings toggles. UI Tuning Pass 3 completed in v0.39.0 with removal of the persistent install control from the header. UI Tuning Pass 4 completed in v0.40.0 with a single contextual pause/resume icon control, true paused-time tracking, and a recognizable gear settings icon. Additional user-directed sizing and micro-UI adjustments remain iterative. Performance Pass 1 completed in v0.41.0, removing redundant navigation saves, batching continuous-input autosaves, caching unchanged heavy views, reducing Android paint cost, and adding performance regression coverage. Android Behavior Pass 1 completed in v0.42.0 with native Back navigation, layered transient-UI dismissal, protected double-back root exit, and explicit native app-state persistence/wake-lock handling. Android Behavior Pass 2 completed in v0.43.0 with native keyboard resizing, dynamic viewport/safe-area handling, explicit status-bar styling, Android share-sheet backup export, reusable file imports, and startup storage-write verification.**
+**Status: Workout Console UX Pass completed in v0.72.0 from a narrated real-device workflow review, establishing a zero-scroll normal-path target, compact session chrome, explicit exercise switching, inline Add Set, progressive disclosure of session actions, and contextual Finish Workout. Visual identity passes complete through v0.36.0. UI Tuning Pass 1 completed in v0.37.0 from a real-device screen-recording review, including Android system-bar integration, bottom-dock integration, and schematic exercise artwork. UI Tuning Pass 2 completed in v0.38.0 with app-owned selectors and responsive Settings toggles. UI Tuning Pass 3 completed in v0.39.0 with removal of the persistent install control from the header. UI Tuning Pass 4 completed in v0.40.0 with a single contextual pause/resume icon control, true paused-time tracking, and a recognizable gear settings icon. Additional user-directed sizing and micro-UI adjustments remain iterative. Performance Pass 1 completed in v0.41.0, removing redundant navigation saves, batching continuous-input autosaves, caching unchanged heavy views, reducing Android paint cost, and adding performance regression coverage. Android Behavior Pass 1 completed in v0.42.0 with native Back navigation, layered transient-UI dismissal, protected double-back root exit, and explicit native app-state persistence/wake-lock handling. Android Behavior Pass 2 completed in v0.43.0 with native keyboard resizing, dynamic viewport/safe-area handling, explicit status-bar styling, Android share-sheet backup export, reusable file imports, and startup storage-write verification.**
 
 **Priority: High**
 
@@ -1120,8 +1120,8 @@ The following product ideas are explicitly retained on the roadmap:
 
 ## Immediate next development task
 
-**Settings cleanup and reorganization** is the next active task after completed Phase 8.3.
+**Real-device validation of the v0.72.0 workout console UX** is the current active task. This pass was implemented from a narrated phone walkthrough and focuses on compact one-screen logging, obvious exercise switching, inline set changes, and contextual session actions.
 
-Before changing code, inventory every current Settings control and its present section, then reorganize section grouping, order, labels, and placement while preserving behavior.
+After the phone validation/iteration, return to the remaining **Settings cleanup and reorganization** work. The v0.71.0 short-share real-device check also remains an independent cloud exit test.
 
 Canonical resume reference: `docs/NEXT_CHAT_HANDOFF.md`.
