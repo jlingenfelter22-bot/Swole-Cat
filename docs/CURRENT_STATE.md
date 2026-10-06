@@ -25,9 +25,10 @@ Checkpoint date: **2026-10-06 (America/Chicago)**
 ### Experimental development
 
 - Branch: `main`
-- Current main merge commit: `2184e0d4951053f775ddb1c7fa93f9fda3c54688`
-- App version: **v0.72.3**
-- Android version code: **102**
+- Current app source merge: `b116cd08bca04408187044abc6eba7c95386aa51`
+- Current Testing release manifest commit: `fa5340cd3a95bdc3bdcba32eb3e9148aed908e6d`
+- App version: **v0.73.1**
+- Android version code: **104**
 - Android app name: **Swole Cat Testing**
 - Android package ID: `com.jlingenfelter.swolecat.testing`
 - Purpose: current Testing build for cloud/account work, sharing, new features, architecture experiments, and risky development
@@ -45,33 +46,65 @@ Do not change the `main` package ID back to `com.jlingenfelter.swolecat` while t
 
 ## 2. Latest green development gate
 
-Current main baseline: **v0.72.3 / Android versionCode 102**
+Current Testing baseline: **v0.73.1 / Android versionCode 104**
 
-- Main merge commit: `2184e0d4951053f775ddb1c7fa93f9fda3c54688`
-- PR: **#15, v0.72.3 numeric entry readability**
-- PR validation: run **728**, success, all 75 validation steps passed
-- Validate Swole Cat on `main`: run **729**, success, all 75 validation steps passed
-- Deploy Swole Cat to GitHub Pages: run **653**, success
-- Build Swole Cat Testing Android: run **342**, success
-- permanent Testing certificate verification: success
-- Android artifact: `Swole-Cat-Testing-Android-v0.72.3-signed`
-- Android artifact ID: `11443243011`
-- Android artifact digest: `sha256:e0785c21b00c8e0f405596d478c8a16f64cb8d45359a4579f22b5566b733b750`
-- Artifact expires from GitHub Actions on **2026-11-05** unless rebuilt sooner
+Updater foundation:
+- PR #16: **v0.73.0 Testing in-app updater foundation**
+- v0.73.0 app source merge: `3fa2ba063daf2ebcbde2ff035ff77d141b9b2871`
+- Android generator fix: `8ce8659da188205ee451c8865da873d6a5866caa`
+- build-script syntax hardening: `b9a6e3433c6f4fda63790aa02e4f05b332221d8b`
+- updater PR final validation run 738: PASS, all 76 validation steps
+- v0.73.0 signed Testing build run 344: PASS
+- v0.73.0 Testing artifact ID: `11451167705`
+- v0.73.0 direct APK SHA-256: `8c8461a21b7f6620da3bfab4927edfa48b0a2e274ff139bf6b725cbe51310dea`
+- v0.73.0 is the **manual baseline APK** for the real-device N -> N+1 updater proof
+
+Proof target:
+- PR #17: **v0.73.1 Testing updater proof release**
+- v0.73.1 source merge: `b116cd08bca04408187044abc6eba7c95386aa51`
+- PR validation run 743: PASS, all 76 validation steps
+- main validation run 744: PASS, all 76 validation steps
+- Pages run 664: PASS
+- signed Testing Android build run 345: PASS
+- v0.73.1 artifact ID: `11450429897`
+- public Testing release tag: `testing-v0.73.1`
+- public Testing APK SHA-256: `233ff8b207a6b4529c0e054d9f03c26fd551c40a0648c31c101ba7dd9a0712d4`
+- Testing manifest commit: `fa5340cd3a95bdc3bdcba32eb3e9148aed908e6d`
+- Testing manifest currently advertises v0.73.1 / build 104
+- permanent Testing certificate verification: PASS
 - beta branch remains untouched at v0.66.1
 
-v0.72.3 is a surgical active-set readability pass from the fourth narrated real-device review.
+Updater behavior now implemented in Testing:
+- Settings -> App & updates
+- installed version/build/channel display
+- passive update checks at most every six hours
+- user-triggered download and install only
+- no install/download while an active workout exists
+- public Testing feed independent of Swole Cat login
+- HTTPS host pinning for manifest and release APK locations
+- SHA-256 verification before installation
+- downloaded APK package-name and versionCode verification
+- downloaded APK signing certificate must match the installed app signing identity
+- downgrade/reinstall rejection through the normal updater
+- one-time Android unknown-source approval flow when required
+- PackageInstaller handoff with USER_ACTION_REQUIRED on Android 12+
+- Android owns the final install approval UI; Swole Cat does not install silently
+- ordinary Testing publication never writes or advances a Beta manifest
 
-Numeric-entry behavior now:
-- Weight and Reps labels render in full instead of truncating beside step controls
-- Weight shows the active unit and bodyweight movements can show Added weight
-- Weight/Reps use one compact row: decrement, value, increment
-- the established 52px numeric input remains the central logging target
-- step buttons sit directly beside the value they change
-- RIR remains a selector and does not gain step buttons
-- the old artificial RIR label-row height is removed
-- the new arrangement reduces rather than increases the vertical footprint
-- no workout UI outside the active-set numeric controls was intentionally changed
+Immediate real-device proof:
+1. install the preserved signed v0.73.0 Testing baseline manually over the current Testing app
+2. confirm routines/history/settings/auth/local data remain intact
+3. Settings -> App & updates
+4. confirm installed v0.73.0 / build 103 and offered v0.73.1 / build 104
+5. tap Download & verify update
+6. if Android asks, enable Allow from this source for Swole Cat Testing
+7. return and continue install
+8. approve Android's standard update confirmation
+9. reopen Swole Cat Testing
+10. confirm installed v0.73.1 / build 104 and all local/cloud state survived
+11. confirm App & updates now reports Up to date
+
+Do not promote Beta until this real-device proof succeeds.
 
 ## 3. Phase 8 cloud architecture
 
