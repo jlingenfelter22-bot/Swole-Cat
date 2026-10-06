@@ -313,10 +313,10 @@ function cloudSettingsHtml(){
   }
   if(info.signedIn){
     const label=info.user?.email||info.user?.displayName||'Signed in';
-    return '<div class="notice"><b>Cloud account connected</b><br>'+esc(label)+'<br><br><span class="mini">Cloud backup is available. Multi-device sync is in Phase 8.3 testing and only sends training records when you explicitly choose Sync Now.</span></div>'+
+    return '<div class="notice"><b>Cloud account connected</b><br>'+esc(label)+'<br><br><span class="mini">Private cloud backup and manual multi-device sync are available. Local workouts never depend on a network connection.</span></div>'+
       '<div class="actions"><button class="btn secondary" onclick="openCloudAccount()">Manage account</button></div>';
   }
-  return '<div class="notice"><b>Cloud account available</b><br>Signing in enables private cloud backup and the Phase 8.3 manual sync test. Local workouts still work without an account or network.</div>'+
+  return '<div class="notice"><b>Cloud account available</b><br>Signing in enables private cloud backup and manual multi-device sync. Swole Cat remains fully usable without an account or network.</div>'+
     '<div class="actions"><button class="btn secondary" onclick="openCloudAccount()">Cloud account</button></div>';
 }
 function openCloudAccount(){
