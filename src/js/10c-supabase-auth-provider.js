@@ -6,7 +6,8 @@ const SWOLE_CAT_SUPABASE_STORAGE_KEY='swolecat-auth-session-v1';
 const SWOLE_CAT_CLOUD_REAUTH_PENDING_KEY='swolecat-reauth-pending-v1';
 const SWOLE_CAT_CLOUD_REAUTH_VERIFIED_KEY='swolecat-reauth-verified-v1';
 const SWOLE_CAT_CLOUD_REAUTH_MAX_AGE_MS=10*60*1000;
-const SWOLE_CAT_ANDROID_AUTH_REDIRECT='com.jlingenfelter.swolecat.testing://auth/callback';
+const SWOLE_CAT_ANDROID_AUTH_SCHEME='__SWOLE_CAT_ANDROID_AUTH_SCHEME__';
+const SWOLE_CAT_ANDROID_AUTH_REDIRECT=SWOLE_CAT_ANDROID_AUTH_SCHEME+'://auth/callback';
 let swoleCatSupabaseLoadPromise=null;
 let swoleCatSupabaseClient=null;
 let swoleCatSupabaseProviderRegistered=false;
@@ -238,7 +239,7 @@ SwoleCatRuntime.registerService('identityProviderLoader',{
 function isSwoleCatAndroidAuthUrl(rawUrl){
   try{
     const url=new URL(String(rawUrl||''));
-    return url.protocol==='com.jlingenfelter.swolecat.testing:' &&
+    return url.protocol===SWOLE_CAT_ANDROID_AUTH_SCHEME+':' &&
       url.hostname==='auth' &&
       (url.pathname==='/callback'||url.pathname.startsWith('/callback/'));
   }catch(error){
