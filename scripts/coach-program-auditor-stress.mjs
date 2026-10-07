@@ -58,6 +58,8 @@ assert.match(routineSession.lastResponse,/Program audit:/i);
 assert.equal(JSON.stringify({programs:read().programs,routines:read().routines,sessions:read().sessions}),before);
 
 w.eval('coachRoutineSession=null');w.renderPrograms();
-assert.match(w.document.getElementById('programList').textContent,/Coach Audit/i);
+assert.doesNotMatch(w.document.getElementById('programList').textContent,/Coach Audit/i,'Coach Audit should not clutter the primary program card');
+w.openProgramCardMenu('p');
+assert.match(w.document.getElementById('modalBody').textContent,/Coach Audit/i,'Coach Audit should remain available in Program Options');
 console.log('Coach Swolecat v0.63 Program auditor PASS');
 dom.window.close();
