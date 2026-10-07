@@ -58,6 +58,16 @@ jobs:
           test "$(node -p "require('./capacitor.config.json').appId")" = "com.jlingenfelter.swolecat"
           test "$(node -p "require('./capacitor.config.json').appName")" = "Swole Cat"
 
+      - name: Run Beta promotion regressions
+        run: |
+          npm run build:web
+          node --check www/app.js
+          node scripts/app-updater-stress.mjs
+          node scripts/android-auth-deeplink-stress.mjs
+          node scripts/beta-baseline-stress.mjs
+          grep -F "const SWOLE_CAT_ANDROID_AUTH_SCHEME='com.jlingenfelter.swolecat';" www/app.js
+          grep -F "beta:'https://raw.githubusercontent.com/jlingenfelter22-bot/Swole-Cat/beta/updates/beta.json'" www/app.js
+
       - name: Check signing secrets
         env:
           KEYSTORE_B64: ${{ secrets.SWOLE_CAT_ANDROID_KEYSTORE_B64 }}
