@@ -171,7 +171,7 @@ function load(){
  }
 }
 let state=load();
-let stateRevision=0,pendingStateSave=false,pendingStateSaveTimer=null;
+let stateRevision=0,pendingStateSave=false,pendingStateSaveTimer=null,pendingStateSaveSyncRelevant=true;
 SwoleCatRuntime.registerService('state',{
  read(){return cloneData(state)},
  revision(){return stateRevision},
@@ -235,8 +235,10 @@ function queueNavigationRefresh(id){
    if(activeViewId()===id)renderNavigationView(id);
  });
 }
-function scheduleStateSave(delay=220){
+function scheduleStateSave(delay=220,syncRelevant=true){
  if(storageWriteBlocked)return false;
+ if(!pendingStateSave)pendingStateSaveSyncRelevant=!!syncRelevant;
+ else pendingStateSaveSyncRelevant=pendingStateSaveSyncRelevant||!!syncRelevant;
  pendingStateSave=true;
  if(pendingStateSaveTimer)clearTimeout(pendingStateSaveTimer);
  pendingStateSaveTimer=setTimeout(()=>flushPendingStateSave(),delay);
@@ -245,8 +247,10 @@ function scheduleStateSave(delay=220){
 function flushPendingStateSave(){
  if(pendingStateSaveTimer){clearTimeout(pendingStateSaveTimer);pendingStateSaveTimer=null}
  if(!pendingStateSave)return true;
+ const syncRelevant=pendingStateSaveSyncRelevant;
  pendingStateSave=false;
- return save();
+ pendingStateSaveSyncRelevant=true;
+ return save({syncRelevant});
 }
 function renderNavigationView(id){
  if(!Object.prototype.hasOwnProperty.call(navigationRenderRevision,id))return;
@@ -259,10 +263,12 @@ function renderNavigationView(id){
  navigationRenderRevision[id]=stateRevision;
 }
 
-function save(){
+function save(options={}){
  if(storageWriteBlocked)return false;
+ const syncRelevant=options?.syncRelevant!==false;
  if(pendingStateSaveTimer){clearTimeout(pendingStateSaveTimer);pendingStateSaveTimer=null}
  pendingStateSave=false;
+ pendingStateSaveSyncRelevant=true;
  try{
    if(!recoverySnapshotWritten){
      const previous=swoleCatStorage.getItem(LSKEY);
@@ -275,7 +281,7 @@ function save(){
    swoleCatStorage.setItem(LSKEY,serialized);
    stateRevision++;
    lastStorageError='';
-   SwoleCatRuntime.events.dispatchEvent(new CustomEvent('state:saved',{detail:{revision:stateRevision,savedAt:state.meta.lastSavedAt}}));
+   SwoleCatRuntime.events.dispatchEvent(new CustomEvent('state:saved',{detail:{revision:stateRevision,savedAt:state.meta.lastSavedAt,syncRelevant}}));
    return true;
  }catch(e){
    lastStorageError=e?.message||String(e);
@@ -578,23 +584,24 @@ function markWorkoutStructureDirty(){
    }catch(e){}
  }
 }
-function saveActiveWorkout(defer=false){
+function saveActiveWorkout(defer=false,syncRelevant=true){
  if(state.activeWorkout){
    state.activeWorkout.status='active';
    state.activeWorkout.lastSavedAt=new Date().toISOString();
  }
- return defer?scheduleStateSave():save();
+ return defer?scheduleStateSave(220,syncRelevant):save({syncRelevant});
 }
-function saveActiveWorkoutWithoutExtendingPendingSave(delay=90){
+function saveActiveWorkoutWithoutExtendingPendingSave(delay=90,syncRelevant=false){
  if(state.activeWorkout){
    state.activeWorkout.status='active';
    state.activeWorkout.lastSavedAt=new Date().toISOString();
  }
  if(pendingStateSaveTimer){
    pendingStateSave=true;
+   pendingStateSaveSyncRelevant=pendingStateSaveSyncRelevant||!!syncRelevant;
    return true;
  }
- return scheduleStateSave(delay);
+ return scheduleStateSave(delay,syncRelevant);
 }
 function workoutHeaderIcon(stateName){
  if(stateName==='pause'){
