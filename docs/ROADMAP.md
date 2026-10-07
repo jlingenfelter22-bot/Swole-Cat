@@ -161,6 +161,57 @@ The visual system should be established before building the workout-completion r
 
 ---
 
+## Phase 3.5 — Product UX Refinement and Retention
+
+**Status: In progress beginning with v0.76.0**
+
+**Priority: High**
+
+Goal: refine the established Swole Cat interface into a faster, calmer, more distinctive product without changing the core navigation or adding artificial engagement mechanics. The app should make the next useful action obvious, surface progress quickly, and reduce visual competition between secondary features.
+
+### Locked refinement order
+
+1. **Home hierarchy**
+   - Make the next workout / Resume Workout the unquestioned primary action.
+   - Move weekly progress into a compact, glanceable strip directly below the training hero.
+   - Keep Coach Swolecat prominent but visually secondary to starting a workout.
+   - Compress Saved Workouts / Build Manually into lightweight shortcuts.
+   - Show one secondary intelligence surface at a time: a useful Coach insight when available, otherwise the latest-workout recap.
+   - Hide secondary dashboard content while a workout is actively in progress so Resume remains dominant.
+
+2. **History density**
+   - Make session cards easy to scan by default: workout, date, duration, volume, working sets, and PRs.
+   - Move full exercise/set detail behind View Recap instead of rendering the entire workout in the feed.
+   - Visually demote destructive actions such as Delete Workout.
+
+3. **Routines action cleanup**
+   - Keep Start as the primary action.
+   - Keep Edit easy to reach.
+   - Move low-frequency actions such as Share and Archive into a compact overflow surface where appropriate.
+   - Evaluate a Routines / Programs segmented switch if it improves long-list navigation without adding another bottom-nav destination.
+
+4. **Progress simplification**
+   - Lead with motivating results and trends before detailed analysis.
+   - Keep charts, muscle workload, and deeper analytics available without forcing explanatory copy into the main scan path.
+   - Move methodology/help text behind contextual “How this works” affordances where useful.
+
+5. **Final visual-language refinement**
+   - Reduce the sense that every piece of content is an equally glowing bordered card.
+   - Strengthen semantic color roles: green for train/complete/success, violet for Coach/create/intelligence, cyan for navigation/data/neutral interaction, yellow for linked/superset behavior, pink as a restrained Swole Cat brand accent.
+   - Vary surface treatment so only important interactive modules receive the strongest futuristic framing.
+   - Preserve the current dark retro-futurist/cyberpunk identity, typography, bottom navigation, workout console, and large gym-friendly touch targets.
+   - Revisit the header’s local/cloud status wording after the primary screen refinements are complete.
+
+### Retention principle
+
+Swole Cat should earn repeat use through **fast time-to-value, effortless workout logging, visible progress, useful intelligence, and trust**, not through intrusive streak pressure, coins, daily quests, ads, or generic social-feed mechanics.
+
+### Iteration rule
+
+Each major surface is implemented and reviewed on a real device before moving to the next phase. User feedback may tune sizing, density, ordering, or emphasis without reopening the entire visual system.
+
+---
+
 ### Performance guardrails
 
 Performance is an ongoing product requirement, not a one-time cleanup.
