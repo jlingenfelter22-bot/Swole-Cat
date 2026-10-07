@@ -1190,3 +1190,33 @@ Immediate real-device proof:
 9. approve the normal Android update confirmation
 10. reopen and confirm v0.73.1 build 104 plus all local data/auth remain intact
 11. only after this succeeds mark core updater proof complete
+
+
+## 2026-10-06 Testing updater real-device proof COMPLETE
+
+User confirmed the real Android updater proof worked perfectly.
+
+Proven path:
+- starting app: Swole Cat Testing v0.73.0 / build 103
+- update target: Swole Cat Testing v0.73.1 / build 104
+- update was initiated from inside Swole Cat Testing
+- Swole Cat discovered the published Testing update
+- APK download/verification completed
+- Android handled the required user approval/install flow
+- update installed in place successfully
+- resulting app remained Swole Cat Testing on the same Testing package/signing identity
+- the user reported the flow worked perfectly
+
+Conclusion:
+- core Testing in-app updater is now real-device proven
+- normal Testing development no longer requires manually handing the user a fresh APK for every release
+- future Testing releases may advance the Testing update feed after validation/build succeeds
+- no Beta promotion has been performed yet
+- Beta must remain frozen until the user explicitly authorizes promotion
+
+Next gated milestone:
+- when explicitly approved by the user, create the new one-time Beta baseline from the selected tested Testing checkpoint
+- include the proven updater in that Beta baseline
+- use the permanent Beta/release signing identity
+- current v0.66.1 beta testers may need one final manual/fresh install
+- after that baseline, future Beta releases should use the in-app updater
