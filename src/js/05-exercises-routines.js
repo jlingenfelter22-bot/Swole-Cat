@@ -355,37 +355,90 @@ function catExerciseThumbnail(ex){
 function routineIsArchived(r){return !!r?.archivedAt}
 function activeRoutines(){return state.routines.filter(r=>!routineIsArchived(r))}
 function archivedRoutines(){return state.routines.filter(r=>routineIsArchived(r))}
+let routinePageMode='routines';
+function setRoutinePageMode(mode){
+ routinePageMode=mode==='programs'?'programs':'routines';
+ syncRoutinePagePriority();
+}
 function syncRoutinePagePriority(){
- const host=document.getElementById('routinePageSections'),programs=document.getElementById('programsSection'),routines=document.getElementById('workoutRoutinesSection');
- if(!host||!programs||!routines)return;
- if(state.programs.length){
-   host.append(programs,routines);
- }else{
-   host.append(routines,programs);
- }
+ const programs=document.getElementById('programsSection'),routines=document.getElementById('workoutRoutinesSection');
+ const routinesTab=document.getElementById('routineViewRoutines'),programsTab=document.getElementById('routineViewPrograms');
+ const routineCount=document.getElementById('routineViewRoutineCount'),programCount=document.getElementById('routineViewProgramCount');
+ if(!programs||!routines)return;
+ const showPrograms=routinePageMode==='programs';
+ routines.hidden=showPrograms;
+ programs.hidden=!showPrograms;
+ routinesTab?.classList.toggle('active',!showPrograms);
+ programsTab?.classList.toggle('active',showPrograms);
+ routinesTab?.setAttribute('aria-selected',String(!showPrograms));
+ programsTab?.setAttribute('aria-selected',String(showPrograms));
+ if(routinesTab)routinesTab.tabIndex=showPrograms?-1:0;
+ if(programsTab)programsTab.tabIndex=showPrograms?0:-1;
+ if(routineCount)routineCount.textContent=String(activeRoutines().length);
+ if(programCount)programCount.textContent=String((state.programs||[]).length);
+}
+function openRoutineCardMenu(id){
+ const r=state.routines.find(x=>x.id===id);if(!r)return;
+ openModal('Routine options',`
+   <div class="routine-manage-summary">
+     <div class="eyebrow">ROUTINE OPTIONS</div>
+     <div class="routine-manage-title">${esc(r.name||'Routine')}</div>
+     <div class="mini">${esc(trainingModeLabel(r.trainingMode))} · ${r.exercises.length} exercise${r.exercises.length===1?'':'s'}</div>
+   </div>
+   <div class="routine-manage-actions">
+     <button class="btn" onclick="closeModal();editRoutine('${escAttr(r.id)}')">Edit Routine</button>
+     <button class="btn secondary" onclick="closeModal();openRoutineShare('${escAttr(r.id)}')">Share Routine</button>
+     <button class="btn secondary" onclick="closeModal();duplicateRoutine('${escAttr(r.id)}')">Duplicate Routine</button>
+     <button class="btn danger" onclick="closeModal();archiveRoutine('${escAttr(r.id)}')">Archive Routine</button>
+   </div>
+ `);
+}
+function openArchivedRoutineMenu(id){
+ const r=state.routines.find(x=>x.id===id);if(!r||!routineIsArchived(r))return;
+ openModal('Archived routine',`
+   <div class="routine-manage-summary">
+     <div class="eyebrow">ARCHIVED ROUTINE</div>
+     <div class="routine-manage-title">${esc(r.name||'Routine')}</div>
+     <div class="mini">Archived ${new Date(r.archivedAt).toLocaleDateString()} · completed history preserved</div>
+   </div>
+   <div class="routine-manage-actions">
+     <button class="btn" onclick="closeModal();restoreRoutine('${escAttr(r.id)}')">Restore Routine</button>
+     <button class="btn danger" onclick="closeModal();deleteRoutine('${escAttr(r.id)}')">Delete Permanently</button>
+   </div>
+ `);
 }
 function renderRoutines(){
- syncRoutinePagePriority();
  renderPrograms();
  const el=document.getElementById('routineList'),activeList=activeRoutines(),archived=archivedRoutines();
  const activeHtml=activeList.length?activeList.map(r=>{
    const active=state.activeWorkout?.routineId===r.id;
    const counts=active?activeWorkoutCounts():null;
    return `
- <div class="card" style="${active?'border-color:rgba(34,197,94,.42)':''}">
-   <div class="row">
+ <div class="card routine-card ${active?'active-routine':''}">
+   <div class="routine-card-head">
      <div class="grow"><div class="exercise-name">${esc(r.name)}</div><div class="mini">${esc(trainingModeLabel(r.trainingMode))} · ${active?`${counts.done} of ${counts.total} sets complete · active workout is autosaved`:(r.exercises.map(x=>esc(exById(x.exerciseId)?.name||'Unknown')).join(' · ')||'No exercises yet')}</div></div>
-     <button class="btn small ${active?'green':''}" onclick="${active?'resumeActiveWorkout()':`openRoutine('${r.id}')`}">${active?'Resume':'Start'}</button>
+     <button class="routine-manage-btn" onclick="openRoutineCardMenu('${escAttr(r.id)}')" aria-label="Manage ${escAttr(r.name||'routine')}">•••</button>
    </div>
-   <div class="actions">${active?'<span class="tag">● ACTIVE</span>':''}<button class="btn small secondary" onclick="openRoutineShare('${r.id}')">Share</button><button class="btn small secondary" onclick="editRoutine('${r.id}')">Edit routine</button><button class="btn small secondary" onclick="archiveRoutine('${r.id}')">Archive</button></div>
+   <div class="routine-card-actions">
+     <button class="btn small ${active?'green':''} routine-start-btn" onclick="${active?'resumeActiveWorkout()':`openRoutine('${r.id}')`}">${active?'Resume Workout':'Start Workout'}</button>
+     <button class="btn small secondary routine-edit-btn" onclick="editRoutine('${escAttr(r.id)}')">Edit</button>
+     ${active?'<span class="tag">● ACTIVE</span>':''}
+   </div>
  </div>`;
  }).join(''):`<div class="empty">You don't have any active routines yet.</div>`;
- const archivedHtml=archived.length?`<div class="picker-section" style="margin-top:18px">Archived routines</div>${archived.map(r=>`
- <div class="card">
-   <div class="row"><div class="grow"><div class="exercise-name">${esc(r.name)}</div><div class="mini">${esc(trainingModeLabel(r.trainingMode))} · archived ${new Date(r.archivedAt).toLocaleDateString()} · history preserved</div></div><span class="tag">ARCHIVED</span></div>
-   <div class="actions"><button class="btn small secondary" onclick="restoreRoutine('${r.id}')">Restore</button><button class="btn small danger" onclick="deleteRoutine('${r.id}')">Delete permanently</button></div>
+ const archivedHtml=archived.length?`<div class="picker-section routine-archived-title">Archived routines</div>${archived.map(r=>`
+ <div class="card routine-card archived-routine-card">
+   <div class="routine-card-head">
+     <div class="grow"><div class="exercise-name">${esc(r.name)}</div><div class="mini">${esc(trainingModeLabel(r.trainingMode))} · archived ${new Date(r.archivedAt).toLocaleDateString()} · history preserved</div></div>
+     <button class="routine-manage-btn" onclick="openArchivedRoutineMenu('${escAttr(r.id)}')" aria-label="Manage archived ${escAttr(r.name||'routine')}">•••</button>
+   </div>
+   <div class="routine-card-actions">
+     <button class="btn small secondary routine-restore-btn" onclick="restoreRoutine('${escAttr(r.id)}')">Restore</button>
+     <span class="tag">ARCHIVED</span>
+   </div>
  </div>`).join('')}`:'';
  el.innerHTML=activeHtml+archivedHtml;
+ syncRoutinePagePriority();
  updateActiveWorkoutChrome();
 }
 let routinePickerSelection=new Set(),routinePickerCategory='home',routinePickerMovement='';
