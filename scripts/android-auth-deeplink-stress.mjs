@@ -13,7 +13,7 @@ assert(['com.jlingenfelter.swolecat.testing','com.jlingenfelter.swolecat'].inclu
 assert(['Swole Cat Testing','Swole Cat'].includes(capacitor.appName));
 
 assert.match(provider,/__SWOLE_CAT_ANDROID_AUTH_SCHEME__/);
-assert.match(provider,/SWOLE_CAT_ANDROID_AUTH_SCHEME\+'[:][/]\/[']auth\/callback/);
+assert.match(provider,/SWOLE_CAT_ANDROID_AUTH_REDIRECT=SWOLE_CAT_ANDROID_AUTH_SCHEME\+'[:][/][/]auth[/]callback'/);
 assert.match(provider,/skipBrowserRedirect:true/);
 assert.match(provider,/exchangeCodeForSession\(code\)/);
 assert.match(provider,/addListener\?\.\('appUrlOpen'/);
