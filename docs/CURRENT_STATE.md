@@ -1141,3 +1141,52 @@ Immediate next engineering task:
 4. prove in-app N -> N+1 update with local data/auth/workout state preserved
 5. test bad hash, wrong package/channel, offline, and active-workout deferral
 6. only then create/promote the new Beta baseline
+
+
+## 2026-10-06 Testing updater proof-ready checkpoint
+
+Status: **proof-ready, not yet real-device proven**
+
+Testing updater implementation is present and automated.
+
+Proof pair:
+- baseline: Swole Cat Testing v0.73.0 / Android versionCode 103
+- baseline signed workflow artifact ID: `11451167705`
+- baseline release tag: `testing-v0.73.0`
+- baseline direct APK SHA-256: `8c8461a21b7f6620da3bfab4927edfa48b0a2e274ff139bf6b725cbe51310dea`
+- target: Swole Cat Testing v0.73.1 / Android versionCode 104
+- target signed workflow artifact ID: `11450429897`
+- target release tag: `testing-v0.73.1`
+- Testing manifest currently points to v0.73.1
+
+Updater behavior implemented:
+- Settings -> App & updates
+- passive update checks plus manual Check for updates
+- explicit Download & verify action
+- active workouts block update download/install
+- updater validates Testing channel/package
+- updater validates versionCode upgrade only
+- updater validates APK SHA-256
+- updater validates installed/candidate signing certificate
+- updater validates release certificate declared by manifest
+- updater uses Android PackageInstaller
+- Android 12+ SessionParams explicitly requires user action
+- unknown-source permission is surfaced through Android settings when needed
+- no silent-install bypass
+
+Dedicated regression:
+- `scripts/app-updater-stress.mjs`
+- updater foundation validation is green
+
+Immediate real-device proof:
+1. install v0.73.0 over the current Swole Cat Testing app
+2. confirm local Testing routines/history/settings/auth remain present
+3. Settings -> App & updates
+4. confirm installed shows v0.73.0 build 103
+5. Check for updates should discover v0.73.1 build 104
+6. Download & verify update
+7. if Android asks, enable Allow from this source for Swole Cat Testing
+8. Install update
+9. approve the normal Android update confirmation
+10. reopen and confirm v0.73.1 build 104 plus all local data/auth remain intact
+11. only after this succeeds mark core updater proof complete
