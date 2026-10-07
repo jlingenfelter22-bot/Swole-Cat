@@ -3,6 +3,7 @@ import { cp, mkdir, rm, stat, readFile, writeFile } from 'node:fs/promises';
 const OUT = new URL('../www/', import.meta.url);
 const ROOT = new URL('../', import.meta.url);
 const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+const capacitorConfig = JSON.parse(await readFile(new URL('../capacitor.config.json', import.meta.url), 'utf8'));
 const version = String(pkg.version || '').trim();
 
 if (!version) throw new Error('package.json is missing a version');
@@ -94,6 +95,7 @@ if (!appJs.includes('__SWOLE_CAT_VERSION__')) {
 }
 appJs = appJs.replaceAll('__SWOLE_CAT_VERSION__', version);
 const cloudBuildValues = {
+  '__SWOLE_CAT_ANDROID_AUTH_SCHEME__': String(capacitorConfig.appId || ''),
   '__SWOLE_CAT_SUPABASE_URL__': process.env.SWOLE_CAT_SUPABASE_URL || '',
   '__SWOLE_CAT_SUPABASE_PUBLISHABLE_KEY__': process.env.SWOLE_CAT_SUPABASE_PUBLISHABLE_KEY || '',
   '__SWOLE_CAT_GOOGLE_WEB_CLIENT_ID__': process.env.SWOLE_CAT_GOOGLE_WEB_CLIENT_ID || ''
