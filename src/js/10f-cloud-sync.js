@@ -167,6 +167,7 @@ function syncCanonical(value){
   if(Array.isArray(value))return '['+value.map(syncCanonical).join(',')+']';
   return '{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+syncCanonical(value[key])).join(',')+'}';
 }
+const SWOLE_CAT_SYNC_TEXT_ENCODER=typeof TextEncoder==='undefined'?null:new TextEncoder();
 const SWOLE_CAT_SYNC_SHA256_K=[
   0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
   0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
@@ -178,8 +179,8 @@ const SWOLE_CAT_SYNC_SHA256_K=[
   0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 ];
 function syncSha256HexText(text){
-  if(typeof TextEncoder==='undefined')throw new Error('Sync text encoding is unavailable on this device.');
-  const bytes=new TextEncoder().encode(String(text||''));
+  if(!SWOLE_CAT_SYNC_TEXT_ENCODER)throw new Error('Sync text encoding is unavailable on this device.');
+  const bytes=SWOLE_CAT_SYNC_TEXT_ENCODER.encode(String(text||''));
   const totalLength=Math.ceil((bytes.length+9)/64)*64;
   const data=new Uint8Array(totalLength);
   data.set(bytes);
@@ -723,7 +724,8 @@ const swoleCatCloudSyncService=SwoleCatRuntime.registerService('cloudSync',{
   resetLocalMetadata:cloudSyncResetLocalMetadata
 });
 
-SwoleCatRuntime.events.addEventListener('state:saved',()=>{
+SwoleCatRuntime.events.addEventListener('state:saved',event=>{
+  if(event?.detail?.syncRelevant===false)return;
   syncScheduleCapture();
   syncScheduleAuto('save');
 });
