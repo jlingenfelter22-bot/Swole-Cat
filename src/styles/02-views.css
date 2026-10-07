@@ -688,7 +688,7 @@
   }
   .history-metrics{
     display:grid;
-    grid-template-columns:repeat(4,minmax(0,1fr));
+    grid-template-columns:minmax(46px,.72fr) minmax(86px,1.3fr) minmax(72px,1.08fr) minmax(42px,.62fr);
     margin-top:9px;
     padding:8px 0;
     border-top:1px solid rgba(69,88,116,.22);
@@ -696,7 +696,7 @@
   }
   .history-metrics>span{
     min-width:0;
-    padding:0 7px;
+    padding:0 6px;
     border-right:1px solid rgba(69,88,116,.2);
   }
   .history-metrics>span:first-child{padding-left:0}
@@ -708,20 +708,20 @@
     line-height:1;
     color:#e7eef8;
     white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
   }
   .history-metrics small{
     display:block;
     margin-top:3px;
-    font-size:.43rem;
+    min-height:.9rem;
+    font-size:.42rem;
     font-weight:850;
-    letter-spacing:.045em;
+    line-height:1.08;
+    letter-spacing:.035em;
     text-transform:uppercase;
     color:#62768e;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
   }
   .history-metrics .has-pr b{color:#ffd76b}
   .history-muscle-row{display:flex;gap:4px;align-items:center;overflow:hidden;margin-top:7px}
@@ -785,7 +785,9 @@
     #history .history-entry{grid-template-columns:40px minmax(0,1fr);gap:7px;padding:9px 9px 9px 5px}
     #history #historyList:before{left:19px}
     .history-sequence{min-height:40px}
-    .history-metrics>span{padding-inline:5px}
+    .history-metrics{grid-template-columns:minmax(42px,.66fr) minmax(80px,1.34fr) minmax(68px,1.12fr) minmax(38px,.58fr)}
+    .history-metrics>span{padding-inline:4px}
+    .history-metrics small{font-size:.4rem;letter-spacing:.025em}
     .history-entry-exercises{font-size:.58rem}
     .history-muscle-row span{font-size:.46rem;padding:3px 5px}
   }
