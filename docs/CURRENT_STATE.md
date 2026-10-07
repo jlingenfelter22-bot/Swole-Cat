@@ -1220,3 +1220,52 @@ Next gated milestone:
 - use the permanent Beta/release signing identity
 - current v0.66.1 beta testers may need one final manual/fresh install
 - after that baseline, future Beta releases should use the in-app updater
+
+
+## 2026-10-06 Beta baseline promotion checkpoint
+
+Status: **Beta branch promoted and validated; signed baseline publication blocked only on missing permanent release secrets.**
+
+Approved source:
+- updater-proven Testing checkpoint: v0.73.1 / Android versionCode 104
+- proven source commit: `b116cd08bca04408187044abc6eba7c95386aa51`
+
+Beta promotion:
+- PR #18 promoted the approved application checkpoint to `beta`
+- Beta package: `com.jlingenfelter.swolecat`
+- Beta app name: `Swole Cat`
+- Beta updater feed: `updates/beta.json`
+- Beta feed starts disabled and cannot publish until the signed release workflow succeeds
+- updater now chooses Testing or Beta manifest from the native package channel
+- Android OAuth redirect now derives from the actual package identity at build time
+- PR #19 corrected only a malformed auth regression matcher
+- current Beta branch commit after hotfix: `38ca71f05cd8c874aa321733291a45f80ad597eb`
+- full Beta validation run 758: PASS, 77 steps
+
+Signed Beta workflow:
+- workflow: `Build Signed Swole Cat Beta Android`
+- run 2 reached the signing-secret gate after Beta promotion/updater/auth regressions passed
+- publication stopped safely because `SWOLE_CAT_ANDROID_KEYSTORE_B64` was not configured
+- no Beta release asset was published
+- `updates/beta.json` remains disabled
+- no tester-facing update was exposed
+
+Permanent Beta signing identity generated for the new fresh-install baseline:
+- alias: `swolecat-beta`
+- certificate SHA-256: `6942d0f5e2f809fd998e88c73b272b460145551e2bf6bbcd631c577f1d9defc8`
+- sensitive keystore/password values must never be committed to the repository
+- GitHub repository secrets required:
+  - `SWOLE_CAT_ANDROID_KEYSTORE_B64`
+  - `SWOLE_CAT_ANDROID_STORE_PASSWORD`
+  - `SWOLE_CAT_ANDROID_KEY_ALIAS`
+  - `SWOLE_CAT_ANDROID_KEY_PASSWORD`
+
+Immediate next action:
+1. user adds the four permanent Beta signing secrets from the generated secure backup
+2. rerun/trigger the Beta signed build from `beta`
+3. verify package/name/auth/updater/signature/hash
+4. publish `beta-v0.73.1`
+5. enable `updates/beta.json` only from the successful signed workflow
+6. hand the fresh-install Beta APK to testers
+7. perform one final fresh-install migration for the current v0.66.1 cohort
+8. verify the new Beta baseline can later receive a Beta in-app update before calling the Beta updater fully proven
