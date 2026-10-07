@@ -1121,3 +1121,20 @@ Locked rules:
 
 Immediate next task:
 **Implement the Testing updater and prove a real signed Testing version N -> N+1 in-app update before Beta promotion.**
+
+
+## Latest updater handoff: proof-ready
+
+The Testing updater is implemented. Do not rebuild it from scratch.
+
+Real-device proof pair:
+- install baseline v0.73.0 / build 103
+- Testing feed target v0.73.1 / build 104
+- baseline artifact ID `11451167705`
+- target artifact ID `11450429897`
+- baseline direct APK SHA-256 `8c8461a21b7f6620da3bfab4927edfa48b0a2e274ff139bf6b725cbe51310dea`
+
+Next action is the real phone proof only:
+v0.73.0 -> Settings -> App & updates -> v0.73.1.
+
+Do not mark updater proof complete until the user confirms Android installed v0.73.1 in place and local data/auth survived.
