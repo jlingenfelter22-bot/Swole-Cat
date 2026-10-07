@@ -34,5 +34,9 @@ assert.match(css,/\.history-metrics/,'History should style compact metrics');
 assert.match(css,/\.history-manage-btn/,'History should style the overflow/manage control');
 assert.match(css,/\.history-recap-btn/,'View Recap should have explicit primary emphasis');
 assert.match(css,/\.history-edit-btn/,'Edit should have explicit secondary emphasis');
+assert.match(css,/grid-template-columns:minmax\(46px,\.72fr\) minmax\(86px,1\.3fr\)/,
+  'History metrics should give Working Sets more room than duration');
+assert.match(css,/\.history-metrics small\{[^}]*white-space:normal[^}]*text-overflow:clip/s,
+  'History metric labels should wrap cleanly instead of ellipsizing');
 
-console.log('Swole Cat v0.77.0 History density PASS: compact timeline, recap-first detail, demoted destructive actions, preserved management');
+console.log('Swole Cat v0.77.1 History density PASS: compact timeline, recap-first detail, demoted destructive actions, preserved management');
