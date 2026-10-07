@@ -607,7 +607,7 @@ function supersetFlowHtml(w,ei,si){
  else if(!flow.roundDone)footer='Finish this movement to complete round '+(flow.round+1)+'.';
  else footer='Round '+(flow.round+1)+' complete.';
  return '<section class="superset-flow" aria-label="Superset flow">'+
-  '<div class="superset-flow-head"><div><div class="eyebrow">SUPERSET '+flow.groupNumber+' · ROUND '+Math.min(flow.round+1,flow.rounds)+' OF '+flow.rounds+'</div><div class="superset-flow-order">'+order+'</div></div><span class="superset-flow-badge">LINKED</span></div>'+
+  '<div class="superset-flow-head"><div class="superset-flow-title-wrap"><span class="superset-flow-bolt" aria-hidden="true">⚡</span><div><div class="eyebrow">SUPERSET '+flow.groupNumber+' · ROUND '+Math.min(flow.round+1,flow.rounds)+' OF '+flow.rounds+'</div><div class="superset-flow-order">'+order+'</div></div></div><span class="superset-flow-badge">SUPERSET</span></div>'+
   '<div class="superset-flow-track">'+steps+'</div>'+
   '<div class="superset-flow-footer">'+esc(footer)+'</div></section>';
 }
@@ -1078,7 +1078,7 @@ function focusedSetRailHtml(e,ei,si){
  const setPills=e.sets.map(function(set,i){
    const editing=!!workoutSetEditTarget(ei,i),cls=editing?'done editing':set.done?'done':i===si?'current':'future';
    const aria=set.done?('Edit completed '+setDisplayLabel(e,i)):('Open '+setDisplayLabel(e,i));
-   return '<button class="focus-set-pill '+cls+'" onclick="selectWorkoutSet('+ei+','+i+')" aria-label="'+esc(aria)+'" title="'+esc(set.done?'Tap to edit completed set':setDisplayLabel(e,i))+'">'+(set.done?'✓ ':'')+(i+1)+(set.done?'<span class="focus-set-edit-mark" aria-hidden="true">✎</span>':'')+'</button>';
+   return '<button class="focus-set-pill '+cls+'" onclick="selectWorkoutSet('+ei+','+i+')" aria-label="'+esc(aria)+'" title="'+esc(set.done?'Tap to edit completed set':setDisplayLabel(e,i))+'">'+(set.done?'✓ ':'')+(i+1)+(editing?'<span class="focus-set-edit-mark" aria-hidden="true">✎</span>':'')+'</button>';
  }).join('');
  return '<div class="focus-set-rail" aria-label="Workout sets">'+setPills+
   '<button class="focus-set-add" onclick="addWorkoutSet('+ei+',\'working\')" aria-label="Add working set"><span aria-hidden="true">＋</span> Set</button></div>';
@@ -1358,7 +1358,12 @@ function openUnfinishedWorkoutReview(){
 function finishWorkout(allowIncomplete=false){
  const w=state.activeWorkout;if(!w)return;
  const completed=w.exercises.some(function(e){return e.sets.some(function(s){return s.done})});
- if(!completed&&!allowIncomplete&&!confirm('No sets are marked complete. Save anyway?'))return;
+ if(!completed&&!allowIncomplete){
+   openModal('No completed sets',
+    '<div class="notice"><b>No sets are marked complete yet.</b><br>If you finish now, Swole Cat will save this workout with no completed sets.</div>'+
+    '<div class="actions"><button class="btn danger" onclick="finishWorkout(true)">Finish Anyway</button><button class="btn secondary" onclick="closeModal()">Keep Working Out</button></div>');
+   return;
+ }
  const unfinished=unfinishedWorkoutExercises(w);
  if(unfinished.length&&!allowIncomplete){openUnfinishedWorkoutReview();return}
  closeModal();
