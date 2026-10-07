@@ -1120,7 +1120,7 @@ The following product ideas are explicitly retained on the roadmap:
 
 ## Immediate next development task
 
-**Testing in-app update infrastructure is real-device proven.** The next gated milestone is a new Beta baseline, but it must not be created or published until the user explicitly approves promotion of a tested Testing checkpoint.
+**The v0.73.1 Beta baseline branch is promoted and fully validated (77/77).** Signed publication is the active gate. The permanent Beta signing identity has been generated; the user must add its four repository secrets before the signed Beta build can publish the fresh-install baseline.
 
 After the phone validation/iteration, return to the remaining **Settings cleanup and reorganization** work. The v0.71.0 short-share real-device check also remains an independent cloud exit test.
 
