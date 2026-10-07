@@ -44,8 +44,14 @@ assert.match(programs,/Share Program/,'Program overflow should preserve sharing'
 assert.match(programs,/Delete Program/,'Program overflow should preserve delete');
 
 assert.match(css,/\.routine-view-switch/,'Segmented navigation should be styled');
+assert.match(css,/\.routine-view-tab\{[^}]*min-height:43px[^}]*background:rgba\(8,14,24,\.72\)/s,
+  'Segmented tabs should have a stronger tappable inactive surface');
+assert.match(css,/\.routine-view-tab\.active\{[^}]*border-color:rgba\(34,211,238,\.72\)[^}]*box-shadow:/s,
+  'Selected Routines/Programs tab should have strong active contrast');
+assert.match(css,/\.routine-view-tab\.active span\{[^}]*background:rgba\(34,211,238,\.10\)/s,
+  'Selected count pill should reinforce the active state');
 assert.match(css,/\.routine-card-actions/,'Routine action hierarchy should be styled');
 assert.match(css,/\.program-card-actions/,'Program action hierarchy should be styled');
 assert.match(css,/\.routine-manage-btn/,'Overflow control should be styled consistently');
 
-console.log('Swole Cat v0.78.0 Routines hierarchy PASS: segmented view, Start/Edit priority, overflow management');
+console.log('Swole Cat v0.78.1 Routines hierarchy PASS: segmented view, Start/Edit priority, overflow management');
