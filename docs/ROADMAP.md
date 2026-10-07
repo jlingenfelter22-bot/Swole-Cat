@@ -1120,7 +1120,7 @@ The following product ideas are explicitly retained on the roadmap:
 
 ## Immediate next development task
 
-**In-app update infrastructure on Swole Cat Testing** is the current active task. Build and prove Testing self-update first; only then create the new one-time Beta baseline. Beta must never advance from ordinary main-branch development without explicit promotion approval.
+**Testing in-app update infrastructure is real-device proven.** The next gated milestone is a new Beta baseline, but it must not be created or published until the user explicitly approves promotion of a tested Testing checkpoint.
 
 After the phone validation/iteration, return to the remaining **Settings cleanup and reorganization** work. The v0.71.0 short-share real-device check also remains an independent cloud exit test.
 
