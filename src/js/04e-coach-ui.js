@@ -345,6 +345,44 @@ function homeWeekSummaryHtml(weekSessions,weekSets,weekPrs){
    </div>
  </button>`;
 }
+function homeActiveWorkoutSummaryHtml(w,counts){
+ const exercises=(w?.exercises||[]).filter(e=>!e.skipped);
+ const completeExercises=exercises.filter(e=>(e.sets||[]).length&&(e.sets||[]).every(s=>s.done)).length;
+ const elapsed=typeof workoutElapsed==='function'?workoutElapsed():(()=>{
+   const started=new Date(w?.startDate||0).getTime();
+   const mins=Number.isFinite(started)?Math.max(0,Math.floor((Date.now()-started)/60000)):0;
+   return mins<60?`${mins}m`:`${Math.floor(mins/60)}h ${mins%60}m`;
+ })();
+ return `<div class="home-active-stats" aria-label="Live workout summary">
+   <span><b>${elapsed}</b><small>elapsed</small></span>
+   <span><b>${counts.done}/${counts.total}</b><small>sets</small></span>
+   <span><b>${completeExercises}/${counts.activeExercises}</b><small>exercises</small></span>
+ </div>`;
+}
+function homeActiveWorkoutNowHtml(w){
+ if(!w?.exercises?.length)return '';
+ let ei=Number(w.focusExerciseIndex);
+ if(!Number.isInteger(ei)||ei<0||ei>=w.exercises.length||w.exercises[ei]?.skipped){
+   ei=w.exercises.findIndex(e=>!e.skipped&&(e.sets||[]).some(s=>!s.done));
+   if(ei<0)ei=w.exercises.findIndex(e=>!e.skipped);
+ }
+ if(ei<0)return '';
+ const e=w.exercises[ei],ex=exById(e.exerciseId);
+ let si=Number(w.focusSetIndex);
+ if(!Number.isInteger(si)||si<0||si>=(e.sets||[]).length||e.sets?.[si]?.done){
+   const open=(e.sets||[]).findIndex(s=>!s.done);
+   si=open>=0?open:Math.max(0,(e.sets||[]).length-1);
+ }
+ const done=(e.sets||[]).filter(s=>s.done).length,total=(e.sets||[]).length;
+ const remainingExercises=w.exercises.filter((other,index)=>index!==ei&&!other.skipped&&(other.sets||[]).some(s=>!s.done));
+ const next=remainingExercises[0],nextName=next?exById(next.exerciseId)?.name:'';
+ return `<button class="home-active-now" onclick="resumeActiveWorkout()" aria-label="Resume current workout at ${esc(ex?.name||'current exercise')}">
+   <div class="home-active-now-head"><div class="eyebrow">NOW</div><span>RESUME ›</span></div>
+   <div class="home-active-now-name">${esc(ex?.name||'Current exercise')}</div>
+   <div class="home-active-now-meta">Set ${Math.min(si+1,Math.max(1,total))} of ${Math.max(1,total)} · ${done} complete</div>
+   ${nextName?`<div class="home-active-next"><span>NEXT UP</span><b>${esc(nextName)}</b></div>`:''}
+ </button>`;
+}
 function renderHome(){
  const primary=document.getElementById('homePrimary'),coach=document.getElementById('homeCoachLauncher'),quick=document.getElementById('homeQuickActions'),signal=document.getElementById('homeTelemetry'),latest=document.getElementById('homeLatest');
  if(!primary)return;
@@ -354,7 +392,9 @@ function renderHome(){
  if(active){
    const ac=activeWorkoutCounts(active),saved=active.lastSavedAt?new Date(active.lastSavedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'just now';
    primary.innerHTML=`<div class="eyebrow"><span class="active-pulse"></span>WORKOUT IN PROGRESS</div><h1>Resume ${esc(active.routineName||'Workout')}</h1><div class="muted">${ac.done} of ${ac.total} sets complete · autosaved ${esc(saved)}</div><div class="home-primary-progress progress-bar"><div style="width:${ac.pct}%"></div></div><div class="actions"><button class="btn green home-hero-primary" onclick="resumeActiveWorkout()">Resume Workout</button></div>`;
-   coach.innerHTML='';quick.innerHTML='';signal.innerHTML='';latest.innerHTML='';
+   coach.innerHTML='';quick.innerHTML='';
+   signal.innerHTML=homeActiveWorkoutSummaryHtml(active,ac);
+   latest.innerHTML=homeActiveWorkoutNowHtml(active);
    updateActiveWorkoutChrome();return;
  }else if(p&&next){
    const logs=programSessions(p),last=logs[0];
