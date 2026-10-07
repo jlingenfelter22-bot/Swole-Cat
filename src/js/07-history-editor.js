@@ -1,22 +1,89 @@
 let sessionEditDraft=null;
 
+function historySessionDateParts(session){
+ const d=new Date(session?.date||0);
+ if(!Number.isFinite(d.getTime()))return {date:'Unknown date',time:''};
+ return {
+   date:d.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}),
+   time:d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})
+ };
+}
+function historyExerciseSummary(session){
+ const names=(session?.exercises||[])
+   .filter(e=>!e.skipped&&completedSets(e).length)
+   .map(e=>exById(e.exerciseId)?.name||'Exercise');
+ if(!names.length)return 'No completed exercises';
+ const shown=names.slice(0,3);
+ return shown.join(' · ')+(names.length>shown.length?` · +${names.length-shown.length} more`:'');
+}
+function historyMuscleSummaryHtml(session){
+ const muscles=sessionMuscleGroups(session);
+ if(!muscles.length)return '';
+ const shown=muscles.slice(0,4),more=muscles.length-shown.length;
+ return `<div class="history-muscle-row">${shown.map(m=>`<span>${esc(m)}</span>`).join('')}${more>0?`<span class="history-muscle-more">+${more}</span>`:''}</div>`;
+}
+function openHistorySessionMenu(id){
+ const s=state.sessions.find(x=>x.id===id);if(!s)return;
+ const when=historySessionDateParts(s);
+ openModal('Workout options',`
+   <div class="history-manage-summary">
+     <div class="eyebrow">SESSION OPTIONS</div>
+     <div class="history-manage-title">${esc(s.routineName||'Workout')}</div>
+     <div class="mini">${esc(when.date)}${when.time?` · ${esc(when.time)}`:''}</div>
+   </div>
+   <div class="history-manage-actions">
+     <button class="btn" onclick="closeModal();openHistoricalWorkoutRecap('${escAttr(s.id)}')">View Recap</button>
+     <button class="btn secondary" onclick="closeModal();editCompletedWorkout('${escAttr(s.id)}')">Edit Workout</button>
+     <button class="btn danger" onclick="closeModal();deleteSession('${escAttr(s.id)}')">Delete Workout</button>
+   </div>
+ `);
+}
+function openHistoryOptions(){
+ openModal('History options',`
+   <div class="notice">History is your permanent local record of completed workouts. Clearing it recalculates records and progression history.</div>
+   <div class="history-manage-actions" style="margin-top:12px">
+     <button class="btn danger" onclick="closeModal();clearWorkoutHistory()">Clear All Workout History</button>
+     <button class="btn secondary" onclick="closeModal()">Cancel</button>
+   </div>
+ `);
+}
 function renderHistory(){
  const el=document.getElementById('historyList');
  const sessions=derivedSessionData().sessionsDesc;
  if(!sessions.length){el.innerHTML='<div class="empty"><div class="empty-illustration"><span class="empty-glyph empty-glyph-history" aria-hidden="true"></span></div><strong>No workout history yet</strong>Finish your first session and it will be saved here.</div>';return;}
- el.innerHTML=sessions.map((s,sessionIndex)=>`<div class="card history-entry">
-   <div class="history-sequence"><span>${String(sessions.length-sessionIndex).padStart(2,'0')}</span><small>SESSION</small></div>
-   <div class="history-entry-body">
-   <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleString()} · ${sessionSetCount(s)} working sets${sessionAllSetCount(s)!==sessionSetCount(s)?` · ${sessionAllSetCount(s)} total`:''}${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div></div>
-   <div class="editor-summary"><span class="tag">${Math.round(sessionVolume(s)).toLocaleString()} ${state.profile.unit}×reps</span>${sessionPRCount(s)?`<span class="tag">🏆 ${sessionPRCount(s)} PR</span>`:''}</div>
-   ${s.exercises.map(e=>{const ex=exById(e.exerciseId),sets=completedSets(e); return sets.length?`<table class="history-table"><tr><th colspan="3"><span class="exercise-link" onclick="openExerciseProgress('${e.exerciseId}')">${esc(ex?.name||'Exercise')}</span></th></tr>${sets.map((x,i)=>`<tr><td>${esc(setTypeLabel(setType(x)))} ${e.sets.slice(0,e.sets.indexOf(x)+1).filter(y=>setType(y)===setType(x)).length}</td><td>${x.weight} ${state.profile.unit}</td><td>${x.reps} reps${x.rir!==''&&x.rir!=null?` · ${x.rir} RIR`:''}</td></tr>`).join('')}</table>`:''}).join('')}
-   <div class="history-card-actions">
-     <button class="btn small" onclick="openHistoricalWorkoutRecap('${s.id}')">View Recap</button>
-     <button class="btn small secondary" onclick="editCompletedWorkout('${s.id}')">Edit Workout</button>
-     <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete Workout</button>
-   </div>
-   </div>
- </div>`).join('');
+ el.innerHTML=sessions.map((s,sessionIndex)=>{
+   const when=historySessionDateParts(s);
+   const workingSets=sessionSetCount(s),allSets=sessionAllSetCount(s),volume=Math.round(sessionVolume(s)),prs=sessionPRCount(s);
+   const exercises=sessionCompletedExerciseCount(s),totalReps=sessionTotalReps(s);
+   return `<article class="card history-entry">
+     <div class="history-sequence"><span>${String(sessions.length-sessionIndex).padStart(2,'0')}</span><small>SESSION</small></div>
+     <div class="history-entry-body">
+       <div class="history-entry-head">
+         <div class="history-entry-heading">
+           <div class="history-entry-date">${esc(when.date)}${when.time?` <span>· ${esc(when.time)}</span>`:''}</div>
+           <div class="history-entry-title">${esc(s.routineName||'Workout')}</div>
+           <div class="history-entry-exercises">${exercises} exercise${exercises===1?'':'s'} · ${esc(historyExerciseSummary(s))}</div>
+         </div>
+         <button class="history-manage-btn" onclick="openHistorySessionMenu('${escAttr(s.id)}')" aria-label="Manage ${escAttr(s.routineName||'workout')}">•••</button>
+       </div>
+
+       <div class="history-metrics" aria-label="Workout summary">
+         <span><b>${s.durationMinutes!=null?Math.max(0,Number(s.durationMinutes)||0):'—'}</b><small>min</small></span>
+         <span><b>${workingSets}</b><small>working sets</small></span>
+         <span><b>${volume>0?volume.toLocaleString():'—'}</b><small>${volume>0?esc(state.profile.unit)+' × reps':'volume'}</small></span>
+         <span class="${prs?'has-pr':''}"><b>${prs}</b><small>PR${prs===1?'':'s'}</small></span>
+       </div>
+
+       ${historyMuscleSummaryHtml(s)}
+       <div class="history-entry-submeta">${totalReps} total reps${allSets!==workingSets?` · ${allSets} total completed sets`:''}</div>
+
+       <div class="history-card-actions">
+         <button class="btn small history-recap-btn" onclick="openHistoricalWorkoutRecap('${escAttr(s.id)}')">View Recap</button>
+         <button class="btn small secondary history-edit-btn" onclick="editCompletedWorkout('${escAttr(s.id)}')">Edit</button>
+       </div>
+     </div>
+   </article>`;
+ }).join('');
 }
 function calculateHistoricalPR(prior,set){
  if(!prior.length)return '';
