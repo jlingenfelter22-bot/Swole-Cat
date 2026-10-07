@@ -157,6 +157,34 @@ jobs:
           printf '%s' "$KEYSTORE_B64" | base64 --decode > android/app/swole-cat-release.jks
           test -s android/app/swole-cat-release.jks
 
+      - name: Verify Beta signing credentials
+        run: |
+          keytool -list \
+            -keystore android/app/swole-cat-release.jks \
+            -storepass "$SWOLE_CAT_SIGNING_STORE_PASSWORD" >/dev/null \
+            || { echo "::error::SWOLE_CAT_ANDROID_STORE_PASSWORD does not unlock the permanent Beta keystore"; exit 1; }
+
+          keytool -list \
+            -keystore android/app/swole-cat-release.jks \
+            -storepass "$SWOLE_CAT_SIGNING_STORE_PASSWORD" \
+            -alias "$SWOLE_CAT_SIGNING_KEY_ALIAS" >/dev/null \
+            || { echo "::error::SWOLE_CAT_ANDROID_KEY_ALIAS was not found in the permanent Beta keystore"; exit 1; }
+
+          rm -f /tmp/swole-cat-beta-keycheck.p12
+          keytool -importkeystore \
+            -srckeystore android/app/swole-cat-release.jks \
+            -srcstoretype JKS \
+            -srcstorepass "$SWOLE_CAT_SIGNING_STORE_PASSWORD" \
+            -srcalias "$SWOLE_CAT_SIGNING_KEY_ALIAS" \
+            -srckeypass "$SWOLE_CAT_SIGNING_KEY_PASSWORD" \
+            -destkeystore /tmp/swole-cat-beta-keycheck.p12 \
+            -deststoretype PKCS12 \
+            -deststorepass swolecat-temporary-check \
+            -destkeypass swolecat-temporary-check \
+            -noprompt >/dev/null \
+            || { echo "::error::SWOLE_CAT_ANDROID_KEY_PASSWORD does not unlock the permanent Beta signing key"; exit 1; }
+          rm -f /tmp/swole-cat-beta-keycheck.p12
+
       - name: Reconfigure Android with Beta signing
         run: node scripts/configure-android.mjs
 
