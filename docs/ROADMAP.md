@@ -163,7 +163,7 @@ The visual system should be established before building the workout-completion r
 
 ## Phase 3.5 — Product UX Refinement and Retention
 
-**Status: In progress beginning with v0.76.0. Home hierarchy landed in v0.76.0; v0.76.1 added live active-workout context; v0.76.2 completes the active Home with Session Pulse metrics, live rest state, and an exercise progress rail.**
+**Status: In progress beginning with v0.76.0. Home hierarchy is complete through v0.76.2. History density refinement begins in v0.77.0 with compact session cards, recap-first detail, and destructive actions moved out of the primary scan path.**
 
 **Priority: High**
 
