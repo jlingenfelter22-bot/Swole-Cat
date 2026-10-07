@@ -1,11 +1,12 @@
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 
 const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+const capacitorConfig = JSON.parse(await readFile(new URL('../capacitor.config.json', import.meta.url), 'utf8'));
 const versionName = String(pkg.version || '').trim();
 const versionCode = Number(pkg.swoleCat?.androidVersionCode);
 const gradleUrl = new URL('../android/app/build.gradle', import.meta.url);
 const manifestUrl = new URL('../android/app/src/main/AndroidManifest.xml', import.meta.url);
-const ANDROID_AUTH_SCHEME='com.jlingenfelter.swolecat.testing';
+const ANDROID_AUTH_SCHEME=String(capacitorConfig.appId||'').trim();
 const ANDROID_AUTH_HOST='auth';
 const ANDROID_AUTH_PATH='/callback';
 
@@ -288,6 +289,7 @@ public class SwoleCatSecureStoragePlugin extends Plugin {
 
 
 if (!versionName) throw new Error('package.json is missing version');
+if (!ANDROID_AUTH_SCHEME) throw new Error('capacitor.config.json is missing appId for Android auth scheme');
 if (!Number.isInteger(versionCode) || versionCode < 1) {
   throw new Error('package.json swoleCat.androidVersionCode must be a positive integer');
 }
