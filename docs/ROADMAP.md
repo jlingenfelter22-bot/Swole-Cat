@@ -163,7 +163,7 @@ The visual system should be established before building the workout-completion r
 
 ## Phase 3.5 — Product UX Refinement and Retention
 
-**Status: In progress beginning with v0.76.0. Home hierarchy is complete through v0.76.2. History density is complete through v0.77.1. Routines action cleanup begins in v0.78.0 with segmented Routines/Programs navigation, Start/Edit priority, and low-frequency actions moved into overflow management.**
+**Status: In progress beginning with v0.76.0. Home hierarchy is complete through v0.76.2. History density is complete through v0.77.1. Routines action cleanup landed in v0.78.0; v0.78.1 strengthens the Routines/Programs segmented control so the selected view is immediately obvious and the control reads as intentionally tappable.**
 
 **Priority: High**
 
