@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "enabled": false,
+  "channel": "beta",
+  "packageId": "com.jlingenfelter.swolecat",
+  "version": "0.73.1",
+  "versionCode": 104,
+  "apkUrl": "",
+  "sha256": "",
+  "signingCertSha256": "",
+  "notes": "Swole Cat Beta v0.73.1 baseline",
+  "publishedAt": "",
+  "required": false
+}
