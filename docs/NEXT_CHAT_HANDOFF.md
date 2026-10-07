@@ -1211,3 +1211,12 @@ Immediate next action:
 8. verify the new Beta baseline can later receive a Beta in-app update before calling the Beta updater fully proven
 
 Do not regenerate or rotate the Beta signing identity after testers install the new baseline.
+
+
+## Latest Beta release blocker
+
+The v0.73.1 Beta baseline is promoted and 77/77 validated. Signed publication is blocked only because GitHub's `SWOLE_CAT_ANDROID_STORE_PASSWORD` secret does not match the permanent Beta keystore.
+
+The local signing backup is valid and opens successfully with its generated store password. User must replace that one repository Actions secret with the exact generated value, then rerun `Build Signed Swole Cat Beta Android`.
+
+Beta feed remains disabled; no tester-facing release exists yet.
