@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "enabled": false,
+  "enabled": true,
   "channel": "beta",
   "packageId": "com.jlingenfelter.swolecat",
   "version": "0.73.1",
   "versionCode": 104,
-  "apkUrl": "",
-  "sha256": "",
-  "signingCertSha256": "",
-  "notes": "Swole Cat Beta v0.73.1 baseline",
-  "publishedAt": "",
+  "apkUrl": "https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/beta-v0.73.1/swole-cat-beta-v0.73.1-signed.apk",
+  "sha256": "0f318e2359a8072619b066c5805b30b0ca0c467e120d0d8e9c64c775492126e3",
+  "signingCertSha256": "00e3edf9e8523fdc8e5e38eb95e4914cc08d5bd352964198f30de0774af61fe8",
+  "notes": "Swole Cat Beta v0.73.1",
+  "publishedAt": "2026-10-07T01:42:41.992Z",
   "required": false
 }
