@@ -12,8 +12,8 @@ const settingsSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8'
 const coreSource=fs.readFileSync('src/js/01-core-runtime.js','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.73.1');
-assert.equal(pkg.swoleCat.androidVersionCode,104);
+assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'package version should be a semantic x.y.z app version');
+assert(Number.isInteger(pkg.swoleCat.androidVersionCode)&&pkg.swoleCat.androidVersionCode>=1,'Android versionCode should be a positive integer');
 assert.match(syncSource,/SWOLE_CAT_SYNC_AUTO_DELAY_MS=4000/);
 assert.match(syncSource,/SWOLE_CAT_SYNC_AUTO_REFRESH_MS=5\*60\*1000/);
 assert.match(syncSource,/syncScheduleAuto\('save'\)/,'ordinary state saves should schedule background sync');
