@@ -35,6 +35,22 @@ self.addEventListener('fetch',e=>{
     return;
   }
 
+  const isSameOrigin=u.origin===self.location.origin;
+
+  // Never allow the PWA cache to sit in front of cloud/API requests.
+  // A cached empty Supabase sync response can hide records created later at
+  // the same cursor, so all non-whitelisted cross-origin traffic is network-only.
+  if(!isSameOrigin){
+    e.respondWith(fetch(e.request,{cache:'no-store'}));
+    return;
+  }
+
+  // Mutating requests must never participate in the app-shell cache.
+  if(e.request.method!=='GET'){
+    e.respondWith(fetch(e.request));
+    return;
+  }
+
   if(e.request.mode==='navigate'||u.pathname.endsWith('/index.html')){
     e.respondWith(caches.open(CACHE).then(async cache=>{
       try{

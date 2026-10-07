@@ -8,19 +8,24 @@ https://jlingenfelter22-bot.github.io/Swole-Cat/
 
 ## Android
 
-The Android app shares the same HTML, CSS, JavaScript, workout logic, and `overload_v3` data model as the PWA.
+The Android apps share the same HTML, CSS, JavaScript, workout logic, and `overload_v3` data model as the PWA, but the field-beta and experimental channels intentionally use different Android package IDs so they can be installed side-by-side with isolated local storage.
 
+- Field beta app: **Swole Cat**, package `com.jlingenfelter.swolecat`
+- Experimental `main` app: **Swole Cat Testing**, package `com.jlingenfelter.swolecat.testing`
 - Capacitor 8.5.2
-- Android application ID: `com.jlingenfelter.swolecat`
 - Android API 36 build target
 - Automated debug APK builds through GitHub Actions
-- Existing PWA users migrate by exporting a Swole Cat backup and importing it on first Android launch
+- Android sandboxes keep beta workout data separate from Testing workout/auth data
 
 See [docs/ANDROID.md](docs/ANDROID.md) for build and migration details.
 
 ## Product Roadmap
 
 The canonical feature roadmap, implementation order, and locked long-term product direction live in [docs/ROADMAP.md](docs/ROADMAP.md).
+
+The principles governing the free core, independence, ads, subscriptions, Lifetime Pro, and sustainable cloud monetization live in [docs/PRODUCT_PHILOSOPHY.md](docs/PRODUCT_PHILOSOPHY.md).
+
+For the exact current development state and the safest place to resume after lost chat/context, read [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md).
 
 ## Data
 

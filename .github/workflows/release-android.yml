@@ -1,17 +1,31 @@
-name: Build Signed Swole Cat Android Release
+name: Build Signed Swole Cat Beta Android
 
 on:
   workflow_dispatch:
+  push:
+    branches: [beta]
+    paths:
+      - "index.html"
+      - "manifest.webmanifest"
+      - "sw.js"
+      - "assets/**"
+      - "src/**"
+      - "resources/**"
+      - "package.json"
+      - "capacitor.config.json"
+      - "scripts/**"
+      - ".github/workflows/release-android.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  signed-release:
+  signed-beta:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
       SWOLE_CAT_ENABLE_SIGNING: "1"
+      SWOLE_CAT_SIGNING_BUILD_TYPE: "release"
       SWOLE_CAT_SIGNING_STORE_FILE: "swole-cat-release.jks"
       SWOLE_CAT_SIGNING_STORE_PASSWORD: ${{ secrets.SWOLE_CAT_ANDROID_STORE_PASSWORD }}
       SWOLE_CAT_SIGNING_KEY_ALIAS: ${{ secrets.SWOLE_CAT_ANDROID_KEY_ALIAS }}
@@ -20,6 +34,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Enforce Beta branch
+        run: |
+          test "$GITHUB_REF_NAME" = "beta" || { echo "::error::Beta release workflow must run from beta"; exit 1; }
 
       - name: Set up Node 22
         uses: actions/setup-node@v4
@@ -34,6 +52,21 @@ jobs:
         run: |
           echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
           echo "version_code=$(node -p "require('./package.json').swoleCat.androidVersionCode")" >> "$GITHUB_OUTPUT"
+
+      - name: Check Beta identity before build
+        run: |
+          test "$(node -p "require('./capacitor.config.json').appId")" = "com.jlingenfelter.swolecat"
+          test "$(node -p "require('./capacitor.config.json').appName")" = "Swole Cat"
+
+      - name: Run Beta promotion regressions
+        run: |
+          npm run build:web
+          node --check www/app.js
+          node scripts/app-updater-stress.mjs
+          node scripts/android-auth-deeplink-stress.mjs
+          node scripts/beta-baseline-stress.mjs
+          grep -F "const SWOLE_CAT_ANDROID_AUTH_SCHEME='com.jlingenfelter.swolecat';" www/app.js
+          grep -F "beta:'https://raw.githubusercontent.com/jlingenfelter22-bot/Swole-Cat/beta/updates/beta.json'" www/app.js
 
       - name: Check signing secrets
         env:
@@ -65,35 +98,123 @@ jobs:
           printf '%s' "$KEYSTORE_B64" | base64 --decode > android/app/swole-cat-release.jks
           test -s android/app/swole-cat-release.jks
 
-      - name: Reconfigure Android with release signing
+      - name: Reconfigure Android with Beta signing
         run: node scripts/configure-android.mjs
 
-      - name: Build signed APK and AAB
+      - name: Verify generated Beta package contract
+        run: |
+          grep -Eq "versionCode[[:space:]]+${{ steps.meta.outputs.version_code }}" android/app/build.gradle
+          grep -Eq "versionName[[:space:]]+\"${{ steps.meta.outputs.version }}\"" android/app/build.gradle
+          grep -F 'applicationId "com.jlingenfelter.swolecat"' android/app/build.gradle
+          grep -F '<string name="app_name">Swole Cat</string>' android/app/src/main/res/values/strings.xml
+          grep -F 'android:scheme="com.jlingenfelter.swolecat"' android/app/src/main/AndroidManifest.xml
+          grep -F 'android:host="auth"' android/app/src/main/AndroidManifest.xml
+          grep -F 'android:pathPrefix="/callback"' android/app/src/main/AndroidManifest.xml
+          grep -F 'android.permission.REQUEST_INSTALL_PACKAGES' android/app/src/main/AndroidManifest.xml
+          MAIN_ACTIVITY="$(find android/app/src/main/java -name MainActivity.java -print -quit)"
+          UPDATER_PLUGIN="$(find android/app/src/main/java -name SwoleCatUpdaterPlugin.java -print -quit)"
+          test -n "$MAIN_ACTIVITY"
+          test -n "$UPDATER_PLUGIN"
+          grep -F 'registerPlugin(SwoleCatUpdaterPlugin.class);' "$MAIN_ACTIVITY"
+          grep -F '@CapacitorPlugin(name = "SwoleCatUpdater")' "$UPDATER_PLUGIN"
+          grep -F 'PackageInstaller.SessionParams.USER_ACTION_REQUIRED' "$UPDATER_PLUGIN"
+          grep -F 'signingConfig signingConfigs.swoleCat' android/app/build.gradle
+
+      - name: Build signed Beta APK and AAB
         working-directory: android
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease bundleRelease --stacktrace
 
-      - name: Verify APK signature
+      - name: Verify Beta APK signature
+        id: cert
         run: |
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk | tee beta-signature.txt
+          CERT="$(grep -Fi 'Signer #1 certificate SHA-256 digest:' beta-signature.txt | head -n1 | sed 's/.*digest: //' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          test ${#CERT} -eq 64 || { echo "::error::Could not read Beta signing certificate digest"; exit 1; }
+          echo "sha256=$CERT" >> "$GITHUB_OUTPUT"
 
-      - name: Verify AAB signature
+      - name: Verify Beta AAB signature
         run: jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/app-release.aab >/dev/null
 
-      - name: Name release files
+      - name: Name Beta release files
         run: |
-          cp android/app/build/outputs/apk/release/app-release.apk "swole-cat-v${{ steps.meta.outputs.version }}-release.apk"
-          cp android/app/build/outputs/bundle/release/app-release.aab "swole-cat-v${{ steps.meta.outputs.version }}-release.aab"
-          sha256sum "swole-cat-v${{ steps.meta.outputs.version }}-release.apk" "swole-cat-v${{ steps.meta.outputs.version }}-release.aab" > SHA256SUMS.txt
+          cp android/app/build/outputs/apk/release/app-release.apk "swole-cat-beta-v${{ steps.meta.outputs.version }}-signed.apk"
+          cp android/app/build/outputs/bundle/release/app-release.aab "swole-cat-beta-v${{ steps.meta.outputs.version }}-signed.aab"
 
-      - name: Upload signed release
+      - name: Compute Beta APK SHA-256
+        id: checksum
+        run: |
+          APK="swole-cat-beta-v${{ steps.meta.outputs.version }}-signed.apk"
+          echo "sha256=$(sha256sum "$APK" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          sha256sum "$APK" "swole-cat-beta-v${{ steps.meta.outputs.version }}-signed.aab" > SHA256SUMS.txt
+
+      - name: Publish versioned Beta prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          TAG="beta-v$VERSION"
+          APK="swole-cat-beta-v$VERSION-signed.apk"
+          AAB="swole-cat-beta-v$VERSION-signed.aab"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" "$AAB" SHA256SUMS.txt --clobber
+          else
+            gh release create "$TAG" "$APK" "$AAB" SHA256SUMS.txt \
+              --target "$GITHUB_SHA" \
+              --prerelease \
+              --title "Swole Cat Beta v$VERSION" \
+              --notes "Approved Swole Cat Beta baseline v$VERSION."
+          fi
+
+      - name: Advance Beta update channel manifest
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          VERSION_CODE: ${{ steps.meta.outputs.version_code }}
+          APK_SHA256: ${{ steps.checksum.outputs.sha256 }}
+          BETA_CERT_SHA256: ${{ steps.cert.outputs.sha256 }}
+        run: |
+          git config user.name "swole-cat-release-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git fetch origin beta
+          git checkout beta
+          git pull --ff-only origin beta
+          mkdir -p updates
+          node <<'NODE'
+          const fs=require('fs');
+          const version=process.env.VERSION;
+          const apk=`swole-cat-beta-v${version}-signed.apk`;
+          const manifest={
+            schema:1,
+            enabled:true,
+            channel:'beta',
+            packageId:'com.jlingenfelter.swolecat',
+            version,
+            versionCode:Number(process.env.VERSION_CODE),
+            apkUrl:`https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/beta-v${version}/${apk}`,
+            sha256:process.env.APK_SHA256,
+            signingCertSha256:process.env.BETA_CERT_SHA256,
+            notes:`Swole Cat Beta v${version}`,
+            publishedAt:new Date().toISOString(),
+            required:false
+          };
+          fs.writeFileSync('updates/beta.json',JSON.stringify(manifest,null,2)+'\n');
+          NODE
+          git add updates/beta.json
+          if git diff --cached --quiet; then
+            echo "Beta channel already points to v$VERSION"
+          else
+            git commit -m "Publish Beta update v$VERSION"
+            git push origin beta
+          fi
+
+      - name: Upload signed Beta baseline
         uses: actions/upload-artifact@v4
         with:
-          name: Swole-Cat-Android-v${{ steps.meta.outputs.version }}-release
+          name: Swole-Cat-Beta-Android-v${{ steps.meta.outputs.version }}-signed
           path: |
-            swole-cat-v${{ steps.meta.outputs.version }}-release.apk
-            swole-cat-v${{ steps.meta.outputs.version }}-release.aab
+            swole-cat-beta-v${{ steps.meta.outputs.version }}-signed.apk
+            swole-cat-beta-v${{ steps.meta.outputs.version }}-signed.aab
             SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 90

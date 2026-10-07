@@ -17,8 +17,75 @@ function convertStoredUnits(fromUnit,toUnit){
  }
 }
 
+function cloudHubSyncStatus(info){
+ if(!info?.configured)return 'Local-only build';
+ if(!info?.signedIn)return 'Sign in to enable';
+ const sync=SwoleCatRuntime.getService('cloudSync')?.snapshot?.()||{};
+ if(sync.status==='syncing')return 'Syncing now…';
+ if(Number(sync.conflicts)>0)return Number(sync.conflicts)+' conflict'+(Number(sync.conflicts)===1?'':'s')+' need review';
+ if(Number(sync.queued)>0)return Number(sync.queued)+' change'+(Number(sync.queued)===1?'':'s')+' queued';
+ if(sync.lastSyncAt){
+   const ms=Date.now()-Date.parse(sync.lastSyncAt);
+   if(Number.isFinite(ms)&&ms>=0){
+     const minutes=Math.floor(ms/60000);
+     if(minutes<1)return 'Synced just now';
+     if(minutes<60)return 'Synced '+minutes+'m ago';
+     const hours=Math.floor(minutes/60);
+     if(hours<24)return 'Synced '+hours+'h ago';
+   }
+   return 'Previously synced';
+ }
+ return cloudAutomationPrefs().autoSync!==false?'Automatic sync ready':'Automatic sync off';
+}
+function cloudHubHtml(){
+ const info=cloudIdentitySnapshot();
+ const accountState=!info.configured
+   ?'Local-only build'
+   :(info.signedIn?(info.user?.email||info.user?.displayName||'Connected'):'Not signed in');
+ const cloudState=cloudHubSyncStatus(info);
+ return `
+ <div class="card cloud-hub-card">
+   <button type="button" class="cloud-hub-tile" onclick="openCloudAccount()">
+     <span class="cloud-hub-kicker">ACCOUNT</span>
+     <b>Cloud account</b>
+     <span class="mini">${esc(accountState)}</span>
+     <span class="cloud-hub-arrow" aria-hidden="true">›</span>
+   </button>
+   <button type="button" class="cloud-hub-tile" onclick="openCloudSettings()">
+     <span class="cloud-hub-kicker">SETTINGS</span>
+     <b>Cloud settings</b>
+     <span class="mini">${esc(cloudState)}</span>
+     <span class="cloud-hub-arrow" aria-hidden="true">›</span>
+   </button>
+ </div>`;
+}
+
+function openCloudSettings(){
+ openModal('Cloud settings',`
+ <div class="cloud-settings-menu">
+   <div class="notice"><b>Local-first by design.</b><br>Cloud features are optional. Normal workouts and active workout autosave continue to work locally without an account or network.</div>
+
+   <div class="section-title"><h2>Automation</h2></div>
+   ${cloudAutomationSettingsHtml()}
+
+   <div class="section-title"><h2>Cloud backup</h2></div>
+   ${cloudBackupSettingsHtml()}
+
+   <div class="section-title"><h2>Multi-device sync</h2></div>
+   ${cloudSyncSettingsHtml()}
+
+   <div class="section-title"><h2>Data safety</h2></div>
+   <div class="notice"><b>App:</b> ${isNativeApp()?'Android package':'Web / PWA'}<br><b>Version:</b> ${esc(APP_VERSION)}<br><b>Storage:</b> ${esc(storageHealthText())}<br><b>Data schema:</b> v${DATA_SCHEMA_VERSION}<br><b>Last local backup created:</b> ${state.meta?.lastBackupAt?new Date(state.meta.lastBackupAt).toLocaleString():'Never on this device'}</div>
+   <div class="actions"><button class="btn secondary" onclick="exportBackup()">Export backup</button><label class="btn secondary" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0],this)" style="display:none"></label>${preImportSnapshotInfo()?'<button class="btn secondary" onclick="restorePreImportSnapshot()">Restore pre-import snapshot</button>':''}</div>
+   <div class="native-note" style="margin-top:8px">Imports are validated before replacing your current state. A safety snapshot is created before every successful import so you can roll back if you picked the wrong file.</div>
+
+   <div class="actions cloud-settings-back"><button class="btn secondary" onclick="openSettings()">Back to Settings</button></div>
+ </div>
+ `);
+}
+
 function openSettings(){
- openModal('Settings & backup',`
+ openModal('Settings',`
  <div class="field"><label>Your name</label><input id="pName" value="${escAttr(state.profile.name||'')}" placeholder="Jake"></div>
  <div class="field"><label>Units</label><select id="pUnit"><option value="lb" ${state.profile.unit==='lb'?'selected':''}>Pounds (lb)</option><option value="kg" ${state.profile.unit==='kg'?'selected':''}>Kilograms (kg)</option></select><div class="native-note" style="margin-top:6px">Changing units converts your stored workout weights, bodyweight entries, and progression increments.</div></div>
  <div class="form-grid three">
@@ -33,12 +100,16 @@ function openSettings(){
    <div class="setting-toggle" style="border-bottom:0"><div><b>Keep screen awake</b><div class="mini">Ask Android to keep the screen awake during an active workout when supported.</div></div><button id="awakeToggle" class="toggle ${state.ui?.keepAwake!==false?'on':''}" onclick="this.classList.toggle('on')"></button></div>
  </div>
  <div class="actions"><button class="btn" onclick="saveSettings()">Save settings</button></div>
+
+ <div class="section-title"><h2>App & updates</h2></div>
+ ${appUpdateHubHtml()}
+
  <div class="section-title"><h2>Coach behavior</h2></div>
- <div class="notice">The coach uses repeated logged performance, your optional RIR entries, and each exercise's selected goal. Stall and reset flags are intentionally conservative. They are suggestions, and manual session targets always remain available.</div>
- <div class="section-title"><h2>Data safety</h2></div>
- <div class="notice"><b>Progression rule:</b> Double progression is rep-driven. Add reps first, then one configured load step after every programmed working set reaches the top of its rep range. Optional RIR never blocks that earned load increase.<br><br><b>App:</b> ${isNativeApp()?'Android package':'Web / PWA'}<br><b>Version:</b> ${esc(APP_VERSION)}<br><b>Storage:</b> ${esc(storageHealthText())}<br><b>Data schema:</b> v${DATA_SCHEMA_VERSION}<br><b>Last exported backup:</b> ${state.meta?.lastBackupAt?new Date(state.meta.lastBackupAt).toLocaleString():'Never on this device'}</div>
- <div class="actions"><button class="btn secondary" onclick="exportBackup()">Export backup</button><label class="btn secondary" style="display:inline-block;margin:0">Import backup<input type="file" accept=".json,application/json" onchange="importBackup(this.files[0],this)" style="display:none"></label>${preImportSnapshotInfo()?'<button class="btn secondary" onclick="restorePreImportSnapshot()">Restore pre-import snapshot</button>':''}</div>
- <div class="native-note" style="margin-top:8px">Imports are validated before replacing your current state. A safety snapshot is created before every successful import so you can roll back if you picked the wrong file.</div>
+ <div class="notice">The coach uses repeated logged performance, your optional RIR entries, and each exercise's selected goal. Stall and reset flags are intentionally conservative. They are suggestions, and manual session targets always remain available.<br><br><b>Progression rule:</b> Double progression is rep-driven. Add reps first, then one configured load step after every programmed working set reaches the top of its rep range. Optional RIR never blocks that earned load increase.</div>
+
+ <div class="section-title"><h2>Cloud account</h2></div>
+ ${cloudHubHtml()}
+
  <div class="section-title"><h2>Exercise illustrations</h2></div>
  <div class="notice">Exercise thumbnail illustrations are provided by <a href="https://github.com/bryllim/workout-guide" target="_blank" rel="noopener">Workout Guide by Bryl Lim</a>, based in part on Everkinetic artwork, and are licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>. Swole Cat presents the licensed movement artwork as compact retro-futurist training-schematic thumbnails.</div>
  <div class="actions"><button class="btn danger" onclick="resetAll()">Erase all local data</button></div>
@@ -134,6 +205,7 @@ function importBackup(file,input=null){
 }
 function resetAll(){closeModal();confirmAction('Erase all local data?','This permanently removes every workout, routine, custom exercise, favorite, bodyweight entry, setting, recovery snapshot, and pre-import snapshot stored by Swole Cat on this device.',()=>{
  try{swoleCatStorage.removeItem(LSKEY);swoleCatStorage.removeItem(RECOVERYKEY);swoleCatStorage.removeItem(IMPORTSNAPSHOTKEY)}catch(e){}
+ SwoleCatRuntime.getService('cloudSync')?.resetLocalMetadata?.();
  storageWriteBlocked=false;recoveredFromSnapshot=false;startupStorageNotice='';lastStorageError='';recoverySnapshotWritten=false;
  state=freshState();save();renderHome();showToast('Local data erased');setTimeout(onboarding,250);
 });}
@@ -306,6 +378,7 @@ renderNavigationView('home');populateMuscles();updateActiveWorkoutChrome();
 SwoleCatRuntime.events.dispatchEvent(new CustomEvent('app:ready',{detail:{version:APP_VERSION}}));
 installNativeBehaviorHandlers();
 configureNativeUi();
+setTimeout(()=>maybeCheckForAppUpdate(),1800);
 if(startupStorageNotice){
  setTimeout(openStartupStorageNotice,180);
 } else if(state.activeWorkout){

@@ -545,7 +545,7 @@ function advanceSupersetAfterSet(ei,si){
      w.focusExerciseIndex=oi;w.focusSetIndex=targetSi;
      w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==oi});
      w.exercises.forEach(function(x,i){x.expanded=i===oi});
-     saveActiveWorkout();renderWorkout();
+     saveActiveWorkout();renderWorkoutExerciseTransition(ei,oi);
      showToast('Superset '+meta.label+': '+((exById(oe.exerciseId)&&exById(oe.exerciseId).name)||'next exercise'));
      return true;
    }
@@ -557,7 +557,7 @@ function advanceSupersetAfterSet(ei,si){
    w.focusExerciseIndex=next;w.focusSetIndex=workoutFirstIncompleteSetIndex(w.exercises[next]);
    w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==next});
    w.exercises.forEach(function(x,i){x.expanded=i===next});
-   saveActiveWorkout();renderWorkout();showToast('Superset '+meta.label+' round complete · rest');return true;
+   saveActiveWorkout();renderWorkoutExerciseTransition(ei,next);showToast('Superset '+meta.label+' round complete · rest');return true;
  }
  if(workoutHasRemainingProgrammedWork())startRestTimer(e.config.restSeconds||120);else stopRestTimer();
  if(advanceFromCompletedExercise(ei))return true;
@@ -796,6 +796,77 @@ function compactTargetText(e,ex,prev){
  if((Number(t.weight)||0)<=0)return ex?.equipment==='bodyweight'?`${t.reps} reps · bodyweight`:`Choose starting weight · ${t.reps} reps`;
  return `${t.weight} ${state.profile.unit} × ${t.reps} target`;
 }
+
+let workoutIncomingExerciseCue=null,workoutSetAdvanceCue=null,workoutStructureNoticeTimer=null;
+function workoutReducedMotion(){
+ try{return !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches}catch(e){return false}
+}
+function dismissWorkoutStructureNotice(){
+ clearTimeout(workoutStructureNoticeTimer);workoutStructureNoticeTimer=null;
+ const el=document.getElementById('workoutStructureNotice');if(!el)return;
+ el.classList.remove('show');
+ setTimeout(()=>el.remove(),180);
+}
+function showWorkoutStructureNotice(){
+ if(!state.activeWorkout)return;
+ document.getElementById('workoutStructureNotice')?.remove();
+ clearTimeout(workoutStructureNoticeTimer);
+ const el=document.createElement('div');
+ el.id='workoutStructureNotice';
+ el.className='workout-structure-toast';
+ el.setAttribute('role','status');
+ el.setAttribute('aria-live','polite');
+ el.setAttribute('tabindex','0');
+ el.innerHTML='<div class="workout-structure-toast-copy"><b>Workout modified</b><span>Your saved routine stays unchanged unless you update it when finishing.</span></div><span class="workout-structure-toast-close" aria-hidden="true">×</span><span class="workout-structure-toast-progress" aria-hidden="true"></span>';
+ el.addEventListener('click',dismissWorkoutStructureNotice);
+ el.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();dismissWorkoutStructureNotice()}});
+ document.body.appendChild(el);
+ requestAnimationFrame(()=>el.classList.add('show'));
+ workoutStructureNoticeTimer=setTimeout(dismissWorkoutStructureNotice,5000);
+}
+SwoleCatRuntime.events.addEventListener('workout:structure-changed',()=>setTimeout(showWorkoutStructureNotice,0));
+
+function queueWorkoutSetAdvanceCue(ei,si){
+ if(workoutReducedMotion())return;
+ workoutSetAdvanceCue={ei,si};
+}
+function applyWorkoutMotionCues(){
+ const exerciseCue=workoutIncomingExerciseCue;
+ if(exerciseCue){
+   workoutIncomingExerciseCue=null;
+   const stage=document.querySelector('#workout .focus-exercise-stage[data-exercise-index="'+exerciseCue.ei+'"]');
+   if(stage){
+     const cls='workout-exercise-enter-'+exerciseCue.direction;
+     stage.classList.add(cls);
+     setTimeout(()=>stage.classList.remove(cls),320);
+   }
+ }
+ const setCue=workoutSetAdvanceCue;
+ if(setCue){
+   workoutSetAdvanceCue=null;
+   const pill=document.querySelector('#workout .focus-set-pill.current');
+   const card=document.querySelector('#workout .focus-set-card[data-set-index="'+setCue.si+'"]');
+   if(pill)pill.classList.add('set-advance-pulse');
+   if(card)card.classList.add('set-advance-settle');
+   setTimeout(()=>{pill?.classList.remove('set-advance-pulse');card?.classList.remove('set-advance-settle')},520);
+ }
+}
+function renderWorkoutExerciseTransition(fromEi,toEi){
+ if(fromEi===toEi||workoutReducedMotion()){renderWorkout();return}
+ const direction=toEi>fromEi?'forward':'back';
+ if(typeof document.startViewTransition==='function'){
+   const root=document.documentElement;
+   root.dataset.workoutTransition=direction;
+   let transition=null;
+   try{transition=document.startViewTransition(()=>renderWorkout())}catch(e){delete root.dataset.workoutTransition;renderWorkout();return}
+   Promise.resolve(transition?.finished).catch(()=>{}).finally(()=>{
+     if(root.dataset.workoutTransition===direction)delete root.dataset.workoutTransition;
+   });
+   return;
+ }
+ workoutIncomingExerciseCue={ei:toEi,direction};
+ renderWorkout();
+}
 function advanceFromCompletedExercise(ei){
  const w=state.activeWorkout;if(!w)return false;
  const e=w.exercises[ei],p=exerciseSetProgress(e);
@@ -807,8 +878,7 @@ function advanceFromCompletedExercise(ei){
    w.focusExerciseIndex=next;w.focusSetIndex=workoutFirstIncompleteSetIndex(w.exercises[next]);
    w.deferredExerciseIndexes=w.deferredExerciseIndexes.filter(function(i){return i!==next});
    w.exercises.forEach(function(x,i){x.expanded=i===next});
-   const ex=exById(w.exercises[next].exerciseId);
-   saveActiveWorkout();renderWorkout();showToast('Up next: '+((ex&&ex.name)||'next exercise'));
+   saveActiveWorkout();renderWorkoutExerciseTransition(ei,next);
  }else{
    stopRestTimer();w.focusExerciseIndex=ei;w.focusSetIndex=Math.max(0,e.sets.length-1);
    saveActiveWorkout();renderWorkout();showToast('All programmed sets complete');
@@ -843,14 +913,16 @@ function workoutExerciseNavigatorHtml(w,ei){
     '<span class="focus-nav-copy"><b>'+esc(rx&&rx.name||'Exercise')+'</b><small>'+esc(status.label)+' · '+row.sets.filter(function(s){return s.done}).length+'/'+row.sets.length+' sets</small></span>'+
     '<span class="focus-nav-go">'+(i===ei?'●':'›')+'</span></button>';
  }).join('');
+ const addRow='<button class="focus-nav-add" onclick="event.preventDefault();event.stopPropagation();openAddWorkoutExercise()" aria-label="Add exercise to this workout">'+
+   '<span class="focus-nav-add-icon">＋</span><span class="focus-nav-copy"><b>Add exercise</b><small>Add another movement to today\'s workout</small></span><span class="focus-nav-go">›</span></button>';
  return '<div class="focus-exercise-nav-shell">'+
    '<details class="focus-exercise-nav"><summary>'+
    '<div class="focus-exercise-position">EXERCISE '+(ei+1)+' OF '+w.exercises.length+'</div>'+
-   '<div class="focus-exercise-name">'+esc(ex&&ex.name||'Exercise')+'</div>'+
-   '<div class="focus-exercise-meta">'+esc(p.complete?'Complete':workoutActiveSetText(e))+' · '+esc(ex&&ex.muscle||'')+' · '+workingSetIndexes(e).length+' working sets</div>'+
-   '<span class="focus-nav-switch" aria-hidden="true"><span>Switch</span><b>⌄</b></span>'+
-   '</summary><div class="focus-nav-list">'+rows+'</div></details>'+
-   '<button class="focus-howto-btn" onclick="event.preventDefault();event.stopPropagation();openFocusedExerciseHowTo('+ei+')" aria-label="How to do '+esc(ex&&ex.name||'this exercise')+'" title="How to"><span aria-hidden="true">i</span></button>'+
+   '<div class="focus-exercise-title-line"><span class="focus-exercise-name">'+esc(ex&&ex.name||'Exercise')+'</span>'+
+   '<button type="button" class="focus-howto-inline" onclick="event.preventDefault();event.stopPropagation();openFocusedExerciseHowTo('+ei+')" aria-label="How to do '+esc(ex&&ex.name||'this exercise')+'" title="How to"><span aria-hidden="true">i</span></button></div>'+
+   '<div class="focus-exercise-bottom-row"><div class="focus-exercise-meta">'+esc(p.complete?'Complete':workoutActiveSetText(e))+' · '+esc(ex&&ex.muscle||'')+' · '+workingSetIndexes(e).length+' working sets</div>'+
+   '<span class="focus-nav-switch" aria-hidden="true">Switch exercise</span></div>'+
+   '</summary><div class="focus-nav-list">'+rows+addRow+'</div></details>'+
    '</div>';
 }
 function openFocusedExerciseHowTo(ei){
@@ -874,7 +946,7 @@ function selectWorkoutExercise(ei){
  const currentName=exById(w.exercises[current]&&w.exercises[current].exerciseId);
  const wasIncomplete=current!==ei&&current>=0&&!exerciseSetProgress(w.exercises[current]).complete&&!w.exercises[current].skipped;
  if(!setWorkoutFocus(ei,null,{deferCurrent:true,render:false}))return;
- saveActiveWorkout();renderWorkout();
+ saveActiveWorkout();renderWorkoutExerciseTransition(current,ei);
  if(wasIncomplete)showToast(((currentName&&currentName.name)||'Exercise')+' saved as pending');
 }
 function selectWorkoutSet(ei,si){
@@ -888,13 +960,15 @@ function deferFocusedExercise(){
  if(next<0){showToast('No other unfinished exercise');return}
  const ex=exById(w.exercises[ei].exerciseId),name=ex&&ex.name||'Exercise';
  setWorkoutFocus(next,null,{deferCurrent:true,render:false});
- saveActiveWorkout();renderWorkout();showToast(name+' saved as pending');
+ saveActiveWorkout();renderWorkoutExerciseTransition(ei,next);showToast(name+' saved as pending');
 }
 function focusedSetRailHtml(e,ei,si){
- return '<div class="focus-set-rail" aria-label="Workout sets">'+e.sets.map(function(set,i){
+ const setPills=e.sets.map(function(set,i){
    const cls=set.done?'done':i===si?'current':'future';
    return '<button class="focus-set-pill '+cls+'" onclick="selectWorkoutSet('+ei+','+i+')" aria-label="Open '+esc(setDisplayLabel(e,i))+'">'+(set.done?'✓ ':'')+(i+1)+'</button>';
- }).join('')+'</div>';
+ }).join('');
+ return '<div class="focus-set-rail" aria-label="Workout sets">'+setPills+
+  '<button class="focus-set-add" onclick="addWorkoutSet('+ei+',\'working\')" aria-label="Add working set"><span aria-hidden="true">＋</span> Set</button></div>';
 }
 function openFocusedSetOptions(ei,si){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],set=e&&e.sets&&e.sets[si];if(!e||!set)return;
@@ -909,17 +983,20 @@ function openFocusedSetOptions(ei,si){
 }
 function openFocusedExerciseMore(ei){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],ex=e?exById(e.exerciseId):null;if(!e)return;
- const prev=previousExercise(e.exerciseId),target=liveSetTarget(e,firstWorkingSetIndex(e),prev),warmups=warmupGuide(target.weight,ex),superset=supersetMeta(ei);
+ const prev=previousExercise(e.exerciseId),target=liveSetTarget(e,firstWorkingSetIndex(e),prev),warmups=warmupGuide(target.weight,ex),superset=supersetMeta(ei),hasRemaining=workoutHasRemainingProgrammedWork(w);
  openModal(esc(ex&&ex.name||'Exercise')+' · More',
-  '<div class="notice">Use these only when you need them. They do not change completed workout history unless you explicitly log or save a change.</div>'+
-  '<div class="actions">'+
+  '<div class="notice">Keep the live screen focused on logging. Everything here stays available when you need to change the exercise or the session.</div>'+
+  '<div class="workout-more-section"><div class="eyebrow">EXERCISE</div><div class="actions">'+
   (warmups.length?'<button class="btn secondary" onclick="closeModal();openWarmupGuide('+ei+')">Warm-up guide</button>':'')+
   '<button class="btn secondary" onclick="closeModal();openTargetOverride('+ei+')">Override target</button>'+
   '<button class="btn secondary" onclick="closeModal();openSupersetPicker('+ei+')">⚡ '+(superset?('Superset '+superset.label):'Superset')+'</button>'+
   '<button class="btn secondary" onclick="addWorkoutSet('+ei+',\'working\');closeModal()">+ Working set</button>'+
+  '<button class="btn danger" onclick="closeModal();toggleSkipWorkoutExercise('+ei+')">Skip exercise today</button></div></div>'+
+  '<div class="field" style="margin-top:12px"><label>Exercise notes</label><textarea oninput="updateNotes('+ei+',this.value)" placeholder="Seat setting, grip, tempo, machine used...">'+esc(e.notes||'')+'</textarea></div>'+
+  '<div class="workout-more-section"><div class="eyebrow">WORKOUT</div><div class="actions">'+
   '<button class="btn secondary" onclick="closeModal();openWorkoutStructureEditor()">Manage workout</button>'+
-  '<button class="btn danger" onclick="closeModal();toggleSkipWorkoutExercise('+ei+')">Skip exercise today</button></div>'+
-  '<div class="field" style="margin-top:14px"><label>Exercise notes</label><textarea oninput="updateNotes('+ei+',this.value)" placeholder="Seat setting, grip, tempo, machine used...">'+esc(e.notes||'')+'</textarea></div>');
+  (hasRemaining?'<button class="btn secondary" onclick="closeModal();finishWorkout()">Finish workout early</button>':'<button class="btn green" onclick="closeModal();finishWorkout()">Finish workout</button>')+
+  '<button class="btn danger" onclick="closeModal();cancelWorkout()">Cancel workout</button></div></div>');
 }
 function focusedCoachTargetHtml(e,ei,ex,prev){
  const rec=buildRecommendation(e.config,prev,e.exerciseId),coach=coachSignal(e.exerciseId,e.config);
@@ -943,11 +1020,14 @@ function focusedSetCardHtml(e,ei,si,ex,prev){
   '<div class="focus-set-head"><div><div class="exercise-kicker">'+esc(setDisplayLabel(e,si))+' · '+(si+1)+' OF '+e.sets.length+'</div><div class="focus-set-reference">'+(type==='working'?('Previous: '+esc(ref)):'Logged separately from progression')+'</div></div>'+
   '<button class="focus-set-options" onclick="openFocusedSetOptions('+ei+','+si+')" aria-label="Set options">•••</button></div>'+
   (type==='working'?'<div class="focus-set-target"><span class="set-target">'+esc(targetBadgeText(target,ex))+'</span></div>':'<div class="set-nonprogress-note">'+esc(setProgressionNote(type))+'</div>')+
-  '<div class="live-entry"><div class="live-input-wrap"><div class="input-label-row"><label>'+((ex&&ex.equipment)==='bodyweight'?'Added weight':'Weight')+' ('+state.profile.unit+')</label><div class="micro-step">'+
-  '<button aria-label="decrease weight" onclick="changeSetValue('+ei+','+si+',\'weight\',-'+increment+')">−</button><button aria-label="increase weight" onclick="changeSetValue('+ei+','+si+',\'weight\','+increment+')">+</button></div></div>'+
-  '<input class="direct-number" type="number" inputmode="decimal" enterkeyhint="done" step=".25" min="0" value="'+displaySetWeightValue(s.weight)+'" placeholder="'+((ex&&ex.equipment)==='bodyweight'?'0':'Enter')+'" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+',\'weight\',this.value)" onblur="commitFirstExerciseWeightAutofill('+ei+','+si+')" aria-label="weight"></div>'+
-  '<div class="live-input-wrap"><div class="input-label-row"><label>Reps</label><div class="micro-step"><button aria-label="decrease reps" onclick="changeSetValue('+ei+','+si+',\'reps\',-1)">−</button><button aria-label="increase reps" onclick="changeSetValue('+ei+','+si+',\'reps\',1)">+</button></div></div>'+
-  '<input class="direct-number" type="number" inputmode="numeric" enterkeyhint="done" min="0" value="'+s.reps+'" placeholder="Reps" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+',\'reps\',this.value)" aria-label="reps"></div>'+
+  '<div class="live-entry"><div class="live-input-wrap numeric-entry"><label>'+((ex&&ex.equipment)==='bodyweight'?'Added weight':'Weight')+' ('+state.profile.unit+')</label><div class="numeric-stepper">'+
+  '<button class="numeric-step-btn" aria-label="decrease weight" onclick="changeSetValue('+ei+','+si+',\'weight\',-'+increment+')">−</button>'+
+  '<input class="direct-number" type="number" inputmode="decimal" enterkeyhint="done" step=".25" min="0" value="'+displaySetWeightValue(s.weight)+'" placeholder="'+((ex&&ex.equipment)==='bodyweight'?'0':'Enter')+'" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+',\'weight\',this.value)" onblur="commitFirstExerciseWeightAutofill('+ei+','+si+')" aria-label="weight">'+
+  '<button class="numeric-step-btn" aria-label="increase weight" onclick="changeSetValue('+ei+','+si+',\'weight\','+increment+')">+</button></div></div>'+
+  '<div class="live-input-wrap numeric-entry"><label>Reps</label><div class="numeric-stepper">'+
+  '<button class="numeric-step-btn" aria-label="decrease reps" onclick="changeSetValue('+ei+','+si+',\'reps\',-1)">−</button>'+
+  '<input class="direct-number" type="number" inputmode="numeric" enterkeyhint="done" min="0" value="'+s.reps+'" placeholder="Reps" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+',\'reps\',this.value)" aria-label="reps">'+
+  '<button class="numeric-step-btn" aria-label="increase reps" onclick="changeSetValue('+ei+','+si+',\'reps\',1)">+</button></div></div>'+
   '<div class="live-input-wrap rir-small"><div class="input-label-row"><label>RIR</label></div><select onchange="updateSet('+ei+','+si+',\'rir\',this.value)"><option value="">—</option>'+rirOptions+'</select></div></div>'+
   (pt?'<div class="plates">'+esc(pt)+'</div>':'')+
   '<button class="complete-set '+(s.done?'done':'')+'" onclick="toggleSet('+ei+','+si+')">'+(s.done?'✓ Completed · tap to reopen':'Complete Set')+'</button>'+
@@ -955,16 +1035,17 @@ function focusedSetCardHtml(e,ei,si,ex,prev){
 }
 function focusedExerciseCanvasHtml(w,ei){
  const e=w.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),si=workoutFocusedSetIndex(w),prog=exerciseSetProgress(e),superset=supersetMeta(ei);
- const next=nextWorkoutExerciseIndex(ei,w);
- return workoutExerciseNavigatorHtml(w,ei)+
+ const next=nextWorkoutExerciseIndex(ei,w),allDone=!workoutHasRemainingProgrammedWork(w);
+ return '<div class="focus-exercise-stage" data-exercise-index="'+ei+'">'+workoutExerciseNavigatorHtml(w,ei)+
   '<div id="workoutExercise-'+ei+'" class="focus-exercise-canvas tone-'+(ei%4)+' '+(prog.complete?'complete-block':'')+'">'+
   '<div class="focus-exercise-actions"><button class="btn secondary" onclick="openWorkoutSubstitute('+ei+')">⇄ Substitute</button>'+
-  '<button class="btn secondary" onclick="deferFocusedExercise()" '+(next<0?'disabled':'')+'>Next Exercise</button>'+
   '<button class="btn secondary focus-more-btn" onclick="openFocusedExerciseMore('+ei+')">More ···</button></div>'+
   focusedCoachTargetHtml(e,ei,ex,prev)+
   (superset?'<div class="superset-note"><b>Superset '+superset.label+'</b> · '+esc(supersetNames(superset.id))+'<br>Complete this set, then Swole Cat will rotate to the paired movement.</div>':'')+
   focusedSetRailHtml(e,ei,si)+focusedSetCardHtml(e,ei,si,ex,prev)+
-  '<div class="focus-exercise-footer">'+(prog.complete?'<button class="btn secondary" onclick="deferFocusedExercise()">Go to unfinished exercise</button>':'<span>'+e.sets.filter(function(s){return s.done}).length+' of '+e.sets.length+' sets complete</span>')+'</div></div>';
+  (allDone?'<div class="focus-workout-complete"><div><div class="eyebrow">SESSION READY</div><b>All programmed sets complete.</b></div><button class="btn green" onclick="finishWorkout()">Finish Workout</button></div>':
+   (prog.complete&&next>=0?'<div class="focus-exercise-footer"><button class="btn secondary" onclick="deferFocusedExercise()">Go to unfinished exercise</button></div>':''))+
+  '</div></div>';
 }
 
 let workoutKeyboardAnchorBound=false;
@@ -998,17 +1079,16 @@ function renderWorkout(){
  if(!w){document.getElementById('workoutArea').innerHTML='<div class="empty">No active workout.</div>';return;}
  const focus=normalizeWorkoutFocusState(w);
  const counts=workoutCounts(),pct=counts.total?Math.round(counts.done/counts.total*100):0,workoutCoach=workoutCoachSignal();
- let html='<div class="focus-workout-top"><div class="focus-session-copy"><div class="workout-console-code"><span class="active-pulse"></span>SESSION // ACTIVE</div>'+
-  '<h1>'+esc(w.routineName)+'</h1><div class="mini">'+counts.done+'/'+counts.total+' sets · '+pct+'% · '+workoutElapsed()+'</div></div>'+
-  '<button class="btn small danger workout-cancel-btn" onclick="cancelWorkout()" aria-label="Cancel active workout">Cancel</button></div>'+
+ let html='<div class="focus-session-strip">'+
+  '<div class="focus-session-primary"><span class="focus-session-label"><span class="active-pulse"></span>ACTIVE</span><b class="focus-session-name" title="'+escAttr(w.routineName)+'">'+esc(w.routineName)+'</b></div>'+
+  '<div class="focus-session-stats"><span>'+counts.done+'/'+counts.total+' sets</span><span>'+pct+'%</span><span>'+workoutElapsed()+'</span></div></div>'+
   '<div class="focus-session-progress"><div style="width:'+pct+'%"></div></div>';
- if(w.structureDirty)html+='<div class="workout-structure-note"><b>Today’s structure changed.</b> Your saved routine stays untouched unless you choose to update it when finishing.</div>';
  if(workoutCoach)html+='<details class="focus-session-coach"><summary>Coach session note</summary><div class="coachbox '+workoutCoach.level+'"><div class="coach-text">'+esc(workoutCoach.text)+'</div>'+
   (workoutCoach.level==='reset'?'<div class="actions"><button class="btn small secondary" onclick="applyLightSession()">Use a 7.5% lighter session</button></div>':'')+'</div></details>';
  html+=focus>=0?focusedExerciseCanvasHtml(w,focus):'<div class="empty">No available exercise.</div>';
- html+='<div class="focus-workout-footer"><button class="btn secondary" onclick="openAddWorkoutExercise()">+ Add Exercise</button><button class="btn green" onclick="finishWorkout()">Finish Workout</button></div>';
  document.getElementById('workoutArea').innerHTML=html;
  bindWorkoutKeyboardAnchor();
+ applyWorkoutMotionCues();
  requestAnimationFrame(syncWorkoutStickyOffsets);
 }
 
@@ -1082,6 +1162,7 @@ function toggleSet(ei,si){
    if(workoutHasRemainingProgrammedWork())startRestTimer(e.config.restSeconds||120);else stopRestTimer();
    if(advanceFromCompletedExercise(ei))return;
    w.focusSetIndex=workoutFirstIncompleteSetIndex(e);
+   queueWorkoutSetAdvanceCue(ei,w.focusSetIndex);
  }else{
    set.pr='';w.focusSetIndex=si;
    w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(function(i){return i!==ei});
@@ -1132,7 +1213,8 @@ function unfinishedWorkoutExercises(w){
  }).filter(function(row){return !row.e.skipped&&row.undone>0});
 }
 function focusUnfinishedWorkoutExercise(ei){
- closeModal();setWorkoutFocus(ei,null,{deferCurrent:false,render:false});saveActiveWorkout();renderWorkout();
+ const w=state.activeWorkout,from=normalizeWorkoutFocusState(w);
+ closeModal();setWorkoutFocus(ei,null,{deferCurrent:false,render:false});saveActiveWorkout();renderWorkoutExerciseTransition(from,ei);
  const ex=exById(state.activeWorkout.exercises[ei].exerciseId);showToast('Back to '+((ex&&ex.name)||'unfinished exercise'));
 }
 function skipUnfinishedWorkoutExercise(ei){

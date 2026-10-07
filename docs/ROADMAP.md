@@ -11,6 +11,7 @@ This document is the canonical product roadmap for Swole Cat. Features listed as
 5. **Social features should enhance training, not turn Swole Cat into a generic social network.**
 6. **Visual identity should evolve without sacrificing usability.** Swole Cat should preserve the clean information architecture, sizing, readability, and fast workout flow while developing a distinctive dark retro-futurist/cyberpunk visual identity.
 7. **Fitness should not be gatekept by friction.** Core fitness functionality should not be gatekept behind ads, intrusive monetization, or a maze of in-app purchases. Swole Cat should prioritize helping someone open the app, build or start a workout, train, and leave with useful history and guidance.
+8. **The business model should feel like Swole Cat.** The core workout app should remain genuinely useful for free, with no ads and no required recurring subscription. The intended monetization model is an optional **Swole Cat Pro lifetime unlock**, initially targeted at **$7.99 one time**, for cloud-connected and other premium features. A user who buys Lifetime Pro keeps that entitlement permanently, even if pricing changes for future customers.
 
 ---
 
@@ -115,7 +116,7 @@ Areas to evaluate:
 
 ## Phase 3 — Visual Identity Refresh
 
-**Status: Visual identity passes complete through v0.36.0. UI Tuning Pass 1 completed in v0.37.0 from a real-device screen-recording review, including Android system-bar integration, bottom-dock integration, and schematic exercise artwork. UI Tuning Pass 2 completed in v0.38.0 with app-owned selectors and responsive Settings toggles. UI Tuning Pass 3 completed in v0.39.0 with removal of the persistent install control from the header. UI Tuning Pass 4 completed in v0.40.0 with a single contextual pause/resume icon control, true paused-time tracking, and a recognizable gear settings icon. Additional user-directed sizing and micro-UI adjustments remain iterative. Performance Pass 1 completed in v0.41.0, removing redundant navigation saves, batching continuous-input autosaves, caching unchanged heavy views, reducing Android paint cost, and adding performance regression coverage. Android Behavior Pass 1 completed in v0.42.0 with native Back navigation, layered transient-UI dismissal, protected double-back root exit, and explicit native app-state persistence/wake-lock handling. Android Behavior Pass 2 completed in v0.43.0 with native keyboard resizing, dynamic viewport/safe-area handling, explicit status-bar styling, Android share-sheet backup export, reusable file imports, and startup storage-write verification.**
+**Status: Workout Console UX Pass completed in v0.72.0 from a narrated real-device workflow review, establishing a zero-scroll normal-path target, compact session chrome, explicit exercise switching, inline Add Set, progressive disclosure of session actions, and contextual Finish Workout. Visual identity passes complete through v0.36.0. UI Tuning Pass 1 completed in v0.37.0 from a real-device screen-recording review, including Android system-bar integration, bottom-dock integration, and schematic exercise artwork. UI Tuning Pass 2 completed in v0.38.0 with app-owned selectors and responsive Settings toggles. UI Tuning Pass 3 completed in v0.39.0 with removal of the persistent install control from the header. UI Tuning Pass 4 completed in v0.40.0 with a single contextual pause/resume icon control, true paused-time tracking, and a recognizable gear settings icon. Additional user-directed sizing and micro-UI adjustments remain iterative. Performance Pass 1 completed in v0.41.0, removing redundant navigation saves, batching continuous-input autosaves, caching unchanged heavy views, reducing Android paint cost, and adding performance regression coverage. Android Behavior Pass 1 completed in v0.42.0 with native Back navigation, layered transient-UI dismissal, protected double-back root exit, and explicit native app-state persistence/wake-lock handling. Android Behavior Pass 2 completed in v0.43.0 with native keyboard resizing, dynamic viewport/safe-area handling, explicit status-bar styling, Android share-sheet backup export, reusable file imports, and startup storage-write verification.**
 
 **Priority: High**
 
@@ -776,6 +777,32 @@ Goal: freeze the pre-beta product on a leaner, faster, better-audited runtime be
 
 **Optimization principle:** the beta freeze favors measured, low-risk simplification over architectural churn. Large rewrites, speculative lazy-loading, and broad CSS deletion are intentionally deferred when they could destabilize working behavior without a clear runtime win.
 
+### v0.66.1 — Field Beta Milestone
+
+**Status: Frozen baseline**
+
+The first outside beta baseline is commit `99c258f4fc8c0254a533867901f50a8a216f2b28`, Swole Cat v0.66.1, Android versionCode 82.
+
+Branch model:
+- `beta` — stable field-testing branch. Starts at the v0.66.1 milestone. It should only move for deliberate beta hotfixes that are specifically intended for current testers.
+- `beta-v0.66.1` — immutable snapshot of the original v0.66.1 beta milestone. Do not move or repurpose this branch.
+- `main` — active lab/development branch. New experiments, architecture work, features, and risky changes continue here without changing the field beta unless intentionally promoted.
+
+Promotion rule:
+1. Develop and validate new work on `main`.
+2. Do not merge ordinary lab work into `beta`.
+3. If a current tester needs a critical fix, make the smallest safe fix, validate the full regression wall + Android build, then intentionally advance `beta`.
+4. Keep the frozen `beta-v0.66.1` branch unchanged so the original milestone is always recoverable.
+5. A future major beta milestone should get its own frozen snapshot branch before `beta` advances.
+
+Beta purpose:
+- let real users exercise the stable app in normal workouts over time
+- collect field feedback on reliability, progression behavior, usability, sharing, history, and real workout flow
+- separate real-world beta evidence from experimental lab development
+- avoid destabilizing a working tester build merely because new work is underway on `main`
+
+See `docs/BETA_MILESTONE.md` for the operating contract.
+
 ---
 
 ## Phase 8 — Accounts, Cloud Backup, and Multi-Device Sync
@@ -784,16 +811,147 @@ Goal: freeze the pre-beta product on a leaner, faster, better-audited runtime be
 
 Goal: add identity and cloud infrastructure only when it unlocks meaningful value.
 
-### Locked: Optional Swole Cat accounts
-- [ ] Account creation/sign-in
-- [ ] Cloud backup
-- [ ] Multi-device sync
-- [ ] Account recovery
-- [ ] Conflict-safe sync strategy
-- [ ] Local-first/offline behavior remains supported
+### Phase 8.0 - Cloud architecture specification
 
-### Likely implementation direction
-A hosted backend such as Supabase or an equivalent service can provide authentication, relational data, permissions, storage, and real-time features. Final provider should be chosen when this phase begins based on current cost, reliability, and platform needs.
+**Status: Complete**
+
+The initial cloud architecture is locked in `docs/CLOUD_ARCHITECTURE.md`.
+
+Core decisions:
+- [x] Use **Supabase Free** as the initial hosted backend for the lab/private cloud beta.
+- [x] Keep `overload_v3` local-first and usable without an account or network connection.
+- [x] Put Supabase behind Swole Cat runtime services instead of calling it directly from workout, routine, progression, or Coach domains.
+- [x] Separate full cloud backup from record-level multi-device sync.
+- [x] Reuse the existing `swole-cat-backup` envelope for disaster-recovery snapshots.
+- [x] Keep normal sync record-based, versioned, queueable, retry-safe, and conflict-aware rather than overwriting one giant state blob.
+- [x] Reuse `SWOLECAT1` for cloud short-code/link sharing.
+- [x] Keep collaborative/group data separate from each member's private performance records.
+- [x] Start with no realtime subscriptions and no cloud dependency in the live workout path.
+- [x] Keep service-role credentials and purchase verification off-device.
+- [x] Treat the Supabase provider as replaceable infrastructure, not as Swole Cat's domain model.
+- [x] Keep the cloud lab at **$0/month** until real usage, reliability needs, or free-tier limits justify an upgrade.
+
+### Phase 8.1 - Optional account foundation
+
+**Status: Phase 8.1 and Phase 8.2 are complete through v0.68.0. Cloud Backup is verified on real Android hardware. Phase 8.3 Multi-device Sync is next.**
+
+**v0.67.0 Cloud Shell Foundation** established the provider-neutral identity boundary without uploading workout data.
+
+**v0.67.1** connected real Google OAuth on web/PWA.
+
+**v0.67.2** added Android PKCE OAuth browser return/deep-link handling.
+
+**v0.67.3** split experimental Android development into the separate **Swole Cat Testing** app so it can coexist with the frozen field beta without sharing local data.
+
+**v0.67.4** moves Android Supabase session persistence behind an app-local Capacitor bridge using AES-256-GCM with its secret key generated and held by Android Keystore. Existing Testing auth values migrate once from the old namespaced WebView storage and are removed only after secure write/read verification.
+
+**v0.67.5** establishes the first verified permanently signed Swole Cat Testing APK so later Testing builds can update in place.
+
+**v0.67.6** completes the Phase 8.1 account-lifecycle implementation: Google-only recovery, fresh same-account Google re-auth before destructive deletion, an authenticated server-side `delete-account` Edge Function, safe cancellation/failure behavior, and regression coverage proving local workout state remains untouched.
+
+- [x] Add provider-neutral `identity`, `cloudConfig`, and namespaced `cloudAuthStorage` runtime services.
+- [x] Make cloud configuration disabled by default and injectable at build/runtime without committing backend credentials.
+- [x] Keep local-only startup at zero cloud requests and zero cloud metadata.
+- [x] Add the Settings/Account shell with explicit local-only and signed-in states.
+- [x] Keep sign-in/sign-out isolated from `overload_v3`.
+- [x] Explicitly keep workout sync OFF in the identity phase.
+- [x] Avoid creating Swole Cat database rows merely because an Auth account exists.
+- [x] Add production-bundle regression coverage proving local saves never wake the cloud shell.
+- [x] Provision the dedicated Supabase Free project and connect the lab build to its public URL/publishable key without adding application-data tables.
+- [x] Connect the actual Supabase Auth provider adapter with pinned lazy-loaded Supabase JS.
+- [x] Configure and verify Google OAuth on the live web/PWA build.
+- [x] Add Android OAuth deep-link return handling and verify a real Google login returns successfully to the installed app.
+- [x] Keep the experimental `main` Android build installable side-by-side with the field beta as **Swole Cat Testing** using package ID `com.jlingenfelter.swolecat.testing` and callback `com.jlingenfelter.swolecat.testing://auth/callback`.
+- [x] Preserve the field-beta package ID `com.jlingenfelter.swolecat` so beta workout data and experimental lab data remain in separate Android app sandboxes.
+- [x] Define and wire a persistent Testing-only Android signing identity so future Testing APKs can update in place.
+- [x] Add the four Testing signing values as GitHub Actions repository secrets.
+- [x] Produce and verify the first permanently signed Testing APK (v0.67.5, Android run 328).
+- [x] Verify the live Supabase account state after real-device login: one Google Auth identity and zero public Swole Cat application tables as of 2026-10-03.
+- [x] Move Android auth session secrets from the temporary namespaced lab store to Keystore-backed AES-GCM storage protected by Android Keystore.
+- [x] Add Google-only account recovery/re-auth and authenticated cloud-account deletion.
+- [x] Verify permanently signed v0.67.6 updates in place over v0.67.5 and preserves the existing Google/Supabase session on real Android hardware.
+- [x] Verify sign-out keeps local data and same-Google-account recovery works on real Android hardware.
+- [x] Verify Google re-auth plus final cloud-account deletion keeps local workout data on real Android hardware.
+- [x] Verify backend Auth user removal after deletion and confirm public application-table count remains zero.
+- [x] Keep local-only mode fully supported.
+
+**Phase 8.1 complete: 2026-10-04.**
+
+**Resume checkpoint:** see `docs/CURRENT_STATE.md` before continuing Phase 8 work.
+
+### Phase 8.2 - Cloud backup
+- [x] Create private `swole-cat-backups` Storage bucket with owner-folder RLS.
+- [x] Create RLS-protected `backup_metadata` table with schema/app version, SHA-256, timestamp, source installation ID, object path, and size.
+- [x] Upload the existing validated `swole-cat-backup` envelope without creating a second backup format.
+- [x] Keep a bounded latest + previous recovery snapshot set per user.
+- [x] Add manual **Back Up Now** and **Restore from Cloud** controls.
+- [x] Verify SHA-256 and size before a downloaded snapshot can reach restore.
+- [x] Show restore preview before replacement and create the normal local pre-import safety snapshot first.
+- [x] Keep cloud failure non-blocking for workouts and keep backup traffic explicitly user initiated.
+- [x] Extend account deletion to remove private backup objects/metadata before deleting the Auth user.
+- [x] Pass the full v0.68.0 regression/build wall on `main` (branch Validate 608, main Validate 609, Pages 602, Android Testing 330).
+- [x] Verify backup creation, two-snapshot retention, restore, rollback snapshot, offline safety, and account deletion with cloud backups on real Android hardware.
+- [x] Verify the final backup-aware account deletion leaves 0 Auth users, 0 backup metadata rows, and 0 private backup objects.
+
+**Phase 8.2 complete: 2026-10-05.**
+
+### Phase 8.3 Multi-device Sync — COMPLETE
+
+**Status: COMPLETE. Real-device bidirectional sync, conflict handling, tombstones, offline queue persistence, and destructive account cleanup all passed on v0.69.4.
+
+- [x] Add stable per-device identity and separate local sync metadata.
+- [x] Represent user-owned sync data as individual records with server version, change sequence, tombstones, and source-device metadata.
+- [x] Diff local state against the last synced manifest so ordinary saves only enqueue changed records.
+- [x] Keep ordinary local saves network-free; first release uses explicit **Sync Now** while queueing/debounce behavior is battle-tested.
+- [x] Pull changes by server change sequence with paging.
+- [x] Surface true edit conflicts instead of silently discarding one device's changes.
+- [x] Add explicit **Keep this device** / **Use cloud** conflict resolution.
+- [x] Treat simultaneous active-workout editing conservatively by leaving active workouts local-only in the first pass.
+- [x] Harden `devices` and `sync_records` Data API grants to least privilege with owner-only RLS.
+- [x] Pass the full v0.69.0 regression/build wall (branch Validate 642, main Validate 643, Pages 612, Android Testing 331).
+- [x] Verify fresh-device pull and bidirectional edits on real installations.
+- [ ] Verify deliberate same-record conflicts, tombstones, and offline queued changes on real installations.
+- [ ] After proven stable, enable automatic background-safe batch sync at documented safe moments.
+
+### Phase 8.4 - Cloud sharing transport
+- [ ] Add short human-friendly codes and share URLs that resolve to stored canonical `SWOLECAT1` payloads.
+- [ ] Keep the current universal importer as the only plan-ingestion path.
+- [ ] Permit recipients to import a shared blueprint without exposing sender workout history or private account data.
+
+### Phase 8.5 - Lifetime Pro entitlement
+- [ ] Target **Swole Cat Pro at $7.99 lifetime**.
+- [ ] Verify Google Play lifetime purchases server-side before writing cloud entitlement state.
+- [ ] Make entitlement rows readable by the owning user but not writable by the client.
+- [ ] Cache entitlement appropriately for offline UI, while cloud-only features naturally require connectivity.
+- [ ] Never convert an existing lifetime buyer into a recurring subscriber.
+
+### Locked: Optional Swole Cat accounts
+- [x] Account creation/sign-in
+- [x] Cloud backup
+- [ ] Multi-device sync
+- [x] Account recovery
+- [ ] Conflict-safe sync strategy
+- [x] Local-first/offline behavior remains the architectural requirement
+
+### Locked: Monetization philosophy
+- [x] Keep the core workout experience genuinely useful for free.
+- [x] No advertising.
+- [x] No required recurring subscription for the core Swole Cat product.
+- [x] Target **Swole Cat Pro at $7.99 lifetime** as the initial paid model.
+- [x] Use Pro primarily for features that create ongoing infrastructure cost or meaningful premium value, such as cloud backup, multi-device sync, cloud sharing/short codes, and selected connected/advanced features.
+- [x] A Lifetime Pro purchase remains lifetime. Existing buyers are never converted into recurring subscribers because pricing changes later.
+- [x] Future customers may have a different one-time purchase price if operating costs or product scope change.
+- [x] Do not deliberately cripple ordinary workout tracking to force a Pro purchase.
+- [x] If future cloud AI creates material per-use cost, price that usage separately rather than silently undermining the lifetime promise.
+- [x] Design infrastructure with lifetime economics in mind: keep recurring server/storage costs lean, preserve local-first operation, and avoid unnecessary cloud dependence.
+
+**Positioning:** Pro should feel like a voluntary way to unlock connected convenience and support an independent, ad-free, subscription-free product, not a toll booth placed in front of training.
+
+### Locked provider decision
+
+Use **Supabase** for the first Swole Cat cloud implementation. The initial remote environment should remain on the Free plan during lab/private-beta work. Upgrade only when actual usage, uptime expectations, backup requirements, or free-tier limits justify it.
+
+Current official free-plan constraints and the planned upgrade triggers are recorded in `docs/CLOUD_ARCHITECTURE.md` so the decision can be revisited if provider pricing changes.
 
 **Sharing integration requirement:** account/cloud infrastructure must treat `SWOLECAT1` as the existing canonical Routine/Program package. Short codes and share links are a delivery/index layer over that payload, not a replacement serialization format. See `docs/SHARING_ARCHITECTURE.md`.
 
@@ -946,11 +1104,24 @@ The following product ideas are explicitly retained on the roadmap:
 - [x] Local deterministic workout-generation engine using muscle/equipment/history/preferences
 - [ ] Optional later AI-backed conversational Coach layer
 - [ ] Preserve an ad-free, no-paywall core workout experience
-- [ ] Routine sharing/import
-- [ ] Optional Swole Cat accounts
-- [ ] Cloud backup and multi-device sync
+- [x] Routine sharing/import
+- [x] Optional Swole Cat accounts
+- [ ] Free core workout experience with no ads
+- [ ] Swole Cat Pro lifetime purchase model, initially targeted at $7.99 one time
+- [ ] Lifetime entitlement guarantee for existing Pro buyers
+- [ ] Cloud-connected Pro features without making local workout tracking dependent on payment
+- [x] Cloud backup and multi-device sync
 - [ ] Shared workout groups/programs
 - [ ] Independent stats for every member on a shared program
 - [ ] Group progress visibility
 - [ ] Privacy controls for shared stats
 - [ ] Live group workout sessions
+
+
+## Immediate next development task
+
+**In-app update infrastructure on Swole Cat Testing** is the current active task. Build and prove Testing self-update first; only then create the new one-time Beta baseline. Beta must never advance from ordinary main-branch development without explicit promotion approval.
+
+After the phone validation/iteration, return to the remaining **Settings cleanup and reorganization** work. The v0.71.0 short-share real-device check also remains an independent cloud exit test.
+
+Canonical resume reference: `docs/NEXT_CHAT_HANDOFF.md`.

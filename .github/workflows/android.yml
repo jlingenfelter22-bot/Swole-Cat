@@ -1,4 +1,4 @@
-name: Build Swole Cat Android
+name: Build Swole Cat Testing Android
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ on:
       - ".github/workflows/android.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   debug-apk:
@@ -59,28 +59,160 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
+      - name: Check persistent Testing signing secrets
+        env:
+          KEYSTORE_B64: ${{ secrets.SWOLE_CAT_TESTING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.SWOLE_CAT_TESTING_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SWOLE_CAT_TESTING_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.SWOLE_CAT_TESTING_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_B64" || { echo "::error::Missing SWOLE_CAT_TESTING_KEYSTORE_B64"; exit 1; }
+          test -n "$STORE_PASSWORD" || { echo "::error::Missing SWOLE_CAT_TESTING_STORE_PASSWORD"; exit 1; }
+          test -n "$KEY_ALIAS" || { echo "::error::Missing SWOLE_CAT_TESTING_KEY_ALIAS"; exit 1; }
+          test -n "$KEY_PASSWORD" || { echo "::error::Missing SWOLE_CAT_TESTING_KEY_PASSWORD"; exit 1; }
+
       - name: Prepare Android project
         run: npm run android:prepare
+
+      - name: Install persistent Testing signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.SWOLE_CAT_TESTING_KEYSTORE_B64 }}
+        run: |
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > android/app/swole-cat-testing.jks
+          test -s android/app/swole-cat-testing.jks
+
+      - name: Configure persistent Testing signing
+        env:
+          SWOLE_CAT_ENABLE_SIGNING: "1"
+          SWOLE_CAT_SIGNING_BUILD_TYPE: "debug"
+          SWOLE_CAT_SIGNING_STORE_FILE: "swole-cat-testing.jks"
+          SWOLE_CAT_SIGNING_STORE_PASSWORD: ${{ secrets.SWOLE_CAT_TESTING_STORE_PASSWORD }}
+          SWOLE_CAT_SIGNING_KEY_ALIAS: ${{ secrets.SWOLE_CAT_TESTING_KEY_ALIAS }}
+          SWOLE_CAT_SIGNING_KEY_PASSWORD: ${{ secrets.SWOLE_CAT_TESTING_KEY_PASSWORD }}
+        run: node scripts/configure-android.mjs
 
       - name: Verify Android version metadata
         run: |
           grep -Eq "versionCode[[:space:]]+${{ steps.meta.outputs.version_code }}" android/app/build.gradle
           grep -Eq "versionName[[:space:]]+\"${{ steps.meta.outputs.version }}\"" android/app/build.gradle
           grep -F "const APP_VERSION='${{ steps.meta.outputs.version }}';" www/app.js
+          grep -F 'android:scheme="com.jlingenfelter.swolecat.testing"' android/app/src/main/AndroidManifest.xml
+          grep -F 'android:host="auth"' android/app/src/main/AndroidManifest.xml
+          grep -F 'android:pathPrefix="/callback"' android/app/src/main/AndroidManifest.xml
+          grep -F 'applicationId "com.jlingenfelter.swolecat.testing"' android/app/build.gradle
+          grep -F '<string name="app_name">Swole Cat Testing</string>' android/app/src/main/res/values/strings.xml
+          SECURE_PLUGIN="$(find android/app/src/main/java -name SwoleCatSecureStoragePlugin.java -print -quit)"
+          MAIN_ACTIVITY="$(find android/app/src/main/java -name MainActivity.java -print -quit)"
+          test -n "$SECURE_PLUGIN"
+          test -n "$MAIN_ACTIVITY"
+          grep -F '@CapacitorPlugin(name = "SwoleCatSecureStorage")' "$SECURE_PLUGIN"
+          grep -F 'AndroidKeyStore' "$SECURE_PLUGIN"
+          grep -F 'AES/GCM/NoPadding' "$SECURE_PLUGIN"
+          grep -F 'registerPlugin(SwoleCatSecureStoragePlugin.class);' "$MAIN_ACTIVITY"
+          UPDATER_PLUGIN="$(find android/app/src/main/java -name SwoleCatUpdaterPlugin.java -print -quit)"
+          UPDATE_RECEIVER="$(find android/app/src/main/java -name SwoleCatUpdateReceiver.java -print -quit)"
+          test -n "$UPDATER_PLUGIN"
+          test -n "$UPDATE_RECEIVER"
+          grep -F '@CapacitorPlugin(name = "SwoleCatUpdater")' "$UPDATER_PLUGIN"
+          grep -F 'PackageInstaller.SessionParams.USER_ACTION_REQUIRED' "$UPDATER_PLUGIN"
+          grep -F 'Downloaded APK failed SHA-256 verification.' "$UPDATER_PLUGIN"
+          grep -F 'Downloaded APK signing certificate does not match the installed app.' "$UPDATER_PLUGIN"
+          grep -F 'registerPlugin(SwoleCatUpdaterPlugin.class);' "$MAIN_ACTIVITY"
+          grep -F 'android.permission.REQUEST_INSTALL_PACKAGES' android/app/src/main/AndroidManifest.xml
+          grep -F 'SwoleCatUpdateReceiver' android/app/src/main/AndroidManifest.xml
+          grep -F 'signingConfigs {' android/app/build.gradle
+          grep -F 'swoleCat {' android/app/build.gradle
+          grep -F 'signingConfig signingConfigs.swoleCat' android/app/build.gradle
 
       - name: Build debug APK
         working-directory: android
+        env:
+          SWOLE_CAT_ENABLE_SIGNING: "1"
+          SWOLE_CAT_SIGNING_BUILD_TYPE: "debug"
+          SWOLE_CAT_SIGNING_STORE_FILE: "swole-cat-testing.jks"
+          SWOLE_CAT_SIGNING_STORE_PASSWORD: ${{ secrets.SWOLE_CAT_TESTING_STORE_PASSWORD }}
+          SWOLE_CAT_SIGNING_KEY_ALIAS: ${{ secrets.SWOLE_CAT_TESTING_KEY_ALIAS }}
+          SWOLE_CAT_SIGNING_KEY_PASSWORD: ${{ secrets.SWOLE_CAT_TESTING_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
 
+      - name: Verify persistent Testing signature
+        run: |
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs android/app/build/outputs/apk/debug/app-debug.apk | tee testing-signature.txt
+          grep -Fi 'Signer #1 certificate SHA-256 digest: d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53' testing-signature.txt
+
       - name: Name APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk "swole-cat-v${{ steps.meta.outputs.version }}-debug.apk"
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk "swole-cat-testing-v${{ steps.meta.outputs.version }}-signed.apk"
+
+      - name: Compute Testing APK SHA-256
+        id: checksum
+        run: |
+          APK="swole-cat-testing-v${{ steps.meta.outputs.version }}-signed.apk"
+          echo "sha256=$(sha256sum "$APK" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Publish versioned Testing prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          TAG="testing-v$VERSION"
+          APK="swole-cat-testing-v$VERSION-signed.apk"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" --clobber
+          else
+            gh release create "$TAG" "$APK" \
+              --target "$GITHUB_SHA" \
+              --prerelease \
+              --title "Swole Cat Testing v$VERSION" \
+              --notes "Validated Swole Cat Testing build v$VERSION."
+          fi
+
+      - name: Advance Testing update channel manifest
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          VERSION_CODE: ${{ steps.meta.outputs.version_code }}
+          APK_SHA256: ${{ steps.checksum.outputs.sha256 }}
+          TESTING_CERT_SHA256: d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53
+        run: |
+          git config user.name "swole-cat-release-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+          mkdir -p updates
+          node <<'NODE'
+          const fs=require('fs');
+          const version=process.env.VERSION;
+          const apk=`swole-cat-testing-v${version}-signed.apk`;
+          const manifest={
+            schema:1,
+            enabled:true,
+            channel:'testing',
+            packageId:'com.jlingenfelter.swolecat.testing',
+            version,
+            versionCode:Number(process.env.VERSION_CODE),
+            apkUrl:`https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v${version}/${apk}`,
+            sha256:process.env.APK_SHA256,
+            signingCertSha256:process.env.TESTING_CERT_SHA256,
+            notes:`Swole Cat Testing v${version}`,
+            publishedAt:new Date().toISOString(),
+            required:false
+          };
+          fs.writeFileSync('updates/testing.json',JSON.stringify(manifest,null,2)+'\n');
+          NODE
+          git add updates/testing.json
+          if git diff --cached --quiet; then
+            echo "Testing channel already points to v$VERSION"
+          else
+            git commit -m "Publish Testing update v$VERSION"
+            git push origin main
+          fi
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: Swole-Cat-Android-v${{ steps.meta.outputs.version }}-debug
-          path: swole-cat-v${{ steps.meta.outputs.version }}-debug.apk
+          name: Swole-Cat-Testing-Android-v${{ steps.meta.outputs.version }}-signed
+          path: swole-cat-testing-v${{ steps.meta.outputs.version }}-signed.apk
           if-no-files-found: error
           retention-days: 30

@@ -103,6 +103,7 @@ function normalizeState(saved){
      merged.activeWorkout.status='active';
      merged.activeWorkout.lastSavedAt=merged.activeWorkout.lastSavedAt||merged.activeWorkout.startDate||new Date().toISOString();
      merged.activeWorkout.structureDirty=!!merged.activeWorkout.structureDirty;
+     merged.activeWorkout.structureNoticeSeen=typeof merged.activeWorkout.structureNoticeSeen==='boolean'?merged.activeWorkout.structureNoticeSeen:merged.activeWorkout.structureDirty;
      merged.activeWorkout.trainingMode=normalizeTrainingMode(merged.activeWorkout.trainingMode);
      merged.activeWorkout.pausedDurationMs=Math.max(0,Number(merged.activeWorkout.pausedDurationMs)||0);
      merged.activeWorkout.pausedAt=typeof merged.activeWorkout.pausedAt==='string'&&merged.activeWorkout.pausedAt?merged.activeWorkout.pausedAt:null;
@@ -293,11 +294,13 @@ function parseBackupText(text){
  }
  return normalizeState(payload);
 }
-function createBackupEnvelope(exportedAt=new Date().toISOString()){
+function createBackupEnvelope(exportedAt=new Date().toISOString(),recordLocal=true){
  state.schemaVersion=DATA_SCHEMA_VERSION;
  state.meta=isPlainObject(state.meta)?state.meta:{};
- state.meta.lastBackupAt=exportedAt;
- save();
+ if(recordLocal){
+   state.meta.lastBackupAt=exportedAt;
+   save();
+ }
  return {format:BACKUP_FORMAT,formatVersion:BACKUP_FORMAT_VERSION,exportedAt,schemaVersion:DATA_SCHEMA_VERSION,state:cloneData(state)};
 }
 function createPreImportSnapshot(){
@@ -342,6 +345,7 @@ function clearUnreadableLocalData(){
      swoleCatStorage.removeItem(RECOVERYKEY);
      swoleCatStorage.removeItem(IMPORTSNAPSHOTKEY);
    }catch(e){}
+   SwoleCatRuntime.getService('cloudSync')?.resetLocalMetadata?.();
    storageWriteBlocked=false;recoveredFromSnapshot=false;startupStorageNotice='';lastStorageError='';recoverySnapshotWritten=false;
    state=freshState();save();renderHome();populateMuscles();updateActiveWorkoutChrome();showToast('Started with fresh local data');setTimeout(onboarding,180);
  });
@@ -564,8 +568,15 @@ function activeWorkoutCounts(w=state.activeWorkout){
 }
 function markWorkoutStructureDirty(){
  if(!state.activeWorkout)return;
+ const firstNotice=!state.activeWorkout.structureNoticeSeen;
  state.activeWorkout.structureDirty=true;
+ state.activeWorkout.structureNoticeSeen=true;
  saveActiveWorkout();
+ if(firstNotice){
+   try{
+     SwoleCatRuntime.events.dispatchEvent(new CustomEvent('workout:structure-changed',{detail:{workoutId:state.activeWorkout.id}}));
+   }catch(e){}
+ }
 }
 function saveActiveWorkout(defer=false){
  if(state.activeWorkout){
@@ -671,7 +682,7 @@ function startRoutineFresh(id,programId=null){
  const effectiveMode=programMode!=='inherit'?normalizeTrainingMode(programMode):normalizeTrainingMode(r.trainingMode);
  const now=new Date().toISOString();
  const active={
-   id:uid(),routineId:id,routineName:r.name,trainingMode:effectiveMode,programId:programId||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,pausedAt:null,pausedDurationMs:0,focusExerciseIndex:0,focusSetIndex:0,deferredExerciseIndexes:[],
+   id:uid(),routineId:id,routineName:r.name,trainingMode:effectiveMode,programId:programId||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,structureNoticeSeen:false,pausedAt:null,pausedDurationMs:0,focusExerciseIndex:0,focusSetIndex:0,deferredExerciseIndexes:[],
    exercises:r.exercises.map((re,routineIndex)=>{
      const prev=previousExercise(re.exerciseId);
      const mode=effectiveMode,config={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode};

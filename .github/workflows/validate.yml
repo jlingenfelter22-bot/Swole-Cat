@@ -2,9 +2,9 @@ name: Validate Swole Cat
 
 on:
   push:
-    branches: [main]
+    branches: [main, beta]
   pull_request:
-    branches: [main]
+    branches: [main, beta]
 
 permissions:
   contents: read
@@ -19,15 +19,18 @@ jobs:
       - name: Build modular web app
         run: npm run build:web
 
-      - name: Check app JavaScript syntax
+      - name: Check app and build-script JavaScript syntax
         run: |
           node --check www/app.js
-          for file in src/data/*.js src/js/*.js; do
+          for file in src/data/*.js src/js/*.js scripts/*.mjs; do
             node --check "$file"
           done
 
       - name: Check service worker syntax
         run: node --check www/sw.js
+
+      - name: Stress test PWA service-worker cloud cache boundary
+        run: node scripts/service-worker-cache-stress.mjs
 
       - name: Check PWA manifest
         run: |
@@ -49,11 +52,19 @@ jobs:
           assert(!/<style>[\s\S]*<\/style>/.test(source),'index.html should not contain the application stylesheet');
           assert(!/<script>[\s\S]*<\/script>/.test(source),'index.html should not contain the application runtime');
           const moduleTags=[...source.matchAll(/<script src="\.\/src\/js\/([^"]+)"><\/script>/g)].map(m=>m[1]);
-          assert.equal(moduleTags.length,20,'source shell should load all JavaScript domain modules');
+          assert.equal(moduleTags.length,28,'source shell should load all JavaScript domain modules');
           assert(moduleTags.includes('04f-coach-routine-control.js'),'v0.61 Coach saved-routine control module must stay registered');
           assert(moduleTags.includes('04g-coach-history-insights.js'),'v0.62 Coach history intelligence module must stay registered');
           assert(moduleTags.includes('04h-coach-program-auditor.js'),'v0.63 Coach Program auditor module must stay registered');
           assert(moduleTags.includes('05b-sharing.js'),'v0.66 local sharing module must stay registered');
+          assert(moduleTags.includes('10a-cloud-config.js'),'v0.67 cloud configuration boundary must stay registered');
+          assert(moduleTags.includes('10b-cloud-identity.js'),'v0.67 identity shell must stay registered');
+          assert(moduleTags.includes('10c-supabase-auth-provider.js'),'v0.67.1 Supabase Auth provider must stay registered');
+          assert(moduleTags.includes('10d-cloud-backup.js'),'v0.68 provider-neutral cloud backup service must stay registered');
+          assert(moduleTags.includes('10e-supabase-backup-provider.js'),'v0.68 Supabase backup provider must stay registered');
+          assert(moduleTags.includes('10f-cloud-sync.js'),'v0.69 provider-neutral record sync service must stay registered');
+          assert(moduleTags.includes('10g-supabase-sync-provider.js'),'v0.69 Supabase sync provider must stay registered');
+          assert(moduleTags.includes('10h-supabase-sharing-provider.js'),'v0.71 Supabase short-share provider must stay registered');
           assert(!moduleTags.includes('04-coach.js'),'legacy monolithic Coach module must stay removed');
           const dataTags=[...source.matchAll(/<script src="\.\/src\/data\/([^"]+)"><\/script>/g)].map(m=>m[1]);
           assert.deepEqual(dataTags,['exercises.js','anatomy.js','coach-knowledge.js'],'source shell should load static data modules in order');
@@ -112,6 +123,24 @@ jobs:
       - name: Beta test first-time-user workout clarity
         run: node scripts/beta-first-user-clarity-stress.mjs
 
+      - name: Stress test v0.72.0 workout screen UX hierarchy
+        run: node scripts/workout-screen-ux-stress.mjs
+
+      - name: Stress test v0.72.1 workout feedback and transition polish
+        run: node scripts/workout-feedback-stress.mjs
+
+      - name: Stress test v0.72.2 exercise header composition
+        run: node scripts/workout-header-stress.mjs
+
+      - name: Stress test v0.72.3 numeric entry readability
+        run: node scripts/workout-numeric-entry-stress.mjs
+
+      - name: Stress test v0.73.0 in-app updater foundation
+        run: node scripts/app-updater-stress.mjs
+
+      - name: Stress test v0.73.1 Beta baseline promotion
+        run: node scripts/beta-baseline-stress.mjs
+
       - name: Stress test v0.65 Focus Mode workout flow
         run: node scripts/focus-mode-workout-stress.mjs
 
@@ -123,6 +152,27 @@ jobs:
 
       - name: Stress test v0.66.1 beta optimization hardening
         run: node scripts/beta-optimization-stress.mjs
+
+      - name: Stress test v0.67.0 cloud shell boundaries
+        run: node scripts/cloud-shell-stress.mjs
+
+      - name: Stress test v0.67.2 Android OAuth deep-link contract
+        run: node scripts/android-auth-deeplink-stress.mjs
+
+      - name: Stress test v0.67.4 Android Keystore auth storage
+        run: node scripts/android-secure-auth-stress.mjs
+
+      - name: Stress test v0.67.6 account lifecycle
+        run: node scripts/cloud-account-lifecycle-stress.mjs
+
+      - name: Stress test v0.68.0 cloud backup and restore
+        run: node scripts/cloud-backup-stress.mjs
+
+      - name: Stress test v0.69.4 record-level multi-device sync
+        run: node scripts/cloud-sync-stress.mjs
+
+      - name: Stress test v0.71.0 short-lived cloud plan sharing
+        run: node scripts/cloud-sharing-stress.mjs
 
       - name: Smoke test active workouts, set types, progression, and supersets
         run: |

@@ -83,8 +83,11 @@ assert.equal(w.document.querySelectorAll('#workout .focus-exercise-canvas').leng
 assert.equal(w.document.querySelectorAll('#workout .focus-set-card').length,1,'Focus Mode should render one primary set card');
 const actionButtons=[...w.document.querySelectorAll('#workout .focus-exercise-actions button')].map(b=>b.textContent.trim());
 assert(actionButtons.some(x=>/Substitute/i.test(x)),'Substitute should remain visible');
-assert(actionButtons.some(x=>/Next Exercise/i.test(x)),'Next Exercise should remain visible');
 assert(actionButtons.some(x=>/More/i.test(x)),'secondary tools should be grouped under More');
+assert(!actionButtons.some(x=>/Next Exercise/i.test(x)),'redundant Next Exercise should stay off the primary surface');
+assert.match(w.document.querySelector('#workout .focus-exercise-nav')?.textContent||'',/Switch exercise/i,'exercise navigation should explicitly say Switch exercise');
+assert(w.document.querySelector('#workout .focus-nav-add'),'Add Exercise should live inside the exercise switcher');
+assert(w.document.querySelector('#workout .focus-set-add'),'Add Set should live directly in the set rail');
 const firstEntry=w.document.querySelector('#workout .live-entry');
 assert(firstEntry,'active workout should render the live set-entry row');
 assert.equal(firstEntry.querySelectorAll('.live-input-wrap').length,3,'live set row should still expose Weight, Reps, and RIR as three explicit controls');
@@ -128,6 +131,6 @@ const lc=pathCentroid(left.path),rc=pathCentroid(right.path);
 assert(lc.x>20.5&&lc.y>17,'left front delt should sit on the outside/front shoulder rather than near the neck');
 assert(rc.x<11.2&&rc.y>17,'right front delt should sit on the outside/front shoulder rather than near the neck');
 
-console.log('Swole Cat beta pass 2 PASS: RIR layout, rep ceiling, compact final-aware timer, progressive disclosure, and front-delt anatomy');
+console.log('Swole Cat beta clarity PASS: RIR layout, rep ceiling, discoverable exercise switching, inline Add Set, compact final-aware timer, progressive disclosure, and front-delt anatomy');
 w.stopRestTimer();
 dom.window.close();

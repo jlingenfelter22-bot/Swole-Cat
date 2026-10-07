@@ -1,6 +1,6 @@
 # Swole Cat Architecture
 
-Swole Cat is a local-first web application packaged for Android with Capacitor. Beginning with v0.56, the source is organized by domain while the production build remains intentionally small and framework-free.
+Swole Cat is a local-first web application packaged for Android with Capacitor. The experimental `main` Android channel is intentionally packaged as `com.jlingenfelter.swolecat.testing` / **Swole Cat Testing**, while the frozen field beta retains `com.jlingenfelter.swolecat` / **Swole Cat** so both installs have isolated Android storage. Beginning with v0.56, the source is organized by domain while the production build remains intentionally small and framework-free.
 
 ## Source layout
 
@@ -29,6 +29,9 @@ src/
     06-workout-engine.js
     07-history-editor.js
     08-exercise-tools.js
+    10a-cloud-config.js         # Phase 8.1 build/runtime cloud configuration boundary
+    10b-cloud-identity.js       # Provider-neutral optional-account shell
+    10c-supabase-auth-provider.js # Lazy web/PWA + Android Supabase Google OAuth adapter
     09-settings-ui-bootstrap.js
 scripts/
   build-web.mjs               # Deterministic source -> production bundle
@@ -87,9 +90,16 @@ The app must remain usable when offline. Cloud sync should be optional infrastru
 
 `src/js/00-runtime.js` establishes `window.SwoleCatRuntime` with a small service registry and event target. Device persistence is already routed through the registered `storage` service, and the core exposes a narrow `state` service for snapshot reads/revision/save requests. Existing application behavior remains local-first while new infrastructure can register isolated services without importing network/account concerns into the workout engine. Persisted changes emit `state:saved`, and completed startup emits `app:ready`, giving a future sync queue explicit hooks without coupling it to workout-domain functions.
 
-Expected future services include:
+Current Phase 8.1 services include:
 
-- identity/account session
+- `cloudConfig`: disabled-by-default provider configuration
+- `cloudAuthStorage`: auth-only storage, separate from workout state; browser storage on web/PWA and AES-GCM Android storage protected by Android Keystore on native Android
+- `identity`: provider-neutral account/session state
+
+The identity shell performs no sync and makes no provider network calls by itself. A configured provider adapter must be registered explicitly.
+
+Expected later services include:
+
 - sync queue and conflict resolution
 - routine sharing transport
 - group/program collaboration
@@ -109,6 +119,14 @@ When account and sync phases begin:
 - Network failures must never block starting, logging, or finishing a workout.
 - Authentication state must not be mixed into workout progression logic.
 - Import/export backups remain supported independently of cloud accounts.
+
+## Cloud implementation contract
+
+Phase 8.0 selected Supabase as the first hosted backend while preserving the local-first boundary above.
+
+The provider-specific implementation, sync record model, backup strategy, conflict policy, security rules, zero-cost operating plan, and provider exit strategy are defined in `docs/CLOUD_ARCHITECTURE.md`.
+
+Workout-domain modules must not import or call Supabase directly. Cloud work belongs behind runtime services so the backend can be replaced without rewriting training logic.
 
 ## Testing rule
 
