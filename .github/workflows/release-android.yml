@@ -109,6 +109,11 @@ jobs:
                   value=value[1:-1].strip()
               return value
           values={name:extract(name,env) for name,env in names.items()}
+          # Mask normalized/derived forms too. GitHub only auto-masks exact repository
+          # secret values, so transformed values must be registered explicitly.
+          for value in values.values():
+              if value:
+                  print(f'::add-mask::{value}')
           raw_b64=''.join(values['SWOLE_CAT_ANDROID_KEYSTORE_B64'].split())
           runs=re.findall(r'[A-Za-z0-9+/]{100,}={0,2}',raw_b64)
           b64=max(runs,key=len) if runs else raw_b64
