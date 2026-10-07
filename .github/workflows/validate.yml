@@ -2248,7 +2248,7 @@ jobs:
 
 
 
-      - name: Smoke test V501 adaptive routines priority
+      - name: Smoke test v0.78 Routines and Programs segmented navigation
         run: |
           node <<'JS'
           const fs=require('fs');
@@ -2263,27 +2263,45 @@ jobs:
           const run=async()=>{
             await wait(70);
             const w=dom.window,d=w.document;
-            const host=d.getElementById('routinePageSections');
             w.renderRoutines();
-            assert.equal(host.firstElementChild.id,'workoutRoutinesSection','without programs, routines must be first');
-            assert(d.getElementById('programList').querySelector('.program-empty-compact'),'empty programs should be compact, not a large dead section');
+
+            const routines=d.getElementById('workoutRoutinesSection');
+            const programs=d.getElementById('programsSection');
+            const routinesTab=d.getElementById('routineViewRoutines');
+            const programsTab=d.getElementById('routineViewPrograms');
+
+            assert.equal(routines.hidden,false,'Routines should be the default view');
+            assert.equal(programs.hidden,true,'Programs should not create a second stacked section by default');
+            assert(routinesTab.classList.contains('active'),'Routines tab should start active');
+            assert.equal(d.getElementById('routineViewRoutineCount').textContent,'0','empty routine count should be visible');
+            assert.equal(d.getElementById('routineViewProgramCount').textContent,'0','empty program count should be visible');
 
             const ex=w.allExercises().find(x=>x.name==='Barbell Bench Press');
             w.eval(`state.routines=[{id:'r1',name:'Push',description:'',trainingMode:'guided',exercises:[{exerciseId:'${ex.id}',sets:3,minReps:8,maxReps:12,increment:5,mode:'double'}]}];save();renderRoutines()`);
-            assert.equal(host.firstElementChild.id,'workoutRoutinesSection','routines stay first when routines exist but programs do not');
-            assert(d.getElementById('routineList').textContent.includes('Push'),'saved routine should be immediately visible at top');
+            assert.equal(routines.hidden,false,'adding a routine should keep Routines visible');
+            assert(d.getElementById('routineList').textContent.includes('Push'),'saved routine should be visible');
+            assert.equal(d.getElementById('routineViewRoutineCount').textContent,'1','routine tab should show active routine count');
 
             w.eval(`state.programs=[{id:'p1',name:'PPL',routineIds:['r1'],frequency:3,preferredDays:[],trainingMode:'inherit',nextIndex:0}];save();renderRoutines()`);
-            assert.equal(host.firstElementChild.id,'programsSection','programs must take priority once any program exists');
-            assert(d.getElementById('programList').textContent.includes('PPL'),'program should be visible in prioritized section');
-            assert.equal(host.children[1].id,'workoutRoutinesSection','routines should remain directly below programs');
+            assert.equal(routines.hidden,false,'Programs should not reorder the whole screen when one is created');
+            assert.equal(programs.hidden,true,'Programs stay behind their segmented view until selected');
+            assert.equal(d.getElementById('routineViewProgramCount').textContent,'1','program tab should show program count');
+
+            w.setRoutinePageMode('programs');
+            assert.equal(routines.hidden,true,'selecting Programs should hide routine list');
+            assert.equal(programs.hidden,false,'selecting Programs should reveal program list');
+            assert(programsTab.classList.contains('active'),'Programs tab should become active');
+            assert(d.getElementById('programList').textContent.includes('PPL'),'program should be visible in Programs view');
+
+            w.setRoutinePageMode('routines');
+            assert.equal(routines.hidden,false,'Routines should be one tap away from Programs');
+            assert.equal(programs.hidden,true,'switching back should hide Programs');
 
             dom.window.close();
-            console.log('Swole Cat V50.1 adaptive routines priority PASS');
+            console.log('Swole Cat v0.78 segmented Routines/Programs navigation PASS');
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
-
 
       - name: Smoke test V502 save completed workout as routine
         run: |
