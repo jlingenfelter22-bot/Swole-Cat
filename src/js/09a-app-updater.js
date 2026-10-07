@@ -1,4 +1,7 @@
-const SWOLE_CAT_TESTING_UPDATE_MANIFEST='https://raw.githubusercontent.com/jlingenfelter22-bot/Swole-Cat/main/updates/testing.json';
+const SWOLE_CAT_UPDATE_MANIFESTS={
+ testing:'https://raw.githubusercontent.com/jlingenfelter22-bot/Swole-Cat/main/updates/testing.json',
+ beta:'https://raw.githubusercontent.com/jlingenfelter22-bot/Swole-Cat/beta/updates/beta.json'
+};
 const SWOLE_CAT_UPDATE_CHECK_KEY='swole_cat_update_check_v1';
 const SWOLE_CAT_UPDATE_CHECK_INTERVAL=6*60*60*1000;
 
@@ -18,7 +21,8 @@ function appUpdaterIsSupported(){
  return isNativeApp()&&nativePlatform()==='android'&&!!appUpdaterPlugin();
 }
 function appUpdaterManifestUrl(){
- return SWOLE_CAT_TESTING_UPDATE_MANIFEST+'?ts='+Date.now();
+ const channel=appUpdaterState.native?.channel==='beta'?'beta':'testing';
+ return SWOLE_CAT_UPDATE_MANIFESTS[channel]+'?ts='+Date.now();
 }
 function appUpdaterSnapshot(){
  return {
