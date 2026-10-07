@@ -19,8 +19,14 @@ assert.match(home,/signal\.innerHTML=homeWeekSummaryHtml/,'weekly progress shoul
 assert.doesNotMatch(home,/homeWeekSummaryHtml\([^\n]+\)\+coachInsightHtml/,
   'weekly progress and Coach insight should not stack in one telemetry surface');
 assert.match(home,/latest\.innerHTML=insight\|\|/,'Home should show one secondary intelligence surface at a time');
-assert.match(home,/signal\.innerHTML='';latest\.innerHTML='';\s*updateActiveWorkoutChrome\(\);return;/,
-  'active workouts should suppress secondary Home content');
+assert.match(home,/signal\.innerHTML=homeActiveWorkoutSummaryHtml\(active,ac\)/,
+  'active workouts should use the Home telemetry area for live workout context');
+assert.match(home,/latest\.innerHTML=homeActiveWorkoutNowHtml\(active\)/,
+  'active workouts should show the current movement instead of leaving Home blank');
+assert.match(home,/coach\.innerHTML='';quick\.innerHTML='';/,
+  'active workouts should still suppress unrelated Coach and shortcut content');
+assert.match(home,/function homeActiveWorkoutSummaryHtml/,'active Home should expose elapsed, set, and exercise progress');
+assert.match(home,/function homeActiveWorkoutNowHtml/,'active Home should expose current workout position');
 assert.match(home,/btn secondary home-coach-go/,'Coach action should remain visually secondary to Start Workout');
 assert.match(home,/home-hero-primary/,'training CTA should have dedicated primary emphasis');
 assert.match(insights,/home-smart-card home-coach-insight/,'deep Coach insights should use the restrained Home surface');
@@ -32,4 +38,4 @@ assert.match(css,/\.home-coach-go/,'Home should visually demote the Coach submit
 assert.match(css,/\.home-coach-chips\{[^}]*flex-wrap:nowrap[^}]*overflow-x:auto/,
   'Coach suggestion chips should remain compact instead of expanding Home vertically');
 
-console.log('Swole Cat v0.76.0 Home hierarchy PASS: train-first hero, compact progress, secondary Coach, single smart surface, compact shortcuts');
+console.log('Swole Cat v0.76.1 Home hierarchy PASS: train-first hero, compact progress, secondary Coach, single smart surface, compact shortcuts');
