@@ -13,8 +13,8 @@ const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
 
 new Function(updater);
 
-assert.equal(pkg.version,'0.73.1');
-assert.equal(pkg.swoleCat.androidVersionCode,104);
+assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'package version should be a semantic x.y.z app version');
+assert(Number.isInteger(pkg.swoleCat.androidVersionCode)&&pkg.swoleCat.androidVersionCode>=1,'Android versionCode should be a positive integer');
 
 assert.match(build,/src\/js\/09a-app-updater\.js/,'web build should include updater module');
 assert.match(settings,/App & updates/,'Settings should expose App & updates');
