@@ -1297,8 +1297,11 @@ function syncRestTimerDock(){
  root.style.setProperty('--rest-nav-height',navHeight+'px');
 }
 function paintRestTimer(){
- const box=document.getElementById('restTimer'),txt=document.getElementById('restTimerText');if(!box||!txt)return;
- const m=Math.floor(restLeft/60),s=String(Math.max(0,restLeft%60)).padStart(2,'0');txt.textContent=`${m}:${s}`;
+ const box=document.getElementById('restTimer'),txt=document.getElementById('restTimerText');
+ const m=Math.floor(restLeft/60),s=String(Math.max(0,restLeft%60)).padStart(2,'0'),time=`${m}:${s}`;
+ if(box&&txt)txt.textContent=time;
+ const homeTxt=document.getElementById('homeActiveRestText');
+ if(homeTxt)homeTxt.textContent=time;
 }
 function toggleRestTimerExpanded(){
  const box=document.getElementById('restTimer');if(!box?.classList.contains('show'))return;
