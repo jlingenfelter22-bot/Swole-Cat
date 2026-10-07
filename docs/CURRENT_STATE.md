@@ -1269,3 +1269,21 @@ Immediate next action:
 6. hand the fresh-install Beta APK to testers
 7. perform one final fresh-install migration for the current v0.66.1 cohort
 8. verify the new Beta baseline can later receive a Beta in-app update before calling the Beta updater fully proven
+
+
+## 2026-10-07 Beta baseline signing blocker narrowed to one GitHub secret
+
+Current Beta branch:
+- app baseline: v0.73.1 / Android versionCode 104
+- full Beta validation: PASS, 77/77
+- latest validated Beta commit before publication checks: `a1190255885d2c9334f6acc79e6b1544e4d9f1d1`
+- Beta update feed remains disabled
+- no tester-facing Beta release has been published
+
+Signing preflight result:
+- keystore Base64 payload: accepted and decoded
+- JKS structure: verified
+- blocker: `SWOLE_CAT_ANDROID_STORE_PASSWORD` in GitHub does not unlock the permanent Beta keystore
+- local backup keystore and its generated store password were independently verified with keytool
+- user must replace only the GitHub Actions secret `SWOLE_CAT_ANDROID_STORE_PASSWORD` using the exact generated value from the secure signing backup
+- after replacement, rerun signed Beta workflow and continue through alias/key-password, Gradle build, certificate verification, SHA-256, prerelease publication, and beta.json enablement
