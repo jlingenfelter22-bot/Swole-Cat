@@ -263,7 +263,7 @@ function changeSetValue(ei,si,key,delta){
  if(input)input.value=key==='weight'?displaySetWeightValue(set[key]):set[key];
  haptic(8);
  if(edit)return;
- saveActiveWorkout(true);
+ saveActiveWorkout(true,false);
  if(key==='weight')scheduleFirstExerciseWeightAutofill(ei,si,120);
 }
 function workoutCounts(){return activeWorkoutCounts()}
@@ -1265,7 +1265,7 @@ function updateSet(ei,si,k,v){
  else s[k]=(v===''?0:Math.max(0,+v||0));
  if(k!=='rir')s.pr='';
  if(edit)return;
- saveActiveWorkout(true);
+ saveActiveWorkout(true,false);
  if(k==='weight')scheduleFirstExerciseWeightAutofill(ei,si);
 }
 function toggleSet(ei,si){
@@ -1286,7 +1286,7 @@ function toggleSet(ei,si){
  }
  saveActiveWorkout();renderWorkout();
 }
-function updateNotes(ei,v){state.activeWorkout.exercises[ei].notes=v;saveActiveWorkout(true);}
+function updateNotes(ei,v){state.activeWorkout.exercises[ei].notes=v;saveActiveWorkout(true,false);}
 let restInterval=null,restLeft=0;
 function workoutHasRemainingProgrammedWork(w=state.activeWorkout){
  return !!w?.exercises?.some(e=>!e.skipped&&(e.sets||[]).some(s=>!s.done));
