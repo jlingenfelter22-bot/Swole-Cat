@@ -22,22 +22,37 @@ function programRouteHtml(p){
    return `<div class="program-step ${i===next?'next':''}"><span class="program-letter">${programSlotLabel(i)}</span><span>${esc(r?.name||'Missing routine')}</span></div>`;
  }).join('')}</div>`;
 }
+function openProgramCardMenu(id){
+ const p=programById(id);if(!p)return;
+ const isActive=state.activeProgramId===p.id;
+ openModal('Program options',`
+   <div class="routine-manage-summary">
+     <div class="eyebrow">PROGRAM OPTIONS</div>
+     <div class="routine-manage-title">${esc(p.name||'Program')}</div>
+     <div class="mini">${p.routineIds.length} workout${p.routineIds.length===1?'':'s'} · ${p.frequency}×/week · ${esc(programDaysText(p))}</div>
+   </div>
+   <div class="routine-manage-actions">
+     <button class="btn" onclick="closeModal();newProgram('${escAttr(p.id)}')">Edit Program</button>
+     ${!isActive?`<button class="btn secondary" onclick="closeModal();activateProgram('${escAttr(p.id)}')">Set Active</button>`:''}
+     <button class="btn secondary" onclick="closeModal();openCoachProgramAudit('${escAttr(p.id)}')">Coach Audit</button>
+     <button class="btn secondary" onclick="closeModal();openProgramShare('${escAttr(p.id)}')">Share Program</button>
+     <button class="btn danger" onclick="closeModal();deleteProgram('${escAttr(p.id)}')">Delete Program</button>
+   </div>
+ `);
+}
 function programCard(p){
  const isActive=state.activeProgramId===p.id,next=programNextRoutine(p),logs=programSessions(p),last=logs[0];
  return `<div class="card program-card ${isActive?'active-program':''}">
-   <div class="row">
+   <div class="program-card-head">
      <div class="grow"><div class="exercise-name">${esc(p.name)}</div><div class="mini">${p.routineIds.length} workout${p.routineIds.length===1?'':'s'} · ${p.frequency}×/week · ${esc(programDaysText(p))} · ${esc(programTrainingModeLabel(p.trainingMode))}</div></div>
-     ${isActive?'<span class="tag">● ACTIVE</span>':''}
+     <button class="routine-manage-btn" onclick="openProgramCardMenu('${escAttr(p.id)}')" aria-label="Manage ${escAttr(p.name||'program')}">•••</button>
    </div>
+   ${isActive?'<div class="program-status-row"><span class="tag">● ACTIVE</span></div>':''}
    ${programRouteHtml(p)}
-   <div class="mini" style="margin-top:8px">${next?`Next: <b>${esc(next.name)}</b>`:'Add a routine to start'}${last?` · Last: ${esc(last.routineName)} ${new Date(last.date).toLocaleDateString()}`:''} · ${logs.length} completed</div>
-   <div class="actions">
-     ${next?`<button class="btn small ${isActive?'green':''}" onclick="startProgramWorkout('${p.id}')">${state.activeWorkout?.programId===p.id?'Resume Program Workout':'Start Next'}</button>`:''}
-     ${!isActive?`<button class="btn small secondary" onclick="activateProgram('${p.id}')">Set Active</button>`:''}
-      <button class="btn small secondary" onclick="openCoachProgramAudit('${p.id}')">Coach Audit</button>
-     <button class="btn small secondary" onclick="openProgramShare('${p.id}')">Share</button>
-     <button class="btn small secondary" onclick="newProgram('${p.id}')">Edit</button>
-     <button class="btn small danger" onclick="deleteProgram('${p.id}')">Delete</button>
+   <div class="program-card-meta">${next?`Next: <b>${esc(next.name)}</b>`:'Add a routine to start'}${last?` · Last: ${esc(last.routineName)} ${new Date(last.date).toLocaleDateString()}`:''} · ${logs.length} completed</div>
+   <div class="program-card-actions">
+     ${next?`<button class="btn small ${isActive?'green':''} program-start-btn" onclick="startProgramWorkout('${escAttr(p.id)}')">${state.activeWorkout?.programId===p.id?'Resume Program':'Start Next'}</button>`:''}
+     <button class="btn small secondary program-edit-btn" onclick="newProgram('${escAttr(p.id)}')">Edit</button>
    </div>
  </div>`;
 }
