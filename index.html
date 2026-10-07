@@ -43,14 +43,18 @@
       <div><div class="screen-code">PROGRAM MATRIX // 02</div><h1>Build the rotation.</h1><div class="screen-copy">Organize routines into repeatable training systems, then launch the next session without losing your individual progression.</div></div>
       <div class="screen-mark" aria-hidden="true"><span></span><span></span><span></span></div>
     </div>
+    <div class="routine-view-switch" role="tablist" aria-label="Routines screen">
+      <button id="routineViewRoutines" class="routine-view-tab active" role="tab" aria-selected="true" onclick="setRoutinePageMode('routines')">Routines <span id="routineViewRoutineCount">0</span></button>
+      <button id="routineViewPrograms" class="routine-view-tab" role="tab" aria-selected="false" onclick="setRoutinePageMode('programs')">Programs <span id="routineViewProgramCount">0</span></button>
+    </div>
     <div id="routinePageSections">
-      <div id="programsSection" class="routine-page-section">
-        <div class="section-title"><h2>Programs</h2><button class="btn small" onclick="newProgram()">+ Program</button></div>
-        <div id="programList" class="grid"></div>
-      </div>
       <div id="workoutRoutinesSection" class="routine-page-section">
         <div class="section-title"><h2>Workout routines</h2><div class="section-title-actions"><button class="btn small secondary" onclick="openShareImport()">Import</button><button class="btn small" onclick="newRoutine()">+ Create</button></div></div>
         <div id="routineList" class="grid"></div>
+      </div>
+      <div id="programsSection" class="routine-page-section" hidden>
+        <div class="section-title"><h2>Programs</h2><button class="btn small" onclick="newProgram()">+ Program</button></div>
+        <div id="programList" class="grid"></div>
       </div>
     </div>
   </section>
