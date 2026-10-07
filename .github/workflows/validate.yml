@@ -156,6 +156,9 @@ jobs:
       - name: Stress test v0.76.0 Home hierarchy refinement
         run: node scripts/home-hierarchy-stress.mjs
 
+      - name: Stress test v0.77.0 History density refinement
+        run: node scripts/history-density-stress.mjs
+
       - name: Stress test v0.67.0 cloud shell boundaries
         run: node scripts/cloud-shell-stress.mjs
 
