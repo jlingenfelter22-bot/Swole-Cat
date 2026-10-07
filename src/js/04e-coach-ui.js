@@ -383,6 +383,35 @@ function homeActiveWorkoutNowHtml(w){
    ${nextName?`<div class="home-active-next"><span>NEXT UP</span><b>${esc(nextName)}</b></div>`:''}
  </button>`;
 }
+function homeActiveWorkoutPulseHtml(w){
+ const exercises=(w?.exercises||[]).filter(e=>!e.skipped);
+ const completedSets=exercises.flatMap(e=>(e.sets||[]).filter(s=>s.done));
+ const totalReps=completedSets.reduce((n,s)=>n+(Number(s.reps)||0),0);
+ const volume=Math.round(completedSets.reduce((n,s)=>n+(Number(s.weight)||0)*(Number(s.reps)||0),0));
+ const prs=completedSets.filter(s=>s.pr).length;
+ let focus=Number(w?.focusExerciseIndex);
+ if(!Number.isInteger(focus)||focus<0||focus>=(w?.exercises||[]).length||w.exercises[focus]?.skipped){
+   focus=(w?.exercises||[]).findIndex(e=>!e.skipped&&(e.sets||[]).some(s=>!s.done));
+ }
+ const restActive=typeof restLeft==='number'&&restLeft>0;
+ const restText=restActive?`${Math.floor(restLeft/60)}:${String(restLeft%60).padStart(2,'0')}`:'';
+ const route=(w?.exercises||[]).map((e,index)=>{
+   if(e.skipped)return '';
+   const sets=e.sets||[],complete=sets.length>0&&sets.every(s=>s.done),current=index===focus&&!complete;
+   const cls=complete?'done':current?'current':'upcoming';
+   const mark=complete?'✓':current?'●':'○';
+   return `<span class="home-active-route-item ${cls}"><i>${mark}</i><b>${esc(exById(e.exerciseId)?.name||'Exercise')}</b></span>`;
+ }).filter(Boolean).join('<span class="home-active-route-arrow">›</span>');
+ return `<div class="home-active-pulse">
+   <div class="home-active-pulse-head"><div class="eyebrow">SESSION PULSE</div>${restActive?`<span class="home-active-rest">RESTING · <b id="homeActiveRestText">${restText}</b></span>`:''}</div>
+   <div class="home-active-pulse-metrics">
+     <span><b>${totalReps.toLocaleString()}</b><small>reps logged</small></span>
+     <span><b>${volume>0?volume.toLocaleString():'—'}</b><small>${volume>0?esc(state.profile.unit)+' × reps':'volume'}</small></span>
+     <span><b>${prs}</b><small>PR${prs===1?'':'s'} hit</small></span>
+   </div>
+   <div class="home-active-route" aria-label="Exercise progress">${route}</div>
+ </div>`;
+}
 function renderHome(){
  const primary=document.getElementById('homePrimary'),coach=document.getElementById('homeCoachLauncher'),quick=document.getElementById('homeQuickActions'),signal=document.getElementById('homeTelemetry'),latest=document.getElementById('homeLatest');
  if(!primary)return;
@@ -392,9 +421,10 @@ function renderHome(){
  if(active){
    const ac=activeWorkoutCounts(active),saved=active.lastSavedAt?new Date(active.lastSavedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'just now';
    primary.innerHTML=`<div class="eyebrow"><span class="active-pulse"></span>WORKOUT IN PROGRESS</div><h1>Resume ${esc(active.routineName||'Workout')}</h1><div class="muted">${ac.done} of ${ac.total} sets complete · autosaved ${esc(saved)}</div><div class="home-primary-progress progress-bar"><div style="width:${ac.pct}%"></div></div><div class="actions"><button class="btn green home-hero-primary" onclick="resumeActiveWorkout()">Resume Workout</button></div>`;
-   coach.innerHTML='';quick.innerHTML='';
+   coach.innerHTML='';
    signal.innerHTML=homeActiveWorkoutSummaryHtml(active,ac);
    latest.innerHTML=homeActiveWorkoutNowHtml(active);
+   quick.innerHTML=homeActiveWorkoutPulseHtml(active);
    updateActiveWorkoutChrome();return;
  }else if(p&&next){
    const logs=programSessions(p),last=logs[0];
