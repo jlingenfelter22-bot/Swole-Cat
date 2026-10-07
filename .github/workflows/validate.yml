@@ -150,6 +150,9 @@ jobs:
       - name: Stress test v0.66.1 beta optimization hardening
         run: node scripts/beta-optimization-stress.mjs
 
+      - name: Stress test v0.75.0 performance hardening
+        run: node scripts/performance-hardening-stress.mjs
+
       - name: Stress test v0.67.0 cloud shell boundaries
         run: node scripts/cloud-shell-stress.mjs
 
