@@ -77,6 +77,29 @@ jobs:
           test -n "$SWOLE_CAT_SIGNING_KEY_ALIAS" || { echo "::error::Missing SWOLE_CAT_ANDROID_KEY_ALIAS"; exit 1; }
           test -n "$SWOLE_CAT_SIGNING_KEY_PASSWORD" || { echo "::error::Missing SWOLE_CAT_ANDROID_KEY_PASSWORD"; exit 1; }
 
+      - name: Normalize signing secret values
+        env:
+          RAW_KEYSTORE_B64: ${{ secrets.SWOLE_CAT_ANDROID_KEYSTORE_B64 }}
+          RAW_STORE_PASSWORD: ${{ secrets.SWOLE_CAT_ANDROID_STORE_PASSWORD }}
+          RAW_KEY_ALIAS: ${{ secrets.SWOLE_CAT_ANDROID_KEY_ALIAS }}
+          RAW_KEY_PASSWORD: ${{ secrets.SWOLE_CAT_ANDROID_KEY_PASSWORD }}
+        run: |
+          KEYSTORE_B64="${RAW_KEYSTORE_B64#SWOLE_CAT_ANDROID_KEYSTORE_B64=}"
+          STORE_PASSWORD="${RAW_STORE_PASSWORD#SWOLE_CAT_ANDROID_STORE_PASSWORD=}"
+          KEY_ALIAS="${RAW_KEY_ALIAS#SWOLE_CAT_ANDROID_KEY_ALIAS=}"
+          KEY_PASSWORD="${RAW_KEY_PASSWORD#SWOLE_CAT_ANDROID_KEY_PASSWORD=}"
+          KEYSTORE_B64="$(printf '%s' "$KEYSTORE_B64" | tr -d '\r\n\t ')"
+          test -n "$KEYSTORE_B64" || { echo "::error::Normalized keystore secret is empty"; exit 1; }
+          printf '%s' "$KEYSTORE_B64" | base64 --decode >/tmp/swole-cat-release.jks.check || { echo "::error::SWOLE_CAT_ANDROID_KEYSTORE_B64 is not valid Base64 after normalization"; exit 1; }
+          test -s /tmp/swole-cat-release.jks.check || { echo "::error::Decoded keystore is empty"; exit 1; }
+          rm -f /tmp/swole-cat-release.jks.check
+          {
+            echo "SWOLE_CAT_NORMALIZED_KEYSTORE_B64=$KEYSTORE_B64"
+            echo "SWOLE_CAT_SIGNING_STORE_PASSWORD=$STORE_PASSWORD"
+            echo "SWOLE_CAT_SIGNING_KEY_ALIAS=$KEY_ALIAS"
+            echo "SWOLE_CAT_SIGNING_KEY_PASSWORD=$KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
       - name: Set up Java 21
         uses: actions/setup-java@v5
         with:
@@ -92,7 +115,7 @@ jobs:
 
       - name: Prepare Android project
         env:
-          KEYSTORE_B64: ${{ secrets.SWOLE_CAT_ANDROID_KEYSTORE_B64 }}
+          KEYSTORE_B64: ${{ env.SWOLE_CAT_NORMALIZED_KEYSTORE_B64 }}
         run: |
           npm run android:prepare
           printf '%s' "$KEYSTORE_B64" | base64 --decode > android/app/swole-cat-release.jks
