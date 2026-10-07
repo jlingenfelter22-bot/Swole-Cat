@@ -23,8 +23,10 @@ assert.match(home,/signal\.innerHTML=homeActiveWorkoutSummaryHtml\(active,ac\)/,
   'active workouts should use the Home telemetry area for live workout context');
 assert.match(home,/latest\.innerHTML=homeActiveWorkoutNowHtml\(active\)/,
   'active workouts should show the current movement instead of leaving Home blank');
-assert.match(home,/coach\.innerHTML='';quick\.innerHTML='';/,
-  'active workouts should still suppress unrelated Coach and shortcut content');
+assert.match(home,/coach\.innerHTML='';/,
+  'active workouts should still suppress unrelated Coach content');
+assert.match(home,/quick\.innerHTML=homeActiveWorkoutPulseHtml\(active\)/,
+  'active workouts should use the lower Home slot for Session Pulse instead of normal shortcuts');
 assert.match(home,/function homeActiveWorkoutSummaryHtml/,'active Home should expose elapsed, set, and exercise progress');
 assert.match(home,/function homeActiveWorkoutNowHtml/,'active Home should expose current workout position');
 assert.match(home,/function homeActiveWorkoutPulseHtml/,'active Home should fill the remaining space with live session context');
