@@ -163,7 +163,7 @@ The visual system should be established before building the workout-completion r
 
 ## Phase 3.5 — Product UX Refinement and Retention
 
-**Status: In progress beginning with v0.76.0**
+**Status: In progress beginning with v0.76.0. Home hierarchy landed in v0.76.0; v0.76.1 adds live active-workout context so focus mode remains useful without leaving most of Home blank.**
 
 **Priority: High**
 
