@@ -1129,6 +1129,40 @@
 #workout .focus-set-pill{min-width:38px;height:34px;padding:0 9px;border-radius:999px;border:1px solid rgba(73,91,120,.66);background:rgba(18,27,40,.8);color:#96a6ba;font-weight:900}
 #workout .focus-set-pill.current{border-color:rgba(34,211,238,.72);background:rgba(34,211,238,.10);color:#bff8ff;box-shadow:0 0 0 2px rgba(34,211,238,.06)}
 #workout .focus-set-pill.done{border-color:rgba(53,233,138,.4);background:rgba(53,233,138,.07);color:#8ce9a4}
+#workout .focus-set-pill.done{gap:4px}
+#workout .focus-set-edit-mark{margin-left:3px;color:#7ce9c4;font-size:.62rem;opacity:.82}
+#workout .focus-set-pill.editing{border-color:rgba(34,211,238,.82);background:linear-gradient(120deg,rgba(34,211,238,.14),rgba(53,233,138,.09));color:#d9fbff;box-shadow:0 0 0 2px rgba(34,211,238,.08),0 0 20px rgba(34,211,238,.08)}
+#workout .focus-set-card.editing{border-color:rgba(34,211,238,.62)!important;background:linear-gradient(145deg,rgba(10,27,35,.98),rgba(8,16,27,.98))!important}
+#workout .focus-set-edit-banner{display:grid;gap:2px;margin:0 0 8px;padding:8px 10px;border:1px solid rgba(34,211,238,.28);border-radius:8px 13px 8px 13px;background:rgba(34,211,238,.055)}
+#workout .focus-set-edit-banner b{color:#bdf7ff;font-size:.72rem}
+#workout .focus-set-edit-banner span{color:#8fa8b8;font-size:.64rem;line-height:1.35}
+#workout .focus-set-edit-cancel{min-width:56px;min-height:36px;padding:0 10px;border:1px solid rgba(121,143,171,.55);border-radius:9px;background:rgba(18,27,40,.82);color:#aebdcd;font-size:.68rem;font-weight:900}
+#workout .complete-set.update-set{border-color:rgba(34,211,238,.5);background:linear-gradient(100deg,rgba(34,211,238,.2),rgba(53,233,138,.16));color:#e8ffff;box-shadow:0 0 24px rgba(34,211,238,.09)}
+
+#workout .superset-flow{margin:7px 0 8px;padding:9px;border:1px solid rgba(244,114,182,.34);border-radius:8px 16px 8px 16px;background:linear-gradient(125deg,rgba(244,114,182,.07),rgba(34,211,238,.035)),rgba(9,15,25,.94)}
+#workout .superset-flow-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:7px}
+#workout .superset-flow-head .eyebrow{color:#f3a7d3}
+#workout .superset-flow-order{display:flex;align-items:center;gap:6px;margin-top:3px}
+#workout .superset-flow-order span{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:1px solid rgba(117,137,166,.5);border-radius:50%;color:#9cadc1;font-family:var(--display);font-size:.65rem;font-weight:950}
+#workout .superset-flow-order span.active{border-color:rgba(244,114,182,.72);background:rgba(244,114,182,.12);color:#ffd5ed;box-shadow:0 0 16px rgba(244,114,182,.12)}
+#workout .superset-flow-order i{color:#6f8198;font-style:normal;font-size:.7rem}
+#workout .superset-flow-badge{padding:4px 7px;border:1px solid rgba(244,114,182,.35);border-radius:999px;background:rgba(244,114,182,.08);color:#f1a7cf;font-size:.56rem;font-weight:950;letter-spacing:.1em}
+#workout .superset-flow-track{display:flex;gap:6px;overflow-x:auto}
+#workout .superset-flow-step{position:relative;display:grid;grid-template-columns:28px minmax(0,1fr) 18px;align-items:center;gap:6px;flex:1 1 0;min-width:128px;min-height:54px;padding:7px;border:1px solid rgba(72,89,116,.5);border-radius:8px 12px 8px 12px;background:rgba(12,20,32,.82);color:#dbe6f2;text-align:left}
+#workout .superset-flow-step:not(:disabled):active{transform:translateY(1px)}
+#workout .superset-flow-step.active{border-color:rgba(244,114,182,.66);background:linear-gradient(110deg,rgba(244,114,182,.12),rgba(25,31,48,.88))}
+#workout .superset-flow-step.done{border-color:rgba(53,233,138,.28);background:rgba(53,233,138,.045);opacity:.72}
+#workout .superset-flow-letter{display:flex;align-items:center;justify-content:center;width:27px;height:27px;border-radius:50%;border:1px solid rgba(118,139,169,.5);color:#b8c7d7;font-family:var(--display);font-size:.68rem;font-weight:950}
+#workout .superset-flow-step.active .superset-flow-letter{border-color:rgba(244,114,182,.72);color:#ffd4ec}
+#workout .superset-flow-copy{min-width:0}
+#workout .superset-flow-copy b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.69rem}
+#workout .superset-flow-copy small{display:block;margin-top:2px;color:#7589a0;font-size:.55rem;font-weight:950;letter-spacing:.08em}
+#workout .superset-flow-step.active small{color:#f0a9d1}
+#workout .superset-flow-state{color:#8296ad;font-size:.72rem;text-align:center}
+#workout .superset-flow-step.active .superset-flow-state{color:#f5a9d3}
+#workout .superset-flow-step.done .superset-flow-state{color:#70dda0}
+#workout .superset-flow-footer{margin-top:7px;color:#a5b2c2;font-size:.64rem;font-weight:760;line-height:1.3}
+
 #workout .focus-set-card{margin:0!important;padding:13px!important;border-radius:7px 17px 7px 17px!important;box-shadow:none!important}
 #workout .focus-set-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
 #workout .focus-set-reference{margin-top:4px;color:#8ea0b4;font-size:.69rem;line-height:1.25}
