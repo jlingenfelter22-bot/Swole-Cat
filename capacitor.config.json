@@ -1,6 +1,6 @@
 {
-  "appId": "com.jlingenfelter.swolecat.testing",
-  "appName": "Swole Cat Testing",
+  "appId": "com.jlingenfelter.swolecat",
+  "appName": "Swole Cat",
   "webDir": "www",
   "server": {
     "hostname": "localhost",
