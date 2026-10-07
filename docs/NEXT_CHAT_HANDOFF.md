@@ -10,7 +10,7 @@ Do not begin a new cloud phase by default.
 
 The next product task is:
 
-**Build and real-device validate the in-app updater on Swole Cat Testing before promoting a new Beta baseline. Testing remains the development channel; Beta must move only after explicit promotion approval.**
+**Testing in-app updates are now real-device proven. Do not change Beta until the user explicitly says to promote the tested checkpoint into a new Beta baseline.**
 
 The user wants to review the Settings screen, clean up all settings, decide where each setting belongs, improve grouping/order/labels, and make the Settings menu feel intentional and easy to scan.
 
@@ -1138,3 +1138,24 @@ Next action is the real phone proof only:
 v0.73.0 -> Settings -> App & updates -> v0.73.1.
 
 Do not mark updater proof complete until the user confirms Android installed v0.73.1 in place and local data/auth survived.
+
+
+## Latest authoritative updater status
+
+Testing updater proof: **COMPLETE**
+
+Real-device result:
+- v0.73.0 / build 103 -> v0.73.1 / build 104
+- initiated through Settings -> App & updates
+- Android normal approval/install flow completed successfully
+- user reported the update worked perfectly
+
+Interpretation:
+- Testing self-update is proven on the real phone
+- manual APK handoff is no longer the normal Testing update path
+- keep all ongoing development on Testing/main
+- Beta remains frozen until explicit user promotion approval
+- when approved, create a new Beta baseline containing the updater and signed permanently for `com.jlingenfelter.swolecat`
+- expect the current v0.66.1 beta cohort may need one last manual/fresh-install migration before future in-app Beta updates begin
+
+Do not silently promote Beta.
