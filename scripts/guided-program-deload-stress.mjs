@@ -65,7 +65,7 @@ const weekDate=offset=>{const d=new Date(monday);d.setDate(d.getDate()+offset*7+
 const weekAt=offset=>{const d=new Date(monday);d.setDate(d.getDate()+offset*7+1);return d};
 const sample=(i)=>({
  id:'guided_week_'+i,programId,routineId,routineName:'Fixture Guided',
- trainingMode:'guided',programPhase:'normal',date:weekDate(i-3),status:'finished',
+ trainingMode:'guided',programPhase:'normal',date:weekDate(i-4),status:'finished',
  exercises:[{exerciseId,skipped:false,sets:Array.from({length:3},()=>({done:true,type:'working',weight:100,reps:8+(i-1)*2,rir:2,pr:''}))}]
 });
 w.eval('state.sessions='+JSON.stringify([sample(1),sample(2),sample(3)])+';state.activeWorkout=null;'+
