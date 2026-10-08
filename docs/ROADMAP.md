@@ -163,7 +163,7 @@ The visual system should be established before building the workout-completion r
 
 ## Phase 3.5 — Product UX Refinement and Retention
 
-**Status: In progress beginning with v0.76.0. Home hierarchy is complete through v0.76.2. History density is complete through v0.77.1. Routines action cleanup is complete through v0.78.1. Progress simplification begins in v0.79.0 with results-first snapshot metrics, consistency/strength/PR priority, deeper analytics below a clear detail divider, and methodology moved to contextual help.**
+**Status: In progress beginning with v0.76.0. Home hierarchy is complete through v0.76.2. History density is complete through v0.77.1. Routines action cleanup is complete through v0.78.1. Progress simplification is complete in v0.79.0. Final whole-app visual-language refinement begins in v0.80.0 with semantic color tokens, unified state meanings, documented screen identity, and protected yellow superset language.**
 
 **Priority: High**
 
