@@ -215,7 +215,7 @@ function derivedSessionData(){
      if(session.programPhase!=='deload'&&working.length&&!previousByExercise.has(e.exerciseId))previousByExercise.set(e.exerciseId,{date:session.date,...e});
      if(!working.length)return;
      if(!historyByExercise.has(e.exerciseId))historyByExercise.set(e.exerciseId,[]);
-     historyByExercise.get(e.exerciseId).push({date:session.date,routineName:session.routineName,programId:session.programId||null,programPhase:session.programPhase||'normal',loadType:exerciseLoadType(e.exerciseId,e.config),sets:working,allSets:all,notes:e.notes||''});
+     historyByExercise.get(e.exerciseId).push({date:session.date,routineName:session.routineName,programId:session.programId||null,programPhase:session.programPhase||'normal',loadType:exerciseLoadType(e.exerciseId,e.config),measurementType:loggedExerciseMeasurement(e),sets:working,allSets:all,notes:e.notes||''});
    });
  });
  historyByExercise.forEach(rows=>rows.sort((a,b)=>String(a.date).localeCompare(String(b.date))));
@@ -672,14 +672,17 @@ function toggleActiveWorkoutControl(){
  else resumeActiveWorkout();
 }
 function activeSetsFromRoutineExercise(re,rec,ex){
+ const measurement=exerciseMeasurementType(re.exerciseId,re);
  const working=Array.from({length:re.sets},(_,i)=>({
    weight:rec.weights?.[i]??rec.weight??0,
-   reps:rec.targetReps?.[i]??re.minReps,
+   reps:measurement==='reps'?(rec.targetReps?.[i]??re.minReps):0,
+   durationSeconds:measurement==='duration'?(rec.targetValues?.[i]??(Number(re.minDurationSeconds)||20)):0,
+   distanceMeters:measurement==='distance'?(rec.targetValues?.[i]??(Number(re.minDistanceMeters)||10)):0,
    done:false,rir:'',type:'working',pr:'',
    role:typeof coachAdaptiveSetRole==='function'?coachAdaptiveSetRole(re,i):'working',
    amrap:!!re.lastSetAmrap&&i===Math.max(0,re.sets-1)
  }));
- if(!re.autoWarmup||!ex||exerciseLoadType(re.exerciseId,re)!=='external'||!COACH_COMPOUND_PATTERNS.has(ex.pattern))return working;
+ if(measurement!=='reps'||!re.autoWarmup||!ex||exerciseLoadType(re.exerciseId,re)!=='external'||!COACH_COMPOUND_PATTERNS.has(ex.pattern))return working;
  const targetWeight=Number(rec.weights?.[0]??rec.weight??0);
  let warmups=warmupGuide(targetWeight,ex);
  if(!warmups.length&&ex.equipment!=='bodyweight'){
@@ -706,7 +709,7 @@ function startRoutineFresh(id,programId=null){
      const prev=previousExercise(re.exerciseId,programId,re);
      const loadType=exerciseLoadType(re.exerciseId,re);
      const mode=effectiveMode,normalConfig={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode,programGuided:!!(program&&programMode==='guided')};
-     if(loadType!=='external'){normalConfig.adaptiveProgression=false;normalConfig.setStructure=null;normalConfig.progressionStrategy='double';}
+     if(loadType!=='external'||exerciseMeasurementType(re.exerciseId,re)!=='reps'){normalConfig.adaptiveProgression=false;normalConfig.setStructure=null;normalConfig.progressionStrategy='double';}
      const reducedSets=isDeload?Math.max(1,Math.ceil((Number(re.sets)||1)/2)):Math.max(1,Number(re.sets)||1);
      const config=isDeload?{...normalConfig,sets:reducedSets,setStructure:null,adaptiveProgression:false}:normalConfig;
      const normalRec=buildRecommendation(normalConfig,prev,re.exerciseId);
@@ -715,6 +718,7 @@ function startRoutineFresh(id,programId=null){
        status:'deload',
        weights:Array.from({length:reducedSets},(_,i)=>Number(priorWorking[i]?.weight??priorWorking[0]?.weight??0)),
        targetReps:Array(reducedSets).fill(Math.max(1,Number(config.minReps)||8)),
+       targetValues:Array(reducedSets).fill(exerciseMovementProfile(re.exerciseId,config).min),
        weight:Number(priorWorking[0]?.weight)||0,
        headline:'Deload · Fewer working sets',
        detail:'Lighter training stress by design. Performance from this week will not lower your normal progression baseline.'

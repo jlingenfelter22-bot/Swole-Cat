@@ -93,6 +93,9 @@ jobs:
           fs.writeFileSync('/tmp/swole-cat-test.html',html);
           JS
 
+      - name: Stress test v0.84.0 exercise intelligence and timed/distance measurement
+        run: node scripts/exercise-intelligence-stress.mjs
+
       - name: Stress test Coach Swolecat prompt matrix
         run: node scripts/coach-stress.mjs
 
@@ -1903,7 +1906,7 @@ jobs:
             await wait(70);
             const w=dom.window;
             const audit=w.auditExerciseMuscleCoverage();
-            assert.equal(audit.length,307,'every built-in exercise must be audited');
+            assert.equal(audit.length,308,'every built-in exercise, including Dead Hang, must be audited');
             assert.equal(audit.filter(x=>!x.primary.length).length,0,'every exercise needs a primary muscle');
             assert.equal(audit.filter(x=>x.missing.length).length,0,'every mapped muscle must be drawable on the heat map');
 

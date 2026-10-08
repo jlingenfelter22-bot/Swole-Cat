@@ -55,6 +55,9 @@ function renderHistory(){
    const when=historySessionDateParts(s);
    const workingSets=sessionSetCount(s),allSets=sessionAllSetCount(s),volume=Math.round(sessionVolume(s)),prs=sessionPRCount(s);
    const exercises=sessionCompletedExerciseCount(s),totalReps=sessionTotalReps(s);
+   const totalTime=(s.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='duration'?completedSets(e).reduce((a,set)=>a+(Number(set.durationSeconds)||0),0):0),0);
+   const totalDistance=(s.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='distance'?completedSets(e).reduce((a,set)=>a+(Number(set.distanceMeters)||0),0):0),0);
+   const measureSummary=[totalReps?totalReps+' total reps':'',totalTime?compactMetricNumber(totalTime)+' hold seconds':'',totalDistance?compactMetricNumber(distanceFromMeters(totalDistance))+' '+distanceUnitLabel()+' traveled':''].filter(Boolean).join(' · ')||'No measured sets';
    return `<article class="card history-entry">
      <div class="history-sequence"><small>SESSION</small><span>${String(sessions.length-sessionIndex).padStart(2,'0')}</span></div>
      <div class="history-entry-body">
@@ -76,7 +79,7 @@ function renderHistory(){
        </div>
 
        ${historyMuscleSummaryHtml(s)}
-       <div class="history-entry-submeta">${totalReps} total reps${allSets!==workingSets?` · ${allSets} total completed sets`:''}</div>
+       <div class="history-entry-submeta">${measureSummary}${allSets!==workingSets?` · ${allSets} total completed sets`:''}</div>
 
        <div class="history-card-actions">
          <button class="btn small history-recap-btn" onclick="openHistoricalWorkoutRecap('${escAttr(s.id)}')">View Recap</button>
@@ -96,9 +99,11 @@ function rebuildAllPRs(){
  chronological.forEach(session=>(session.exercises||[]).forEach(e=>{
    const prior=priorByExercise[e.exerciseId]||(priorByExercise[e.exerciseId]=[]);
    (e.sets||[]).forEach(set=>{
-     if(!set.done||!isProgressionSet(set)||Number(set.reps)<=0)return;
-     set.pr=calculateHistoricalPR(prior,set,e.exerciseId,e.config);
-     prior.push({weight:Number(set.weight)||0,reps:Number(set.reps)||0,rir:set.rir});
+     if(!set.done||!isProgressionSet(set)||exerciseMetricValue(set,loggedExerciseMeasurement(e))<=0)return;
+     const cfg={...e.config,measurementType:loggedExerciseMeasurement(e)};
+     set.pr=calculateHistoricalPR(prior,set,e.exerciseId,cfg);
+     prior.push({weight:Number(set.weight)||0,reps:Number(set.reps)||0,rir:set.rir,
+       durationSeconds:Number(set.durationSeconds)||0,distanceMeters:Number(set.distanceMeters)||0});
    });
  }));
 }
@@ -113,14 +118,15 @@ function renderCompletedWorkoutEditor(){
    <div class="notice">Fix weights, reps, RIR, set types, notes, or accidentally logged sets. Saving recalculates PR badges and future progression from the corrected history.</div>
    <div class="field" style="margin-top:12px"><label>Workout name</label><input id="sessionEditName" value="${escAttr(s.routineName||'Workout')}"></div>
    ${s.exercises.map((e,ei)=>{
-     const ex=exById(e.exerciseId);
+     const ex=exById(e.exerciseId),measurement=loggedExerciseMeasurement(e);
      return `<div class="history-edit-exercise">
        <div class="row"><div><div class="exercise-name">${esc(ex?.name||'Exercise')}</div><div class="mini">${esc(ex?.muscle||'')} · ${esc(ex?.equipment||'')}</div></div><button class="btn small secondary" onclick="addSessionDraftSet(${ei})">+ Set</button></div>
        ${(e.sets||[]).map((set,si)=>`<div class="history-edit-set">
          <div class="set-type-field"><label>Type</label><select id="sessType-${ei}-${si}">${setTypeOptions(setType(set))}</select></div>
-         <div><label>${exerciseLoadLabel(exerciseLoadType(e.exerciseId,e.config))} ${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?'(reps-only)':('('+state.profile.unit+')')}</label><input id="sessWeight-${ei}-${si}" type="number" step=".25" min="0" value="${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?0:(Number(set.weight)||0)}" ${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?'readonly aria-label="Bodyweight exercise: no external load"':''}></div>
-         <div><label>Reps</label><input id="sessReps-${ei}-${si}" type="number" min="0" value="${Number(set.reps)||0}"></div>
-         <div><label>RIR</label><select id="sessRir-${ei}-${si}"><option value="">—</option>${[0,1,2,3,4,5].map(v=>`<option value="${v}" ${String(set.rir)===String(v)?'selected':''}>${v}</option>`).join('')}</select></div>
+         ${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?'<div class="mini">Bodyweight · no added load</div>':`<div><label>${exerciseLoadLabel(exerciseLoadType(e.exerciseId,e.config))} (${state.profile.unit})</label><input id="sessWeight-${ei}-${si}" type="number" step=".25" min="0" value="${Number(set.weight)||0}"></div>`}
+         ${measurement==='reps'?`<div><label>Reps</label><input id="sessReps-${ei}-${si}" type="number" min="0" value="${Number(set.reps)||0}"></div>
+         <div><label>RIR</label><select id="sessRir-${ei}-${si}"><option value="">—</option>${[0,1,2,3,4,5].map(v=>`<option value="${v}" ${String(set.rir)===String(v)?'selected':''}>${v}</option>`).join('')}</select></div>`
+         :`<div><label>${measurement==='duration'?'Seconds':'Distance ('+distanceUnitLabel()+')'}</label><input id="sessMetric-${ei}-${si}" type="number" step=".1" min="0" value="${measurement==='duration'?Number(set.durationSeconds)||0:compactMetricNumber(distanceFromMeters(set.distanceMeters))}"></div>`}
          <button class="btn danger history-edit-remove" onclick="removeSessionDraftSet(${ei},${si})" aria-label="Remove set">×</button>
        </div>`).join('')||'<div class="empty">No sets logged.</div>'}
        <div class="field" style="margin-top:10px"><label>Exercise notes</label><textarea id="sessNotes-${ei}">${esc(e.notes||'')}</textarea></div>
@@ -137,10 +143,16 @@ function syncSessionEditDraft(){
      const type=document.getElementById(`sessType-${ei}-${si}`);
      const weight=document.getElementById(`sessWeight-${ei}-${si}`);
      const reps=document.getElementById(`sessReps-${ei}-${si}`);
+     const metric=document.getElementById(`sessMetric-${ei}-${si}`);
      const rir=document.getElementById(`sessRir-${ei}-${si}`);
      if(type)set.type=type.value;
      if(weight)set.weight=Math.max(0,Number(weight.value)||0);
      if(reps)set.reps=Math.max(0,Math.round(Number(reps.value)||0));
+     if(metric){
+      if(loggedExerciseMeasurement(e)==='duration')set.durationSeconds=Math.max(0,Number(metric.value)||0);
+      else set.distanceMeters=Math.max(0,distanceToMeters(Number(metric.value)||0));
+      set.reps=0;
+     }
      if(rir)set.rir=rir.value===''?'':Number(rir.value);
      set.done=true;
    });
@@ -152,7 +164,10 @@ function addSessionDraftSet(ei){
  const e=sessionEditDraft?.exercises?.[ei];if(!e)return;
  const last=e.sets?.at(-1);
  e.sets=e.sets||[];
- e.sets.push({weight:Number(last?.weight)||0,reps:Number(last?.reps)||0,rir:'',done:true,type:'working',pr:''});
+ e.sets.push({weight:Number(last?.weight)||0,reps:loggedExerciseMeasurement(e)==='reps'?(Number(last?.reps)||0):0,
+  durationSeconds:loggedExerciseMeasurement(e)==='duration'?(Number(last?.durationSeconds)||0):0,
+  distanceMeters:loggedExerciseMeasurement(e)==='distance'?(Number(last?.distanceMeters)||0):0,
+  rir:'',done:true,type:'working',pr:''});
  renderCompletedWorkoutEditor();
 }
 function removeSessionDraftSet(ei,si){

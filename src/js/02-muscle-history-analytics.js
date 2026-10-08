@@ -9,6 +9,7 @@ const MUSCLE_REGION_LABELS={
 };
 function uniqueMuscles(list){return [...new Set((list||[]).filter(Boolean))]}
 const EXERCISE_MUSCLE_OVERRIDES={
+ 'Dead Hang':{primary:['forearms'],secondary:['lats','upper_back','traps']},
  'Deadlift':{primary:['quads','glutes','lower_back'],secondary:['hamstrings','upper_back','forearms','core']},
  'Rack Pull':{primary:['glutes','lower_back','upper_back'],secondary:['hamstrings','traps','forearms','core']},
  'Block Pull':{primary:['glutes','lower_back','upper_back'],secondary:['hamstrings','traps','forearms','core']},
@@ -261,6 +262,16 @@ function sessionProgressHighlights(s,priorSessions=state.sessions){
    const previous=progressionSets(prior);
    if(!previous.length)return;
    const ex=exById(e.exerciseId),name=ex?.name||'Exercise',type=exerciseLoadType(e.exerciseId,e.config);
+   const measurement=exerciseMeasurementType(e.exerciseId,e.config);
+   if(measurement!=='reps'){
+    const sum=rows=>rows.reduce((n,set)=>n+exerciseMetricValue(set,measurement),0);
+    const currentTotal=sum(current),previousTotal=sum(previous);
+    if(currentTotal>previousTotal&&previousTotal>0)
+     highlights.push({name,text:measurement==='duration'?
+      'Total working hold time increased from '+compactMetricNumber(previousTotal)+' to '+compactMetricNumber(currentTotal)+' seconds.':
+      'Total working distance increased from '+compactMetricNumber(distanceFromMeters(previousTotal))+' to '+compactMetricNumber(distanceFromMeters(currentTotal))+' '+distanceUnitLabel()+'.'});
+    return;
+   }
    const currentMax=Math.max(...current.map(set=>Number(set.weight)||0));
    const previousMax=Math.max(...previous.map(set=>Number(set.weight)||0));
    const currentReps=current.reduce((n,set)=>n+(Number(set.reps)||0),0);
@@ -355,6 +366,9 @@ function saveCompletedSessionAsRoutine(sessionId){
 }
 function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],historical=false}={}){
  const workingSets=sessionSetCount(session),allSets=sessionAllSetCount(session),reps=sessionTotalReps(session);
+ const holdSeconds=(session.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='duration'?completedSets(e).reduce((a,set)=>a+(Number(set.durationSeconds)||0),0):0),0);
+ const distanceMeters=(session.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='distance'?completedSets(e).reduce((a,set)=>a+(Number(set.distanceMeters)||0),0):0),0);
+ const measureHeadline=reps>0?{value:reps,label:'Total reps'}:holdSeconds>0?{value:compactMetricNumber(holdSeconds),label:'Hold seconds'}:distanceMeters>0?{value:compactMetricNumber(distanceFromMeters(distanceMeters)),label:'Distance ('+distanceUnitLabel()+')'}:{value:'—',label:'Tracked sets'};
  const savedRoutine=routineSavedFromSession(session.id);
  const linkedRoutine=!!(session.routineId&&state.routines.some(r=>r.id===session.routineId));
  const volume=Math.round(sessionVolume(session)),prs=sessionPRDetails(session),muscles=sessionMuscleGroups(session);
@@ -363,16 +377,18 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
    const ex=exById(e.exerciseId),done=completedSets(e),working=progressionSets(e);
    if(e.skipped)return `<div class="recap-exercise"><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">Skipped for this session</div></div>`;
    if(!done.length)return `<div class="recap-exercise"><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">No completed sets</div>${e.notes?`<div class="muscle-map-note" style="margin-top:8px"><b>Notes</b><br>${esc(e.notes)}</div>`:''}</div>`;
+   const measurement=exerciseMeasurementType(e.exerciseId,e.config);
    const totalReps=done.reduce((n,set)=>n+(Number(set.reps)||0),0);
+   const metricTotal=done.reduce((n,set)=>n+exerciseMetricValue(set,measurement),0);
    const topWeight=Math.max(...done.map(set=>Number(set.weight)||0));
    const prCount=working.filter(set=>set.pr).length;
    const setRows=done.map((set,i)=>{
      const ordinal=e.sets.slice(0,e.sets.indexOf(set)+1).filter(x=>setType(x)===setType(set)).length;
      const load=Number(set.weight)||0,reps=Number(set.reps)||0;
-     return `<div class="recap-set-row"><span>${esc(setTypeLabel(setType(set)))} ${ordinal}</span><b>${load} ${state.profile.unit} × ${reps}</b>${set.rir!==''&&set.rir!=null?`<span>${esc(String(set.rir))} RIR</span>`:'<span></span>'}${set.pr?`<span class="inline-pr-mark">PR</span>`:'<span></span>'}</div>`;
+     return `<div class="recap-set-row"><span>${esc(setTypeLabel(setType(set)))} ${ordinal}</span><b>${measurement==='reps'?`${load} ${state.profile.unit} × ${reps}`:esc(setMeasurementText(e,set))+(load>0?' @ '+load+' '+state.profile.unit:'')}</b>${measurement==='reps'&&set.rir!==''&&set.rir!=null?`<span>${esc(String(set.rir))} RIR</span>`:'<span></span>'}${set.pr?`<span class="inline-pr-mark">PR</span>`:'<span></span>'}</div>`;
    }).join('');
    return `<div class="recap-exercise">
-     <div class="recap-exercise-top"><div><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">${working.length} working set${working.length===1?'':'s'} · ${totalReps} total reps${topWeight>0?` · top ${topWeight} ${state.profile.unit}`:''}</div></div>${prCount?`<span class="preference-badge prefer">PR ×${prCount}</span>`:''}</div>
+     <div class="recap-exercise-top"><div><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">${working.length} working set${working.length===1?'':'s'} · ${measurement==='duration'?compactMetricNumber(metricTotal)+' total seconds':measurement==='distance'?compactMetricNumber(distanceFromMeters(metricTotal))+' '+distanceUnitLabel()+' total':totalReps+' total reps'}${topWeight>0?` · top ${topWeight} ${state.profile.unit}`:''}</div></div>${prCount?`<span class="preference-badge prefer">PR ×${prCount}</span>`:''}</div>
      <div class="recap-set-list">${setRows}</div>
      ${e.notes?`<div class="muscle-map-note" style="margin-top:8px"><b>Notes</b><br>${esc(e.notes)}</div>`:''}
    </div>`;
@@ -393,7 +409,7 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
    <div class="recap-metrics">
      <div class="recap-metric"><b>${completedExercises}</b><span>Exercises</span></div>
      <div class="recap-metric"><b>${workingSets}</b><span>Working sets</span></div>
-     <div class="recap-metric"><b>${reps}</b><span>Total reps</span></div>
+     <div class="recap-metric"><b>${measureHeadline.value}</b><span>${measureHeadline.label}</span></div>
      <div class="recap-metric"><b>${prs.length}</b><span>Exercises with PR</span></div>
    </div>
    <div class="recap-section">
@@ -426,19 +442,23 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
 function exerciseHistory(exerciseId){return derivedSessionData().historyByExercise.get(exerciseId)||[];}
 function exerciseMetrics(exerciseId){
  const h=exerciseHistory(exerciseId).filter(row=>row.programPhase!=='deload'),sets=h.flatMap(x=>x.sets);
+ const measurement=exerciseMeasurementType(exerciseId,h.at(-1)||null);
  const type=exerciseLoadType(exerciseId,h.at(-1)||null);
- const bestWeight=type==='external'&&sets.length?Math.max(...sets.map(x=>Number(x.weight)||0)):0;
- const bestAssistance=type==='assistance'&&sets.length?Math.min(...sets.map(x=>Math.max(0,Number(x.weight)||0))):null;
- const bestReps=sets.length?Math.max(...sets.map(x=>Number(x.reps)||0)):0;
- const bestE1=type==='external'&&sets.length?Math.max(...sets.map(x=>estimated1RM(x.weight,x.reps))):0;
- const bestVolume=type==='external'&&h.length?Math.max(...h.map(x=>x.sets.reduce((a,s)=>a+(Number(s.weight)||0)*(Number(s.reps)||0),0))):0;
- const latest=h.at(-1),prior=h.at(-2);
- const latestE1=type==='external'&&latest?Math.max(...latest.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
- const priorE1=type==='external'&&prior?Math.max(...prior.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ const metricRows=measurement==='reps'?sets:sets.filter(x=>exerciseMetricValue(x,measurement)>0);
+ const bestMetric=measurement==='reps'?0:Math.max(0,...metricRows.map(x=>exerciseMetricValue(x,measurement)));
+ const bestWeight=measurement==='reps'&&type==='external'&&sets.length?Math.max(...sets.map(x=>Number(x.weight)||0)):0;
+ const bestAssistance=measurement==='reps'&&type==='assistance'&&sets.length?Math.min(...sets.map(x=>Math.max(0,Number(x.weight)||0))):null;
+ const bestReps=measurement==='reps'&&sets.length?Math.max(...sets.map(x=>Number(x.reps)||0)):0;
+ const bestE1=measurement==='reps'&&type==='external'&&sets.length?Math.max(...sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ const bestVolume=measurement==='reps'&&type==='external'&&h.length?Math.max(...h.map(x=>x.sets.reduce((n,v)=>n+(Number(v.weight)||0)*(Number(v.reps)||0),0))):0;
+ const comparable=h.filter(x=>x.sets.some(set=>exerciseMetricValue(set,measurement)>0));
+ const latest=comparable.at(-1),prior=comparable.at(-2);
+ const latestE1=measurement==='reps'&&type==='external'&&latest?Math.max(...latest.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ const priorE1=measurement==='reps'&&type==='external'&&prior?Math.max(...prior.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
  let trend='flat';
  if(priorE1&&latestE1>priorE1*1.01)trend='up';
  else if(priorE1&&latestE1<priorE1*.99)trend='down';
- return {history:h,sets,type,bestWeight,bestAssistance,bestReps,bestE1,bestVolume,latestE1,priorE1,trend};
+ return {history:h,sets,measurement,type,bestMetric,bestWeight,bestAssistance,bestReps,bestE1,bestVolume,latestE1,priorE1,trend};
 }
 function lastEightWeeks(){
  const now=startOfWeek(),rows=[];
@@ -516,20 +536,21 @@ function lifetimeExerciseRecords(){
    const rows=[];
    history.forEach(h=>h.sets.forEach(set=>rows.push({set,date:h.date,routineName:h.routineName})));
    if(!rows.length)return null;
-   const type=exerciseLoadType(id,history.at(-1)||null);
+   const type=exerciseLoadType(id,history.at(-1)||null),measurement=exerciseMeasurementType(id,history.at(-1)||null);
+   const bestMetric=measurement==='reps'?0:Math.max(0,...rows.map(x=>exerciseMetricValue(x.set,measurement)));
    const byLoad=[...rows].sort((a,b)=>(Number(b.set.weight)||0)-(Number(a.set.weight)||0)||(Number(b.set.reps)||0)-(Number(a.set.reps)||0))[0];
    const byAssistance=type==='assistance'?[...rows].sort((a,b)=>(Number(a.set.weight)||0)-(Number(b.set.weight)||0)||(Number(b.set.reps)||0)-(Number(a.set.reps)||0))[0]:null;
    const byE1=[...rows].sort((a,b)=>estimated1RM(b.set.weight,b.set.reps)-estimated1RM(a.set.weight,a.set.reps))[0];
    const byReps=[...rows].sort((a,b)=>(Number(b.set.reps)||0)-(Number(a.set.reps)||0))[0];
    const prs=rows.filter(x=>x.set.pr);
    return {
-     id,ex,history,type,
+     id,ex,history,type,measurement,bestMetric,
      bestAssistance:byAssistance?(Number(byAssistance.set.weight)||0):null,
      bestAssistanceReps:byAssistance?(Number(byAssistance.set.reps)||0):0,
      bestWeight:type==='external'?(Number(byLoad?.set.weight)||0):0,
      bestWeightReps:Number(byLoad?.set.reps)||0,
      bestReps:Number(byReps?.set.reps)||0,
-     bestE1:type==='external'&&byE1?estimated1RM(byE1.set.weight,byE1.set.reps):0,
+     bestE1:measurement==='reps'&&type==='external'&&byE1?estimated1RM(byE1.set.weight,byE1.set.reps):0,
      sessions:history.length,
      lastDate:history.at(-1)?.date||'',
      lastPRDate:prs.at(-1)?.date||''
@@ -537,11 +558,14 @@ function lifetimeExerciseRecords(){
  }).filter(Boolean);
 }
 function recordPrimaryText(r){
+ if(r.measurement==='duration')return compactMetricNumber(r.bestMetric)+' sec';
+ if(r.measurement==='distance')return compactMetricNumber(distanceFromMeters(r.bestMetric))+' '+distanceUnitLabel();
  if(r.type==='assistance')return (r.bestAssistance??0)+' '+state.profile.unit+' assist × '+r.bestAssistanceReps;
  if(r.type==='bodyweight')return r.bestReps+' reps';
  return r.bestWeight>0?r.bestWeight+' '+state.profile.unit+' × '+r.bestWeightReps:r.bestReps+' reps';
 }
 function recordSecondaryText(r){
+ if(r.measurement==='duration'||r.measurement==='distance')return r.sessions+' tracked sessions';
  if(r.type==='assistance')return 'Less assistance is harder · '+r.sessions+' sessions';
  if(r.type==='bodyweight')return 'Repetition record · '+r.sessions+' sessions';
  return r.bestE1>0?r.bestE1.toFixed(0)+' '+state.profile.unit+' est. 1RM':r.sessions+' logged sessions';
@@ -665,7 +689,7 @@ function renderRecordsModal(){
  const rows=lifetimeExerciseRecords().filter(r=>!q||(r.ex?.name||'').toLowerCase().includes(q)).sort((a,b)=>(a.ex?.name||'').localeCompare(b.ex?.name||''));
  host.innerHTML=rows.length?rows.map(r=>`<div class="records-row clickable" onclick="openExerciseProgress('${r.id}')">
    <div><div class="exercise-name">${esc(r.ex?.name||'Exercise')}</div><div class="mini">${r.sessions} session${r.sessions===1?'':'s'} · last ${new Date(r.lastDate).toLocaleDateString()}</div></div>
-   <div class="records-value"><b>${esc(recordPrimaryText(r))}</b><span>${r.type==='assistance'?'Least assistance':r.type==='bodyweight'?'Best reps':r.bestWeight>0?'Best load':'Best reps'}</span></div>
+   <div class="records-value"><b>${esc(recordPrimaryText(r))}</b><span>${r.measurement==='duration'?'Best hold':r.measurement==='distance'?'Best distance':r.type==='assistance'?'Least assistance':r.type==='bodyweight'?'Best reps':r.bestWeight>0?'Best load':'Best reps'}</span></div>
    <div class="records-value e1"><b>${r.bestE1>0?r.bestE1.toFixed(0):'—'}</b><span>Est. 1RM</span></div>
  </div>`).join(''):'<div class="empty">No matching records yet.</div>';
 }
@@ -812,7 +836,7 @@ function renderFormGuidePickerResults(exerciseId){
 
 function openExerciseProgress(exerciseId){
  const ex=exById(exerciseId),m=exerciseMetrics(exerciseId),h=m.history,pref=exercisePreference(exerciseId);
- const type=exerciseLoadType(exerciseId,h.at(-1)||null),recent=h.slice(-12);
+ const type=exerciseLoadType(exerciseId,h.at(-1)||null),measurement=exerciseMeasurementType(exerciseId,h.at(-1)||null),recent=h.filter(x=>measurement==='reps'||x.sets.some(set=>exerciseMetricValue(set,measurement)>0)).slice(-12);
  const e1s=recent.map(x=>Math.max(...x.sets.map(s=>estimated1RM(s.weight,s.reps))));
  const bestReps=recent.map(x=>Math.max(...x.sets.map(s=>Number(s.reps)||0)));
  const firstAssistance=recent.length?Math.min(...recent[0].sets.map(s=>Number(s.weight)||0)):0;
@@ -820,6 +844,10 @@ function openExerciseProgress(exerciseId){
  const trend=m.trend==='up'?'<span class="trend-up">↑ Trending up</span>':m.trend==='down'?'<span class="trend-down">↓ Recent dip</span>':'<span class="trend-flat">→ Holding steady</span>';
  const progressHtml=!h.length
   ?'<div class="empty"><strong>No workout history yet</strong>Log this exercise in a workout and its progress will appear here.</div>'
+  :measurement!=='reps'?`<div class="notice">This movement is tracked by ${measurement==='duration'?'hold time':'distance'}, not repetitions. Your chart shows the best completed working set each session; it does not invent a one-rep max.</div>
+    <div class="metric-row"><div class="metric-mini"><b>${measurement==='duration'?compactMetricNumber(m.bestMetric)+' sec':compactMetricNumber(distanceFromMeters(m.bestMetric))+' '+distanceUnitLabel()}</b><span>Best ${measurement==='duration'?'hold':'distance'}</span></div><div class="metric-mini"><b>${h.length}</b><span>Logged sessions</span></div></div>
+    <div class="chart-card"><div class="row"><b>Best ${measurement==='duration'?'hold time':'distance'} by session</b><span class="mini">Last ${recent.length}</span></div>${svgLine(recent.map(x=>Math.max(0,...x.sets.map(set=>measurement==='duration'?Number(set.durationSeconds)||0:distanceFromMeters(set.distanceMeters)))))}</div>
+    <div class="picker-section">Recent sessions</div><div class="card">${h.slice().reverse().slice(0,8).map(x=>`<div class="list-item"><b>${new Date(x.date).toLocaleDateString()}</b><span class="mini">${x.sets.map(set=>setMeasurementText({exerciseId,config:{measurementType:measurement}},set)).join(' · ')}</span></div>`).join('')}</div>`
   :type==='assistance'?`<div class="notice">Assistance is a counterweight. <b>Less assistance means a harder movement.</b> Estimated 1RM and conventional external-load volume are not applicable.</div>
     <div class="metric-row"><div class="metric-mini"><b>${m.bestAssistance??0} ${state.profile.unit}</b><span>Least assistance</span></div><div class="metric-mini"><b>${m.bestReps}</b><span>Most reps</span></div><div class="metric-mini"><b>${h.length}</b><span>Sessions</span></div></div>
     <div class="chart-card"><div class="row"><b>Reduction in assistance</b><span class="mini">Last ${recent.length}</span></div>${svgLine(assistanceReductions)}</div>
