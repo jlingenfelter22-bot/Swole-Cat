@@ -4,7 +4,7 @@ This document is the canonical product roadmap for Swole Cat. Features listed as
 
 ## Product Principles
 
-**Next proposed exercise-intelligence foundation (not implemented):** [EXERCISE_INTELLIGENCE_FOUNDATION.md](EXERCISE_INTELLIGENCE_FOUNDATION.md) defines lightweight deterministic movement profiles for all 307 built-in exercises, user- and goal-sensitive rep suggestions, load semantics, future time/distance/per-side tracking, per-exercise analytics validity, and strict regression/performance gates. Owner to review Testing v0.83.0 before authorizing implementation; no Beta changes.
+**Exercise-intelligence foundation (first phase implemented in Testing v0.84.0):** [EXERCISE_INTELLIGENCE_FOUNDATION.md](EXERCISE_INTELLIGENCE_FOUNDATION.md) records lightweight movement-family and goal-aware defaults for 308 built-in exercises, including Dead Hang. Time-based holds and distance-based carries/sleds now use real measurement fields, metric-aware PRs and history; exercise-specific loading and manual overrides remain intact. Field review pending. Combined time/distance, stopwatch controls, side-specific measurements, deeper equipment modeling, and further optimization remain future work. Beta unchanged.
 
 1. **Local-first stays valuable.** Core workout tracking should remain usable without an account or network connection.
 2. **A routine is a blueprint.** Workout history, weights, reps, progression, notes, and personal stats belong to the individual user, even when a routine is shared.
