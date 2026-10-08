@@ -55,6 +55,9 @@ function renderHistory(){
    const when=historySessionDateParts(s);
    const workingSets=sessionSetCount(s),allSets=sessionAllSetCount(s),volume=Math.round(sessionVolume(s)),prs=sessionPRCount(s);
    const exercises=sessionCompletedExerciseCount(s),totalReps=sessionTotalReps(s);
+   const totalTime=(s.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='duration'?completedSets(e).reduce((a,set)=>a+(Number(set.durationSeconds)||0),0):0),0);
+   const totalDistance=(s.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='distance'?completedSets(e).reduce((a,set)=>a+(Number(set.distanceMeters)||0),0):0),0);
+   const measureSummary=[totalReps?totalReps+' total reps':'',totalTime?compactMetricNumber(totalTime)+' hold seconds':'',totalDistance?compactMetricNumber(distanceFromMeters(totalDistance))+' '+distanceUnitLabel()+' traveled':''].filter(Boolean).join(' · ')||'No measured sets';
    return `<article class="card history-entry">
      <div class="history-sequence"><small>SESSION</small><span>${String(sessions.length-sessionIndex).padStart(2,'0')}</span></div>
      <div class="history-entry-body">
@@ -76,7 +79,7 @@ function renderHistory(){
        </div>
 
        ${historyMuscleSummaryHtml(s)}
-       <div class="history-entry-submeta">${totalReps} total reps${allSets!==workingSets?` · ${allSets} total completed sets`:''}</div>
+       <div class="history-entry-submeta">${measureSummary}${allSets!==workingSets?` · ${allSets} total completed sets`:''}</div>
 
        <div class="history-card-actions">
          <button class="btn small history-recap-btn" onclick="openHistoricalWorkoutRecap('${escAttr(s.id)}')">View Recap</button>
@@ -120,7 +123,7 @@ function renderCompletedWorkoutEditor(){
        <div class="row"><div><div class="exercise-name">${esc(ex?.name||'Exercise')}</div><div class="mini">${esc(ex?.muscle||'')} · ${esc(ex?.equipment||'')}</div></div><button class="btn small secondary" onclick="addSessionDraftSet(${ei})">+ Set</button></div>
        ${(e.sets||[]).map((set,si)=>`<div class="history-edit-set">
          <div class="set-type-field"><label>Type</label><select id="sessType-${ei}-${si}">${setTypeOptions(setType(set))}</select></div>
-         <div><label>${exerciseLoadLabel(exerciseLoadType(e.exerciseId,e.config))} ${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?'(reps-only)':('('+state.profile.unit+')')}</label><input id="sessWeight-${ei}-${si}" type="number" step=".25" min="0" value="${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?0:(Number(set.weight)||0)}" ${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?'readonly aria-label="Bodyweight exercise: no external load"':''}></div>
+         <div><label>${exerciseLoadLabel(exerciseLoadType(e.exerciseId,e.config))} ${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?'(no external load)':('('+state.profile.unit+')')}</label><input id="sessWeight-${ei}-${si}" type="number" step=".25" min="0" value="${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?0:(Number(set.weight)||0)}" ${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?'readonly aria-label="Bodyweight exercise: no external load"':''}></div>
          ${measurement==='reps'?`<div><label>Reps</label><input id="sessReps-${ei}-${si}" type="number" min="0" value="${Number(set.reps)||0}"></div>
          <div><label>RIR</label><select id="sessRir-${ei}-${si}"><option value="">—</option>${[0,1,2,3,4,5].map(v=>`<option value="${v}" ${String(set.rir)===String(v)?'selected':''}>${v}</option>`).join('')}</select></div>`
          :`<div><label>${measurement==='duration'?'Seconds':'Distance ('+distanceUnitLabel()+')'}</label><input id="sessMetric-${ei}-${si}" type="number" step=".1" min="0" value="${measurement==='duration'?Number(set.durationSeconds)||0:compactMetricNumber(distanceFromMeters(set.distanceMeters))}"></div>`}
