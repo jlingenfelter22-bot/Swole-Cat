@@ -585,7 +585,7 @@ function routineEditorHtml(r){
         <div class="editor-summary">
           <span class="tag">${re.sets} sets</span>
           <span class="tag">${exerciseMeasurementType(re.exerciseId,re)==='duration'?(Number(re.minDurationSeconds)||20)+'-'+(Number(re.maxDurationSeconds)||45)+' sec':exerciseMeasurementType(re.exerciseId,re)==='distance'?compactMetricNumber(distanceFromMeters(Number(re.minDistanceMeters)||10))+'-'+compactMetricNumber(distanceFromMeters(Number(re.maxDistanceMeters)||30))+' '+distanceUnitLabel():re.minReps+'-'+re.maxReps+' reps'}</span>
-          <span class="tag">${exerciseLoadType(re.exerciseId,re)==='bodyweight'?'Reps only':(exerciseLoadType(re.exerciseId,re)==='assistance'?'−':'+' )+re.increment+' '+state.profile.unit}</span>
+          <span class="tag">${exerciseLoadType(re.exerciseId,re)==='bodyweight'?(exerciseMeasurementType(re.exerciseId,re)==='reps'?'Reps only':'No external load'):(exerciseLoadType(re.exerciseId,re)==='assistance'?'−':'+' )+re.increment+' '+state.profile.unit}</span>
           <span class="tag">${re.setStructure?.type==='top_backoff'?`Top + ${re.setStructure.backoffSets||0} backoff @ ${re.setStructure.backoffPercent||90}%`:(re.mode==='range'||re.mode==='double')?'Double progression · +1/set':re.mode==='total'?'Beat total reps':'Manual'}</span>
           <span class="tag">${goalLabel(re.trainingGoal||'general')}</span>
           ${routineSupersetMeta(r,i)?`<span class="superset-badge">⚡ Superset ${routineSupersetMeta(r,i).label}</span>`:''}
@@ -681,9 +681,9 @@ function editRoutineExerciseSettings(id,index){
    <option value="auto" ${!re.loadType||re.loadType==='auto'?'selected':''}>Automatic · ${esc(exerciseLoadLabel(exerciseLoadType(re.exerciseId,re)))}</option>
    <option value="external" ${re.loadType==='external'?'selected':''}>Added resistance (more weight is harder)</option>
    <option value="assistance" ${re.loadType==='assistance'?'selected':''}>Assistance (less weight is harder)</option>
-   <option value="bodyweight" ${re.loadType==='bodyweight'?'selected':''}>Bodyweight · reps only</option>
+   <option value="bodyweight" ${re.loadType==='bodyweight'?'selected':''}>Bodyweight · no added load</option>
  </select><div class="native-note">Assisted machines progress by reducing counterweight. Unweighted movements track reps. Weighted variants track added resistance. Override automatic classification for custom setups.</div></div>
- <div class="field"><label>Weight change step (${state.profile.unit}, ignored for reps-only)</label><input type="number" step=".25" min="0" id="reInc" value="${re.increment}"></div>
+ <div class="field"><label>External weight step (${state.profile.unit}, used only for loaded movements)</label><input type="number" step=".25" min="0" id="reInc" value="${re.increment}"></div>
  <div class="form-grid">
    <div><label>Training goal</label><select id="reGoal">
     <option value="general" ${(re.trainingGoal||'general')==='general'?'selected':''}>General progression</option>
@@ -697,7 +697,7 @@ function editRoutineExerciseSettings(id,index){
    </select></div>
  </div>
  <div class="field"><label>Rest seconds</label><input type="number" id="reRest" value="${re.restSeconds||120}"></div>
- <div class="notice">Goal changes how Coach interprets effort and stalls. It does not silently invent working weights.</div>
+ <div class="notice">Your goal influences suggested ranges and effort context. Exercise tracking follows its measurement type, and your saved targets remain yours to customize.</div>
  <div class="actions"><button class="btn" onclick="saveRoutineExerciseSettings('${id}',${index})">Save</button><button class="btn secondary" onclick="editRoutineDetails('${id}')">Back</button></div>`);
 }
 function changeRoutineMeasurementFields(value){
