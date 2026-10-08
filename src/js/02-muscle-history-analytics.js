@@ -369,10 +369,11 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
    :'<div class="notice">No PR badge this time. PRs are only called when the logged performance clears the existing record logic.</div>';
  return `
    <div class="workout-recap-hero">
-     <div class="eyebrow">${historical?'HISTORICAL SESSION · SAVED LOCALLY':'SESSION COMPLETE · SAVED LOCALLY'}</div>
+     <div class="eyebrow">${session.programPhase==='deload'?'DELOAD WEEK · INTENTIONALLY LIGHTER':historical?'HISTORICAL SESSION · SAVED LOCALLY':'SESSION COMPLETE · SAVED LOCALLY'}</div>
      <div class="workout-recap-title">${esc(session.routineName)}</div>
      <div class="workout-recap-time">${esc(formatSessionCompletionTime(session))} · ${session.durationMinutes||0} min</div>
    </div>
+   ${session.programPhase==='deload'?'<div class="workout-deload-note"><b>☾ Deload workout</b><span>This workload is saved in your training history, but it is not used to conclude that you lost strength or to lower your next normal target.</span></div>':''}
    <div class="recap-metrics">
      <div class="recap-metric"><b>${completedExercises}</b><span>Exercises</span></div>
      <div class="recap-metric"><b>${workingSets}</b><span>Working sets</span></div>
