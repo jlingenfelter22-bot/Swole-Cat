@@ -1,7 +1,7 @@
 # Swole Cat Training Science Foundation
 
 **Status:** Canonical RESEARCH REFERENCE, not an approved algorithm or an app feature.
-**Verified:** 2026-10-08.
+**Verified:** 2026-10-08. **Evidence update:** 2026-10-08, 2026 ACSM position stand reviewed.
 **Scope:** All workout, program, Guided Progressive Overload, Strength Focus, Coach programming, fatigue-management, deload, and progression-related design and development.
 **Owner intent:** A flexible, personal, science-informed workout tracker that prioritizes useful guidance, user control, and high-quality training history without pretending to diagnose physiological states.
 
