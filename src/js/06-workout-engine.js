@@ -1566,6 +1566,22 @@ function focusedExerciseCanvasHtml(w,ei){
 }
 
 let workoutKeyboardAnchorBound=false;
+let workoutKeyboardDockBound=false;
+function bindWorkoutKeyboardDock(){
+ if(workoutKeyboardDockBound)return;
+ workoutKeyboardDockBound=true;
+ document.addEventListener('focusin',function(event){
+  if(event.target?.matches?.('#workout .focus-set-card input.direct-number'))
+   document.documentElement.classList.add('workout-keyboard-active');
+ });
+ document.addEventListener('focusout',function(event){
+  if(!event.target?.matches?.('#workout .focus-set-card input.direct-number'))return;
+  setTimeout(function(){
+   if(!document.activeElement?.matches?.('#workout .focus-set-card input.direct-number'))
+    document.documentElement.classList.remove('workout-keyboard-active');
+  },80);
+ });
+}
 function anchorFocusedWorkoutSet(behavior='auto'){
  const card=document.querySelector('.focus-set-card');if(!card)return;
  const header=Math.max(0,Math.round((document.querySelector('header')&&document.querySelector('header').getBoundingClientRect().height)||0));
@@ -1574,6 +1590,7 @@ function anchorFocusedWorkoutSet(behavior='auto'){
  window.scrollTo({top:top,behavior:behavior});
 }
 function bindWorkoutKeyboardAnchor(){
+ bindWorkoutKeyboardDock();
  if(workoutKeyboardAnchorBound||!window.visualViewport)return;
  workoutKeyboardAnchorBound=true;
  window.visualViewport.addEventListener('resize',function(){
@@ -1583,6 +1600,7 @@ function bindWorkoutKeyboardAnchor(){
  });
 }
 function workoutNumberFocus(el){
+ document.documentElement.classList.add('workout-keyboard-active');
  smartNumberFocus(el);
  setTimeout(function(){
    if(document.activeElement!==el)return;
@@ -1592,6 +1610,7 @@ function workoutNumberFocus(el){
 
 
 function renderWorkout(){
+ document.documentElement.classList.remove('workout-keyboard-active');
  const w=state.activeWorkout;
  if(workoutHoldClock){
   const same=w&&Number(w.focusExerciseIndex)===workoutHoldClock.ei&&Number(w.focusSetIndex)===workoutHoldClock.si;
