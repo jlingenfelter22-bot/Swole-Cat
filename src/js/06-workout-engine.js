@@ -1469,7 +1469,7 @@ function stopWorkoutHoldTimer(record=true){
  const e=state.activeWorkout?.exercises?.[clock.ei],set=e?.sets?.[clock.si];
  if(record&&set&&!set.done){
   const actual=Math.max(0,Math.round((clock.elapsed+(Date.now()-clock.startedAt)/1000)*10)/10);
-  if(actual>0){set.durationSeconds=actual;set.metricRecorded=true;set.pr='';saveActiveWorkout(true,false)}
+  if(actual>0){set.durationSeconds=actual;set.metricRecorded=true;set.pr='';saveActiveWorkout()}
  }
  paintWorkoutHoldTimer();return true;
 }
