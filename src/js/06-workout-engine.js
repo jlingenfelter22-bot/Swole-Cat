@@ -204,7 +204,7 @@ function buildRecommendation(config,prev,exerciseId=null){
  if(routineMode==='track'){
    return {status:'track',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),
      targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),
-     headline:'Track your working sets',detail:'No automatic progression is active. '+exerciseLoadExplanation(loadType)};
+     headline:'Track your working sets',detail:'No automatic progression target is active. '+exerciseLoadExplanation(loadType)};
  }
  // Unweighted movements progress in repetitions only. A weighted variant is a
  // different exercise and must be selected explicitly, not invented from zero.
