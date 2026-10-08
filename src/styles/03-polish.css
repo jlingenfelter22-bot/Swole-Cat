@@ -2606,3 +2606,17 @@ html.workout-keyboard-active #restTimer.resttimer.show{
  #workout .hold-timer-panel{gap:7px;padding:9px}
  #workout .hold-timer-action{min-width:100px;padding:8px}
 }
+
+
+/* Prevent guidance summaries and mixed-metric labels from truncating on phones. */
+#workout .focus-guidance .workout-guidance-title,
+#workout .focus-guidance .workout-guidance-meta{
+ white-space:normal!important;
+ overflow:visible!important;
+ text-overflow:clip!important;
+ overflow-wrap:break-word;
+ line-height:1.4;
+}
+#workout .focus-guidance .workout-guidance-title{font-size:.9rem}
+.recap-metrics .recap-metric span{white-space:normal;overflow-wrap:break-word;line-height:1.35}
+.recap-metrics .recap-metric b{font-variant-numeric:tabular-nums}
