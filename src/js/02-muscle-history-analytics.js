@@ -470,8 +470,8 @@ function progressCalendarHtml(){
    </div>
    <div class="calendar-weekdays">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>`<div>${x}</div>`).join('')}</div>
    <div class="calendar-grid">${data.cells.map(cell=>cell
-     ?`<button class="calendar-day ${cell.today?'today':''} ${cell.count?'trained':''}" ${cell.count?`onclick="openProgressDay('${cell.key}')"`:'disabled'}>
-        <span class="daynum">${cell.day}</span>${cell.count?'<span class="calendar-dot"></span>':''}
+     ?`<button class="calendar-day ${cell.today?'today':''} ${cell.count?'trained':''} ${cell.sessions.some(s=>s.programPhase==='deload')?'calendar-deload':''}" ${cell.count?`onclick="openProgressDay('${cell.key}')"`:'disabled'}>
+        <span class="daynum">${cell.day}</span>${cell.count?'<span class="calendar-dot"></span>':''}${cell.sessions.some(s=>s.programPhase==='deload')?'<span class="calendar-deload-icon" title="Deload workout">☾</span>':''}
         ${cell.count?`<span class="daycount">${cell.count} workout${cell.count===1?'':'s'}</span>`:''}
        </button>`
      :'<div class="calendar-day empty"></div>').join('')}</div>
@@ -484,7 +484,7 @@ function openProgressDay(key){
  openModal(d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}),`
    <div class="mini" style="margin-bottom:10px">${sessions.length} workout${sessions.length===1?'':'s'} logged</div>
    ${sessions.map(s=>`<div class="card" style="margin-bottom:9px">
-     <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})} · ${sessionSetCount(s)} working sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div>${sessionPRCount(s)?`<span class="tag pr-tag">PR · ${sessionPRCount(s)}</span>`:''}</div>
+     <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${s.programPhase==='deload'?'☾ DELOAD · ':''}${new Date(s.date).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})} · ${sessionSetCount(s)} working sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div>${sessionPRCount(s)?`<span class="tag pr-tag">PR · ${sessionPRCount(s)}</span>`:''}</div>
      <div class="mini" style="margin-top:8px">${s.exercises.filter(e=>progressionSets(e).length).map(e=>esc(exById(e.exerciseId)?.name||'Exercise')).join(' · ')}</div>
      <div class="actions"><button class="btn small" onclick="closeModal();openHistoricalWorkoutRecap('${s.id}')">View Recap</button><button class="btn small secondary" onclick="closeModal();go('history')">Open History</button></div>
    </div>`).join('')}
@@ -846,8 +846,9 @@ function renderAnalytics(){
  const activeWeeks=weeks.filter(x=>x.workouts>0).length;
  const avgWorkouts=(weeks.reduce((a,x)=>a+x.workouts,0)/Math.max(1,weeks.length));
  const volumeTrend=progressVolumeTrend30(now);
+ const recentDeloadCount=last30.filter(s=>s.programPhase==='deload').length;
  const volumeTrendText=volumeTrend.pct==null?'—':`${volumeTrend.pct>0?'+':''}${Math.round(volumeTrend.pct)}%`;
- const volumeTrendClass=volumeTrend.pct==null?'trend-flat':volumeTrend.pct>2?'trend-up':volumeTrend.pct<-2?'trend-down':'trend-flat';
+ const volumeTrendClass=volumeTrend.pct==null||recentDeloadCount&&volumeTrend.pct<-2?'trend-flat':volumeTrend.pct>2?'trend-up':volumeTrend.pct<-2?'trend-down':'trend-flat';
  const workloads=muscleWorkloadComparison(),maxWorkload=Math.max(1,...workloads.flatMap(x=>[x.current,x.average]));
  const coveragePeriods=muscleCoveragePeriods(),frequency=muscleFrequencyWeeks(8);
  const records=lifetimeExerciseRecords();
@@ -875,9 +876,10 @@ function renderAnalytics(){
      <div class="progress-snapshot-metric"><span>THIS WEEK</span><b>${thisWeek.length}</b><small>workout${thisWeek.length===1?'':'s'}</small></div>
      <div class="progress-snapshot-metric"><span>PRs · 30D</span><b>${prs30}</b><small>exercise PR${prs30===1?'':'s'}</small></div>
      <div class="progress-snapshot-metric"><span>CONSISTENCY</span><b>${activeWeeks}/8</b><small>active weeks · ${avgWorkouts.toFixed(1)}/wk</small></div>
-     <div class="progress-snapshot-metric"><span>VOLUME · 30D</span><b class="${volumeTrendClass}">${volumeTrendText}</b><small>${volumeTrend.pct==null?'build more history':'vs prior 30 days'}</small></div>
+     <div class="progress-snapshot-metric"><span>VOLUME · 30D</span><b class="${volumeTrendClass}">${volumeTrendText}</b><small>${volumeTrend.pct==null?'build more history':'vs prior 30 days'}${recentDeloadCount?' · includes deload':''}</small></div>
    </div>
  </div>
+ ${recentDeloadCount?'<div class="workout-deload-note"><b>☾ Planned deload sessions in the last 30 days</b><span>Lower set counts or volume during a planned deload are intentional, not proof of lost strength. These sessions remain in your workout counts and volume totals; estimated strength changes and future progression exclude them.</span></div>':''}
 
  <div class="progress-primary-section">
    <div class="section-title"><h2>8-week consistency</h2><span class="mini">${weeks.reduce((a,x)=>a+x.workouts,0)} workouts</span></div>
