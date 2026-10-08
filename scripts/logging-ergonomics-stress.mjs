@@ -85,7 +85,7 @@ const session={id:'mixed-metrics',routineName:'Mixed training',date:new Date().t
   {exerciseId:'lib_258',config:{loadType:'external',measurementType:'distance'},sets:[{done:true,type:'working',weight:25,weightEntered:true,reps:0,distanceMeters:12.192,rir:'',pr:''}]}
  ]};
 const recap=w.workoutRecapHtml(session);
-assert.match(recap,/Repetitions/,'repetitions have their own summary card');
+assert.match(recap,/Total reps/,'repetitions have their own summary card');
 assert.match(recap,/Hold seconds/,'timed holds have their own summary card');
 assert.match(recap,/Distance \(ft\)/,'carries have their own summary card');
 assert.match(recap,/Weight per hand/,'carry load meaning is explicit in recap');
