@@ -1433,38 +1433,105 @@ function focusedCoachTargetHtml(e,ei,ex,prev){
   (coach&&coach.canReset&&!e.targetOverride?'<div class="actions compact-guidance-action"><button class="btn small secondary" onclick="applyCoachReset('+ei+')">Apply '+coach.resetPercent+'% reset for today</button></div>':'')+
   '</div></details>';
 }
+// The hold stopwatch records an actual duration, never a prescribed target.
+// It is transient, pauses if the app becomes hidden, and never auto-completes a set.
+let workoutHoldClock=null;
+function workoutHoldTimerMatches(ei,si){return !!workoutHoldClock&&workoutHoldClock.ei===ei&&workoutHoldClock.si===si}
+function holdTimerDisplay(ei,si){
+ const elapsed=workoutHoldTimerMatches(ei,si)?Math.max(0,(Date.now()-workoutHoldClock.startedAt)/1000+workoutHoldClock.elapsed):0;
+ const seconds=Math.floor(elapsed);return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+}
+function paintWorkoutHoldTimer(){
+ const el=document.getElementById('workoutHoldTimerReadout');
+ if(el&&workoutHoldClock)el.textContent=holdTimerDisplay(workoutHoldClock.ei,workoutHoldClock.si);
+}
+function stopWorkoutHoldTimer(record=true){
+ const clock=workoutHoldClock;if(!clock)return false;
+ clearInterval(clock.interval);workoutHoldClock=null;
+ const e=state.activeWorkout?.exercises?.[clock.ei],set=e?.sets?.[clock.si];
+ if(record&&set&&!set.done){
+  const actual=Math.max(0,Math.round((clock.elapsed+(Date.now()-clock.startedAt)/1000)*10)/10);
+  if(actual>0){set.durationSeconds=actual;set.metricRecorded=true;set.pr='';saveActiveWorkout(true,false)}
+ }
+ paintWorkoutHoldTimer();return true;
+}
+function toggleWorkoutHoldTimer(ei,si){
+ const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];
+ if(!e||!set||set.done||exerciseMeasurementType(e.exerciseId,e.config)!=='duration')return;
+ if(workoutHoldTimerMatches(ei,si)){
+  stopWorkoutHoldTimer(true);renderWorkout();return;
+ }
+ if(workoutHoldClock)stopWorkoutHoldTimer(true);
+ workoutHoldClock={ei,si,startedAt:Date.now(),elapsed:0,interval:setInterval(paintWorkoutHoldTimer,200)};
+ renderWorkout();
+}
+function repeatPreviousWorkoutSet(ei,si){
+ const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];
+ const old=workoutMetricPreviousSet(e,si);if(!set||set.done||!old)return;
+ if(workoutHoldClock)stopWorkoutHoldTimer(true);
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config);
+ set.weight=Number(old.weight)||0;set.weightEntered=old.weightEntered!==false;
+ if(measurement==='duration')set.durationSeconds=Number(old.durationSeconds)||0;
+ else if(measurement==='distance')set.distanceMeters=Number(old.distanceMeters)||0;
+ else {set.reps=Number(old.reps)||0;set.rir=old.rir??''}
+ if(measurement!=='reps')set.metricRecorded=true;
+ set.pr='';saveActiveWorkout();renderWorkout();showToast('Previous set values copied. Complete when ready.');
+}
+function guardWorkoutHoldClockVisibility(){
+ if(document.visibilityState==='hidden')stopWorkoutHoldTimer(true);
+}
+document.addEventListener('visibilitychange',guardWorkoutHoldClockVisibility);
+
 function focusedSetCardHtml(e,ei,si,ex,prev){
- const base=e.sets[si],edit=workoutSetEditTarget(ei,si),s=edit?edit.draft:base;
- const type=setType(s),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev);
+ const base=e.sets[si],edit=workoutSetEditTarget(ei,si),set=edit?edit.draft:base;
+ const type=setType(set),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev);
  const measurement=exerciseMeasurementType(e.exerciseId,e.config),loadType=exerciseLoadType(e.exerciseId,e.config);
- const ref=type==='working'?setReference(prev,wi,e.exerciseId,e.config):'Not used for progression';
- const pt=plateLoadText(s.weight||target.weight,ex);
- const inc=Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5));
- const opts=[0,1,2,3,4,5].map(v=>'<option value="'+v+'" '+(String(s.rir)===String(v)?'selected':'')+'>'+v+'</option>').join('');
+ const lastSet=workoutMetricPreviousSet(e,si);
+ const reference=type==='working'?setReference(prev,wi,e.exerciseId,e.config):'Not used for progression';
+ const recentLabel=lastSet?'Last set today: '+setMeasurementText(e,lastSet)+(loadType!=='bodyweight'&&Number(lastSet.weight)>0?' @ '+lastSet.weight+' '+state.profile.unit:''):'';
+ const plateText=measurement==='reps'?plateLoadText(set.weight||target.weight,ex):'';
+ const increment=Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5));
+ const options=[0,1,2,3,4,5].map(v=>'<option value="'+v+'" '+(String(set.rir)===String(v)?'selected':'')+'>'+v+'</option>').join('');
+ const recorded=measurement==='reps'||set.done||set.metricRecorded===true;
  function numericField(label,key,value,step,mode='decimal'){
-  const displayed=key==='weight'?displaySetWeightValue(value):key==='distanceMeters'?compactMetricNumber(distanceFromMeters(value)):value;
+  let displayed=key==='weight'?displaySetWeightValue(value):key==='distanceMeters'?compactMetricNumber(distanceFromMeters(value)):value;
+  if((key==='durationSeconds'||key==='distanceMeters')&&!recorded)displayed='';
   const quoted='&quot;'+key+'&quot;';
   return '<div class="live-input-wrap numeric-entry"><label>'+esc(label)+'</label><div class="numeric-stepper">'+
    '<button class="numeric-step-btn" aria-label="decrease '+esc(label)+'" onclick="changeSetValue('+ei+','+si+','+quoted+','+(-step)+')">−</button>'+
    '<input class="direct-number" type="number" inputmode="'+mode+'" enterkeyhint="done" step="'+(key==='reps'?1:key==='weight'?.25:.1)+'" min="0" value="'+displayed+'" placeholder="'+esc(label)+'" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+','+quoted+',this.value)" '+(key==='weight'&&!edit?'onblur="commitFirstExerciseWeightAutofill('+ei+','+si+')"':'')+' aria-label="'+key+'">'+
    '<button class="numeric-step-btn" aria-label="increase '+esc(label)+'" onclick="changeSetValue('+ei+','+si+','+quoted+','+step+')">+</button></div></div>';
  }
- const loadField=loadType==='bodyweight'
-  ?'<div class="live-input-wrap numeric-entry bodyweight-entry-note"><label>Load</label><div class="mini">'+(measurement==='reps'?'Bodyweight · reps only':'Bodyweight · no added weight')+'</div></div>'
-  :numericField((loadType==='assistance'?'Assistance':ex?.equipment==='bodyweight'?'Added weight':'Weight')+' ('+state.profile.unit+')','weight',s.weight,inc);
+ let loadField='';
+ if(loadType!=='bodyweight'){
+  const label=measurement==='distance'?carryLoadLabel(ex)+' ('+state.profile.unit+')':(loadType==='assistance'?'Assistance':ex?.equipment==='bodyweight'?'Added weight':'Weight')+' ('+state.profile.unit+')';
+  loadField=numericField(label,'weight',set.weight,increment);
+ }
+ const measureLabel=measurement==='duration'?'Actual hold (seconds)':measurement==='distance'?'Actual distance ('+distanceUnitLabel()+')':'Reps';
  const measureField=measurement==='duration'
-  ?numericField('Seconds','durationSeconds',s.durationSeconds||0,5)
+  ?numericField(measureLabel,'durationSeconds',set.durationSeconds||0,5)
   :measurement==='distance'
-  ?numericField('Distance ('+distanceUnitLabel()+')','distanceMeters',s.distanceMeters||0,distanceUnitLabel()==='ft'?5:2.5)
-  :numericField('Reps','reps',s.reps,1,'numeric');
+  ?numericField(measureLabel,'distanceMeters',set.distanceMeters||0,distanceUnitLabel()==='ft'?5:2.5)
+  :numericField(measureLabel,'reps',set.reps,1,'numeric');
+ const metricHint=measurement==='reps'?'':'<div class="metric-logging-hint">Suggested target is shown above. Enter what you actually '+(measurement==='duration'?'held':'traveled')+'.</div>';
+ const timer=measurement==='duration'&&!edit?'<div class="hold-timer-panel">'+
+   '<div class="hold-timer-display"><span class="hold-timer-caption">Hold stopwatch</span><strong id="workoutHoldTimerReadout">'+esc(holdTimerDisplay(ei,si))+'</strong></div>'+
+   '<button class="btn hold-timer-action" id="workoutHoldTimerButton" onclick="toggleWorkoutHoldTimer('+ei+','+si+')">'+(workoutHoldTimerMatches(ei,si)?'Stop · Save time':'Start hold')+'</button>'+
+   '</div>':'';
+ const repeat=lastSet&&!edit&&!base.done?'<button class="repeat-previous-set" onclick="repeatPreviousWorkoutSet('+ei+','+si+')">↻ Repeat previous set values</button>':'';
+ const measureMode=measurement==='reps'?(loadType==='bodyweight'?' is-bodyweight':''):' is-metric'+(loadField?' is-loaded':' is-unloaded');
  return '<div class="focus-set-card set-card type-'+type+' '+(base.done?'completed ':'')+(edit?'editing':'')+'" data-set-index="'+si+'">'+
-  '<div class="focus-set-head"><div><div class="exercise-kicker">'+esc(setDisplayLabel(e,si))+' · '+(si+1)+' OF '+e.sets.length+'</div><div class="focus-set-reference">'+(type==='working'?'Previous: '+esc(ref):'Logged separately from progression')+'</div></div>'+
+  '<div class="focus-set-head"><div><div class="exercise-kicker">'+esc(setDisplayLabel(e,si))+' · '+(si+1)+' OF '+e.sets.length+'</div>'+
+  '<div class="focus-set-reference">'+(type==='working'?'Last workout: '+esc(reference):'Not used for progression')+'</div>'+
+  (recentLabel?'<div class="focus-set-today">'+esc(recentLabel)+'</div>':'')+'</div>'+
   (edit?'<button class="focus-set-edit-cancel" onclick="cancelWorkoutSetEdit()">Cancel</button>':'<button class="focus-set-options" onclick="openFocusedSetOptions('+ei+','+si+')" aria-label="Set options">•••</button>')+'</div>'+
-  (edit?'<div class="focus-set-edit-banner"><b>Editing completed set</b><span>Change the logged values below, then tap Update Set. Your workout position will not move.</span></div>':'')+
-  (type==='working'?'<div class="focus-set-target"><span class="set-target">'+esc(targetBadgeText(target,ex,e.config))+'</span></div>':'<div class="set-nonprogress-note">'+esc(setProgressionNote(type))+'</div>')+
-  '<div class="live-entry">'+loadField+measureField+
-  (measurement==='reps'?'<div class="live-input-wrap rir-small"><div class="input-label-row"><label>RIR</label></div><select onchange="updateSet('+ei+','+si+',&quot;rir&quot;,this.value)"><option value="">—</option>'+opts+'</select></div>':'')+'</div>'+
-  (pt?'<div class="plates">'+esc(pt)+'</div>':'')+
+  (edit?'<div class="focus-set-edit-banner"><b>Editing completed set</b><span>Adjust your actual logged values, then update this set.</span></div>':'')+
+  (type==='working'?'<div class="focus-set-target"><span class="set-target">'+esc(targetBadgeText(target,ex,e.config))+'</span>'+(loadType==='bodyweight'?'<span class="metric-bodyweight-chip">Bodyweight</span>':'')+'</div>':'<div class="set-nonprogress-note">'+esc(setProgressionNote(type))+'</div>')+
+  metricHint+
+  '<div class="live-entry'+measureMode+'">'+loadField+measureField+
+  (measurement==='reps'?'<div class="live-input-wrap rir-small"><div class="input-label-row"><label>RIR</label></div><select onchange="updateSet('+ei+','+si+',&quot;rir&quot;,this.value)"><option value="">—</option>'+options+'</select></div>':'')+'</div>'+
+  timer+repeat+
+  (plateText?'<div class="plates">'+esc(plateText)+'</div>':'')+
   (edit?'<button class="complete-set update-set" onclick="commitWorkoutSetEdit()">Update Set</button>':'<button class="complete-set '+(base.done?'done':'')+'" onclick="'+(base.done?('beginWorkoutSetEdit('+ei+','+si+')'):('toggleSet('+ei+','+si+')'))+'">'+(base.done?'Edit Set':'Complete Set')+'</button>')+
   (!edit&&base.pr?'<div class="pr-banner"><span class="inline-pr-mark">PR</span> '+esc(base.pr)+'</div>':'')+'</div>';
 }
