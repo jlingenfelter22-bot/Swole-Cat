@@ -229,6 +229,8 @@ function createProgramShareEnvelope(id){
    frequency:shareClampInteger(program.frequency,1,7,3),
    preferredDays:Array.isArray(program.preferredDays)?program.preferredDays.filter(d=>Number.isInteger(d)&&d>=0&&d<=6).slice(0,7):[],
    trainingMode:normalizeProgramTrainingMode(program.trainingMode),
+   deload:{enabled:program?.trainingMode==='guided'&&programDeloadConfig(program.deload).enabled,
+     intervalWeeks:programDeloadConfig(program.deload).intervalWeeks},
    routineKeys
   },
   routines,customExercises:context.customExercises
@@ -372,6 +374,7 @@ function buildSharedPlanImport(envelope){
   frequency:shareClampInteger(envelope.program.frequency,1,7,3),
   preferredDays:Array.isArray(envelope.program.preferredDays)?envelope.program.preferredDays.filter(d=>Number.isInteger(d)&&d>=0&&d<=6).slice(0,7):[],
   trainingMode:normalizeProgramTrainingMode(envelope.program.trainingMode),
+  deload:{...programDeloadConfig(envelope.program.deload),decisions:{},deferNext:false,deferredFrom:''},
   nextIndex:0
  };
  return {customExercises:prepared.additions,routines,program};
