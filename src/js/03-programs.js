@@ -173,8 +173,12 @@ function syncProgramDraftInputs(){
   const custom=document.getElementById('programDeloadCustom');
   if(cadence.value==='custom'){
    const n=Number(custom?.value);
-   if(Number.isInteger(n)&&n>=2&&n<=52)programDraft.deload.intervalWeeks=n;
-  }else programDraft.deload.intervalWeeks=Math.min(52,Math.max(2,Number(cadence.value)||4));
+   programDraft._invalidDeloadCadence=!(custom?.value?.trim()&&Number.isInteger(n)&&n>=2&&n<=52);
+   if(!programDraft._invalidDeloadCadence)programDraft.deload.intervalWeeks=n;
+  }else{
+   programDraft._invalidDeloadCadence=false;
+   programDraft.deload.intervalWeeks=Math.min(52,Math.max(2,Number(cadence.value)||4));
+  }
  }
 }
 function changeProgramTrainingMode(value){
@@ -224,7 +228,7 @@ function renderProgramEditor(){
         <select id="programDeloadEvery" onchange="changeProgramDeloadCadence()">
         ${[3,4,5,6,7,8].map(n=>`<option value="${n}" ${chosen===String(n)?'selected':''}>Every ${n}th week</option>`).join('')}
         <option value="custom" ${chosen==='custom'?'selected':''}>Custom interval</option></select></div>
-       ${chosen==='custom'?`<div class="field"><label>Custom training weeks (2–52)</label><input id="programDeloadCustom" type="number" min="2" max="52" value="${d.intervalWeeks}" onchange="syncProgramDraftInputs()"></div>`:''}
+       ${chosen==='custom'?`<div class="field"><label>Custom training weeks (2–52)</label><input id="programDeloadCustom" type="number" min="2" max="52" value="${d.intervalWeeks}" oninput="syncProgramDraftInputs()"></div>`:''}
        <div class="program-deload-preview">Weeks 1–${d.intervalWeeks-1}: Normal training · Week ${d.intervalWeeks}: Deload · Then repeat</div>
        <div class="native-note">Four weeks is a suggested starting point, not a scientific requirement. You'll review and confirm each deload before it begins.</div>`:''}
     </div>`:''}
@@ -271,6 +275,9 @@ function saveProgram(){
   showToast('Choose a training mode');return;
  }
  if(!programDraft.routineIds.length){showToast('Add at least one routine');return}
+ if(programDraft.trainingMode==='guided'&&programDraft.deload?.enabled&&programDraft._invalidDeloadCadence){
+  showToast('Choose a valid deload interval (2–52 weeks)');return;
+ }
  const existing=programById(programDraft.id);
  let nextIndex=0;
  const keepNext=programDraft._nextRoutineId;
