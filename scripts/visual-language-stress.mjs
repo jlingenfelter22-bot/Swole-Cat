@@ -5,6 +5,7 @@ const base=fs.readFileSync('src/styles/00-base.css','utf8');
 const system=fs.readFileSync('src/styles/01-design-system.css','utf8');
 const views=fs.readFileSync('src/styles/02-views.css','utf8');
 const polish=fs.readFileSync('src/styles/03-polish.css','utf8');
+const visualDoc=fs.readFileSync('docs/VISUAL_LANGUAGE.md','utf8');
 const css=[base,system,views,polish].join('\n');
 
 const expectedTokens=[
@@ -40,6 +41,10 @@ assert.match(polish,/#home \.home-active-stats,[\s\S]*var\(--signal-active\)/,
   'Active workout surfaces should use success green');
 assert.match(polish,/\.btn\.danger,[\s\S]*var\(--signal-danger\)/,
   'Destructive actions should use danger red');
+assert.match(polish,/workout-context-control\[data-state="resume"\][\s\S]*var\(--signal-active\)/,
+  'Resume header state should use active green');
+assert.match(polish,/workout-context-control\[data-state="pause"\][\s\S]*var\(--signal-warning\)/,
+  'Pause header state should use warning orange');
 
 assert.match(base,/\.superset-badge\{[^}]*signal-superset/s,
   'Base superset badge should use protected yellow token');
@@ -59,5 +64,8 @@ assert.match(base,/\.summary-pr\{[^}]*signal-pr/s,'PR summary should use PR pink
 const prLines=css.split('\n').filter(line=>/(pr-banner|summary-pr|pr-glyph|pr-tag|inline-pr)/i.test(line));
 assert(!prLines.some(line=>/(251,191,36|fbbf24|facc15|signal-superset)/i.test(line)),
   'PR styling must not reuse yellow/superset language');
+
+assert.match(visualDoc,/Superset linkage is yellow throughout the app/,'visual-language documentation should protect yellow supersets');
+assert.match(visualDoc,/PRs and record achievements are pink/,'visual-language documentation should keep PRs distinct from supersets');
 
 console.log('Swole Cat v0.80.0 visual language PASS: semantic colors consistent, supersets protected yellow, PRs distinct pink');
