@@ -1540,7 +1540,7 @@ function focusedSetCardHtml(e,ei,si,ex,prev){
  const measureMode=measurement==='reps'?(loadType==='bodyweight'?' is-bodyweight':''):' is-metric'+(loadField?' is-loaded':' is-unloaded');
  return '<div class="focus-set-card set-card type-'+type+' '+(base.done?'completed ':'')+(edit?'editing':'')+'" data-set-index="'+si+'">'+
   '<div class="focus-set-head"><div><div class="exercise-kicker">'+esc(setDisplayLabel(e,si))+' · '+(si+1)+' OF '+e.sets.length+'</div>'+
-  '<div class="focus-set-reference">'+(type==='working'?'Last workout: '+esc(reference):'Not used for progression')+'</div>'+
+  '<div class="focus-set-reference">'+(type==='working'?(reference==='No comparable prior set'?'First recorded session for this exercise':'Last workout: '+esc(reference)):'Not used for progression')+'</div>'+
   (recentLabel?'<div class="focus-set-today">'+esc(recentLabel)+'</div>':'')+'</div>'+
   (edit?'<button class="focus-set-edit-cancel" onclick="cancelWorkoutSetEdit()">Cancel</button>':'<button class="focus-set-options" onclick="openFocusedSetOptions('+ei+','+si+')" aria-label="Set options">•••</button>')+'</div>'+
   (edit?'<div class="focus-set-edit-banner"><b>Editing completed set</b><span>Adjust your actual logged values, then update this set.</span></div>':'')+
