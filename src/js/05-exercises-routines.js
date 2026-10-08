@@ -17,7 +17,8 @@ function scheduleExerciseRender(){
 }
 
 function setExerciseHistoryFilter(filter){
- exerciseHistoryFilter=filter;
+ const valid=['all','done','new','favorite','prefer','hidden'];
+ exerciseHistoryFilter=valid.includes(filter)?filter:'all';
  renderExercises();
 }
 
@@ -29,9 +30,8 @@ function renderExercises(){
  const all=allExercises(),visible=all.filter(x=>!isHiddenExercise(x.id)),hidden=all.filter(x=>isHiddenExercise(x.id));
  const loggedIds=derivedSessionData().loggedExerciseIds;
 
- document.querySelectorAll('[data-history-filter]').forEach(btn=>{
-   btn.classList.toggle('active',btn.dataset.historyFilter===exerciseHistoryFilter);
- });
+ const statusSelect=document.getElementById('exerciseHistoryFilterSelect');
+ if(statusSelect&&statusSelect.value!==exerciseHistoryFilter)statusSelect.value=exerciseHistoryFilter;
  const counts={
    all:visible.length,
    done:visible.filter(x=>loggedIds.has(x.id)).length,
@@ -48,7 +48,8 @@ function renderExercises(){
    exerciseFilterPrefer:`Prefer (${counts.prefer})`,
    exerciseFilterHidden:`Hidden (${counts.hidden})`
  };
- Object.entries(labels).forEach(([id,label])=>{const el=document.getElementById(id);if(el)el.textContent=label});
+ Object.entries(labels).forEach(([id,label])=>{const el=document.getElementById(id);if(el&&el.textContent!==label)el.textContent=label});
+ if(statusSelect&&typeof syncAppSelect==='function')syncAppSelect(statusSelect);
 
  const source=exerciseHistoryFilter==='hidden'?hidden:visible;
  const list=sortExerciseChoices(source.filter(x=>{

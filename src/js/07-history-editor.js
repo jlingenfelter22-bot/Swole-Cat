@@ -56,7 +56,7 @@ function renderHistory(){
    const workingSets=sessionSetCount(s),allSets=sessionAllSetCount(s),volume=Math.round(sessionVolume(s)),prs=sessionPRCount(s);
    const exercises=sessionCompletedExerciseCount(s),totalReps=sessionTotalReps(s);
    return `<article class="card history-entry">
-     <div class="history-sequence"><span>${String(sessions.length-sessionIndex).padStart(2,'0')}</span><small>SESSION</small></div>
+     <div class="history-sequence"><small>SESSION</small><span>${String(sessions.length-sessionIndex).padStart(2,'0')}</span></div>
      <div class="history-entry-body">
        <div class="history-entry-head">
          <div class="history-entry-heading">
