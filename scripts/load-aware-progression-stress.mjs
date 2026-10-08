@@ -44,6 +44,7 @@ assert.equal(guided('lib_32',24,12).weight,19);
 assert.equal(guided('lib_32',3,12).weight,0,'do not allow negative assistance');
 assert.equal(guided('lib_32',0,12).status,'hold','zero assistance cannot be reduced further');
 assert.notEqual(guided('lib_32',64,12,2).status,'load','all sets must qualify');
+assert.deepEqual(Array.from(w.buildRecommendation({...config,mode:'total'},prev(64,9),'lib_32').targetReps),[10,9,9],'assisted total-rep strategy advances the total, not every set');
 assert.equal(w.buildRecommendation({...config,routineMode:'strength'},prev(64,8),'lib_32').weight,59,'Strength Focus also decreases machine assistance');
 assert.equal(w.buildRecommendation({...config,routineMode:'track'},prev(64,12),'lib_32').status,'track','Track Only never forces progression');
 
@@ -51,6 +52,7 @@ rec=guided('lib_31',0,8);
 assert.equal(rec.status,'reps');
 assert.deepEqual(Array.from(rec.targetReps),[9,9,9]);
 assert.deepEqual(Array.from(rec.weights),[0,0,0]);
+assert.deepEqual(Array.from(w.buildRecommendation({...config,mode:'total'},prev(0,9),'lib_31').targetReps),[10,9,9],'bodyweight total-rep strategy remains intact');
 rec=guided('lib_31',0,12);
 assert.equal(rec.status,'hold','full bodyweight rep range should not invent an external load');
 assert.equal(rec.weight,0);
