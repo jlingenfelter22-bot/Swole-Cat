@@ -78,6 +78,7 @@ function workoutMetricPreviousSet(e,si){
 }
 function carryLoadLabel(ex){
  const name=String(ex?.name||'').toLowerCase();
+ if(name.includes('suitcase'))return 'Weight in working hand';
  if(name.includes('dumbbell')||name.includes('kettlebell'))return 'Weight per hand';
  if(name.includes('trap bar'))return 'Total carry weight';
  if(name.includes('plate pinch'))return 'Weight of plate';
@@ -1437,11 +1438,13 @@ function openFocusedExerciseMore(ei){
 function focusedCoachTargetHtml(e,ei,ex,prev){
  const rec=buildRecommendation(e.config,prev,e.exerciseId),coach=exerciseMeasurementType(e.exerciseId,e.config)==='reps'&&exerciseLoadType(e.exerciseId,e.config)==='external'?coachSignal(e.exerciseId,e.config):null;
  const firstWorking=firstWorkingSetIndex(e),firstTarget=liveSetTarget(e,firstWorking,prev),plateText=plateLoadText(firstTarget.weight,ex),compactTarget=compactTargetText(e,ex,prev);
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config);
  const title=e.targetOverride?targetBadgeText(firstTarget,ex,e.config):rec.headline;
  const detail=e.targetOverride?('Session-only '+(e.targetOverride.reason||'override')+'. Routine progression is unchanged.'):rec.detail;
+ const previousLabel=measurement!=='reps'?(prev&&progressionSets(prev).length?'Last workout: '+setReference(prev,0,e.exerciseId,e.config):'First recorded '+(measurement==='duration'?'hold':'carry')):'';
  return '<details class="workout-guidance focus-guidance" '+(e.targetOverride?'open':'')+'><summary>'+
-  '<div class="workout-guidance-copy"><div class="eyebrow">COACH TARGET</div><div class="workout-guidance-title">'+esc(title)+'</div>'+
-  '<div class="workout-guidance-meta">'+esc((coach&&coach.title)||compactTarget)+' · '+(e.config.restSeconds||120)+'s rest</div></div><span class="workout-guidance-more">Why</span></summary>'+
+  '<div class="workout-guidance-copy"><div class="eyebrow">'+(measurement==='reps'?'COACH TARGET':'TODAY\'S TARGET')+'</div><div class="workout-guidance-title">'+esc(measurement==='reps'?title:compactTarget)+'</div>'+
+  '<div class="workout-guidance-meta">'+esc(measurement==='reps'?((coach&&coach.title)||compactTarget)+' · '+(e.config.restSeconds||120)+'s rest':previousLabel+' · '+(e.config.restSeconds||120)+'s suggested rest')+'</div></div><span class="workout-guidance-more">Why</span></summary>'+
   '<div class="workout-guidance-detail"><div class="mini">'+esc(detail)+'</div>'+
   (coach?'<div class="mini guidance-coach-copy"><b>'+esc(coach.title)+':</b> '+esc(coach.text)+'</div>':'')+
   (plateText?'<div class="plates">🏋 '+esc(plateText)+'</div>':'')+
