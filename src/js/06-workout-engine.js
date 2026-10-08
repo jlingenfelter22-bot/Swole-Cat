@@ -215,18 +215,35 @@ function applyCoachReset(ei){
 }
 function openTargetOverride(ei){
  const e=state.activeWorkout.exercises[ei],prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
- openModal('Override session target',`
- <div class="notice">This changes the target for this workout only. It does not rewrite your routine or old history.</div>
- <div class="form-grid" style="margin-top:12px">
-   ${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?'':`<div><label>${exerciseLoadLabel(exerciseLoadType(e.exerciseId,e.config))} (${state.profile.unit})</label><input id="ovWeight" type="number" step=".25" value="${e.targetOverride?.weight??t.weight}"></div>`}
-   <div><label>Target reps</label><input id="ovReps" type="number" min="1" value="${e.targetOverride?.reps??t.reps}"></div>
- </div>
- <div class="actions"><button class="btn" onclick="saveTargetOverride(${ei})">Use for this session</button>${e.targetOverride?`<button class="btn secondary" onclick="clearTargetOverride(${ei})">Clear override</button>`:''}<button class="btn secondary" onclick="closeModal()">Cancel</button></div>`);
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config),load=exerciseLoadType(e.exerciseId,e.config);
+ const value=measurement==='duration'?Number(e.targetOverride?.durationSeconds??t.durationSeconds??0):
+    measurement==='distance'?distanceFromMeters(e.targetOverride?.distanceMeters??t.distanceMeters??0):Number(e.targetOverride?.reps??t.reps??0);
+ const label=measurement==='duration'?'Seconds':measurement==='distance'?'Distance ('+distanceUnitLabel()+')':'Target reps';
+ const loadField=load==='bodyweight'?'':'<div><label>'+exerciseLoadLabel(load)+' ('+state.profile.unit+')</label><input id="ovWeight" type="number" step=".25" min="0" value="'+(e.targetOverride?.weight??t.weight)+'"></div>';
+ openModal('Override session target',
+  '<div class="notice">This changes the target for this workout only. Your saved routine and history remain unchanged.</div>'+
+  '<div class="form-grid" style="margin-top:12px">'+loadField+
+  '<div><label>'+label+'</label><input id="ovMeasure" type="number" min="1" step="'+(measurement==='distance'?'.1':'1')+'" value="'+compactMetricNumber(value)+'"></div></div>'+
+  '<div class="actions"><button class="btn" onclick="saveTargetOverride('+ei+')">Use for this session</button>'+
+  (e.targetOverride?'<button class="btn secondary" onclick="clearTargetOverride('+ei+')">Clear override</button>':'')+
+  '<button class="btn secondary" onclick="closeModal()">Cancel</button></div>');
 }
 function saveTargetOverride(ei){
- const e=state.activeWorkout.exercises[ei],weight=exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?0:Math.max(0,+document.getElementById('ovWeight').value||0),reps=Math.max(1,+document.getElementById('ovReps').value||1);
- e.targetOverride={weight:roundLoad(weight),reps:Math.round(reps),reason:'Manual override'};
- e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=e.targetOverride.weight;s.reps=e.targetOverride.reps;}});
+ const e=state.activeWorkout.exercises[ei],measurement=exerciseMeasurementType(e.exerciseId,e.config),load=exerciseLoadType(e.exerciseId,e.config);
+ const weight=load==='bodyweight'?0:Math.max(0,Number(document.getElementById('ovWeight')?.value)||0);
+ const measure=Math.max(1,Number(document.getElementById('ovMeasure')?.value)||1);
+ const target={weight:roundLoad(weight),reason:'Manual override'};
+ if(measurement==='duration')target.durationSeconds=measure;
+ else if(measurement==='distance')target.distanceMeters=distanceToMeters(measure);
+ else target.reps=Math.round(measure);
+ e.targetOverride=target;
+ e.sets.forEach(s=>{
+  if(s.done||!isProgressionSet(s))return;
+  s.weight=target.weight;
+  if(measurement==='duration')s.durationSeconds=target.durationSeconds;
+  else if(measurement==='distance')s.distanceMeters=target.distanceMeters;
+  else s.reps=target.reps;
+ });
  saveActiveWorkout();closeModal();renderWorkout();
 }
 function clearTargetOverride(ei){
