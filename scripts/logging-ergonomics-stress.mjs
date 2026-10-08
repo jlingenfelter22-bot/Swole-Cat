@@ -41,7 +41,15 @@ w.repeatPreviousWorkoutSet(0,1);await wait(25);
 st=read();
 assert.equal(st.activeWorkout.exercises[0].sets[1].durationSeconds,st.activeWorkout.exercises[0].sets[0].durationSeconds,'repeat copies real logged seconds');
 assert.equal(st.activeWorkout.exercises[0].sets[1].done,false,'repeat does not complete set');
-assert.match(w.document.querySelector('#workout .focus-set-card input[aria-label="durationSeconds"]')?.value||'',/6/);
+assert.match(w.document.querySelector('#workout .focus-set-card input[aria-label="durationSeconds"]')?.value||'',/6/');
+w.setWorkoutFocus(0,2);await wait(25);
+w.toggleWorkoutHoldTimer(0,2);
+w.eval('workoutHoldClock.startedAt -= 3600');
+w.pauseActiveWorkout();await wait(40);
+st=read();
+assert(st.activeWorkout.exercises[0].sets[2].durationSeconds>=3,'pause persists elapsed real hold');
+assert.equal(st.activeWorkout.exercises[0].sets[2].done,false,'pause never completes the unfinished hold');
+assert(!w.eval('workoutHoldClock'),'no hold clock continues running while paused');
 w.eval('state.activeWorkout=null;save()');
 
 w.eval('state.routines[0].exercises=[exerciseDefaultRoutineConfig("lib_258")];save()');
