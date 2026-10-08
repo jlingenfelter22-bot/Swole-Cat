@@ -683,6 +683,9 @@ function routineExerciseFromWorkout(e){
 }
 function syncActiveWorkoutStructureToRoutine(){
  const w=state.activeWorkout;if(!w)return false;
+ if(w.programPhase==='deload'){
+  showToast('Deload set counts are temporary. Edit the saved routine separately.');return false;
+ }
  const r=state.routines.find(x=>x.id===w.routineId);if(!r)return false;
  r.name=w.routineName||r.name;
  r.exercises=w.exercises.map(routineExerciseFromWorkout);
@@ -1389,7 +1392,7 @@ function finishWorkout(allowIncomplete=false){
  if(unfinished.length&&!allowIncomplete){openUnfinishedWorkoutReview();return}
  closeModal();
  const routine=state.routines.find(function(x){return x.id===w.routineId});
- if(w.structureDirty&&routine){
+ if(w.structureDirty&&routine&&w.programPhase!=='deload'){
    openModal('Update your routine?',
     '<div class="notice">You changed today’s workout structure. Choose whether those structural changes stay only in this session or become the new saved version of <b>'+esc(routine.name)+'</b>.<br><br><b>Skip status is always today-only.</b> Updating the routine saves the current exercise order, today-only additions or removals, substitutions, supersets, and number of working sets.</div>'+
     '<div class="actions"><button class="btn green" onclick="finalizeWorkout(true)">Finish + Update Routine</button>'+
@@ -1402,7 +1405,7 @@ function finishWorkout(allowIncomplete=false){
 function finalizeWorkout(updateRoutine=false){
  const w=state.activeWorkout;if(!w)return;
  stopRestTimer();
- if(updateRoutine)syncActiveWorkoutStructureToRoutine();
+ if(updateRoutine&&!syncActiveWorkoutStructureToRoutine())updateRoutine=false;
  closeModal();
  const end=new Date(),duration=Math.max(0,Math.round(workoutElapsedMs(w,end.getTime())/60000));
  const session={id:w.id,routineId:w.routineId,routineName:w.routineName,trainingMode:normalizeTrainingMode(w.trainingMode),
