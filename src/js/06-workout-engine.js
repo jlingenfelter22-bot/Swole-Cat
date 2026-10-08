@@ -1421,7 +1421,7 @@ function focusedSetCardHtml(e,ei,si,ex,prev){
    '<button class="numeric-step-btn" aria-label="increase '+esc(label)+'" onclick="changeSetValue('+ei+','+si+','+quoted+','+step+')">+</button></div></div>';
  }
  const loadField=loadType==='bodyweight'
-  ?'<div class="live-input-wrap numeric-entry bodyweight-entry-note"><label>Load</label><div class="mini">Bodyweight · no added weight</div></div>'
+  ?'<div class="live-input-wrap numeric-entry bodyweight-entry-note"><label>Load</label><div class="mini">'+(measurement==='reps'?'Bodyweight · reps only':'Bodyweight · no added weight')+'</div></div>'
   :numericField((loadType==='assistance'?'Assistance':ex?.equipment==='bodyweight'?'Added weight':'Weight')+' ('+state.profile.unit+')','weight',s.weight,inc);
  const measureField=measurement==='duration'
   ?numericField('Seconds','durationSeconds',s.durationSeconds||0,5)
