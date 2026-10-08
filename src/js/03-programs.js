@@ -2,12 +2,6 @@ const PROGRAM_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 let programDraft=null;
 
 /* Guided program phases are explicit, per-program and never inferred as a diagnosis. */
-function programDeloadConfig(source){
- const d=source&&typeof source==='object'?source:{};
- return {enabled:d.enabled===true,intervalWeeks:Math.min(52,Math.max(2,Math.trunc(Number(d.intervalWeeks)||4))),
-   decisions:d.decisions&&typeof d.decisions==='object'&&!Array.isArray(d.decisions)?{...d.decisions}:{},
-   deferNext:d.deferNext===true,deferredFrom:typeof d.deferredFrom==='string'?d.deferredFrom:''};
-}
 function programWeekKey(value=new Date()){
  const d=new Date(value);if(!Number.isFinite(d.getTime()))return '';
  d.setHours(12,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));
