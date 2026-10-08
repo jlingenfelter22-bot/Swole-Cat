@@ -4,7 +4,7 @@
 **Design discussion:** 2026-10-08; deload opt-in and cadence confirmed in follow-up.
 **Scope:** Multi-workout Programs and program-launched workouts. Existing standalone routines and Track Only behavior remain unchanged unless separately approved.
 **Research:** [TRAINING_SCIENCE_FOUNDATION.md](TRAINING_SCIENCE_FOUNDATION.md), [COACH_SWOLECAT_EVIDENCE.md](COACH_SWOLECAT_EVIDENCE.md).
-**Important:** No runtime/algorithm/default/schema/version change is authorized by this document.
+**Important:** This document records approved scope and the implementation shipped to Testing v0.82.0. It is not authorization for additional behavior changes or Beta promotion.
 
 ## Product goals from owner feedback
 
