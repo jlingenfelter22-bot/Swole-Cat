@@ -2,6 +2,8 @@
 
 Version: v0.64.0
 
+**Cross-cutting research prerequisite (2026-10-08):** Before any Coach, workout, strength, progressive-overload, deload, fatigue, recovery, set/rep/load or history-derived programming work, review [TRAINING_SCIENCE_FOUNDATION.md](TRAINING_SCIENCE_FOUNDATION.md). It contains verified primary citations, levels of certainty, personalization considerations and mandatory non-regression cases. The present file remains the authority on existing Coach-specific implementation and must be read **alongside**, not replaced by, that research reference. No implementation change was authorized when the research reference was added.
+
 Coach Swolecat's first workout builder is deterministic and local. Natural-language parsing identifies user intent, but exercise/programming decisions come from explicit rules rather than freeform AI generation.
 
 ## Current evidence anchors
