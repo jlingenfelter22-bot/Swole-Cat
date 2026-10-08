@@ -2472,3 +2472,137 @@ html[data-workout-transition="back"]::view-transition-new(workout-exercise-stage
  display:inline-block;position:absolute;right:5px;top:4px;
  color:#ffe2ac;font-size:.71rem;line-height:1;
 }
+
+/* v0.85 · Real exercise measurements, ergonomic mobile input and keyboard dock */
+#workout .live-entry.is-metric{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr)!important;
+ gap:12px!important;
+ margin-top:9px;
+}
+#workout .live-entry.is-metric .numeric-entry{min-width:0;width:100%;max-width:100%}
+#workout .live-entry.is-metric .numeric-entry>label{
+ font-size:.72rem!important;
+ color:#cbdde9;
+ line-height:1.35;
+ white-space:normal;
+ overflow:visible;
+ text-overflow:clip;
+ letter-spacing:.015em;
+ margin-bottom:6px;
+}
+#workout .live-entry.is-metric .numeric-stepper{
+ grid-template-columns:44px minmax(0,1fr) 44px!important;
+ gap:9px!important;
+}
+#workout .live-entry.is-metric .numeric-step-btn{
+ width:44px!important;
+ min-width:44px!important;
+ height:54px!important;
+ min-height:54px!important;
+ font-size:1.18rem;
+}
+#workout .live-entry.is-metric .direct-number{
+ font-size:1.28rem!important;
+ text-align:center;
+ height:56px!important;
+ min-width:0;
+ padding:6px 10px!important;
+}
+#workout .live-entry.is-metric.is-unloaded .numeric-entry{width:100%}
+#workout .live-entry.is-bodyweight{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr) 74px!important;
+ gap:12px!important;
+}
+#workout .metric-logging-hint{
+ color:#9eb6c9;
+ font-size:.73rem;
+ line-height:1.5;
+ margin-top:7px;
+ padding:0 2px;
+}
+#workout .focus-set-target{
+ display:flex;
+ align-items:center;
+ flex-wrap:wrap;
+ gap:6px;
+ min-width:0;
+}
+#workout .metric-bodyweight-chip{
+ display:inline-block;
+ font-size:.61rem;
+ font-weight:850;
+ letter-spacing:.04em;
+ color:#b8d1e5;
+ padding:4px 7px;
+ border:1px solid rgba(120,153,175,.28);
+ border-radius:7px;
+ background:rgba(75,112,147,.09);
+}
+#workout .focus-set-today{
+ margin-top:5px;
+ font-size:.69rem;
+ color:#a8dfce;
+ font-weight:750;
+ line-height:1.4;
+}
+#workout .repeat-previous-set{
+ width:100%;
+ min-height:41px;
+ margin-top:8px;
+ border:1px solid rgba(50,196,181,.35);
+ border-radius:10px;
+ background:rgba(39,122,128,.075);
+ color:#b8f1e4;
+ font-size:.76rem;
+ font-weight:800;
+}
+#workout .hold-timer-panel{
+ display:grid;
+ grid-template-columns:minmax(0,1fr) auto;
+ gap:12px;
+ align-items:center;
+ border:1px solid rgba(79,168,192,.37);
+ border-radius:10px 15px 10px 15px;
+ background:rgba(20,49,63,.19);
+ padding:10px 12px;
+ margin-top:12px;
+}
+#workout .hold-timer-display{
+ display:flex;
+ flex-direction:column;
+ min-width:0;
+ gap:2px;
+}
+#workout .hold-timer-caption{
+ color:#a0bcd1;
+ text-transform:uppercase;
+ letter-spacing:.065em;
+ font-size:.63rem;
+ font-weight:800;
+}
+#workout .hold-timer-display strong{
+ font-variant-numeric:tabular-nums;
+ font-size:1.65rem;
+ font-weight:950;
+ color:#f0fdff;
+ line-height:1.15;
+}
+#workout .hold-timer-action{
+ padding:10px 14px;
+ min-width:116px;
+ min-height:48px;
+ white-space:normal;
+ background:rgba(34,211,238,.13);
+ border-color:rgba(34,211,238,.47);
+}
+html.workout-keyboard-active #restTimer.resttimer.show{
+ display:none!important;
+}
+@media(max-width:350px){
+ #workout .live-entry.is-metric .numeric-stepper{grid-template-columns:40px minmax(0,1fr) 40px!important;gap:6px!important}
+ #workout .live-entry.is-metric .numeric-step-btn{min-width:40px!important;width:40px!important}
+ #workout .hold-timer-panel{gap:7px;padding:9px}
+ #workout .hold-timer-action{min-width:100px;padding:8px}
+}
