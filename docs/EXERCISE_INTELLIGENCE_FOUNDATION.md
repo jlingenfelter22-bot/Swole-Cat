@@ -113,4 +113,14 @@ The **same exercise** may need a different rep window for different goals. Illus
 
 **Phase D: Stress + performance verification.** Full regressions, library-wide deterministic classification assertions, device walkthrough, and performance check before proposing Beta.
 
-**Owner checkpoint:** Wait for review of Testing v0.83.0 and explicit instruction before implementing this next layer. **This document changes no runtime behavior or APK.**
+**Owner checkpoint (2026-10-08):** Phase 1 shipped in the v0.84.0 Testing source via PR #41 (https://github.com/jlingenfelter22-bot/Swole-Cat/pull/41), with JSDOM coverage and successful PR validation (https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37834876971). Real Android workout and performance feedback are still needed. Further changes, and particularly Beta promotion, require user approval.
+
+### Implemented phase-one checkpoint
+
+- 308 built-in exercises including Dead Hang, explicit timed-hold and distance-movement metadata, deterministic family/goal-aware suggested rep ranges for newly added exercises.
+- Routine editor measurement choice and editable duration/distance targets; duration is logged in seconds, distance canonically in meters with feet displayed in lb mode. Reps-only pull-ups and assistance loading from v0.83 remain.
+- Live sets, substitutions, targeted progress, history editing, sharing and per-measurement record charts show appropriate metric fields without inventing reps or standard estimated one-rep maxes from hold times or distances.
+- Old rep-based plank logs retain their original rep meaning, and original weight-autofill behavior was regression-tested.
+- Automated validations include all 308 movement resolvers, end-to-end metric logging, legacy histories, share imports and prior workout/Coach tests.
+- **Still out of scope:** a built-in stopwatch/start-stop control; combined time-and-distance sessions; per-side measured sets; equipment calibration; optimized individual exercise presets beyond family heuristics; proven Android timing benchmarks. These require separate development passes.
+
