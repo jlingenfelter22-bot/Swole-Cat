@@ -704,7 +704,7 @@ function startRoutineFresh(id,programId=null){
    programPhase:isDeload?'deload':'normal',programWeekKey:weekContext?.key||null,programWeekIndex:weekContext?.weekIndex||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,structureNoticeSeen:false,pausedAt:null,pausedDurationMs:0,focusExerciseIndex:0,focusSetIndex:0,deferredExerciseIndexes:[],
    exercises:r.exercises.map((re,routineIndex)=>{
      const prev=previousExercise(re.exerciseId,programId);
-     const mode=effectiveMode,normalConfig={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode};
+     const mode=effectiveMode,normalConfig={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode,programGuided:!!(program&&programMode==='guided')};
      const reducedSets=isDeload?Math.max(1,Math.ceil((Number(re.sets)||1)/2)):Math.max(1,Number(re.sets)||1);
      const config=isDeload?{...normalConfig,sets:reducedSets,setStructure:null,adaptiveProgression:false}:normalConfig;
      const normalRec=buildRecommendation(normalConfig,prev,re.exerciseId);
