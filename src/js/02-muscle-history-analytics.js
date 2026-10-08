@@ -833,7 +833,7 @@ function renderFormGuidePickerResults(exerciseId){
 
 function openExerciseProgress(exerciseId){
  const ex=exById(exerciseId),m=exerciseMetrics(exerciseId),h=m.history,pref=exercisePreference(exerciseId);
- const type=exerciseLoadType(exerciseId,h.at(-1)||null),measurement=exerciseMeasurementType(exerciseId,h.at(-1)||null),recent=h.slice(-12);
+ const type=exerciseLoadType(exerciseId,h.at(-1)||null),measurement=exerciseMeasurementType(exerciseId,h.at(-1)||null),recent=h.filter(x=>measurement==='reps'||x.sets.some(set=>exerciseMetricValue(set,measurement)>0)).slice(-12);
  const e1s=recent.map(x=>Math.max(...x.sets.map(s=>estimated1RM(s.weight,s.reps))));
  const bestReps=recent.map(x=>Math.max(...x.sets.map(s=>Number(s.reps)||0)));
  const firstAssistance=recent.length?Math.min(...recent[0].sets.map(s=>Number(s.weight)||0)):0;
