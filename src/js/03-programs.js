@@ -192,7 +192,8 @@ function toggleProgramDeload(){
  syncProgramDraftInputs();renderProgramEditor();
 }
 function changeProgramDeloadCadence(){
- syncProgramDraftInputs();renderProgramEditor();
+ const value=document.getElementById('programDeloadEvery')?.value;
+ syncProgramDraftInputs();programDraft._customDeloadCadence=value==='custom';renderProgramEditor();
 }
 function newProgram(id=null){
  const existing=id?programById(id):null;
@@ -209,7 +210,7 @@ function renderProgramEditor(){
  const selected=programDraft.routineIds.map((id,i)=>({r:state.routines.find(x=>x.id===id),i})).filter(x=>x.r);
  const available=activeRoutines().filter(r=>!programDraft.routineIds.includes(r.id));
  const d=programDeloadConfig(programDraft.deload),guided=programDraft.trainingMode==='guided';
- const chosen=[3,4,5,6,7,8].includes(d.intervalWeeks)?String(d.intervalWeeks):'custom';
+ const chosen=programDraft._customDeloadCadence?'custom':([3,4,5,6,7,8].includes(d.intervalWeeks)?String(d.intervalWeeks):'custom');
  openModal(programById(programDraft.id)?'Edit program':'New program',`
    <div class="field"><label>Program name</label><input id="programName" value="${escAttr(programDraft.name||'')}" placeholder="Full Body Program"></div>
    <div class="field"><label for="programTrainingMode">Program training mode · Required</label><select id="programTrainingMode" aria-label="Program training mode" onchange="changeProgramTrainingMode(this.value)">
