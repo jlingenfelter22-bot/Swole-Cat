@@ -4,6 +4,8 @@ This document is the canonical product roadmap for Swole Cat. Features listed as
 
 ## Product Principles
 
+**Next proposed exercise-intelligence foundation (not implemented):** [EXERCISE_INTELLIGENCE_FOUNDATION.md](EXERCISE_INTELLIGENCE_FOUNDATION.md) defines lightweight deterministic movement profiles for all 307 built-in exercises, user- and goal-sensitive rep suggestions, load semantics, future time/distance/per-side tracking, per-exercise analytics validity, and strict regression/performance gates. Owner to review Testing v0.83.0 before authorizing implementation; no Beta changes.
+
 1. **Local-first stays valuable.** Core workout tracking should remain usable without an account or network connection.
 2. **A routine is a blueprint.** Workout history, weights, reps, progression, notes, and personal stats belong to the individual user, even when a routine is shared.
 3. **Training logic is configurable per routine/program.** Swole Cat began as a progressive-overload tracker, but it should support multiple ways of training without forcing every routine through the same progression algorithm.
