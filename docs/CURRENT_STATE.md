@@ -1,5 +1,32 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-08 · Testing v0.83.0 exercise-aware loading
+
+**Current live Testing build:** v0.83.0, Android versionCode 119, signed Android prerelease and in-app updater manifest published and verified.
+- Implementation: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/39
+- Signed APK: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.83.0
+- Final PR validation: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37820731332 (success).
+- Signed Android workflow: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37821092893 (certificate verification, release and manifest publication succeeded).
+- Testing manifest: `updates/testing.json` v0.83.0, versionCode 119.
+- Beta branch remains unchanged and must not be promoted without explicit owner approval.
+
+### New functionality and correctness safeguards
+
+- Library identifies assisted pull-up, assisted chin-up, assisted dip as **assistance**, ordinary pull-up/chin-up/dip/push-up as **bodyweight reps only**, and weighted pull-ups/chin-ups/push-ups as **external added resistance**. Name/equipment fallback handles additional movements.
+- Assisted counterweight targets move **down** by a configurable increment after eligible reps across all required sets. Decreases are bounded at 0. Regular bodyweight movements advance reps only; weighted variants can progress external weight upward subject to existing percentage safeguards.
+- Routine exercise progression editor offers an explicit override `loadType`: automatic, external, assistance, bodyweight. Routine shares/imports retain this choice and units convert load steps.
+- Live set inputs and coaching labels respect loading types; unweighted bodyweight movements show reps-only. Active substitutions reset old loading overrides so assistance cannot silently transfer to a different movement.
+- PR/history rebuild recognizes comparable reductions in assistance and bodyweight repetition records. Assisted counterweights do not count as external load volume or estimated-1RM strength. Exercise progress labels and charts distinguish least assistance / reps from ordinary lifting strength.
+- Guided/Strength/Track and per-exercise Double / Total Reps / Manual progression mode distinctions are preserved; deload phase isolation from v0.82.0 remains.
+- Automated coverage: `scripts/load-aware-progression-stress.mjs` plus full established regression matrix.
+
+**Permanent development reference:** [EXERCISE_LOAD_BEHAVIOR.md](EXERCISE_LOAD_BEHAVIOR.md), cross-linked from [TRAINING_SCIENCE_FOUNDATION.md](TRAINING_SCIENCE_FOUNDATION.md), [ROADMAP.md](ROADMAP.md), and [../AGENTS.md](../AGENTS.md).
+
+### Next checks
+
+Have the user review Testing v0.83.0 on an actual Android device, particularly 64→59 and 24→19 lb assistance progression, reps-only bodyweight sessions, weighted pull-ups, overriding unusual equipment, and returning to normal training after deloads. Use representative **actual** logs (not synthetic volume) when assessing progress indicators. Avoid changing Beta until instructed.
+
+
 ## Latest completed work: 2026-10-08 · Guided Progressive Overload v0.82.0
 
 **Current Swole Cat Testing release:** v0.82.0 / Android versionCode 118, signed permanent Testing identity, APK and in-app update manifest **published successfully**.
