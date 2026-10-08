@@ -5,6 +5,7 @@ function exerciseLoadType(exerciseId,config=null){
  const override=config?.loadType;
  if(['external','assistance','bodyweight'].includes(override))return override;
  const ex=exById(exerciseId),name=String(ex?.name||'').toLowerCase();
+ if(['external','assistance','bodyweight'].includes(ex?.loadType))return ex.loadType;
  if(/\bweighted\b|\badded.weight\b/.test(name))return 'external';
  if(/\bassisted\b|\bcounterweight\b/.test(name))return 'assistance';
  if(ex?.equipment==='bodyweight')return 'bodyweight';
