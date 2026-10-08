@@ -2,7 +2,8 @@ function previousExercise(exerciseId,programId=state.activeWorkout?.programId||n
  // Deload performances are genuine history, but not evidence of normal training capacity.
  const candidates=(state.sessions||[]).filter(s=>s.programPhase!=='deload')
   .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
- const eligible=s=>((s.exercises||[]).find(e=>e.exerciseId===exerciseId&&!e.skipped&&progressionSets(e).length));
+ const bodyweight=exById(exerciseId)?.equipment==='bodyweight';
+ const eligible=s=>((s.exercises||[]).find(e=>e.exerciseId===exerciseId&&!e.skipped&&progressionSets(e).some(set=>bodyweight||Number(set.weight)>0)));
  const selected=(programId?candidates.filter(s=>s.programId===programId):candidates).find(eligible)
     ||candidates.find(eligible);
  const exercise=selected&&eligible(selected);
