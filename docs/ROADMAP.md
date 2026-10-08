@@ -84,7 +84,7 @@ Every routine/program should have a configurable training mode. The first versio
 
 ## Phase 2 — Training Engine and Smarter Progression
 
-**Status: Core mode-aware engine complete in v0.31.0. Advanced progression research remains an expansion area.**
+**Status: Core mode-aware engine implemented since v0.31.0. Program-based Guided Progressive Overload and optional deload cycles implemented and CI-validated in Testing v0.82.0; real-device field review remains open. Advanced exercise-specific personalization and recovery design continue to evolve.**
 
 **Priority: High**
 
