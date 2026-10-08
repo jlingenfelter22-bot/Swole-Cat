@@ -227,6 +227,7 @@ function sessionPRDetails(s){
 }
 function previousSessionExercise(exerciseId,sessions=state.sessions){
  for(let i=sessions.length-1;i>=0;i--){
+   if(sessions[i].programPhase==='deload')continue;
    const row=(sessions[i].exercises||[]).find(e=>e.exerciseId===exerciseId&&progressionSets(e).length);
    if(row)return row;
  }
@@ -248,6 +249,7 @@ function openHistoricalWorkoutRecap(id){
  openModal('Workout recap',workoutRecapHtml(session,{progressHighlights:historicalProgressHighlights(session),historical:true}));
 }
 function sessionProgressHighlights(s,priorSessions=state.sessions){
+ if(s.programPhase==='deload')return [];
  const highlights=[];
  (s.exercises||[]).forEach(e=>{
    const current=progressionSets(e);
@@ -406,7 +408,7 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
 }
 function exerciseHistory(exerciseId){return derivedSessionData().historyByExercise.get(exerciseId)||[];}
 function exerciseMetrics(exerciseId){
- const h=exerciseHistory(exerciseId),sets=h.flatMap(x=>x.sets);
+ const h=exerciseHistory(exerciseId).filter(row=>row.programPhase!=='deload'),sets=h.flatMap(x=>x.sets);
  const bestWeight=sets.length?Math.max(...sets.map(x=>Number(x.weight)||0)):0;
  const bestE1=sets.length?Math.max(...sets.map(x=>estimated1RM(x.weight,x.reps))):0;
  const bestVolume=h.length?Math.max(...h.map(x=>x.sets.reduce((a,s)=>a+(Number(s.weight)||0)*(Number(s.reps)||0),0))):0;
