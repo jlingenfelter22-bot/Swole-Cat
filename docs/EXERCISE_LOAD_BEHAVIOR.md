@@ -1,6 +1,6 @@
 # Exercise Loading Semantics: Assisted, Bodyweight, and External Resistance
 
-**Future expansion (documentation only):** [EXERCISE_INTELLIGENCE_FOUNDATION.md](EXERCISE_INTELLIGENCE_FOUNDATION.md) describes goal-sensitive repetition suggestions, movement-family profiles, additional measurement types and catalog-wide validation. These are proposed designs, not current app behavior.
+**Exercise-intelligence expansion (Testing v0.84.0):** [EXERCISE_INTELLIGENCE_FOUNDATION.md](EXERCISE_INTELLIGENCE_FOUNDATION.md) tracks the implemented phase-one movement-family profiles, suggested rep ranges, real hold-time/distance measurements, and catalog-wide validation. Per-side logging, multi-measure activities, stopwatch integration, and advanced exercise-specific mechanics remain proposed rather than implemented.
 
 **Implementation scope:** Testing v0.83.0 candidate. Supports workouts launched from routines and programs, plus relevant Strength Focus / Track Only / Guided modes.
 **Research prerequisite:** [TRAINING_SCIENCE_FOUNDATION.md](TRAINING_SCIENCE_FOUNDATION.md). Not a recommendation to change a patient's medical rehabilitation equipment or loading.
