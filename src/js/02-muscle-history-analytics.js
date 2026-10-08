@@ -371,7 +371,7 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
  const recapMetrics=[
   {value:sessionCompletedExerciseCount(session),label:'Exercises'},
   {value:workingSets,label:'Working sets'},
-  ...(reps>0?[{value:reps,label:'Repetitions'}]:[]),
+  ...(reps>0?[{value:reps,label:'Total reps'}]:[]),
   ...(holdSeconds>0?[{value:compactMetricNumber(holdSeconds),label:'Hold seconds'}]:[]),
   ...(distanceMeters>0?[{value:compactMetricNumber(distanceFromMeters(distanceMeters)),label:'Distance ('+distanceUnitLabel()+')'}]:[]),
   {value:sessionPRCount(session),label:'Exercises with PR'}
