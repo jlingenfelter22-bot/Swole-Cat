@@ -96,6 +96,9 @@ jobs:
       - name: Stress test v0.84.0 exercise intelligence and timed/distance measurement
         run: node scripts/exercise-intelligence-stress.mjs
 
+      - name: Stress test v0.85.0 ergonomic measurement logging and mixed-metric recaps
+        run: node scripts/logging-ergonomics-stress.mjs
+
       - name: Stress test Coach Swolecat prompt matrix
         run: node scripts/coach-stress.mjs
 
