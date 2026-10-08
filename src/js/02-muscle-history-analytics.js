@@ -365,6 +365,7 @@ function saveCompletedSessionAsRoutine(sessionId){
 }
 function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],historical=false}={}){
  const workingSets=sessionSetCount(session),allSets=sessionAllSetCount(session),reps=sessionTotalReps(session);
+ const hasMetric=(session.exercises||[]).some(e=>exerciseMeasurementType(e.exerciseId,e.config)!=='reps'&&progressionSets(e).length);
  const savedRoutine=routineSavedFromSession(session.id);
  const linkedRoutine=!!(session.routineId&&state.routines.some(r=>r.id===session.routineId));
  const volume=Math.round(sessionVolume(session)),prs=sessionPRDetails(session),muscles=sessionMuscleGroups(session);
@@ -373,16 +374,18 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
    const ex=exById(e.exerciseId),done=completedSets(e),working=progressionSets(e);
    if(e.skipped)return `<div class="recap-exercise"><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">Skipped for this session</div></div>`;
    if(!done.length)return `<div class="recap-exercise"><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">No completed sets</div>${e.notes?`<div class="muscle-map-note" style="margin-top:8px"><b>Notes</b><br>${esc(e.notes)}</div>`:''}</div>`;
+   const measurement=exerciseMeasurementType(e.exerciseId,e.config);
    const totalReps=done.reduce((n,set)=>n+(Number(set.reps)||0),0);
+   const metricTotal=done.reduce((n,set)=>n+exerciseMetricValue(set,measurement),0);
    const topWeight=Math.max(...done.map(set=>Number(set.weight)||0));
    const prCount=working.filter(set=>set.pr).length;
    const setRows=done.map((set,i)=>{
      const ordinal=e.sets.slice(0,e.sets.indexOf(set)+1).filter(x=>setType(x)===setType(set)).length;
      const load=Number(set.weight)||0,reps=Number(set.reps)||0;
-     return `<div class="recap-set-row"><span>${esc(setTypeLabel(setType(set)))} ${ordinal}</span><b>${load} ${state.profile.unit} × ${reps}</b>${set.rir!==''&&set.rir!=null?`<span>${esc(String(set.rir))} RIR</span>`:'<span></span>'}${set.pr?`<span class="inline-pr-mark">PR</span>`:'<span></span>'}</div>`;
+     return `<div class="recap-set-row"><span>${esc(setTypeLabel(setType(set)))} ${ordinal}</span><b>${measurement==='reps'?`${load} ${state.profile.unit} × ${reps}`:esc(setMeasurementText(e,set))+(load>0?' @ '+load+' '+state.profile.unit:'')}</b>${measurement==='reps'&&set.rir!==''&&set.rir!=null?`<span>${esc(String(set.rir))} RIR</span>`:'<span></span>'}${set.pr?`<span class="inline-pr-mark">PR</span>`:'<span></span>'}</div>`;
    }).join('');
    return `<div class="recap-exercise">
-     <div class="recap-exercise-top"><div><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">${working.length} working set${working.length===1?'':'s'} · ${totalReps} total reps${topWeight>0?` · top ${topWeight} ${state.profile.unit}`:''}</div></div>${prCount?`<span class="preference-badge prefer">PR ×${prCount}</span>`:''}</div>
+     <div class="recap-exercise-top"><div><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">${working.length} working set${working.length===1?'':'s'} · ${measurement==='duration'?compactMetricNumber(metricTotal)+' total seconds':measurement==='distance'?compactMetricNumber(distanceFromMeters(metricTotal))+' '+distanceUnitLabel()+' total':totalReps+' total reps'}${topWeight>0?` · top ${topWeight} ${state.profile.unit}`:''}</div></div>${prCount?`<span class="preference-badge prefer">PR ×${prCount}</span>`:''}</div>
      <div class="recap-set-list">${setRows}</div>
      ${e.notes?`<div class="muscle-map-note" style="margin-top:8px"><b>Notes</b><br>${esc(e.notes)}</div>`:''}
    </div>`;
@@ -403,7 +406,7 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
    <div class="recap-metrics">
      <div class="recap-metric"><b>${completedExercises}</b><span>Exercises</span></div>
      <div class="recap-metric"><b>${workingSets}</b><span>Working sets</span></div>
-     <div class="recap-metric"><b>${reps}</b><span>Total reps</span></div>
+     <div class="recap-metric"><b>${reps}</b><span>${hasMetric?'Rep-based sets only':'Total reps'}</span></div>
      <div class="recap-metric"><b>${prs.length}</b><span>Exercises with PR</span></div>
    </div>
    <div class="recap-section">
@@ -830,7 +833,7 @@ function renderFormGuidePickerResults(exerciseId){
 
 function openExerciseProgress(exerciseId){
  const ex=exById(exerciseId),m=exerciseMetrics(exerciseId),h=m.history,pref=exercisePreference(exerciseId);
- const type=exerciseLoadType(exerciseId,h.at(-1)||null),recent=h.slice(-12);
+ const type=exerciseLoadType(exerciseId,h.at(-1)||null),measurement=exerciseMeasurementType(exerciseId,h.at(-1)||null),recent=h.slice(-12);
  const e1s=recent.map(x=>Math.max(...x.sets.map(s=>estimated1RM(s.weight,s.reps))));
  const bestReps=recent.map(x=>Math.max(...x.sets.map(s=>Number(s.reps)||0)));
  const firstAssistance=recent.length?Math.min(...recent[0].sets.map(s=>Number(s.weight)||0)):0;
@@ -838,6 +841,10 @@ function openExerciseProgress(exerciseId){
  const trend=m.trend==='up'?'<span class="trend-up">↑ Trending up</span>':m.trend==='down'?'<span class="trend-down">↓ Recent dip</span>':'<span class="trend-flat">→ Holding steady</span>';
  const progressHtml=!h.length
   ?'<div class="empty"><strong>No workout history yet</strong>Log this exercise in a workout and its progress will appear here.</div>'
+  :measurement!=='reps'?`<div class="notice">This movement is tracked by ${measurement==='duration'?'hold time':'distance'}, not repetitions. Your chart shows the best completed working set each session; it does not invent a one-rep max.</div>
+    <div class="metric-row"><div class="metric-mini"><b>${measurement==='duration'?compactMetricNumber(m.bestMetric)+' sec':compactMetricNumber(distanceFromMeters(m.bestMetric))+' '+distanceUnitLabel()}</b><span>Best ${measurement==='duration'?'hold':'distance'}</span></div><div class="metric-mini"><b>${h.length}</b><span>Logged sessions</span></div></div>
+    <div class="chart-card"><div class="row"><b>Best ${measurement==='duration'?'hold time':'distance'} by session</b><span class="mini">Last ${recent.length}</span></div>${svgLine(recent.map(x=>Math.max(0,...x.sets.map(set=>measurement==='duration'?Number(set.durationSeconds)||0:distanceFromMeters(set.distanceMeters)))))}</div>
+    <div class="picker-section">Recent sessions</div><div class="card">${h.slice().reverse().slice(0,8).map(x=>`<div class="list-item"><b>${new Date(x.date).toLocaleDateString()}</b><span class="mini">${x.sets.map(set=>setMeasurementText({exerciseId,config:{measurementType:measurement}},set)).join(' · ')}</span></div>`).join('')}</div>`
   :type==='assistance'?`<div class="notice">Assistance is a counterweight. <b>Less assistance means a harder movement.</b> Estimated 1RM and conventional external-load volume are not applicable.</div>
     <div class="metric-row"><div class="metric-mini"><b>${m.bestAssistance??0} ${state.profile.unit}</b><span>Least assistance</span></div><div class="metric-mini"><b>${m.bestReps}</b><span>Most reps</span></div><div class="metric-mini"><b>${h.length}</b><span>Sessions</span></div></div>
     <div class="chart-card"><div class="row"><b>Reduction in assistance</b><span class="mini">Last ${recent.length}</span></div>${svgLine(assistanceReductions)}</div>
