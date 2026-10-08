@@ -1,5 +1,37 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-08 · Testing v0.85.0 measurement logging UX
+
+**Latest signed Swole Cat Testing:** v0.85.0, Android versionCode 121, published and verified.
+- Implementation: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/42 (merged).
+- Full source validation, **all 86 checks passed**: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37841888691.
+- Signed Android Testing release: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.85.0
+- Android signing and manifest workflow: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37842236981 (success).
+- APK: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.85.0/swole-cat-testing-v0.85.0-signed.apk
+- `updates/testing.json`: v0.85.0, code 121, package `com.jlingenfelter.swolecat.testing`. APK SHA-256 `7271944042cf670ebad4b31c7dac71c11cea4a7a44266e33fd2f85870d3d4fd7`, certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta untouched**, branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. No Beta promotion without explicit owner instruction.
+
+### What shipped after the user's 82-second silent walkthrough
+
+- **Targets are not results.** New timed/distance sets start with blank actual values, while the suggested goal stays separate. Completing a set requires an actually entered/timed duration or distance.
+- Added an optional **Start/Stop hold stopwatch**. It does not auto-complete a set; Stop saves measured seconds immediately. If the workout is paused, backgrounded or the set is left, elapsed time is captured and the set stays incomplete. Manual time entry remains available.
+- Full-width stacked, responsive numeric controls for loaded carries and timed holds. Unweighted movements no longer occupy input space with a redundant zero-weight field. Keyboard focus hides the floating rest timer until the user finishes typing.
+- **Prior set today** is labeled separately from **last workout**, with a one-tap Repeat Previous Set action. First exposures have human wording instead of "No comparable prior set."
+- Default imperial carry goals use natural units, for example 30 ft instead of the raw 32.8 ft conversion. Suggested recovery/rest durations are shorter for newly created hold/carry routine exercises; existing explicitly saved values remain intact.
+- Loaded carry fields explain load meaning ("Weight per hand" for dumbbells/farmer carries, working hand for suitcase carries, total bar or sled load when applicable). Empty load is not silently interpreted as an explicitly logged zero.
+- Mixed-workout recaps independently show total reps, hold seconds and distance. They no longer use misleading dismissal of a timed/distance workout because external weight-times-reps volume is zero. Historical "Total reps" naming remains compatible; long guidance labels wrap rather than truncate.
+- Saved routines, existing workout history, guided program/deload phases, load direction and weight-autofill behavior preserved.
+- New `scripts/logging-ergonomics-stress.mjs` verifies targets versus actual values, stopwatch Start/Stop and pause, carry entry guard, same-session repeat, responsive field selection, keyboard state and mixed-metric recap. Old v0.84 and v0.83 tests updated only where semantics and labels intentionally changed.
+
+### What remains to verify and refine
+
+- Test all changes on a physical Android phone in a real workout: hold start/stop while hands busy, rest overlay + keyboard, loaded carry labels, mixed recap and set editing.
+- Future elective improvements: combined time+distance in one set, timed interval/haptic cues, unilateral per-side tracking, additional exercise-specific rest presets, equipment-based microincrements. Do not claim these exist today.
+- No Beta promotion without owner approval.
+
+This section is the current authoritative baseline; earlier milestone sections below remain as historical record.
+
+
 ## Latest milestone: 2026-10-08 · Testing v0.84.0 movement intelligence
 
 **Latest signed Swole Cat Testing:** v0.84.0, Android versionCode 120. Signature, release APK and in-app updater manifest verified.
