@@ -2463,3 +2463,12 @@ html[data-workout-transition="back"]::view-transition-new(workout-exercise-stage
  font-family:var(--display);font-size:.6rem;letter-spacing:.02em;
  color:#ffd8a1;margin-top:5px;white-space:normal;line-height:1.35;
 }
+
+#analytics .calendar-day.calendar-deload{
+ border-color:rgba(245,158,11,.58)!important;
+ background:rgba(245,158,11,.095)!important;
+}
+#analytics .calendar-day .calendar-deload-icon{
+ display:inline-block;position:absolute;right:5px;top:4px;
+ color:#ffe2ac;font-size:.71rem;line-height:1;
+}
