@@ -76,9 +76,16 @@ function openWorkoutSubstitute(ei){
 function refreshWorkoutSubs(ei){const e=state.activeWorkout.exercises[ei];document.getElementById('subList').innerHTML=subRowsHtml(e.exerciseId,ei,document.getElementById('subSearch').value)}
 function swapWorkoutExercise(ei,newId,permanent){
  const e=state.activeWorkout.exercises[ei], old=e.exerciseId;
- if(permanent){const r=state.routines.find(x=>x.id===state.activeWorkout.routineId);if(r&&Number.isInteger(e.routineIndex)&&r.exercises[e.routineIndex])r.exercises[e.routineIndex].exerciseId=newId;}
+ if(permanent){const r=state.routines.find(x=>x.id===state.activeWorkout.routineId);if(r&&Number.isInteger(e.routineIndex)&&r.exercises[e.routineIndex]){
+   r.exercises[e.routineIndex].exerciseId=newId;
+   r.exercises[e.routineIndex].loadType='auto'; // Old exercise's assistance setting must not carry over.
+ }}
  e.exerciseId=newId;e.targetOverride=null;e.skipped=false;
- const prev=previousExercise(newId),rec=buildRecommendation(e.config,prev,e.exerciseId);
+ e.config={...e.config,loadType:'auto'};
+ if(exerciseLoadType(newId,e.config)!=='external'){
+  e.config.adaptiveProgression=false;e.config.setStructure=null;e.config.progressionStrategy='double';
+ }
+ const prev=previousExercise(newId,state.activeWorkout.programId,e.config),rec=buildRecommendation(e.config,prev,e.exerciseId);
  e.sets=Array.from({length:e.config.sets},(_,i)=>({weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??e.config.minReps,done:false,rir:'',type:'working'}));e.notes='';
  if(!permanent)markWorkoutStructureDirty();else saveActiveWorkout();closeModal();renderWorkout();
 }
@@ -144,6 +151,7 @@ function defaultWorkoutExerciseConfig(){
    minReps:state.settings.defaultMin,
    maxReps:state.settings.defaultMax,
    increment:state.settings.defaultIncrement,
+   loadType:'auto',
    mode:'double',
    trainingGoal:'general',
    resetPercent:7.5,
@@ -167,6 +175,7 @@ function addExerciseToWorkout(exerciseId,permanent){
        minReps:cfg.minReps,
        maxReps:cfg.maxReps,
        increment:cfg.increment,
+       loadType:cfg.loadType||'auto',
        mode:cfg.mode==='double'?'double':cfg.mode,
        trainingGoal:cfg.trainingGoal||'general',
        resetPercent:cfg.resetPercent||7.5,
@@ -196,7 +205,9 @@ function addExerciseToWorkout(exerciseId,permanent){
    }
  }
 
- const prev=previousExercise(exerciseId);
+ cfg.routineMode=w.trainingMode||'guided';
+ cfg.programGuided=!!(w.programId&&cfg.routineMode==='guided');
+ const prev=previousExercise(exerciseId,w.programId,cfg);
  const rec=buildRecommendation(cfg,prev,exerciseId);
  const entry={
    exerciseId,
