@@ -1,5 +1,36 @@
 # Swole Cat Current State
 
+## Latest completed work: 2026-10-08 · Guided Progressive Overload v0.82.0
+
+**Current Swole Cat Testing release:** v0.82.0 / Android versionCode 118, signed permanent Testing identity, APK and in-app update manifest **published successfully**.
+- Implementation PR: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/38
+- Signed Testing release: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.82.0
+- Update feed: `updates/testing.json`, currently v0.82.0
+- Android build workflow: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37817808542 (success; signed certificate and manifest checks passed)
+- Final reviewed source PR validation: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37817531763 (success; includes new v0.82 regression suite)
+- Field **Beta was not touched or promoted**. Its branch remains intentionally independent.
+
+### What shipped in Testing
+
+- New Program training mode is an explicit required selection for manual program creation; existing and imported programs remain compatible.
+- Guided Progressive Overload program mode exclusively exposes optional scheduled deloads, off by default. When enabled, every 4th training week is the editable suggested preset (weeks 1–3 normal; week 4 deload), with 3–8 week presets or custom 2–52 weeks.
+- Training weeks are based on distinct Monday-start weeks with completed program workout activity, not completed routine rotations or elapsed calendar time alone. The person can begin, defer, skip or postpone the deload decision.
+- Deloads intentionally reduce working-set volume and target controlled minimum-range reps. The workout, history, recap, calendar and Progress identify deliberate deloads; saved routines remain unchanged.
+- Saved program phase + week metadata preserves historical meaning. Deload workouts remain factual activity but do not set the next normal progression baseline or contribute to Coach adaptive strength-drop/plateau signals.
+- Guided program mode holds automatic load increases over 10% of an existing positive external load as a conservative product safeguard (not a proven universal prescription). Zero/missing weighted logs do not establish positive load progression.
+- Program sharing includes deload preference and interval, not the sender's personal schedule decisions or workout data.
+- Training logic reference: `docs/TRAINING_SCIENCE_FOUNDATION.md`. Full implementation reference: `docs/PROGRAM_GUIDED_OVERLOAD_DESIGN_PROPOSAL.md`.
+
+### Next work, not yet completed
+
+1. Have the user update **Swole Cat Testing** on a real Android phone and inspect a new Guided program, opt-in/default-off settings, three-weeks-then-week-four explanation, deload review choices and visual labels.
+2. Validate resume after an authentic deload session with representative working loads, including lb/kg and different equipment; inspect exercise Progress and Coach after completion.
+3. Decide further personalization and training-week edge cases: partial/missed weeks, late-start calendars, scheduled deferral, user-preferred load micro-increments, and future deload support for Strength Focus. Consider refinement based on field experience, with no physiological diagnosis claims.
+4. Continue testing on `main` and promote to Beta **only on the user's explicit instruction**.
+
+This is the latest checkpoint. Historical paragraphs further below describe earlier milestones and may be outdated; do not rely on their old version numbers when resuming.
+
+
 ## Purpose
 
 This is the **resume-first checkpoint** for Swole Cat.
