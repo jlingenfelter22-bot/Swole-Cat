@@ -643,6 +643,7 @@ function pauseActiveWorkout(){
  const w=state.activeWorkout;
  if(!w){showToast('No active workout');return}
  if(!w.pausedAt)w.pausedAt=new Date().toISOString();
+ if(typeof stopWorkoutHoldTimer==='function')stopWorkoutHoldTimer(true);
  saveActiveWorkout();
  stopRestTimer();
  releaseWakeLock();
