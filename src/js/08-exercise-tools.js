@@ -75,19 +75,32 @@ function openWorkoutSubstitute(ei){
 }
 function refreshWorkoutSubs(ei){const e=state.activeWorkout.exercises[ei];document.getElementById('subList').innerHTML=subRowsHtml(e.exerciseId,ei,document.getElementById('subSearch').value)}
 function swapWorkoutExercise(ei,newId,permanent){
- const e=state.activeWorkout.exercises[ei], old=e.exerciseId;
- if(permanent){const r=state.routines.find(x=>x.id===state.activeWorkout.routineId);if(r&&Number.isInteger(e.routineIndex)&&r.exercises[e.routineIndex]){
-   r.exercises[e.routineIndex].exerciseId=newId;
-   r.exercises[e.routineIndex].loadType='auto'; // Old exercise's assistance setting must not carry over.
- }}
- e.exerciseId=newId;e.targetOverride=null;e.skipped=false;
- e.config={...e.config,loadType:'auto'};
- if(exerciseLoadType(newId,e.config)!=='external'){
-  e.config.adaptiveProgression=false;e.config.setStructure=null;e.config.progressionStrategy='double';
+ const w=state.activeWorkout,e=w?.exercises?.[ei];if(!e||!exById(newId))return;
+ const defaults=exerciseDefaultRoutineConfig(newId);
+ const cfg={...e.config,loadType:'auto',measurementType:'auto',
+  minReps:defaults.minReps,maxReps:defaults.maxReps,
+  minDurationSeconds:defaults.minDurationSeconds,maxDurationSeconds:defaults.maxDurationSeconds,
+  minDistanceMeters:defaults.minDistanceMeters,maxDistanceMeters:defaults.maxDistanceMeters};
+ if(exerciseLoadType(newId,cfg)!=='external'||exerciseMeasurementType(newId,cfg)!=='reps'){
+  cfg.adaptiveProgression=false;cfg.setStructure=null;cfg.progressionStrategy='double';
  }
- const prev=previousExercise(newId,state.activeWorkout.programId,e.config),rec=buildRecommendation(e.config,prev,e.exerciseId);
- e.sets=Array.from({length:e.config.sets},(_,i)=>({weight:rec.weights[i]??rec.weight??0,reps:rec.targetReps[i]??e.config.minReps,done:false,rir:'',type:'working'}));e.notes='';
- if(!permanent)markWorkoutStructureDirty();else saveActiveWorkout();closeModal();renderWorkout();
+ if(permanent){
+  const r=state.routines.find(x=>x.id===w.routineId);
+  if(r&&Number.isInteger(e.routineIndex)&&r.exercises[e.routineIndex])
+   r.exercises[e.routineIndex]={...r.exercises[e.routineIndex],...cfg,exerciseId:newId};
+ }
+ e.exerciseId=newId;e.config=cfg;e.targetOverride=null;e.skipped=false;
+ const prev=previousExercise(newId,w.programId,cfg),rec=buildRecommendation(cfg,prev,newId);
+ const measure=exerciseMeasurementType(newId,cfg);
+ e.sets=Array.from({length:cfg.sets},(_,i)=>({
+  weight:rec.weights?.[i]??rec.weight??0,reps:measure==='reps'?(rec.targetReps?.[i]??cfg.minReps):0,
+  durationSeconds:measure==='duration'?(rec.targetValues?.[i]??cfg.minDurationSeconds):0,
+  distanceMeters:measure==='distance'?(rec.targetValues?.[i]??cfg.minDistanceMeters):0,
+  done:false,rir:'',type:'working',pr:''
+ }));
+ e.notes='';
+ if(!permanent)markWorkoutStructureDirty();else saveActiveWorkout();
+ closeModal();renderWorkout();
 }
 let addPickerCategory='home',addPickerMovement='';
 
@@ -145,18 +158,8 @@ function renderAddExercisePicker(){
  <div class="picker-result-list">${addPickerRows(filtered)}</div>`;
 }
 
-function defaultWorkoutExerciseConfig(){
- return {
-   sets:state.settings.defaultSets,
-   minReps:state.settings.defaultMin,
-   maxReps:state.settings.defaultMax,
-   increment:state.settings.defaultIncrement,
-   loadType:'auto',
-   mode:'double',
-   trainingGoal:'general',
-   resetPercent:7.5,
-   restSeconds:120
- };
+function defaultWorkoutExerciseConfig(exerciseId){
+ return {...exerciseDefaultRoutineConfig(exerciseId),trainingGoal:'general',resetPercent:7.5};
 }
 function addExerciseToWorkout(exerciseId,permanent){
  const w=state.activeWorkout;if(!w)return;
@@ -176,6 +179,9 @@ function addExerciseToWorkout(exerciseId,permanent){
        maxReps:cfg.maxReps,
        increment:cfg.increment,
        loadType:cfg.loadType||'auto',
+       measurementType:cfg.measurementType||'auto',
+       minDurationSeconds:cfg.minDurationSeconds||20,maxDurationSeconds:cfg.maxDurationSeconds||45,
+       minDistanceMeters:cfg.minDistanceMeters||10,maxDistanceMeters:cfg.maxDistanceMeters||30,
        mode:cfg.mode==='double'?'double':cfg.mode,
        trainingGoal:cfg.trainingGoal||'general',
        resetPercent:cfg.resetPercent||7.5,
@@ -193,7 +199,7 @@ function addExerciseToWorkout(exerciseId,permanent){
    return;
  }
 
- const cfg=defaultWorkoutExerciseConfig();
+ const cfg=defaultWorkoutExerciseConfig(exerciseId);
  let newRoutineIndex=null;
 
  if(permanent && routine){
@@ -219,7 +225,9 @@ function addExerciseToWorkout(exerciseId,permanent){
    expanded:true,
    sets:Array.from({length:cfg.sets},(_,i)=>({
      weight:rec.weights?.[i]??rec.weight??0,
-     reps:rec.targetReps?.[i]??cfg.minReps,
+     reps:exerciseMeasurementType(exerciseId,cfg)==='reps'?(rec.targetReps?.[i]??cfg.minReps):0,
+     durationSeconds:exerciseMeasurementType(exerciseId,cfg)==='duration'?(rec.targetValues?.[i]??cfg.minDurationSeconds):0,
+     distanceMeters:exerciseMeasurementType(exerciseId,cfg)==='distance'?(rec.targetValues?.[i]??cfg.minDistanceMeters):0,
      done:false,
      rir:'',
      type:'working'
