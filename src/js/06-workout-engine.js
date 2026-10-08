@@ -204,7 +204,7 @@ function buildRecommendation(config,prev,exerciseId=null){
    if(config.programGuided&&(baseWeight<=0||inc<=0||inc/baseWeight>0.10)){
      return {status:'hold',weight:baseWeight,weights:Array(config.sets).fill(baseWeight),
        targetReps:Array(config.sets).fill(config.maxReps),headline:'Repeat this load or choose a smaller increment',
-       detail:baseWeight<=0?'Establish a positive external load before adding weight automatically. Bodyweight movements can continue with repetition progression.':
+       detail:baseWeight<=0?(exById(exerciseId)?.equipment==='bodyweight'?'You reached the top of the bodyweight rep range. Consider a harder variation or add external resistance manually when appropriate.':'Establish a positive external load before adding weight automatically.'):
          'The configured weight increase is more than 10% of your current load, or no increase is configured. Keep clean reps or select a smaller load step, then progress manually.'};
    }
    const next=roundLoad(baseWeight+inc);
