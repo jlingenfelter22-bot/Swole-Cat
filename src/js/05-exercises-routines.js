@@ -653,7 +653,15 @@ function editRoutineExerciseSettings(id,index){
    <option value="manual" ${re.mode==='manual'?'selected':''}>Manual</option>
  </select></div>`;
  openModal(`${esc(ex?.name||'Exercise')} progression`,`
- ${structureFields}
+ <div id="reRepsFields" style="display:${measurement==='reps'?'block':'none'}">${structureFields}</div>
+ <div id="reMetricSetsFields" style="display:${measurement!=='reps'?'block':'none'}">
+  <div class="field"><label>Working sets</label><input id="reMetricSets" type="number" min="1" max="10" value="${re.sets}"></div>
+  <div class="field"><label>Progression</label><select id="reMetricMode">
+   <option value="double" ${!['manual','total'].includes(re.mode)?'selected':''}>Build each set's time / distance</option>
+   <option value="total" ${re.mode==='total'?'selected':''}>Build one set at a time</option>
+   <option value="manual" ${re.mode==='manual'?'selected':''}>Manual</option>
+  </select></div>
+ </div>
  <div class="field"><label>What does this exercise track?</label><select id="reMeasurement" onchange="changeRoutineMeasurementFields(this.value)">
     <option value="auto" ${!re.measurementType||re.measurementType==='auto'?'selected':''}>Automatic · ${measurement==='duration'?'Hold time':measurement==='distance'?'Distance':'Repetitions'}</option>
     <option value="reps" ${re.measurementType==='reps'?'selected':''}>Repetitions</option>
@@ -693,17 +701,21 @@ function editRoutineExerciseSettings(id,index){
  <div class="actions"><button class="btn" onclick="saveRoutineExerciseSettings('${id}',${index})">Save</button><button class="btn secondary" onclick="editRoutineDetails('${id}')">Back</button></div>`);
 }
 function changeRoutineMeasurementFields(value){
- const selected=value==='auto'?exerciseMeasurementType(document.querySelector('#reMeasurement')?.closest('.modal')?.dataset?.exerciseId):value;
- const inferred=value==='auto'?document.getElementById('reMeasurement')?.options?.[0]?.textContent||'':null;
- const mode=value==='auto'?(inferred?.includes('Hold time')?'duration':inferred?.includes('Distance')?'distance':'reps'):selected;
- const timed=document.getElementById('reTimedFields'),distance=document.getElementById('reDistanceFields');
- if(timed)timed.style.display=mode==='duration'?'block':'none';
- if(distance)distance.style.display=mode==='distance'?'block':'none';
+ const inferred=document.getElementById('reMeasurement')?.options?.[0]?.textContent||'';
+ const mode=value==='auto'?(inferred.includes('Hold time')?'duration':inferred.includes('Distance')?'distance':'reps'):value;
+ for(const [id,show] of [['reTimedFields',mode==='duration'],['reDistanceFields',mode==='distance'],['reRepsFields',mode==='reps'],['reMetricSetsFields',mode!=='reps']]){
+  const el=document.getElementById(id);if(el)el.style.display=show?'block':'none';
+ }
 }
 function saveRoutineExerciseSettings(id,index){
  const r=state.routines.find(x=>x.id===id),re=r?.exercises[index]; if(!re)return;
- const topBackoff=re.setStructure?.type==='top_backoff'&&document.getElementById('reTopSets');
- if(topBackoff){
+ const selectedMeasure=document.getElementById('reMeasurement')?.value;
+ const chosenMeasurement=selectedMeasure==='auto'?exerciseMeasurementType(re.exerciseId):selectedMeasure;
+ const topBackoff=chosenMeasurement==='reps'&&re.setStructure?.type==='top_backoff'&&document.getElementById('reTopSets');
+ if(chosenMeasurement!=='reps'){
+  re.sets=Math.max(1,Math.min(10,Number(document.getElementById('reMetricSets')?.value)||3));
+  re.mode=document.getElementById('reMetricMode')?.value||'double';
+ }else if(topBackoff){
    const topSets=Math.max(1,Math.min(2,+document.getElementById('reTopSets').value||1));
    const topMin=Math.max(1,+document.getElementById('reTopMin').value||3);
    const topMax=Math.max(topMin,+document.getElementById('reTopMax').value||topMin);
