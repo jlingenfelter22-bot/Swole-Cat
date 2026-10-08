@@ -115,7 +115,7 @@ assert(!share.program.deload.decisions,'recipient must not inherit personal delo
 const imported=w.importSharedEnvelope(share);
 assert(imported.program,'sharing should import the whole program');
 assert.equal(imported.program.deload.enabled,true);
-assert.deepEqual(imported.program.deload.decisions,{},'import starts with no training-week history');
+assert.equal(Object.keys(imported.program.deload.decisions).length,0,'import starts with no training-week history');
 
 // No scheduled deloads and other modes cannot trigger deload review.
 w.eval('state.programs.find(p=>p.id==='+esc(programId)+').deload.enabled=false;save();');
