@@ -149,9 +149,9 @@
   .set-add-btn.warmup{border-color:rgba(56,189,248,.3);color:#bae6fd}
   .set-add-btn.drop{border-color:rgba(245,158,11,.3);color:#fde68a}
   .set-add-btn.failure{border-color:rgba(248,113,113,.3);color:#fecaca}
-  .superset-badge{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(244,114,182,.36);background:rgba(244,114,182,.09);color:#fbcfe8;border-radius:999px;padding:5px 8px;font-size:.66rem;font-weight:950;letter-spacing:.05em;white-space:nowrap}
-  .superset-note{margin-top:9px;border:1px solid rgba(244,114,182,.24);background:rgba(244,114,182,.055);border-radius:11px;padding:8px 10px;color:#e5c9db;font-size:.76rem;line-height:1.35}
-  .exercise-block.superset-member{box-shadow:inset 4px 0 0 var(--ex-accent),inset 0 3px 0 rgba(244,114,182,.55),0 10px 26px rgba(0,0,0,.16)}
+  .superset-badge{display:inline-flex;align-items:center;gap:5px;border:1px solid color-mix(in srgb,var(--signal-superset,#facc15) 58%,transparent);background:color-mix(in srgb,var(--signal-superset,#facc15) 11%,transparent);color:var(--signal-superset-soft,#fff0a0);border-radius:999px;padding:5px 8px;font-size:.66rem;font-weight:950;letter-spacing:.05em;white-space:nowrap}
+  .superset-note{margin-top:9px;border:1px solid color-mix(in srgb,var(--signal-superset,#facc15) 34%,transparent);background:color-mix(in srgb,var(--signal-superset,#facc15) 6%,transparent);border-radius:11px;padding:8px 10px;color:#eadb91;font-size:.76rem;line-height:1.35}
+  .exercise-block.superset-member{box-shadow:inset 4px 0 0 var(--ex-accent),inset 0 3px 0 color-mix(in srgb,var(--signal-superset,#facc15) 72%,transparent),0 10px 26px rgba(0,0,0,.16)}
   .exercise-block.skipped-exercise{opacity:.72;border-style:dashed!important}
   .exercise-block.skipped-exercise .live-head{background:linear-gradient(135deg,rgba(148,163,184,.07),transparent)}
   .exercise-status.skipped{border-color:rgba(148,163,184,.35);background:rgba(148,163,184,.08);color:#cbd5e1}
@@ -181,7 +181,7 @@
   }
   .complete-set{width:100%;margin-top:8px;border:1px solid #31533a;background:#16241a;color:#8be7a3;border-radius:11px;padding:10px;font-weight:900}
   .complete-set.done{background:#22c55e;border-color:#22c55e;color:#07110a}
-  .pr-banner{margin-top:8px;border-radius:10px;padding:8px 10px;background:rgba(251,191,36,.11);border:1px solid rgba(251,191,36,.3);color:#fde68a;font-size:.78rem;font-weight:800}
+  .pr-banner{margin-top:8px;border-radius:10px;padding:8px 10px;background:color-mix(in srgb,var(--signal-pr,#ff4fa3) 8%,transparent);border:1px solid color-mix(in srgb,var(--signal-pr,#ff4fa3) 34%,transparent);color:#ffd2e8;font-size:.78rem;font-weight:800}
   .toolrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
   .toolchip{border:1px solid #303a50;background:#171f2d;color:#cdd5e4;border-radius:999px;padding:7px 10px;font-size:.74rem;font-weight:800}
   .plates{color:#cbd5e1;font-size:.76rem;margin-top:6px}
@@ -209,7 +209,7 @@
   .metric-mini{background:#101620;border:1px solid #252f42;border-radius:12px;padding:10px;text-align:center}
   .metric-mini b{display:block;font-size:1.05rem}.metric-mini span{font-size:.65rem;color:var(--muted);text-transform:uppercase}
   .summary-win{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.26);border-radius:14px;padding:12px;margin-top:10px}
-  .summary-pr{background:rgba(251,191,36,.09);border:1px solid rgba(251,191,36,.3);border-radius:14px;padding:12px;margin-top:10px}
+  .summary-pr{background:color-mix(in srgb,var(--signal-pr,#ff4fa3) 8%,transparent);border:1px solid color-mix(in srgb,var(--signal-pr,#ff4fa3) 34%,transparent);border-radius:14px;padding:12px;margin-top:10px}
   .workout-recap-hero{position:relative;overflow:hidden;background:linear-gradient(145deg,rgba(139,92,246,.18),rgba(34,211,238,.055) 58%,rgba(34,197,94,.045)),#0e1521;border:1px solid rgba(124,105,239,.34);border-radius:18px;padding:18px;margin-bottom:12px}
   .workout-recap-hero:after{content:"";position:absolute;width:120px;height:120px;border:1px solid rgba(34,211,238,.11);transform:rotate(45deg);right:-68px;top:-70px}
   .workout-recap-title{font-size:1.65rem;font-weight:950;line-height:1.05;margin-top:6px}
