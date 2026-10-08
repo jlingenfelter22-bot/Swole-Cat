@@ -1,7 +1,7 @@
 # Exercise Intelligence Foundation (design specification)
 
-**Status:** Product direction and research-informed architecture. **Not implemented by this document.**
-**Recorded:** 2026-10-08. **Target:** A future Swole Cat Testing implementation, requiring explicit owner sign-off for runtime changes.
+**Status:** Phase 1 implemented in Swole Cat Testing v0.84.0; remaining advanced measurement features and optimization are design proposals.
+**Recorded:** 2026-10-08. **Target:** Field-test the implemented phase 1 on Android; require separate approval for additional behaviors and for any Beta promotion.
 **Related:** [TRAINING_SCIENCE_FOUNDATION.md](TRAINING_SCIENCE_FOUNDATION.md), [EXERCISE_LOAD_BEHAVIOR.md](EXERCISE_LOAD_BEHAVIOR.md), [PROGRAM_GUIDED_OVERLOAD_DESIGN_PROPOSAL.md](PROGRAM_GUIDED_OVERLOAD_DESIGN_PROPOSAL.md).
 
 ## 1. Owner objective
