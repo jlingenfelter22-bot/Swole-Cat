@@ -212,7 +212,7 @@ function buildRecommendation(config,prev,exerciseId=null){
  if(loadType==='bodyweight'){
    if(config.mode==='manual')return {status:'manual',weight:0,weights:Array(config.sets).fill(0),targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),headline:'Repeat or adjust bodyweight reps',detail:exerciseLoadExplanation(loadType)};
    const complete=done.length>=config.sets&&done.slice(0,config.sets).every(s=>Number(s.reps)>=config.maxReps);
-   const target=complete?Array(config.sets).fill(config.maxReps):progressEverySetTarget(reps,config.minReps,config.maxReps,config.sets);
+   const target=complete?Array(config.sets).fill(config.maxReps):config.mode==='total'?distributeTarget(reps,config.minReps,config.maxReps,config.sets):progressEverySetTarget(reps,config.minReps,config.maxReps,config.sets);
    return {status:complete?'hold':'reps',weight:0,weights:Array(config.sets).fill(0),targetReps:target,
      headline:complete?'Rep goal reached · Keep quality or choose a harder variation':'Add a rep to each bodyweight set',
      detail:complete?'You reached the top of the rep range. Repeat the reps cleanly or manually choose a harder or weighted variation; no load is automatically invented.':exerciseLoadExplanation(loadType)};
@@ -229,7 +229,7 @@ function buildRecommendation(config,prev,exerciseId=null){
        headline:'Reduce assistance to '+next+' '+state.profile.unit,
        detail:'All programmed working sets met the rep goal at the same assistance. Less assistance increases the challenge. The suggestion never goes below zero.'};
    }
-   const target=ready?Array(config.sets).fill(repGoal):progressEverySetTarget(reps,config.minReps,config.maxReps,config.sets);
+   const target=ready?Array(config.sets).fill(repGoal):config.mode==='total'?distributeTarget(reps,config.minReps,config.maxReps,config.sets):progressEverySetTarget(reps,config.minReps,config.maxReps,config.sets);
    return {status:ready?'hold':'reps',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:target,
      headline:baseWeight===0?'No assistance left · Build reps or switch to pull-ups':ready?'Maintain assistance or choose a smaller decrement':'Keep assistance and build reps',
      detail:baseWeight===0?'You are already at zero assistance. Improve repetitions and technique or switch to an unassisted movement.':step===0?'Choose a positive assistance reduction step to progress the counterweight.':exerciseLoadExplanation(loadType)};
