@@ -767,16 +767,16 @@
   .workout-context-control{display:none}
   .workout-context-control.show{display:inline-flex}
   .workout-context-control[data-state="pause"]{
-    color:#ffd7ec;
-    border-color:rgba(255,46,136,.58);
+    color:#ffd79a;
+    border-color:color-mix(in srgb,var(--signal-warning) 58%,transparent);
     box-shadow:
       inset 0 1px 0 rgba(255,255,255,.045),
-      0 0 0 1px rgba(34,211,238,.055),
+      0 0 0 1px color-mix(in srgb,var(--signal-warning) 6%,transparent),
       0 8px 18px rgba(0,0,0,.22);
   }
   .workout-context-control[data-state="resume"]{
-    color:#bff8ff;
-    border-color:rgba(34,211,238,.58);
+    color:#caffdc;
+    border-color:color-mix(in srgb,var(--signal-active) 58%,transparent);
   }
   .workout-context-control .header-control-svg{
     width:20px;
@@ -785,16 +785,16 @@
     z-index:1;
   }
   .workout-context-control[data-state="pause"] .header-control-svg{
-    color:#ff4fa4;
+    color:var(--signal-warning);
     fill:currentColor;
     stroke:none;
-    filter:drop-shadow(0 0 5px rgba(255,46,136,.28));
+    filter:drop-shadow(0 0 5px color-mix(in srgb,var(--signal-warning) 28%,transparent));
   }
   .workout-context-control[data-state="resume"] .header-control-svg{
-    color:#4eeaff;
+    color:var(--signal-active);
     fill:currentColor;
     stroke:none;
-    filter:drop-shadow(0 0 5px rgba(34,211,238,.28));
+    filter:drop-shadow(0 0 5px color-mix(in srgb,var(--signal-active) 28%,transparent));
   }
   .settings-header-control{
     display:inline-flex;
