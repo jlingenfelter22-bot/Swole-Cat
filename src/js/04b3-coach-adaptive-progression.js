@@ -6,6 +6,7 @@
 const COACH_ADAPTIVE_VERSION='0.60.0';
 
 function coachProgressionExposureRows(exerciseId,referenceMs=Date.now(),limit=8){
+ if(exerciseLoadType(exerciseId)!=='external')return [];
  const rows=exerciseHistory(exerciseId)
    .filter(row=>row.programPhase!=='deload'&&new Date(row?.date||0).getTime()<=referenceMs)
    .slice(-Math.max(2,Number(limit)||8));
