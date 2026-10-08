@@ -261,6 +261,16 @@ function sessionProgressHighlights(s,priorSessions=state.sessions){
    const previous=progressionSets(prior);
    if(!previous.length)return;
    const ex=exById(e.exerciseId),name=ex?.name||'Exercise',type=exerciseLoadType(e.exerciseId,e.config);
+   const measurement=exerciseMeasurementType(e.exerciseId,e.config);
+   if(measurement!=='reps'){
+    const sum=rows=>rows.reduce((n,set)=>n+exerciseMetricValue(set,measurement),0);
+    const currentTotal=sum(current),previousTotal=sum(previous);
+    if(currentTotal>previousTotal&&previousTotal>0)
+     highlights.push({name,text:measurement==='duration'?
+      'Total working hold time increased from '+compactMetricNumber(previousTotal)+' to '+compactMetricNumber(currentTotal)+' seconds.':
+      'Total working distance increased from '+compactMetricNumber(distanceFromMeters(previousTotal))+' to '+compactMetricNumber(distanceFromMeters(currentTotal))+' '+distanceUnitLabel()+'.'});
+    return;
+   }
    const currentMax=Math.max(...current.map(set=>Number(set.weight)||0));
    const previousMax=Math.max(...previous.map(set=>Number(set.weight)||0));
    const currentReps=current.reduce((n,set)=>n+(Number(set.reps)||0),0);
@@ -426,19 +436,23 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
 function exerciseHistory(exerciseId){return derivedSessionData().historyByExercise.get(exerciseId)||[];}
 function exerciseMetrics(exerciseId){
  const h=exerciseHistory(exerciseId).filter(row=>row.programPhase!=='deload'),sets=h.flatMap(x=>x.sets);
+ const measurement=exerciseMeasurementType(exerciseId,h.at(-1)||null);
  const type=exerciseLoadType(exerciseId,h.at(-1)||null);
- const bestWeight=type==='external'&&sets.length?Math.max(...sets.map(x=>Number(x.weight)||0)):0;
- const bestAssistance=type==='assistance'&&sets.length?Math.min(...sets.map(x=>Math.max(0,Number(x.weight)||0))):null;
- const bestReps=sets.length?Math.max(...sets.map(x=>Number(x.reps)||0)):0;
- const bestE1=type==='external'&&sets.length?Math.max(...sets.map(x=>estimated1RM(x.weight,x.reps))):0;
- const bestVolume=type==='external'&&h.length?Math.max(...h.map(x=>x.sets.reduce((a,s)=>a+(Number(s.weight)||0)*(Number(s.reps)||0),0))):0;
- const latest=h.at(-1),prior=h.at(-2);
- const latestE1=type==='external'&&latest?Math.max(...latest.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
- const priorE1=type==='external'&&prior?Math.max(...prior.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ const metricRows=measurement==='reps'?sets:sets.filter(x=>exerciseMetricValue(x,measurement)>0);
+ const bestMetric=measurement==='reps'?0:Math.max(0,...metricRows.map(x=>exerciseMetricValue(x,measurement)));
+ const bestWeight=measurement==='reps'&&type==='external'&&sets.length?Math.max(...sets.map(x=>Number(x.weight)||0)):0;
+ const bestAssistance=measurement==='reps'&&type==='assistance'&&sets.length?Math.min(...sets.map(x=>Math.max(0,Number(x.weight)||0))):null;
+ const bestReps=measurement==='reps'&&sets.length?Math.max(...sets.map(x=>Number(x.reps)||0)):0;
+ const bestE1=measurement==='reps'&&type==='external'&&sets.length?Math.max(...sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ const bestVolume=measurement==='reps'&&type==='external'&&h.length?Math.max(...h.map(x=>x.sets.reduce((n,v)=>n+(Number(v.weight)||0)*(Number(v.reps)||0),0))):0;
+ const comparable=h.filter(x=>x.sets.some(set=>exerciseMetricValue(set,measurement)>0));
+ const latest=comparable.at(-1),prior=comparable.at(-2);
+ const latestE1=measurement==='reps'&&type==='external'&&latest?Math.max(...latest.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ const priorE1=measurement==='reps'&&type==='external'&&prior?Math.max(...prior.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
  let trend='flat';
  if(priorE1&&latestE1>priorE1*1.01)trend='up';
  else if(priorE1&&latestE1<priorE1*.99)trend='down';
- return {history:h,sets,type,bestWeight,bestAssistance,bestReps,bestE1,bestVolume,latestE1,priorE1,trend};
+ return {history:h,sets,measurement,type,bestMetric,bestWeight,bestAssistance,bestReps,bestE1,bestVolume,latestE1,priorE1,trend};
 }
 function lastEightWeeks(){
  const now=startOfWeek(),rows=[];
@@ -516,20 +530,21 @@ function lifetimeExerciseRecords(){
    const rows=[];
    history.forEach(h=>h.sets.forEach(set=>rows.push({set,date:h.date,routineName:h.routineName})));
    if(!rows.length)return null;
-   const type=exerciseLoadType(id,history.at(-1)||null);
+   const type=exerciseLoadType(id,history.at(-1)||null),measurement=exerciseMeasurementType(id,history.at(-1)||null);
+   const bestMetric=measurement==='reps'?0:Math.max(0,...rows.map(x=>exerciseMetricValue(x.set,measurement)));
    const byLoad=[...rows].sort((a,b)=>(Number(b.set.weight)||0)-(Number(a.set.weight)||0)||(Number(b.set.reps)||0)-(Number(a.set.reps)||0))[0];
    const byAssistance=type==='assistance'?[...rows].sort((a,b)=>(Number(a.set.weight)||0)-(Number(b.set.weight)||0)||(Number(b.set.reps)||0)-(Number(a.set.reps)||0))[0]:null;
    const byE1=[...rows].sort((a,b)=>estimated1RM(b.set.weight,b.set.reps)-estimated1RM(a.set.weight,a.set.reps))[0];
    const byReps=[...rows].sort((a,b)=>(Number(b.set.reps)||0)-(Number(a.set.reps)||0))[0];
    const prs=rows.filter(x=>x.set.pr);
    return {
-     id,ex,history,type,
+     id,ex,history,type,measurement,bestMetric,
      bestAssistance:byAssistance?(Number(byAssistance.set.weight)||0):null,
      bestAssistanceReps:byAssistance?(Number(byAssistance.set.reps)||0):0,
      bestWeight:type==='external'?(Number(byLoad?.set.weight)||0):0,
      bestWeightReps:Number(byLoad?.set.reps)||0,
      bestReps:Number(byReps?.set.reps)||0,
-     bestE1:type==='external'&&byE1?estimated1RM(byE1.set.weight,byE1.set.reps):0,
+     bestE1:measurement==='reps'&&type==='external'&&byE1?estimated1RM(byE1.set.weight,byE1.set.reps):0,
      sessions:history.length,
      lastDate:history.at(-1)?.date||'',
      lastPRDate:prs.at(-1)?.date||''
@@ -537,11 +552,14 @@ function lifetimeExerciseRecords(){
  }).filter(Boolean);
 }
 function recordPrimaryText(r){
+ if(r.measurement==='duration')return compactMetricNumber(r.bestMetric)+' sec';
+ if(r.measurement==='distance')return compactMetricNumber(distanceFromMeters(r.bestMetric))+' '+distanceUnitLabel();
  if(r.type==='assistance')return (r.bestAssistance??0)+' '+state.profile.unit+' assist × '+r.bestAssistanceReps;
  if(r.type==='bodyweight')return r.bestReps+' reps';
  return r.bestWeight>0?r.bestWeight+' '+state.profile.unit+' × '+r.bestWeightReps:r.bestReps+' reps';
 }
 function recordSecondaryText(r){
+ if(r.measurement==='duration'||r.measurement==='distance')return r.sessions+' tracked sessions';
  if(r.type==='assistance')return 'Less assistance is harder · '+r.sessions+' sessions';
  if(r.type==='bodyweight')return 'Repetition record · '+r.sessions+' sessions';
  return r.bestE1>0?r.bestE1.toFixed(0)+' '+state.profile.unit+' est. 1RM':r.sessions+' logged sessions';
@@ -665,7 +683,7 @@ function renderRecordsModal(){
  const rows=lifetimeExerciseRecords().filter(r=>!q||(r.ex?.name||'').toLowerCase().includes(q)).sort((a,b)=>(a.ex?.name||'').localeCompare(b.ex?.name||''));
  host.innerHTML=rows.length?rows.map(r=>`<div class="records-row clickable" onclick="openExerciseProgress('${r.id}')">
    <div><div class="exercise-name">${esc(r.ex?.name||'Exercise')}</div><div class="mini">${r.sessions} session${r.sessions===1?'':'s'} · last ${new Date(r.lastDate).toLocaleDateString()}</div></div>
-   <div class="records-value"><b>${esc(recordPrimaryText(r))}</b><span>${r.type==='assistance'?'Least assistance':r.type==='bodyweight'?'Best reps':r.bestWeight>0?'Best load':'Best reps'}</span></div>
+   <div class="records-value"><b>${esc(recordPrimaryText(r))}</b><span>${r.measurement==='duration'?'Best hold':r.measurement==='distance'?'Best distance':r.type==='assistance'?'Least assistance':r.type==='bodyweight'?'Best reps':r.bestWeight>0?'Best load':'Best reps'}</span></div>
    <div class="records-value e1"><b>${r.bestE1>0?r.bestE1.toFixed(0):'—'}</b><span>Est. 1RM</span></div>
  </div>`).join(''):'<div class="empty">No matching records yet.</div>';
 }
