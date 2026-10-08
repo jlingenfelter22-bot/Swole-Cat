@@ -28,6 +28,9 @@ The principles governing the free core, independence, ads, subscriptions, Lifeti
 For the exact current development state and the safest place to resume after lost chat/context, read [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md).
 
 ## Training Science and Guided Progressive Overload
+The [program-based Guided Progressive Overload design proposal](docs/PROGRAM_GUIDED_OVERLOAD_DESIGN_PROPOSAL.md) records pending decisions for new-program training-mode selection, deload cycles, visible phase communication and deload-safe progression analytics. It is a draft specification, not implemented functionality.
+
+
 
 The canonical evidence-backed reference for workout programming, strength and hypertrophy, guided progressive overload, deloading, fatigue interpretation, personalization and training-data quality is [docs/TRAINING_SCIENCE_FOUNDATION.md](docs/TRAINING_SCIENCE_FOUNDATION.md). **Read it before changing workout or progression behavior.** [AGENTS.md](AGENTS.md) provides the same mandatory developer/AI review checklist. Research documentation does not itself modify the running app.
 

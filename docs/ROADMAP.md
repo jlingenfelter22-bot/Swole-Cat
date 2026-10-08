@@ -100,6 +100,9 @@ Goal: expand Swole Cat from a single progressive-overload workflow into a flexib
 - [x] Preserve manual changes as part of workout history
 
 ### Research/spec work before implementation
+**Program-based Guided Progressive Overload design (DRAFT, 2026-10-08):** [PROGRAM_GUIDED_OVERLOAD_DESIGN_PROPOSAL.md](PROGRAM_GUIDED_OVERLOAD_DESIGN_PROPOSAL.md) captures the proposed required training-mode choice, optional deload scheduling, explicit week/rotation semantics, program-phase labeling and analytics isolation. This is a **proposal pending product-owner decisions**, not an approved implementation or new runtime behavior.
+
+
 **Canonical research checkpoint (2026-10-08):** [TRAINING_SCIENCE_FOUNDATION.md](TRAINING_SCIENCE_FOUNDATION.md) is required reading before modifying workout, progression, Coach, strength, fatigue or deload rules. It separates established findings, limited trials, coach consensus and implementation hypotheses. This is a research reference only: no changes to algorithm behavior, mode defaults or approved future feature scope.
 
 The strength and progression systems should be based on established training concepts rather than treating “strength” and “progressive overload” as scientifically unrelated ideas. Product modes are different **workflows and recommendation strategies**, while progressive overload remains a broad training principle.
