@@ -814,7 +814,7 @@ function addRoutineCategoryView(id,cat){
 function appendSelectedRoutineExercises(id){
  const r=state.routines.find(x=>x.id===id); if(!r)return;
  for(const exerciseId of routinePickerSelection){
-   r.exercises.push({exerciseId,sets:state.settings.defaultSets,minReps:state.settings.defaultMin,maxReps:state.settings.defaultMax,increment:state.settings.defaultIncrement,mode:'double',trainingGoal:'general',resetPercent:7.5,restSeconds:120});
+   r.exercises.push({...exerciseDefaultRoutineConfig(exerciseId),trainingGoal:'general',resetPercent:7.5});
  }
  save(); editRoutineDetails(id);
 }
