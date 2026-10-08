@@ -82,7 +82,7 @@ These are **questions to resolve during design**, not newly approved feature req
 
 ## 5. Fatigue, stalls, and deload research: decision boundaries
 
-**Confirmed from research:** Coaches use deloads to reduce training stress; there is no validated universal calendar for everyone, and there are few direct intervention trials. Expert practice often places them every approximately 4–8 weeks, but that is practice, *not* a biological deadline [6]. A full week off and a lower-volume training week are not equivalent [7, 8].
+**Confirmed from research:** Coaches use deloads to reduce training stress; there is no validated universal calendar for everyone, and there are few direct intervention trials. Expert guidance often describes approximately 4–6 weeks [6], while a 2024 convenience survey of 246 competitive strength and physique athletes reported deloads every 5.6 ± 2.3 weeks on average [14]. These are coaching/athlete practices, *not* a biological deadline or evidence that any given interval produces superior gains. A full week off and a lower-volume training week are not equivalent [7, 8].
 
 **Do not turn into an automatic rule:** "Two missed targets = deload," "Week five = deload," "A plateau is overtraining," "RIR fell so CNS is fatigued," "Everybody must reduce weights 50%," or "deloading guarantees more gains."
 
@@ -138,7 +138,9 @@ Primary links below lead to the papers or their PubMed listings, not secondary i
 11. **ACSM (2009), historical progression-model recommendations:** Load increases of ~2–10% in specified conditions; do not apply mechanically. https://pubmed.ncbi.nlm.nih.gov/19204579/
 12. **Schoenfeld et al. (2016), J Strength Cond Res RCT:** "Longer Interset Rest Periods Enhance Muscle Strength and Hypertrophy in Resistance-Trained Men." Small, eight-week comparison of 1- versus 3-minute rest. https://pubmed.ncbi.nlm.nih.gov/26605807/
 13. **Review of resistance-exercise-induced skeletal muscle hypertrophy mechanisms (2022):** External and internal adaptations, not merely soreness or damage. https://pubmed.ncbi.nlm.nih.gov/35389932/
+14. **Bell et al. (2024), Sports Medicine - Open athlete practice survey:** "Deloading Practices in Strength and Physique Sports: A Cross-sectional Survey." Cross-sectional convenience survey of 246 competitive athletes; deload frequency 5.6 ± 2.3 weeks, typical duration 6.4 ± 1.7 days. Descriptive evidence only, not proof of an optimal frequency. https://pubmed.ncbi.nlm.nih.gov/38499934/
 
 ## 9. Change log
 
 - **2026-10-08:** Research library verified and archived; core principles, scientific uncertainty, personalization requirements, data-quality rules, deload boundaries and pre-implementation review gate established. **Documentation only; no runtime/behavior/algorithm changes approved or made.**
+- **2026-10-08 follow-up:** Added the 2024 athlete-practice survey [14]. Program design selected opt-in deloads, with an editable every-fourth-week suggested preset, for Guided Progressive Overload multi-routine programs. This is a product design choice, **not** proof that every person should deload every four weeks. See [PROGRAM_GUIDED_OVERLOAD_DESIGN_PROPOSAL.md](PROGRAM_GUIDED_OVERLOAD_DESIGN_PROPOSAL.md). Documentation only.
