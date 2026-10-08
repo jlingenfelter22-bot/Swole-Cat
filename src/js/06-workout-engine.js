@@ -1,3 +1,64 @@
+/* Small, deterministic exercise intelligence. The catalog defines mechanics, while
+   personal targets and history remain in routine/session data. No network calls. */
+const EXERCISE_FAMILY_PRESETS=Object.freeze({
+ horizontal_press:{general:[6,12],strength:[3,6],hypertrophy:[6,12]},
+ incline_press:{general:[6,12],strength:[4,8],hypertrophy:[6,12]},
+ squat:{general:[6,12],strength:[3,6],hypertrophy:[6,12]},
+ hinge:{general:[6,12],strength:[3,6],hypertrophy:[6,12]},
+ horizontal_pull:{general:[8,12],strength:[5,8],hypertrophy:[8,15]},
+ vertical_pull:{general:[6,12],strength:[4,8],hypertrophy:[6,12]},
+ vertical_press:{general:[6,12],strength:[3,6],hypertrophy:[6,12]},
+ elbow_flexion:{general:[8,15],strength:[6,10],hypertrophy:[10,15]},
+ elbow_extension:{general:[8,15],strength:[6,10],hypertrophy:[10,15]},
+ lateral_raise:{general:[12,20],strength:[8,12],hypertrophy:[12,20]},
+ rear_delt:{general:[12,20],strength:[8,12],hypertrophy:[12,20]},
+ chest_fly:{general:[10,15],strength:[8,12],hypertrophy:[10,20]},
+ calf_raise:{general:[10,20],strength:[8,12],hypertrophy:[10,20]},
+ olympic_pull:{general:[2,5],strength:[2,5],hypertrophy:[3,6]}
+});
+function exerciseMeasurementType(exerciseId,config=null){
+ if(['reps','duration','distance'].includes(config?.measurementType))return config.measurementType;
+ const ex=exById(exerciseId);
+ if(['reps','duration','distance'].includes(ex?.measurementType))return ex.measurementType;
+ if(['carry','sled_push','sled_pull'].includes(ex?.pattern))return 'distance';
+ return 'reps';
+}
+function exerciseMovementProfile(exerciseId,config=null,goal='general'){
+ const ex=exById(exerciseId)||{};
+ const measurement=exerciseMeasurementType(exerciseId,config);
+ const loadType=exerciseLoadType(exerciseId,config);
+ const family=EXERCISE_FAMILY_PRESETS[ex.pattern]||null;
+ const range=family?.[goal]||family?.general||[8,12];
+ const isTimed=measurement==='duration',isDistance=measurement==='distance';
+ return {measurement,loadType,pattern:ex.pattern||'unknown',source:config?.measurementType&&config.measurementType!=='auto'?'routine':ex.measurementType?'library':family?'family':'fallback',
+  min: isTimed?Math.max(1,Number(config?.minDurationSeconds)||20):isDistance?Math.max(1,Number(config?.minDistanceMeters)||10):range[0],
+  max: isTimed?Math.max(1,Number(config?.maxDurationSeconds)||45):isDistance?Math.max(1,Number(config?.maxDistanceMeters)||30):range[1],
+  increment: isTimed?5:isDistance?2.5:1,
+  suggestedReps:range};
+}
+function exerciseDefaultRoutineConfig(exerciseId,settings=state.settings,goal='general'){
+ const profile=exerciseMovementProfile(exerciseId,null,goal);
+ const honorCustomReps=Number(settings?.defaultMin)!==8||Number(settings?.defaultMax)!==12;
+ const repRange=honorCustomReps?[Math.max(1,Number(settings.defaultMin)||8),Math.max(1,Number(settings.defaultMax)||12)]:profile.suggestedReps;
+ return {exerciseId,sets:Math.max(1,Number(settings?.defaultSets)||3),minReps:repRange[0],maxReps:Math.max(repRange[0],repRange[1]),
+   minDurationSeconds:20,maxDurationSeconds:45,minDistanceMeters:10,maxDistanceMeters:30,
+   measurementType:'auto',loadType:'auto',increment:Math.max(0,Number(settings?.defaultIncrement)||5),mode:'double',restSeconds:120};
+}
+function exerciseMetricValue(set,measurement){
+ return measurement==='duration'?Math.max(0,Number(set?.durationSeconds)||0):measurement==='distance'?Math.max(0,Number(set?.distanceMeters)||0):Math.max(0,Number(set?.reps)||0);
+}
+function distanceUnitLabel(){return state.profile.unit==='kg'?'m':'ft'}
+function distanceFromMeters(m){return state.profile.unit==='kg'?Number(m)||0:(Number(m)||0)*3.280839895}
+function distanceToMeters(display){return state.profile.unit==='kg'?Number(display)||0:(Number(display)||0)/3.280839895}
+function compactMetricNumber(n){return (Math.round(Number(n)*10)/10).toString()}
+function setMeasurementText(e,set){
+ const kind=exerciseMeasurementType(e.exerciseId,e.config);
+ if(kind==='duration'&&Number(set.durationSeconds)>0)return compactMetricNumber(set.durationSeconds)+' sec';
+ if(kind==='distance'&&Number(set.distanceMeters)>0)return compactMetricNumber(distanceFromMeters(set.distanceMeters))+' '+distanceUnitLabel();
+ if(kind!=='reps'&&Number(set.reps)>0)return set.reps+' legacy reps';
+ return String(Number(set.reps)||0)+' reps';
+}
+
 // Loading semantics are intentionally separate from numeric weights:
 // an assistance value decreases as performance improves, while an unweighted
 // bodyweight exercise records reps without treating body mass as external load.
