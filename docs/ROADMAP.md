@@ -100,6 +100,8 @@ Goal: expand Swole Cat from a single progressive-overload workflow into a flexib
 - [x] Preserve manual changes as part of workout history
 
 ### Research/spec work before implementation
+**Canonical research checkpoint (2026-10-08):** [TRAINING_SCIENCE_FOUNDATION.md](TRAINING_SCIENCE_FOUNDATION.md) is required reading before modifying workout, progression, Coach, strength, fatigue or deload rules. It separates established findings, limited trials, coach consensus and implementation hypotheses. This is a research reference only: no changes to algorithm behavior, mode defaults or approved future feature scope.
+
 The strength and progression systems should be based on established training concepts rather than treating “strength” and “progressive overload” as scientifically unrelated ideas. Product modes are different **workflows and recommendation strategies**, while progressive overload remains a broad training principle.
 
 Areas to evaluate:

@@ -6,6 +6,8 @@ This is the **resume-first checkpoint** for Swole Cat.
 
 If chat history, assistant context, or a development session is lost, read this file before making changes. It records the current working baseline, branch contract, cloud state, tested account behavior, and the next unfinished work.
 
+**Training research archive added 2026-10-08:** Before planning or changing workout/strength/progression/deload logic, read [TRAINING_SCIENCE_FOUNDATION.md](TRAINING_SCIENCE_FOUNDATION.md), then [COACH_SWOLECAT_EVIDENCE.md](COACH_SWOLECAT_EVIDENCE.md) and [../AGENTS.md](../AGENTS.md). This is a documentation-only foundation, not a new runtime training algorithm or updated Android build. Note: this file's older release snapshot must be reconciled with current Git refs/releases before acting.
+
 Checkpoint date: **2026-10-06 (America/Chicago)**
 
 ## 1. Branches and safe development model
