@@ -200,7 +200,9 @@ function muscleHeatMapHtml(session){
  <div class="muscle-map-note">Based on completed working sets. Primary muscles contribute more than secondary muscles. This map shows relative training involvement only — not soreness, recovery, muscle damage, or measured activation.</div>`;
 }
 function sessionVolume(s){
- return s.exercises.reduce((sum,e)=>sum+completedSets(e).reduce((a,x)=>a+(Number(x.weight)||0)*(Number(x.reps)||0),0),0);
+ // Assistance numbers are counterweights, not external resistance volume.
+ return s.exercises.reduce((sum,e)=>sum+(exerciseLoadType(e.exerciseId,e.config)==='external'
+   ?completedSets(e).reduce((a,x)=>a+(Number(x.weight)||0)*(Number(x.reps)||0),0):0),0);
 }
 function sessionSetCount(s){return s.exercises.reduce((n,e)=>n+progressionSets(e).length,0)}
 function sessionAllSetCount(s){return s.exercises.reduce((n,e)=>n+completedSets(e).length,0)}
@@ -258,13 +260,27 @@ function sessionProgressHighlights(s,priorSessions=state.sessions){
    if(!prior)return;
    const previous=progressionSets(prior);
    if(!previous.length)return;
-   const ex=exById(e.exerciseId),name=ex?.name||'Exercise';
+   const ex=exById(e.exerciseId),name=ex?.name||'Exercise',type=exerciseLoadType(e.exerciseId,e.config);
    const currentMax=Math.max(...current.map(set=>Number(set.weight)||0));
    const previousMax=Math.max(...previous.map(set=>Number(set.weight)||0));
    const currentReps=current.reduce((n,set)=>n+(Number(set.reps)||0),0);
    const previousReps=previous.reduce((n,set)=>n+(Number(set.reps)||0),0);
    const currentVolume=current.reduce((n,set)=>n+(Number(set.weight)||0)*(Number(set.reps)||0),0);
    const previousVolume=previous.reduce((n,set)=>n+(Number(set.weight)||0)*(Number(set.reps)||0),0);
+   if(type==='assistance'){
+     const currentMin=Math.min(...current.map(set=>Number(set.weight)||0));
+     const previousMin=Math.min(...previous.map(set=>Number(set.weight)||0));
+     if(currentMin<previousMin&&currentReps>=previousReps){
+       highlights.push({name,text:'Reduced assistance from '+previousMin+' to '+currentMin+' '+state.profile.unit+' while maintaining or increasing reps.'});
+     }else if(currentMin===previousMin&&currentReps>previousReps){
+       highlights.push({name,text:'Completed '+(currentReps-previousReps)+' more reps at '+currentMin+' '+state.profile.unit+' assistance.'});
+     }
+     return;
+   }
+   if(type==='bodyweight'){
+     if(currentReps>previousReps)highlights.push({name,text:'Completed '+(currentReps-previousReps)+' more bodyweight reps.'});
+     return;
+   }
    if(currentMax>previousMax){
      highlights.push({name,text:`Top working weight increased from ${previousMax} to ${currentMax} ${state.profile.unit}.`});
    }else if(currentMax===previousMax&&currentReps>previousReps){
@@ -410,16 +426,19 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
 function exerciseHistory(exerciseId){return derivedSessionData().historyByExercise.get(exerciseId)||[];}
 function exerciseMetrics(exerciseId){
  const h=exerciseHistory(exerciseId).filter(row=>row.programPhase!=='deload'),sets=h.flatMap(x=>x.sets);
- const bestWeight=sets.length?Math.max(...sets.map(x=>Number(x.weight)||0)):0;
- const bestE1=sets.length?Math.max(...sets.map(x=>estimated1RM(x.weight,x.reps))):0;
- const bestVolume=h.length?Math.max(...h.map(x=>x.sets.reduce((a,s)=>a+(Number(s.weight)||0)*(Number(s.reps)||0),0))):0;
+ const type=exerciseLoadType(exerciseId,h.at(-1)||null);
+ const bestWeight=type==='external'&&sets.length?Math.max(...sets.map(x=>Number(x.weight)||0)):0;
+ const bestAssistance=type==='assistance'&&sets.length?Math.min(...sets.map(x=>Math.max(0,Number(x.weight)||0))):null;
+ const bestReps=sets.length?Math.max(...sets.map(x=>Number(x.reps)||0)):0;
+ const bestE1=type==='external'&&sets.length?Math.max(...sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ const bestVolume=type==='external'&&h.length?Math.max(...h.map(x=>x.sets.reduce((a,s)=>a+(Number(s.weight)||0)*(Number(s.reps)||0),0))):0;
  const latest=h.at(-1),prior=h.at(-2);
- const latestE1=latest?Math.max(...latest.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
- const priorE1=prior?Math.max(...prior.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ const latestE1=type==='external'&&latest?Math.max(...latest.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ const priorE1=type==='external'&&prior?Math.max(...prior.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
  let trend='flat';
- if(priorE1 && latestE1>priorE1*1.01)trend='up';
- else if(priorE1 && latestE1<priorE1*.99)trend='down';
- return {history:h,sets,bestWeight,bestE1,bestVolume,latestE1,priorE1,trend};
+ if(priorE1&&latestE1>priorE1*1.01)trend='up';
+ else if(priorE1&&latestE1<priorE1*.99)trend='down';
+ return {history:h,sets,type,bestWeight,bestAssistance,bestReps,bestE1,bestVolume,latestE1,priorE1,trend};
 }
 function lastEightWeeks(){
  const now=startOfWeek(),rows=[];
@@ -497,16 +516,20 @@ function lifetimeExerciseRecords(){
    const rows=[];
    history.forEach(h=>h.sets.forEach(set=>rows.push({set,date:h.date,routineName:h.routineName})));
    if(!rows.length)return null;
+   const type=exerciseLoadType(id,history.at(-1)||null);
    const byLoad=[...rows].sort((a,b)=>(Number(b.set.weight)||0)-(Number(a.set.weight)||0)||(Number(b.set.reps)||0)-(Number(a.set.reps)||0))[0];
+   const byAssistance=type==='assistance'?[...rows].sort((a,b)=>(Number(a.set.weight)||0)-(Number(b.set.weight)||0)||(Number(b.set.reps)||0)-(Number(a.set.reps)||0))[0]:null;
    const byE1=[...rows].sort((a,b)=>estimated1RM(b.set.weight,b.set.reps)-estimated1RM(a.set.weight,a.set.reps))[0];
    const byReps=[...rows].sort((a,b)=>(Number(b.set.reps)||0)-(Number(a.set.reps)||0))[0];
    const prs=rows.filter(x=>x.set.pr);
    return {
-     id,ex,history,
-     bestWeight:Number(byLoad?.set.weight)||0,
+     id,ex,history,type,
+     bestAssistance:byAssistance?(Number(byAssistance.set.weight)||0):null,
+     bestAssistanceReps:byAssistance?(Number(byAssistance.set.reps)||0):0,
+     bestWeight:type==='external'?(Number(byLoad?.set.weight)||0):0,
      bestWeightReps:Number(byLoad?.set.reps)||0,
      bestReps:Number(byReps?.set.reps)||0,
-     bestE1:byE1?estimated1RM(byE1.set.weight,byE1.set.reps):0,
+     bestE1:type==='external'&&byE1?estimated1RM(byE1.set.weight,byE1.set.reps):0,
      sessions:history.length,
      lastDate:history.at(-1)?.date||'',
      lastPRDate:prs.at(-1)?.date||''
@@ -514,10 +537,14 @@ function lifetimeExerciseRecords(){
  }).filter(Boolean);
 }
 function recordPrimaryText(r){
- return r.bestWeight>0?`${r.bestWeight} ${state.profile.unit} × ${r.bestWeightReps}`:`${r.bestReps} reps`;
+ if(r.type==='assistance')return (r.bestAssistance??0)+' '+state.profile.unit+' assist × '+r.bestAssistanceReps;
+ if(r.type==='bodyweight')return r.bestReps+' reps';
+ return r.bestWeight>0?r.bestWeight+' '+state.profile.unit+' × '+r.bestWeightReps:r.bestReps+' reps';
 }
 function recordSecondaryText(r){
- return r.bestE1>0?`${r.bestE1.toFixed(0)} ${state.profile.unit} est. 1RM`:`${r.sessions} logged session${r.sessions===1?'':'s'}`;
+ if(r.type==='assistance')return 'Less assistance is harder · '+r.sessions+' sessions';
+ if(r.type==='bodyweight')return 'Repetition record · '+r.sessions+' sessions';
+ return r.bestE1>0?r.bestE1.toFixed(0)+' '+state.profile.unit+' est. 1RM':r.sessions+' logged sessions';
 }
 function recentPREvents(limit=8){
  const events=[];
@@ -638,7 +665,7 @@ function renderRecordsModal(){
  const rows=lifetimeExerciseRecords().filter(r=>!q||(r.ex?.name||'').toLowerCase().includes(q)).sort((a,b)=>(a.ex?.name||'').localeCompare(b.ex?.name||''));
  host.innerHTML=rows.length?rows.map(r=>`<div class="records-row clickable" onclick="openExerciseProgress('${r.id}')">
    <div><div class="exercise-name">${esc(r.ex?.name||'Exercise')}</div><div class="mini">${r.sessions} session${r.sessions===1?'':'s'} · last ${new Date(r.lastDate).toLocaleDateString()}</div></div>
-   <div class="records-value"><b>${esc(recordPrimaryText(r))}</b><span>${r.bestWeight>0?'Best load':'Best reps'}</span></div>
+   <div class="records-value"><b>${esc(recordPrimaryText(r))}</b><span>${r.type==='assistance'?'Least assistance':r.type==='bodyweight'?'Best reps':r.bestWeight>0?'Best load':'Best reps'}</span></div>
    <div class="records-value e1"><b>${r.bestE1>0?r.bestE1.toFixed(0):'—'}</b><span>Est. 1RM</span></div>
  </div>`).join(''):'<div class="empty">No matching records yet.</div>';
 }
@@ -785,11 +812,22 @@ function renderFormGuidePickerResults(exerciseId){
 
 function openExerciseProgress(exerciseId){
  const ex=exById(exerciseId),m=exerciseMetrics(exerciseId),h=m.history,pref=exercisePreference(exerciseId);
- const recent=h.slice(-12);
+ const type=exerciseLoadType(exerciseId,h.at(-1)||null),recent=h.slice(-12);
  const e1s=recent.map(x=>Math.max(...x.sets.map(s=>estimated1RM(s.weight,s.reps))));
+ const bestReps=recent.map(x=>Math.max(...x.sets.map(s=>Number(s.reps)||0)));
+ const firstAssistance=recent.length?Math.min(...recent[0].sets.map(s=>Number(s.weight)||0)):0;
+ const assistanceReductions=recent.map(x=>firstAssistance-Math.min(...x.sets.map(s=>Number(s.weight)||0)));
  const trend=m.trend==='up'?'<span class="trend-up">↑ Trending up</span>':m.trend==='down'?'<span class="trend-down">↓ Recent dip</span>':'<span class="trend-flat">→ Holding steady</span>';
  const progressHtml=!h.length
   ?'<div class="empty"><strong>No workout history yet</strong>Log this exercise in a workout and its progress will appear here.</div>'
+  :type==='assistance'?`<div class="notice">Assistance is a counterweight. <b>Less assistance means a harder movement.</b> Estimated 1RM and conventional external-load volume are not applicable.</div>
+    <div class="metric-row"><div class="metric-mini"><b>${m.bestAssistance??0} ${state.profile.unit}</b><span>Least assistance</span></div><div class="metric-mini"><b>${m.bestReps}</b><span>Most reps</span></div><div class="metric-mini"><b>${h.length}</b><span>Sessions</span></div></div>
+    <div class="chart-card"><div class="row"><b>Reduction in assistance</b><span class="mini">Last ${recent.length}</span></div>${svgLine(assistanceReductions)}</div>
+    <div class="picker-section">Recent sessions</div><div class="card">${h.slice().reverse().slice(0,8).map(x=>`<div class="list-item"><div class="grow"><b>${new Date(x.date).toLocaleDateString()}</b><div class="mini">${x.sets.map(s=>`${s.weight} ${state.profile.unit} assist × ${s.reps}`).join(' · ')}</div></div></div>`).join('')}</div>`
+  :type==='bodyweight'?`<div class="notice">Repetitions track progress in this unweighted movement. To add external resistance, use a weighted variant or configure a different load type in the routine.</div>
+    <div class="metric-row"><div class="metric-mini"><b>${m.bestReps}</b><span>Best reps</span></div><div class="metric-mini"><b>${h.length}</b><span>Sessions</span></div></div>
+    <div class="chart-card"><div class="row"><b>Best reps per session</b><span class="mini">Last ${recent.length}</span></div>${svgLine(bestReps)}</div>
+    <div class="picker-section">Recent sessions</div><div class="card">${h.slice().reverse().slice(0,8).map(x=>`<div class="list-item"><b>${new Date(x.date).toLocaleDateString()}</b><span class="mini">${x.sets.map(s=>s.reps+' reps').join(' · ')}</span></div>`).join('')}</div>`
   :`<div style="margin-top:8px;font-weight:850">${trend}</div>
    <div class="metric-row">
      <div class="metric-mini"><b>${m.bestWeight} ${state.profile.unit}</b><span>Best load</span></div>
