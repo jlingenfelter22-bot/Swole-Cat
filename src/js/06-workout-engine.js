@@ -491,7 +491,7 @@ function targetBadgeText(target,ex,config=null){
 function changeSetValue(ei,si,key,delta){
  const edit=workoutSetEditTarget(ei,si),set=edit?edit.draft:state.activeWorkout?.exercises?.[ei]?.sets?.[si];if(!set)return;
  let v=Number(set[key])||0;
- v=Math.max(0,roundLoad(v+(key==='distanceMeters'?distanceToMeters(delta):delta)));
+ v=Math.max(0,key==='distanceMeters'?Math.round((v+distanceToMeters(delta))*1000)/1000:key==='durationSeconds'?Math.round(v+delta):roundLoad(v+delta));
  set[key]=key==='reps'?Math.round(v):v;
  if(key!=='rir')set.pr='';
  const card=document.querySelector(`#workoutExercise-${ei} .set-card[data-set-index="${si}"]`);
