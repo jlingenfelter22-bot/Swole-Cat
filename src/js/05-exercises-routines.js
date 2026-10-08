@@ -506,10 +506,7 @@ function saveRoutine(id,editing){
  const ids=[...routinePickerSelection];
  let old=state.routines.find(x=>x.id===id);
  const oldMap=new Map((old?.exercises||[]).map(x=>[x.exerciseId,x]));
- const exercises=ids.map(exerciseId=>oldMap.get(exerciseId)||{
-   exerciseId,sets:state.settings.defaultSets,minReps:state.settings.defaultMin,maxReps:state.settings.defaultMax,
-   increment:state.settings.defaultIncrement,mode:'double',restSeconds:120
- });
+ const exercises=ids.map(exerciseId=>oldMap.get(exerciseId)||exerciseDefaultRoutineConfig(exerciseId));
  const obj={...(old||{}),id,name,trainingMode:normalizeTrainingMode(old?.trainingMode),description:old?.description||'',exercises};
  if(editing) state.routines=state.routines.map(x=>x.id===id?obj:x); else state.routines.push(obj);
  save();closeModal();renderRoutines();renderHome();
@@ -587,7 +584,7 @@ function routineEditorHtml(r){
         <div class="mini">${esc(ex?.muscle||'')} · ${esc(patternLabel(ex?.pattern||''))} · ${esc(ex?.equipment||'')}</div>
         <div class="editor-summary">
           <span class="tag">${re.sets} sets</span>
-          <span class="tag">${re.minReps}-${re.maxReps} reps</span>
+          <span class="tag">${exerciseMeasurementType(re.exerciseId,re)==='duration'?(Number(re.minDurationSeconds)||20)+'-'+(Number(re.maxDurationSeconds)||45)+' sec':exerciseMeasurementType(re.exerciseId,re)==='distance'?compactMetricNumber(distanceFromMeters(Number(re.minDistanceMeters)||10))+'-'+compactMetricNumber(distanceFromMeters(Number(re.maxDistanceMeters)||30))+' '+distanceUnitLabel():re.minReps+'-'+re.maxReps+' reps'}</span>
           <span class="tag">${exerciseLoadType(re.exerciseId,re)==='bodyweight'?'Reps only':(exerciseLoadType(re.exerciseId,re)==='assistance'?'−':'+' )+re.increment+' '+state.profile.unit}</span>
           <span class="tag">${re.setStructure?.type==='top_backoff'?`Top + ${re.setStructure.backoffSets||0} backoff @ ${re.setStructure.backoffPercent||90}%`:(re.mode==='range'||re.mode==='double')?'Double progression · +1/set':re.mode==='total'?'Beat total reps':'Manual'}</span>
           <span class="tag">${goalLabel(re.trainingGoal||'general')}</span>
@@ -630,6 +627,7 @@ function removeRoutineExercise(id,index){
 function editRoutineExerciseSettings(id,index){
  const r=state.routines.find(x=>x.id===id),re=r?.exercises[index]; if(!re)return;
  const ex=exById(re.exerciseId),topBackoff=re.setStructure?.type==='top_backoff',structure=re.setStructure||{};
+ const measurement=exerciseMeasurementType(re.exerciseId,re);
  const structureFields=topBackoff?`
  <div class="notice">This exercise uses real top-set + backoff progression. Edit the two roles separately so saved set counts and live targets stay aligned.</div>
  <div class="form-grid three">
@@ -656,7 +654,22 @@ function editRoutineExerciseSettings(id,index){
  </select></div>`;
  openModal(`${esc(ex?.name||'Exercise')} progression`,`
  ${structureFields}
- <div class="field"><label>How does load work?</label><select id="reLoadType">
+ <div class="field"><label>What does this exercise track?</label><select id="reMeasurement" onchange="changeRoutineMeasurementFields(this.value)">
+    <option value="auto" ${!re.measurementType||re.measurementType==='auto'?'selected':''}>Automatic · ${measurement==='duration'?'Hold time':measurement==='distance'?'Distance':'Repetitions'}</option>
+    <option value="reps" ${re.measurementType==='reps'?'selected':''}>Repetitions</option>
+    <option value="duration" ${re.measurementType==='duration'?'selected':''}>Hold time (seconds)</option>
+    <option value="distance" ${re.measurementType==='distance'?'selected':''}>Distance (${distanceUnitLabel()})</option>
+  </select>
+  <div class="native-note">Recommended by this movement's profile. You can change how custom or unusual equipment is measured.</div></div>
+  <div id="reTimedFields" style="display:${measurement==='duration'?'block':'none'}"><div class="form-grid">
+    <div><label>Min hold (seconds)</label><input id="reMinDuration" type="number" min="1" step="1" value="${Number(re.minDurationSeconds)||20}"></div>
+    <div><label>Max hold (seconds)</label><input id="reMaxDuration" type="number" min="1" step="1" value="${Number(re.maxDurationSeconds)||45}"></div>
+  </div></div>
+  <div id="reDistanceFields" style="display:${measurement==='distance'?'block':'none'}"><div class="form-grid">
+    <div><label>Min distance (${distanceUnitLabel()})</label><input id="reMinDistance" type="number" min="1" step=".1" value="${compactMetricNumber(distanceFromMeters(Number(re.minDistanceMeters)||10))}"></div>
+    <div><label>Max distance (${distanceUnitLabel()})</label><input id="reMaxDistance" type="number" min="1" step=".1" value="${compactMetricNumber(distanceFromMeters(Number(re.maxDistanceMeters)||30))}"></div>
+  </div></div>
+  <div class="field"><label>How does load work?</label><select id="reLoadType">
    <option value="auto" ${!re.loadType||re.loadType==='auto'?'selected':''}>Automatic · ${esc(exerciseLoadLabel(exerciseLoadType(re.exerciseId,re)))}</option>
    <option value="external" ${re.loadType==='external'?'selected':''}>Added resistance (more weight is harder)</option>
    <option value="assistance" ${re.loadType==='assistance'?'selected':''}>Assistance (less weight is harder)</option>
@@ -678,6 +691,14 @@ function editRoutineExerciseSettings(id,index){
  <div class="field"><label>Rest seconds</label><input type="number" id="reRest" value="${re.restSeconds||120}"></div>
  <div class="notice">Goal changes how Coach interprets effort and stalls. It does not silently invent working weights.</div>
  <div class="actions"><button class="btn" onclick="saveRoutineExerciseSettings('${id}',${index})">Save</button><button class="btn secondary" onclick="editRoutineDetails('${id}')">Back</button></div>`);
+}
+function changeRoutineMeasurementFields(value){
+ const selected=value==='auto'?exerciseMeasurementType(document.querySelector('#reMeasurement')?.closest('.modal')?.dataset?.exerciseId):value;
+ const inferred=value==='auto'?document.getElementById('reMeasurement')?.options?.[0]?.textContent||'':null;
+ const mode=value==='auto'?(inferred?.includes('Hold time')?'duration':inferred?.includes('Distance')?'distance':'reps'):selected;
+ const timed=document.getElementById('reTimedFields'),distance=document.getElementById('reDistanceFields');
+ if(timed)timed.style.display=mode==='duration'?'block':'none';
+ if(distance)distance.style.display=mode==='distance'?'block':'none';
 }
 function saveRoutineExerciseSettings(id,index){
  const r=state.routines.find(x=>x.id===id),re=r?.exercises[index]; if(!re)return;
@@ -702,6 +723,14 @@ function saveRoutineExerciseSettings(id,index){
    re.maxReps=Math.max(re.minReps,+document.getElementById('reMax').value||12);
    re.mode=document.getElementById('reMode').value;
  }
+ re.measurementType=['reps','duration','distance'].includes(document.getElementById('reMeasurement')?.value)?document.getElementById('reMeasurement').value:'auto';
+ const minDuration=Math.max(1,Math.round(Number(document.getElementById('reMinDuration')?.value)||20));
+ const maxDuration=Math.max(minDuration,Math.round(Number(document.getElementById('reMaxDuration')?.value)||45));
+ re.minDurationSeconds=minDuration;re.maxDurationSeconds=maxDuration;
+ const minDistance=Math.max(.25,distanceToMeters(Number(document.getElementById('reMinDistance')?.value)||distanceFromMeters(10)));
+ const maxDistance=Math.max(minDistance,distanceToMeters(Number(document.getElementById('reMaxDistance')?.value)||distanceFromMeters(30)));
+ re.minDistanceMeters=minDistance;re.maxDistanceMeters=maxDistance;
+ if(exerciseMeasurementType(re.exerciseId,re)!=='reps'){re.setStructure=null;re.progressionStrategy='double';}
  re.loadType=['external','assistance','bodyweight'].includes(document.getElementById('reLoadType')?.value)?document.getElementById('reLoadType').value:'auto';
  re.increment=Math.max(0,+document.getElementById('reInc').value||0);
  re.trainingGoal=document.getElementById('reGoal').value;
