@@ -564,6 +564,7 @@ jobs:
 
             // Custom program builder should allow a user-defined A/B rotation and preserve its order.
             w.newProgram();
+            w.changeProgramTrainingMode('inherit'); // New programs require an explicit mode choice.
             w.document.getElementById('programName').value='Custom AB';
             w.document.getElementById('programFrequency').value='2';
             w.addProgramRoutine(a);
