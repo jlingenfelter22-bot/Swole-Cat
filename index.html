@@ -49,11 +49,11 @@
     </div>
     <div id="routinePageSections">
       <div id="workoutRoutinesSection" class="routine-page-section">
-        <div class="section-title"><h2>Workout routines</h2><div class="section-title-actions"><button class="btn small secondary" onclick="openShareImport()">Import</button><button class="btn small" onclick="newRoutine()">+ Create</button></div></div>
+        <div class="section-title routine-compact-head"><h2>Workout routines</h2><div class="section-title-actions"><button class="btn small secondary" onclick="openShareImport()">Import</button><button class="btn small" onclick="newRoutine()">+ Create</button></div></div>
         <div id="routineList" class="grid"></div>
       </div>
       <div id="programsSection" class="routine-page-section" hidden>
-        <div class="section-title"><h2>Programs</h2><button class="btn small" onclick="newProgram()">+ Program</button></div>
+        <div class="section-title routine-compact-head"><h2>Programs</h2><div class="section-title-actions"><button class="btn small secondary" onclick="openShareImport()">Import</button><button class="btn small" onclick="newProgram()">+ Create</button></div></div>
         <div id="programList" class="grid"></div>
       </div>
     </div>
@@ -66,17 +66,21 @@
     </div>
     <div class="section-title"><h2>Exercise library</h2><button class="btn small" onclick="newExercise()">+ Custom</button></div>
     <input id="exerciseSearch" class="search" placeholder="Search bench, row, squat..." oninput="scheduleExerciseRender()">
-    <div class="picker-chips" style="margin-bottom:10px">
-      <button id="exerciseFilterAll" class="chip active" data-history-filter="all" onclick="setExerciseHistoryFilter('all')">All</button>
-      <button id="exerciseFilterDone" class="chip" data-history-filter="done" onclick="setExerciseHistoryFilter('done')">✓ Done Before</button>
-      <button id="exerciseFilterNew" class="chip" data-history-filter="new" onclick="setExerciseHistoryFilter('new')">Not Yet Logged</button>
-      <button id="exerciseFilterFav" class="chip" data-history-filter="favorite" onclick="setExerciseHistoryFilter('favorite')">★ Favorites</button>
-      <button id="exerciseFilterPrefer" class="chip" data-history-filter="prefer" onclick="setExerciseHistoryFilter('prefer')">Prefer</button>
-      <button id="exerciseFilterHidden" class="chip" data-history-filter="hidden" onclick="setExerciseHistoryFilter('hidden')">Hidden</button>
-    </div>
-    <div class="form-grid" style="margin-bottom:12px">
-      <select id="muscleFilter" onchange="renderExercises()"><option value="">All muscle groups</option></select>
-      <select id="equipmentFilter" onchange="renderExercises()"><option value="">All equipment</option></select>
+    <div class="exercise-filter-controls" aria-label="Exercise filters">
+      <div class="exercise-status-field">
+        <select id="exerciseHistoryFilterSelect" aria-label="Exercise status" onchange="setExerciseHistoryFilter(this.value)">
+          <option id="exerciseFilterAll" value="all">All</option>
+          <option id="exerciseFilterDone" value="done">Done Before</option>
+          <option id="exerciseFilterNew" value="new">Not Yet Logged</option>
+          <option id="exerciseFilterFav" value="favorite">Favorites</option>
+          <option id="exerciseFilterPrefer" value="prefer">Preferred</option>
+          <option id="exerciseFilterHidden" value="hidden">Hidden</option>
+        </select>
+      </div>
+      <div class="exercise-attribute-fields">
+        <select id="muscleFilter" aria-label="Muscle group" onchange="renderExercises()"><option value="">All muscle groups</option></select>
+        <select id="equipmentFilter" aria-label="Equipment" onchange="renderExercises()"><option value="">All equipment</option></select>
+      </div>
     </div>
     <div id="exerciseList" class="card"></div>
   </section>
