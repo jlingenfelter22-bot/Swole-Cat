@@ -9,6 +9,7 @@ const MUSCLE_REGION_LABELS={
 };
 function uniqueMuscles(list){return [...new Set((list||[]).filter(Boolean))]}
 const EXERCISE_MUSCLE_OVERRIDES={
+ 'Dead Hang':{primary:['forearms'],secondary:['lats','upper_back','traps']},
  'Deadlift':{primary:['quads','glutes','lower_back'],secondary:['hamstrings','upper_back','forearms','core']},
  'Rack Pull':{primary:['glutes','lower_back','upper_back'],secondary:['hamstrings','traps','forearms','core']},
  'Block Pull':{primary:['glutes','lower_back','upper_back'],secondary:['hamstrings','traps','forearms','core']},
