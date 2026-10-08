@@ -162,6 +162,9 @@ jobs:
       - name: Stress test v0.78.0 Routines hierarchy refinement
         run: node scripts/routines-hierarchy-stress.mjs
 
+      - name: Stress test v0.79.0 Progress hierarchy refinement
+        run: node scripts/progress-hierarchy-stress.mjs
+
       - name: Stress test v0.67.0 cloud shell boundaries
         run: node scripts/cloud-shell-stress.mjs
 
