@@ -12,7 +12,7 @@
 
 **Respect user autonomy.** Profiles propose defaults. The user's explicit sets, rep range, progression method, equipment configuration, load step and target always prevail within sensible validation constraints. Track Only continues to offer no automatic prescription. Do not rewrite historical records when exercise defaults change.
 
-**v0.83.0 baseline:** Built-in library has **307** exercises with existing `id`, `name`, `muscle`, `equipment` and `pattern` fields. Several well-known assisted/bodyweight/weighted variants now contain explicit `loadType` metadata, and the runtime already supports an exercise-level `loadType` override, load-aware PRs, and exercise-specific UI. **This is the foundation, not 307 fully audited prescription profiles.** Verify the actual current library at implementation time.
+**v0.83.0 baseline and v0.84.0 expansion:** The original 307-exercise library became **308** with Dead Hang. Each built-in resolves through a shared `exerciseMovementProfile` and measurement type (`reps`, `duration`, or `distance`); assisted/bodyweight/weighted load semantics from v0.83 remain. These are family-based suggested defaults, **not 308 individually proven optimal exercise prescriptions**. A broader equipment/family audit and device performance measurements remain future work.
 
 ## 2. Evidence limits that define intelligent behavior
 
