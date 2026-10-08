@@ -815,14 +815,36 @@ function openExerciseProgress(exerciseId){
  `);
  loadExerciseFormGuide(exerciseId);
 }
+function progressVolumeTrend30(now=Date.now()){
+ const day=86400000;
+ const current=state.sessions.filter(s=>{const age=now-new Date(s.date).getTime();return age>=0&&age<=30*day});
+ const prior=state.sessions.filter(s=>{const age=now-new Date(s.date).getTime();return age>30*day&&age<=60*day});
+ const currentVolume=current.reduce((n,s)=>n+sessionVolume(s),0);
+ const priorVolume=prior.reduce((n,s)=>n+sessionVolume(s),0);
+ const pct=priorVolume>0?((currentVolume-priorVolume)/priorVolume*100):null;
+ return {currentVolume,priorVolume,pct};
+}
+function openProgressMethodology(topic='overview'){
+ const blocks={
+   workload:`<div class="notice"><b>Muscle workload</b><br><br>Top bars show audited muscle set-equivalents this week. Bottom bars show the average per week across the previous four full weeks. A completed working set contributes 1.0 to primary muscles and 0.5 to secondary muscles. This is training-volume context, not a recovery or soreness score.</div>`,
+   strength:`<div class="notice"><b>Strength changes</b><br><br>Recent strength uses estimated 1RM from your latest logged exposure versus the previous one for the same exercise. Small changes can reflect reps, load, fatigue, or logging differences, so Swole Cat treats this as a trend rather than a diagnosis.</div>`,
+   coverage:`<div class="notice"><b>Muscle coverage</b><br><br>Coverage is derived from completed working sets and the app's audited primary/secondary muscle map. It shows what your training has involved, not measured muscle activation, soreness, recovery, or growth.</div>`,
+   overview:`<div class="notice"><b>Progress analytics</b><br><br>Swole Cat summarizes your completed local workout history. PRs, volume, consistency, estimated strength, muscle coverage, and workload are signals to help you understand training patterns. No single metric is intended to be maximized in isolation.</div>`
+ };
+ openModal('How Progress Works',blocks[topic]||blocks.overview);
+}
 function renderAnalytics(){
  const host=document.getElementById('analyticsArea');if(!host)return;
  const now=Date.now(),last30=state.sessions.filter(s=>now-new Date(s.date).getTime()<=30*86400000);
  const weekStart=startOfWeek(),thisWeek=state.sessions.filter(s=>new Date(s.date)>=weekStart);
  const prs30=last30.reduce((a,s)=>a+sessionPRCount(s),0);
- const sets30=last30.reduce((a,s)=>a+sessionSetCount(s),0);
  const trainingDays30=new Set(last30.map(s=>localDateKey(s.date))).size;
  const weeks=lastEightWeeks(),maxWeek=Math.max(1,...weeks.map(x=>x.workouts));
+ const activeWeeks=weeks.filter(x=>x.workouts>0).length;
+ const avgWorkouts=(weeks.reduce((a,x)=>a+x.workouts,0)/Math.max(1,weeks.length));
+ const volumeTrend=progressVolumeTrend30(now);
+ const volumeTrendText=volumeTrend.pct==null?'—':`${volumeTrend.pct>0?'+':''}${Math.round(volumeTrend.pct)}%`;
+ const volumeTrendClass=volumeTrend.pct==null?'trend-flat':volumeTrend.pct>2?'trend-up':volumeTrend.pct<-2?'trend-down':'trend-flat';
  const workloads=muscleWorkloadComparison(),maxWorkload=Math.max(1,...workloads.flatMap(x=>[x.current,x.average]));
  const coveragePeriods=muscleCoveragePeriods(),frequency=muscleFrequencyWeeks(8);
  const records=lifetimeExerciseRecords();
@@ -837,28 +859,39 @@ function renderAnalytics(){
  }).filter(x=>x.signal.stalled||x.signal.level==='good').slice(0,8);
 
  host.innerHTML=`
- <div class="progress-hero telemetry-hero">
-   <div class="row"><div><div class="eyebrow">LIVE LOCAL TELEMETRY</div><div class="exercise-name" style="font-size:1.15rem;margin-top:4px">Progress at a glance</div><div class="mini" style="margin-top:4px">Calendar, records, workload, consistency, and exercise trends from your completed workouts.</div></div><span class="tag">${state.sessions.length} workout${state.sessions.length===1?'':'s'}</span></div>
+ <div class="progress-hero telemetry-hero progress-snapshot-hero">
+   <div class="progress-snapshot-head">
+     <div>
+       <div class="eyebrow">YOUR TRAINING SIGNAL</div>
+       <div class="exercise-name progress-snapshot-title">Progress at a glance</div>
+       <div class="mini progress-snapshot-copy">Results first. Deeper training analytics are below when you want them.</div>
+     </div>
+     <button class="progress-help-btn" onclick="openProgressMethodology('overview')" aria-label="How Progress works">?</button>
+   </div>
+   <div class="progress-snapshot-grid">
+     <div class="progress-snapshot-metric"><span>THIS WEEK</span><b>${thisWeek.length}</b><small>workout${thisWeek.length===1?'':'s'}</small></div>
+     <div class="progress-snapshot-metric"><span>PRs · 30D</span><b>${prs30}</b><small>exercise PR${prs30===1?'':'s'}</small></div>
+     <div class="progress-snapshot-metric"><span>CONSISTENCY</span><b>${activeWeeks}/8</b><small>active weeks · ${avgWorkouts.toFixed(1)}/wk</small></div>
+     <div class="progress-snapshot-metric"><span>VOLUME · 30D</span><b class="${volumeTrendClass}">${volumeTrendText}</b><small>${volumeTrend.pct==null?'build more history':'vs prior 30 days'}</small></div>
+   </div>
  </div>
 
- <div class="stat-grid">
-   <div class="stat-card"><div class="caption">This week</div><div class="big">${thisWeek.length}</div><div class="mini">workouts</div></div>
-   <div class="stat-card"><div class="caption">Last 30 days</div><div class="big">${trainingDays30}</div><div class="mini">training days</div></div>
-   <div class="stat-card"><div class="caption">Working sets · 30d</div><div class="big">${sets30}</div><div class="mini">completed</div></div>
-   <div class="stat-card"><div class="caption">PRs · 30d</div><div class="big">${prs30}</div><div class="mini">exercises with PRs</div></div>
+ <div class="progress-primary-section">
+   <div class="section-title"><h2>8-week consistency</h2><span class="mini">${weeks.reduce((a,x)=>a+x.workouts,0)} workouts</span></div>
+   <div class="chart-card progress-primary-chart">
+     <div class="weekbars">${weeks.map(w=>`<div class="weekcol"><div class="weekbar" style="height:${Math.max(3,w.workouts/maxWeek*92)}px" title="${w.workouts} workouts · ${w.sets} working sets"></div><div class="weeklabel">${w.label}</div></div>`).join('')}</div>
+   </div>
  </div>
 
- <div class="section-title"><h2>Training calendar</h2><span class="mini">Tap a training day</span></div>
- ${progressCalendarHtml()}
+ <div class="section-title progress-section-title"><h2>Recent strength changes</h2><button class="progress-inline-help" onclick="openProgressMethodology('strength')">How it works</button></div>
+ <div class="chart-card">
+   ${changes.length?`<div class="progress-change-list">${changes.map(x=>`<div class="progress-change clickable" onclick="openExerciseProgress('${x.id}')">
+     <div><div class="exercise-name">${esc(x.ex?.name||'Exercise')}</div><div class="mini">${x.prior.toFixed(0)} → ${x.latest.toFixed(0)} ${state.profile.unit} est. 1RM · ${new Date(x.date).toLocaleDateString()}</div></div>
+     <div class="progress-change-value ${x.delta>0?'trend-up':x.delta<0?'trend-down':'trend-flat'}">${x.delta>0?'+':''}${x.pct.toFixed(1)}%</div>
+   </div>`).join('')}</div>`:'<div class="empty">Log an exercise at least twice to compare recent strength.</div>'}
+ </div>
 
- <div class="section-title"><h2>Lifetime records</h2><button class="btn small secondary" onclick="openAllRecords()">View All</button></div>
- ${recordCards.length?`<div class="record-grid">${recordCards.map(r=>`<div class="record-card" onclick="openExerciseProgress('${r.id}')">
-   <div class="record-name">${esc(r.ex?.name||'Exercise')}</div>
-   <div class="record-big">${esc(recordPrimaryText(r))}</div>
-   <div class="record-meta">${esc(recordSecondaryText(r))}<br>${r.sessions} logged session${r.sessions===1?'':'s'}</div>
- </div>`).join('')}</div>`:'<div class="empty">Complete working sets to build your record book.</div>'}
-
- <div class="section-title"><h2>Recent PRs</h2><span class="mini">Newest first</span></div>
+ <div class="section-title progress-section-title"><h2>Recent PRs</h2><span class="mini">Newest first</span></div>
  <div class="chart-card">
    ${prEvents.length?`<div class="pr-feed">${prEvents.map(p=>`<div class="pr-feed-row clickable" onclick="openExerciseProgress('${p.exerciseId}')">
      <div class="pr-icon" aria-label="Personal record"><span class="pr-glyph">PR</span></div>
@@ -867,16 +900,25 @@ function renderAnalytics(){
    </div>`).join('')}</div>`:'<div class="empty">PRs will show here after an exercise has an established baseline to beat.</div>'}
  </div>
 
- <div class="section-title"><h2>Muscle coverage</h2><span class="mini">Audited primary + secondary involvement</span></div>
+ <div class="progress-secondary-divider"><span>TRAINING DETAIL</span></div>
+
+ <div class="section-title progress-section-title"><h2>Training calendar</h2><span class="mini">Tap a training day</span></div>
+ ${progressCalendarHtml()}
+
+ <div class="section-title progress-section-title"><h2>Lifetime records</h2><button class="btn small secondary" onclick="openAllRecords()">View All</button></div>
+ ${recordCards.length?`<div class="record-grid">${recordCards.map(r=>`<div class="record-card" onclick="openExerciseProgress('${r.id}')">
+   <div class="record-name">${esc(r.ex?.name||'Exercise')}</div>
+   <div class="record-big">${esc(recordPrimaryText(r))}</div>
+   <div class="record-meta">${esc(recordSecondaryText(r))}<br>${r.sessions} logged session${r.sessions===1?'':'s'}</div>
+ </div>`).join('')}</div>`:'<div class="empty">Complete working sets to build your record book.</div>'}
+
+ <div class="section-title progress-section-title"><h2>Muscle coverage</h2><button class="progress-inline-help" onclick="openProgressMethodology('coverage')">How it works</button></div>
  <div class="coverage-period-grid">
    ${coveragePeriodHtml(coveragePeriods.week,'This week')}
    ${coveragePeriodHtml(coveragePeriods.month,'This month to date')}
  </div>
 
- <div class="section-title"><h2>Training frequency</h2><span class="mini">Sessions involving each muscle · last 8 weeks</span></div>
- ${muscleFrequencyHtml(frequency)}
-
- <div class="section-title"><h2>Muscle workload</h2><span class="mini">This week vs prior 4-week average</span></div>
+ <div class="section-title progress-section-title"><h2>Muscle workload</h2><button class="progress-inline-help" onclick="openProgressMethodology('workload')">How it works</button></div>
  <div class="chart-card">
    ${workloads.length?`<div class="workload-grid">${workloads.map(x=>`<div class="workload-row">
      <span>${esc(x.name)}</span>
@@ -885,30 +927,19 @@ function renderAnalytics(){
        <div class="workload-track" title="Prior 4-week average"><div class="workload-average" style="width:${Math.round(x.average/maxWorkload*100)}%"></div></div>
      </div>
      <div class="workload-values"><b>${x.current}</b> now<br>${x.average.toFixed(1)} avg</div>
-   </div>`).join('')}</div><div class="mini" style="margin-top:11px">Top bar = audited muscle set-equivalents this week. Bottom bar = average set-equivalents per week across the previous four full weeks. Primary involvement contributes 1.0 per working set; secondary contributes 0.5.</div>`:'<div class="empty">Complete working sets to populate muscle workload.</div>'}
+   </div>`).join('')}</div>`:'<div class="empty">Complete working sets to populate muscle workload.</div>'}
  </div>
 
- <div class="section-title"><h2>8-week consistency</h2></div>
- <div class="chart-card">
-   <div class="row"><div class="mini">Completed workouts per week</div><span class="tag">${weeks.reduce((a,x)=>a+x.workouts,0)} total</span></div>
-   <div class="weekbars">${weeks.map(w=>`<div class="weekcol"><div class="weekbar" style="height:${Math.max(3,w.workouts/maxWeek*92)}px" title="${w.workouts} workouts · ${w.sets} working sets"></div><div class="weeklabel">${w.label}</div></div>`).join('')}</div>
- </div>
+ <div class="section-title progress-section-title"><h2>Training frequency</h2><span class="mini">Sessions involving each muscle · last 8 weeks</span></div>
+ ${muscleFrequencyHtml(frequency)}
 
- <div class="section-title"><h2>Recent strength changes</h2><span class="mini">Latest session vs previous session</span></div>
- <div class="chart-card">
-   ${changes.length?`<div class="progress-change-list">${changes.map(x=>`<div class="progress-change clickable" onclick="openExerciseProgress('${x.id}')">
-     <div><div class="exercise-name">${esc(x.ex?.name||'Exercise')}</div><div class="mini">${x.prior.toFixed(0)} → ${x.latest.toFixed(0)} ${state.profile.unit} est. 1RM · ${new Date(x.date).toLocaleDateString()}</div></div>
-     <div class="progress-change-value ${x.delta>0?'trend-up':x.delta<0?'trend-down':'trend-flat'}">${x.delta>0?'+':''}${x.pct.toFixed(1)}%</div>
-   </div>`).join('')}</div>`:'<div class="empty">Log an exercise at least twice to compare recent strength.</div>'}
- </div>
-
- <div class="section-title"><h2>Coach insights</h2></div>
+ <div class="section-title progress-section-title"><h2>Coach insights</h2></div>
  <div class="chart-card">${coachInsights.length?`<div class="insight-list">${coachInsights.map(x=>`<div class="coachbox ${x.signal.level==='info'?'':x.signal.level}" style="margin:0"><div class="row"><div><div class="coach-title">${esc(x.ex?.name||'Exercise')}</div><div class="coach-text">${esc(x.signal.text)}</div></div><span class="${x.signal.level==='good'?'trend-up':x.signal.level==='reset'?'trend-down':'trend-flat'}">${x.signal.level==='good'?'↑':x.signal.level==='reset'?'!':'→'}</span></div></div>`).join('')}</div>`:'<div class="empty">No notable progression patterns yet. Keep logging consistent sessions.</div>'}</div>
 
- <div class="section-title"><h2>Recently trained exercises</h2></div>
+ <div class="section-title progress-section-title"><h2>Recently trained exercises</h2></div>
  <div class="grid">${recentExercises.length?recentExercises.map(x=>`<div class="card clickable" onclick="openExerciseProgress('${x.id}')"><div class="row"><div><div class="exercise-name">${esc(x.ex?.name||'Exercise')}</div><div class="mini">${x.history.length} logged sessions · best load ${x.bestWeight} ${state.profile.unit}</div></div><span class="${x.trend==='up'?'trend-up':x.trend==='down'?'trend-down':'trend-flat'}">${x.trend==='up'?'↑':x.trend==='down'?'↓':'→'} ${x.latestE1.toFixed(0)}</span></div></div>`).join(''):'<div class="empty">Once you log repeated exercises, your strength trends will live here.</div>'}</div>
 
- <div class="section-title"><h2>Bodyweight <span class="mini">(optional)</span></h2><button class="btn small secondary" onclick="logBodyweight()">+ Log</button></div>
+ <div class="section-title progress-section-title"><h2>Bodyweight <span class="mini">(optional)</span></h2><button class="btn small secondary" onclick="logBodyweight()">+ Log</button></div>
  <div class="chart-card">${(state.bodyweight||[]).length?`${svgLine(state.bodyweight.slice(-20).map(x=>Number(x.value)))}<div class="row"><span class="mini">Latest</span><b>${state.bodyweight.at(-1).value} ${state.profile.unit}</b></div>`:'<div class="empty">Optional bodyweight tracking lives only on this device.</div>'}</div>`;
 }
 function logBodyweight(){
