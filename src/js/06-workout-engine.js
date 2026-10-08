@@ -38,10 +38,14 @@ function exerciseMovementProfile(exerciseId,config=null,goal='general'){
  const family=EXERCISE_FAMILY_PRESETS[ex.pattern]||null;
  const range=family?.[goal]||family?.general||[8,12];
  const isTimed=measurement==='duration',isDistance=measurement==='distance';
+ // Retain explicit choices; offer natural feet rather than a raw 10m conversion
+ // for legacy automatic carry templates in the imperial UI.
+ const naturalFeet=state.profile.unit!=='kg'&&config?.measurementType!=='distance'&&
+  Number(config?.minDistanceMeters)===10&&Number(config?.maxDistanceMeters)===30;
  return {measurement,loadType,pattern:ex.pattern||'unknown',source:config?.measurementType&&config.measurementType!=='auto'?'routine':ex.measurementType?'library':family?'family':'fallback',
-  min: isTimed?Math.max(1,Number(config?.minDurationSeconds)||20):isDistance?Math.max(1,Number(config?.minDistanceMeters)||10):range[0],
-  max: isTimed?Math.max(1,Number(config?.maxDurationSeconds)||45):isDistance?Math.max(1,Number(config?.maxDistanceMeters)||30):range[1],
-  increment: isTimed?5:isDistance?2.5:1,
+  min: isTimed?Math.max(1,Number(config?.minDurationSeconds)||20):isDistance?naturalFeet?distanceToMeters(30):Math.max(1,Number(config?.minDistanceMeters)||10):range[0],
+  max: isTimed?Math.max(1,Number(config?.maxDurationSeconds)||45):isDistance?naturalFeet?distanceToMeters(100):Math.max(1,Number(config?.maxDistanceMeters)||30):range[1],
+  increment: isTimed?5:isDistance?state.profile.unit==='kg'?2.5:distanceToMeters(5):1,
   suggestedReps:range};
 }
 function exerciseDefaultRoutineConfig(exerciseId,settings=state.settings,goal='general'){
@@ -49,11 +53,37 @@ function exerciseDefaultRoutineConfig(exerciseId,settings=state.settings,goal='g
  const honorCustomReps=Number(settings?.defaultMin)!==8||Number(settings?.defaultMax)!==12;
  const repRange=honorCustomReps?[Math.max(1,Number(settings.defaultMin)||8),Math.max(1,Number(settings.defaultMax)||12)]:profile.suggestedReps;
  return {exerciseId,sets:Math.max(1,Number(settings?.defaultSets)||3),minReps:repRange[0],maxReps:Math.max(repRange[0],repRange[1]),
-   minDurationSeconds:20,maxDurationSeconds:45,minDistanceMeters:10,maxDistanceMeters:30,
-   measurementType:'auto',loadType:'auto',increment:Math.max(0,Number(settings?.defaultIncrement)||5),mode:'double',restSeconds:120};
+   minDurationSeconds:20,maxDurationSeconds:45,minDistanceMeters:state.profile.unit==='kg'?10:distanceToMeters(30),
+   maxDistanceMeters:state.profile.unit==='kg'?30:distanceToMeters(100),
+   measurementType:'auto',loadType:'auto',increment:Math.max(0,Number(settings?.defaultIncrement)||5),mode:'double',
+   restSeconds:profile.measurement==='duration'?75:profile.measurement==='distance'?90:120};
 }
 function exerciseMetricValue(set,measurement){
  return measurement==='duration'?Math.max(0,Number(set?.durationSeconds)||0):measurement==='distance'?Math.max(0,Number(set?.distanceMeters)||0):Math.max(0,Number(set?.reps)||0);
+}
+function actualMetricValue(e,set){
+ const measurement=exerciseMeasurementType(e?.exerciseId,e?.config);
+ if(measurement==='reps')return Number(set?.reps)||0;
+ // A previously seeded but untouched recommendation is not an actual result.
+ if(!set?.done&&set?.metricRecorded!==true)return 0;
+ return exerciseMetricValue(set,measurement);
+}
+function workoutMetricPreviousSet(e,si){
+ if(!e)return null;
+ for(let i=si-1;i>=0;i--){
+  const previous=e.sets[i];
+  if(previous?.done&&isProgressionSet(previous)&&actualMetricValue(e,previous)>0)return previous;
+ }
+ return null;
+}
+function carryLoadLabel(ex){
+ const name=String(ex?.name||'').toLowerCase();
+ if(name.includes('suitcase'))return 'Weight in working hand';
+ if(name.includes('dumbbell')||name.includes('kettlebell'))return 'Weight per hand';
+ if(name.includes('trap bar'))return 'Total carry weight';
+ if(name.includes('plate pinch'))return 'Weight of plate';
+ if(name.includes('sled'))return 'Added sled load';
+ return 'Carried weight';
 }
 function distanceUnitLabel(){return state.profile.unit==='kg'?'m':'ft'}
 function distanceFromMeters(m){return state.profile.unit==='kg'?Number(m)||0:(Number(m)||0)*3.280839895}
@@ -248,16 +278,18 @@ function saveTargetOverride(ei){
  e.sets.forEach(s=>{
   if(s.done||!isProgressionSet(s))return;
   s.weight=target.weight;
-  if(measurement==='duration')s.durationSeconds=target.durationSeconds;
-  else if(measurement==='distance')s.distanceMeters=target.distanceMeters;
-  else s.reps=target.reps;
+  if(measurement==='reps')s.reps=target.reps;
+  // Duration and distance are *actual measurements*. A target must not overwrite them.
  });
  saveActiveWorkout();closeModal();renderWorkout();
 }
 function clearTargetOverride(ei){
  const e=state.activeWorkout.exercises[ei];e.targetOverride=null;
  const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),rec=buildRecommendation(e.config,prev,e.exerciseId);
- let wi=0;e.sets.forEach(s=>{if(!isProgressionSet(s))return;if(!s.done){s.weight=rec.weights?.[wi]??rec.weight??0;s.reps=rec.targetReps?.[wi]??e.config.minReps;}wi++;});
+ let wi=0;e.sets.forEach(s=>{if(!isProgressionSet(s))return;if(!s.done){
+   s.weight=rec.weights?.[wi]??rec.weight??0;
+   if(exerciseMeasurementType(e.exerciseId,e.config)==='reps')s.reps=rec.targetReps?.[wi]??e.config.minReps;
+  }wi++;});
  saveActiveWorkout();closeModal();renderWorkout();
 }
 function applyLightSession(){
@@ -290,8 +322,8 @@ function buildMetricRecommendation(config,prev,exerciseId,measurement){
  const mode=normalizeTrainingMode(config.routineMode);
  if(!done.length){
   return {status:'baseline',weight:0,weights:Array(count).fill(0),targetValues:Array(count).fill(min),
-   headline:measurement==='duration'?'Log your hold time':'Log your distance',
-   detail:'Record actual '+units+' for this movement. This is a starting suggestion, not a mandatory result.'};
+   headline:measurement==='duration'?'First hold · establish a baseline':'First carry · establish a baseline',
+   detail:'Suggested starting target: '+display(min)+' '+units+'. Actual performance stays blank until you log it.'};
  }
  const target=Array.from({length:count},(_,i)=>values[i]??min);
  if(mode==='track'||config.mode==='manual'){
@@ -490,9 +522,12 @@ function targetBadgeText(target,ex,config=null){
 
 function changeSetValue(ei,si,key,delta){
  const edit=workoutSetEditTarget(ei,si),set=edit?edit.draft:state.activeWorkout?.exercises?.[ei]?.sets?.[si];if(!set)return;
- let v=Number(set[key])||0;
+ if((key==='durationSeconds'||key==='distanceMeters')&&workoutHoldClock)stopWorkoutHoldTimer(true);
+ let v=(key==='durationSeconds'||key==='distanceMeters')&&set.metricRecorded!==true&&!set.done?0:Number(set[key])||0;
  v=Math.max(0,key==='distanceMeters'?Math.round((v+distanceToMeters(delta))*1000)/1000:key==='durationSeconds'?Math.round(v+delta):roundLoad(v+delta));
  set[key]=key==='reps'?Math.round(v):v;
+ if(key==='durationSeconds'||key==='distanceMeters')set.metricRecorded=v>0;
+ if(key==='weight')set.weightEntered=true;
  if(key!=='rir')set.pr='';
  const card=document.querySelector(`#workoutExercise-${ei} .set-card[data-set-index="${si}"]`);
  const input=card?.querySelector(`input[aria-label="${key}"]`);
@@ -658,7 +693,8 @@ function addWorkoutSet(ei,type='working'){
  }
  const metricValue=type==='working'?(rec.targetValues?.[existingWorking.length]??rec.targetValues?.at(-1)??profile.min):profile.min;
  const item={weight:roundLoad(weight),reps:measurement==='reps'?Math.max(1,Math.round(reps)):0,
-   durationSeconds:measurement==='duration'?metricValue:0,distanceMeters:measurement==='distance'?metricValue:0,
+   durationSeconds:0,distanceMeters:0,metricRecorded:false,
+   weightEntered:measurement!=='distance'||exerciseLoadType(e.exerciseId,e.config)!=='external'||weight>0,
    done:false,rir:'',type:type,pr:'',
    role:type==='working'&&typeof coachAdaptiveSetRole==='function'?coachAdaptiveSetRole(e.config,existingWorking.length):undefined};
  let at=e.sets.length;
@@ -1065,12 +1101,15 @@ function restoreWorkoutAfterSetEdit(edit){
  w.exercises.forEach((x,i)=>x.expanded=i===returnEi);
 }
 function beginWorkoutSetEdit(ei,si){
+ if(workoutHoldClock)stopWorkoutHoldTimer(true);
  const w=state.activeWorkout,e=w?.exercises?.[ei],set=e?.sets?.[si];if(!w||!e||!set?.done)return false;
  if(workoutSetEditTarget(ei,si))return true;
  const returnEi=normalizeWorkoutFocusState(w),returnSi=Number(w.focusSetIndex)||0;
  workoutSetEditSession={
    ei:Number(ei),si:Number(si),returnEi,returnSi,
-   draft:{weight:Number(set.weight)||0,reps:Number(set.reps)||0,rir:set.rir===''?'':Number(set.rir),type:setType(set),done:true,pr:set.pr||''}
+   draft:{weight:Number(set.weight)||0,reps:Number(set.reps)||0,
+    durationSeconds:Number(set.durationSeconds)||0,distanceMeters:Number(set.distanceMeters)||0,metricRecorded:true,weightEntered:set.weightEntered!==false,
+    rir:set.rir===''?'':Number(set.rir),type:setType(set),done:true,pr:set.pr||''}
  };
  w.focusExerciseIndex=Number(ei);w.focusSetIndex=Number(si);
  w.exercises.forEach((x,i)=>x.expanded=i===Number(ei));
@@ -1083,8 +1122,14 @@ function cancelWorkoutSetEdit(){
 function commitWorkoutSetEdit(){
  const edit=workoutSetEditSession,w=state.activeWorkout,e=w?.exercises?.[edit?.ei],set=e?.sets?.[edit?.si];
  if(!edit||!w||!e||!set){workoutSetEditSession=null;renderWorkout();return}
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config);
+ if(actualMetricValue(e,edit.draft)<=0){showToast('Enter a completed '+(measurement==='duration'?'hold time':measurement==='distance'?'distance':'rep count')+' first');return}
  set.weight=Math.max(0,Number(edit.draft.weight)||0);
+ set.weightEntered=edit.draft.weightEntered!==false;
  set.reps=Math.max(0,Math.round(Number(edit.draft.reps)||0));
+ set.durationSeconds=Math.max(0,Number(edit.draft.durationSeconds)||0);
+ set.distanceMeters=Math.max(0,Number(edit.draft.distanceMeters)||0);
+ set.metricRecorded=true;
  set.rir=edit.draft.rir===''?'':Math.max(0,Number(edit.draft.rir)||0);
  set.done=true;
  set.pr=isProgressionSet(set)?detectPR(e.exerciseId,set):'';
@@ -1393,49 +1438,118 @@ function openFocusedExerciseMore(ei){
 function focusedCoachTargetHtml(e,ei,ex,prev){
  const rec=buildRecommendation(e.config,prev,e.exerciseId),coach=exerciseMeasurementType(e.exerciseId,e.config)==='reps'&&exerciseLoadType(e.exerciseId,e.config)==='external'?coachSignal(e.exerciseId,e.config):null;
  const firstWorking=firstWorkingSetIndex(e),firstTarget=liveSetTarget(e,firstWorking,prev),plateText=plateLoadText(firstTarget.weight,ex),compactTarget=compactTargetText(e,ex,prev);
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config);
  const title=e.targetOverride?targetBadgeText(firstTarget,ex,e.config):rec.headline;
  const detail=e.targetOverride?('Session-only '+(e.targetOverride.reason||'override')+'. Routine progression is unchanged.'):rec.detail;
+ const previousLabel=measurement!=='reps'?(prev&&progressionSets(prev).length?'Last workout: '+setReference(prev,0,e.exerciseId,e.config):'First recorded '+(measurement==='duration'?'hold':'carry')):'';
  return '<details class="workout-guidance focus-guidance" '+(e.targetOverride?'open':'')+'><summary>'+
-  '<div class="workout-guidance-copy"><div class="eyebrow">COACH TARGET</div><div class="workout-guidance-title">'+esc(title)+'</div>'+
-  '<div class="workout-guidance-meta">'+esc((coach&&coach.title)||compactTarget)+' · '+(e.config.restSeconds||120)+'s rest</div></div><span class="workout-guidance-more">Why</span></summary>'+
+  '<div class="workout-guidance-copy"><div class="eyebrow">'+(measurement==='reps'?'COACH TARGET':'TODAY\'S TARGET')+'</div><div class="workout-guidance-title">'+esc(measurement==='reps'?title:compactTarget)+'</div>'+
+  '<div class="workout-guidance-meta">'+esc(measurement==='reps'?((coach&&coach.title)||compactTarget)+' · '+(e.config.restSeconds||120)+'s rest':previousLabel+' · '+(e.config.restSeconds||120)+'s suggested rest')+'</div></div><span class="workout-guidance-more">Why</span></summary>'+
   '<div class="workout-guidance-detail"><div class="mini">'+esc(detail)+'</div>'+
   (coach?'<div class="mini guidance-coach-copy"><b>'+esc(coach.title)+':</b> '+esc(coach.text)+'</div>':'')+
   (plateText?'<div class="plates">🏋 '+esc(plateText)+'</div>':'')+
   (coach&&coach.canReset&&!e.targetOverride?'<div class="actions compact-guidance-action"><button class="btn small secondary" onclick="applyCoachReset('+ei+')">Apply '+coach.resetPercent+'% reset for today</button></div>':'')+
   '</div></details>';
 }
+// The hold stopwatch records an actual duration, never a prescribed target.
+// It is transient, pauses if the app becomes hidden, and never auto-completes a set.
+let workoutHoldClock=null;
+function workoutHoldTimerMatches(ei,si){return !!workoutHoldClock&&workoutHoldClock.ei===ei&&workoutHoldClock.si===si}
+function holdTimerDisplay(ei,si){
+ const elapsed=workoutHoldTimerMatches(ei,si)?Math.max(0,(Date.now()-workoutHoldClock.startedAt)/1000+workoutHoldClock.elapsed):0;
+ const seconds=Math.floor(elapsed);return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+}
+function paintWorkoutHoldTimer(){
+ const el=document.getElementById('workoutHoldTimerReadout');
+ if(el&&workoutHoldClock)el.textContent=holdTimerDisplay(workoutHoldClock.ei,workoutHoldClock.si);
+}
+function stopWorkoutHoldTimer(record=true){
+ const clock=workoutHoldClock;if(!clock)return false;
+ clearInterval(clock.interval);workoutHoldClock=null;
+ const e=state.activeWorkout?.exercises?.[clock.ei],set=e?.sets?.[clock.si];
+ if(record&&set&&!set.done){
+  const actual=Math.max(0,Math.round((clock.elapsed+(Date.now()-clock.startedAt)/1000)*10)/10);
+  if(actual>0){set.durationSeconds=actual;set.metricRecorded=true;set.pr='';saveActiveWorkout()}
+ }
+ paintWorkoutHoldTimer();return true;
+}
+function toggleWorkoutHoldTimer(ei,si){
+ const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];
+ if(!e||!set||set.done||exerciseMeasurementType(e.exerciseId,e.config)!=='duration')return;
+ if(workoutHoldTimerMatches(ei,si)){
+  stopWorkoutHoldTimer(true);renderWorkout();return;
+ }
+ if(workoutHoldClock)stopWorkoutHoldTimer(true);
+ workoutHoldClock={ei,si,startedAt:Date.now(),elapsed:0,interval:setInterval(paintWorkoutHoldTimer,200)};
+ renderWorkout();
+}
+function repeatPreviousWorkoutSet(ei,si){
+ const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];
+ const old=workoutMetricPreviousSet(e,si);if(!set||set.done||!old)return;
+ if(workoutHoldClock)stopWorkoutHoldTimer(true);
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config);
+ set.weight=Number(old.weight)||0;set.weightEntered=old.weightEntered!==false;
+ if(measurement==='duration')set.durationSeconds=Number(old.durationSeconds)||0;
+ else if(measurement==='distance')set.distanceMeters=Number(old.distanceMeters)||0;
+ else {set.reps=Number(old.reps)||0;set.rir=old.rir??''}
+ if(measurement!=='reps')set.metricRecorded=true;
+ set.pr='';saveActiveWorkout();renderWorkout();showToast('Previous set values copied. Complete when ready.');
+}
+function guardWorkoutHoldClockVisibility(){
+ if(document.visibilityState==='hidden')stopWorkoutHoldTimer(true);
+}
+document.addEventListener('visibilitychange',guardWorkoutHoldClockVisibility);
+
 function focusedSetCardHtml(e,ei,si,ex,prev){
- const base=e.sets[si],edit=workoutSetEditTarget(ei,si),s=edit?edit.draft:base;
- const type=setType(s),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev);
+ const base=e.sets[si],edit=workoutSetEditTarget(ei,si),set=edit?edit.draft:base;
+ const type=setType(set),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev);
  const measurement=exerciseMeasurementType(e.exerciseId,e.config),loadType=exerciseLoadType(e.exerciseId,e.config);
- const ref=type==='working'?setReference(prev,wi,e.exerciseId,e.config):'Not used for progression';
- const pt=plateLoadText(s.weight||target.weight,ex);
- const inc=Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5));
- const opts=[0,1,2,3,4,5].map(v=>'<option value="'+v+'" '+(String(s.rir)===String(v)?'selected':'')+'>'+v+'</option>').join('');
+ const lastSet=workoutMetricPreviousSet(e,si);
+ const reference=type==='working'?setReference(prev,wi,e.exerciseId,e.config):'Not used for progression';
+ const recentLabel=lastSet?'Last set today: '+setMeasurementText(e,lastSet)+(loadType!=='bodyweight'&&Number(lastSet.weight)>0?' @ '+lastSet.weight+' '+state.profile.unit:''):'';
+ const plateText=measurement==='reps'?plateLoadText(set.weight||target.weight,ex):'';
+ const increment=Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5));
+ const options=[0,1,2,3,4,5].map(v=>'<option value="'+v+'" '+(String(set.rir)===String(v)?'selected':'')+'>'+v+'</option>').join('');
+ const recorded=measurement==='reps'||set.done||set.metricRecorded===true;
  function numericField(label,key,value,step,mode='decimal'){
-  const displayed=key==='weight'?displaySetWeightValue(value):key==='distanceMeters'?compactMetricNumber(distanceFromMeters(value)):value;
+  let displayed=key==='weight'?displaySetWeightValue(value):key==='distanceMeters'?compactMetricNumber(distanceFromMeters(value)):value;
+  if((key==='durationSeconds'||key==='distanceMeters')&&!recorded)displayed='';
   const quoted='&quot;'+key+'&quot;';
   return '<div class="live-input-wrap numeric-entry"><label>'+esc(label)+'</label><div class="numeric-stepper">'+
    '<button class="numeric-step-btn" aria-label="decrease '+esc(label)+'" onclick="changeSetValue('+ei+','+si+','+quoted+','+(-step)+')">−</button>'+
    '<input class="direct-number" type="number" inputmode="'+mode+'" enterkeyhint="done" step="'+(key==='reps'?1:key==='weight'?.25:.1)+'" min="0" value="'+displayed+'" placeholder="'+esc(label)+'" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+','+quoted+',this.value)" '+(key==='weight'&&!edit?'onblur="commitFirstExerciseWeightAutofill('+ei+','+si+')"':'')+' aria-label="'+key+'">'+
    '<button class="numeric-step-btn" aria-label="increase '+esc(label)+'" onclick="changeSetValue('+ei+','+si+','+quoted+','+step+')">+</button></div></div>';
  }
- const loadField=loadType==='bodyweight'
-  ?'<div class="live-input-wrap numeric-entry bodyweight-entry-note"><label>Load</label><div class="mini">'+(measurement==='reps'?'Bodyweight · reps only':'Bodyweight · no added weight')+'</div></div>'
-  :numericField((loadType==='assistance'?'Assistance':ex?.equipment==='bodyweight'?'Added weight':'Weight')+' ('+state.profile.unit+')','weight',s.weight,inc);
+ let loadField='';
+ if(loadType!=='bodyweight'){
+  const label=measurement==='distance'?carryLoadLabel(ex)+' ('+state.profile.unit+')':(loadType==='assistance'?'Assistance':ex?.equipment==='bodyweight'?'Added weight':'Weight')+' ('+state.profile.unit+')';
+  loadField=numericField(label,'weight',set.weight,increment);
+ }
+ const measureLabel=measurement==='duration'?'Actual hold (seconds)':measurement==='distance'?'Actual distance ('+distanceUnitLabel()+')':'Reps';
  const measureField=measurement==='duration'
-  ?numericField('Seconds','durationSeconds',s.durationSeconds||0,5)
+  ?numericField(measureLabel,'durationSeconds',set.durationSeconds||0,5)
   :measurement==='distance'
-  ?numericField('Distance ('+distanceUnitLabel()+')','distanceMeters',s.distanceMeters||0,distanceUnitLabel()==='ft'?5:2.5)
-  :numericField('Reps','reps',s.reps,1,'numeric');
+  ?numericField(measureLabel,'distanceMeters',set.distanceMeters||0,distanceUnitLabel()==='ft'?5:2.5)
+  :numericField(measureLabel,'reps',set.reps,1,'numeric');
+ const metricHint=measurement==='reps'?'':'<div class="metric-logging-hint">Suggested target is shown above. Enter what you actually '+(measurement==='duration'?'held':'traveled')+'.</div>';
+ const timer=measurement==='duration'&&!edit?'<div class="hold-timer-panel">'+
+   '<div class="hold-timer-display"><span class="hold-timer-caption">Hold stopwatch</span><strong id="workoutHoldTimerReadout">'+esc(holdTimerDisplay(ei,si))+'</strong></div>'+
+   '<button class="btn hold-timer-action" id="workoutHoldTimerButton" onclick="toggleWorkoutHoldTimer('+ei+','+si+')">'+(workoutHoldTimerMatches(ei,si)?'Stop · Save time':'Start hold')+'</button>'+
+   '</div>':'';
+ const repeat=lastSet&&!edit&&!base.done?'<button class="repeat-previous-set" onclick="repeatPreviousWorkoutSet('+ei+','+si+')">↻ Repeat previous set values</button>':'';
+ const measureMode=measurement==='reps'?(loadType==='bodyweight'?' is-bodyweight':''):' is-metric'+(loadField?' is-loaded':' is-unloaded');
  return '<div class="focus-set-card set-card type-'+type+' '+(base.done?'completed ':'')+(edit?'editing':'')+'" data-set-index="'+si+'">'+
-  '<div class="focus-set-head"><div><div class="exercise-kicker">'+esc(setDisplayLabel(e,si))+' · '+(si+1)+' OF '+e.sets.length+'</div><div class="focus-set-reference">'+(type==='working'?'Previous: '+esc(ref):'Logged separately from progression')+'</div></div>'+
+  '<div class="focus-set-head"><div><div class="exercise-kicker">'+esc(setDisplayLabel(e,si))+' · '+(si+1)+' OF '+e.sets.length+'</div>'+
+  '<div class="focus-set-reference">'+(type==='working'?(reference==='No comparable prior set'?'First recorded session for this exercise':'Last workout: '+esc(reference)):'Not used for progression')+'</div>'+
+  (recentLabel?'<div class="focus-set-today">'+esc(recentLabel)+'</div>':'')+'</div>'+
   (edit?'<button class="focus-set-edit-cancel" onclick="cancelWorkoutSetEdit()">Cancel</button>':'<button class="focus-set-options" onclick="openFocusedSetOptions('+ei+','+si+')" aria-label="Set options">•••</button>')+'</div>'+
-  (edit?'<div class="focus-set-edit-banner"><b>Editing completed set</b><span>Change the logged values below, then tap Update Set. Your workout position will not move.</span></div>':'')+
-  (type==='working'?'<div class="focus-set-target"><span class="set-target">'+esc(targetBadgeText(target,ex,e.config))+'</span></div>':'<div class="set-nonprogress-note">'+esc(setProgressionNote(type))+'</div>')+
-  '<div class="live-entry">'+loadField+measureField+
-  (measurement==='reps'?'<div class="live-input-wrap rir-small"><div class="input-label-row"><label>RIR</label></div><select onchange="updateSet('+ei+','+si+',&quot;rir&quot;,this.value)"><option value="">—</option>'+opts+'</select></div>':'')+'</div>'+
-  (pt?'<div class="plates">'+esc(pt)+'</div>':'')+
+  (edit?'<div class="focus-set-edit-banner"><b>Editing completed set</b><span>Adjust your actual logged values, then update this set.</span></div>':'')+
+  (type==='working'?'<div class="focus-set-target"><span class="set-target">'+esc(targetBadgeText(target,ex,e.config))+'</span>'+(loadType==='bodyweight'?'<span class="metric-bodyweight-chip">Bodyweight</span>':'')+'</div>':'<div class="set-nonprogress-note">'+esc(setProgressionNote(type))+'</div>')+
+  metricHint+
+  '<div class="live-entry'+measureMode+'">'+loadField+measureField+
+  (measurement==='reps'?'<div class="live-input-wrap rir-small"><div class="input-label-row"><label>RIR</label></div><select onchange="updateSet('+ei+','+si+',&quot;rir&quot;,this.value)"><option value="">—</option>'+options+'</select></div>':'')+'</div>'+
+  timer+repeat+
+  (plateText?'<div class="plates">'+esc(plateText)+'</div>':'')+
   (edit?'<button class="complete-set update-set" onclick="commitWorkoutSetEdit()">Update Set</button>':'<button class="complete-set '+(base.done?'done':'')+'" onclick="'+(base.done?('beginWorkoutSetEdit('+ei+','+si+')'):('toggleSet('+ei+','+si+')'))+'">'+(base.done?'Edit Set':'Complete Set')+'</button>')+
   (!edit&&base.pr?'<div class="pr-banner"><span class="inline-pr-mark">PR</span> '+esc(base.pr)+'</div>':'')+'</div>';
 }
@@ -1455,6 +1569,22 @@ function focusedExerciseCanvasHtml(w,ei){
 }
 
 let workoutKeyboardAnchorBound=false;
+let workoutKeyboardDockBound=false;
+function bindWorkoutKeyboardDock(){
+ if(workoutKeyboardDockBound)return;
+ workoutKeyboardDockBound=true;
+ document.addEventListener('focusin',function(event){
+  if(event.target?.matches?.('#workout .focus-set-card input.direct-number'))
+   document.documentElement.classList.add('workout-keyboard-active');
+ });
+ document.addEventListener('focusout',function(event){
+  if(!event.target?.matches?.('#workout .focus-set-card input.direct-number'))return;
+  setTimeout(function(){
+   if(!document.activeElement?.matches?.('#workout .focus-set-card input.direct-number'))
+    document.documentElement.classList.remove('workout-keyboard-active');
+  },80);
+ });
+}
 function anchorFocusedWorkoutSet(behavior='auto'){
  const card=document.querySelector('.focus-set-card');if(!card)return;
  const header=Math.max(0,Math.round((document.querySelector('header')&&document.querySelector('header').getBoundingClientRect().height)||0));
@@ -1463,6 +1593,7 @@ function anchorFocusedWorkoutSet(behavior='auto'){
  window.scrollTo({top:top,behavior:behavior});
 }
 function bindWorkoutKeyboardAnchor(){
+ bindWorkoutKeyboardDock();
  if(workoutKeyboardAnchorBound||!window.visualViewport)return;
  workoutKeyboardAnchorBound=true;
  window.visualViewport.addEventListener('resize',function(){
@@ -1472,6 +1603,7 @@ function bindWorkoutKeyboardAnchor(){
  });
 }
 function workoutNumberFocus(el){
+ document.documentElement.classList.add('workout-keyboard-active');
  smartNumberFocus(el);
  setTimeout(function(){
    if(document.activeElement!==el)return;
@@ -1481,7 +1613,12 @@ function workoutNumberFocus(el){
 
 
 function renderWorkout(){
+ document.documentElement.classList.remove('workout-keyboard-active');
  const w=state.activeWorkout;
+ if(workoutHoldClock){
+  const same=w&&Number(w.focusExerciseIndex)===workoutHoldClock.ei&&Number(w.focusSetIndex)===workoutHoldClock.si;
+  if(!same)stopWorkoutHoldTimer(true);
+ }
  if(!w){document.getElementById('workoutArea').innerHTML='<div class="empty">No active workout.</div>';return;}
  const focus=normalizeWorkoutFocusState(w);
  const counts=workoutCounts(),pct=counts.total?Math.round(counts.done/counts.total*100):0,workoutCoach=workoutCoachSignal();
@@ -1554,9 +1691,12 @@ function commitFirstExerciseWeightAutofill(ei,si){
 }
 function updateSet(ei,si,k,v){
  const edit=workoutSetEditTarget(ei,si),s=edit?edit.draft:state.activeWorkout.exercises[ei].sets[si];
+ if(k==='durationSeconds'&&workoutHoldClock)stopWorkoutHoldTimer(false);
  if(k==='rir')s[k]=(v===''?'':Math.max(0,+v||0));
  else if(k==='distanceMeters')s[k]=v===''?0:Math.max(0,distanceToMeters(Number(v)||0));
  else s[k]=(v===''?0:Math.max(0,+v||0));
+ if(k==='durationSeconds'||k==='distanceMeters')s.metricRecorded=v!==''&&Number(v)>0;
+ if(k==='weight')s.weightEntered=v!=='';
  if(k!=='rir')s.pr='';
  if(edit)return;
  saveActiveWorkout(true,false);
@@ -1565,9 +1705,13 @@ function updateSet(ei,si,k,v){
 function toggleSet(ei,si){
  const w=state.activeWorkout,e=w.exercises[ei],set=e.sets[si];
  const measurement=exerciseMeasurementType(e.exerciseId,e.config);
- if(!set.done&&exerciseMetricValue(set,measurement)<=0){
-  showToast(measurement==='duration'?'Enter completed hold time first':measurement==='distance'?'Enter completed distance first':'Enter completed repetitions first');
+ if(!set.done&&measurement==='duration'&&workoutHoldTimerMatches(ei,si))stopWorkoutHoldTimer(true);
+ if(!set.done&&actualMetricValue(e,set)<=0){
+  showToast(measurement==='duration'?'Measure or enter your actual hold time first':measurement==='distance'?'Enter the distance you actually traveled':'Enter completed repetitions first');
   return;
+ }
+ if(!set.done&&measurement==='distance'&&exerciseLoadType(e.exerciseId,e.config)==='external'&&!set.weightEntered&&!(Number(set.weight)>0)){
+  showToast('Enter the weight carried, including 0 if intentionally unloaded');return;
  }
  set.done=!set.done;w.focusExerciseIndex=ei;
  if(set.done){
@@ -1620,7 +1764,7 @@ function stopRestTimer(){
  if(restInterval)clearInterval(restInterval);restInterval=null;restLeft=0;
  const box=document.getElementById('restTimer');box?.classList.remove('show','expanded');
 }
-function cancelWorkout(){confirmAction('Cancel active workout?','This deletes the autosaved active workout draft. Completed workout history is not affected.',()=>{stopRestTimer();state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();go('home',{resetHistory:true});showToast('Active workout cancelled');});}
+function cancelWorkout(){confirmAction('Cancel active workout?','This deletes the autosaved active workout draft. Completed workout history is not affected.',()=>{stopRestTimer();stopWorkoutHoldTimer(false);state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();go('home',{resetHistory:true});showToast('Active workout cancelled');});}
 
 function unfinishedWorkoutExercises(w){
  w=w||state.activeWorkout;if(!w)return [];
@@ -1682,6 +1826,7 @@ function finishWorkout(allowIncomplete=false){
 }
 function finalizeWorkout(updateRoutine=false){
  const w=state.activeWorkout;if(!w)return;
+ stopWorkoutHoldTimer(true);
  stopRestTimer();
  if(updateRoutine&&!syncActiveWorkoutStructureToRoutine())updateRoutine=false;
  closeModal();

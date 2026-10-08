@@ -368,11 +368,19 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
  const workingSets=sessionSetCount(session),allSets=sessionAllSetCount(session),reps=sessionTotalReps(session);
  const holdSeconds=(session.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='duration'?completedSets(e).reduce((a,set)=>a+(Number(set.durationSeconds)||0),0):0),0);
  const distanceMeters=(session.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='distance'?completedSets(e).reduce((a,set)=>a+(Number(set.distanceMeters)||0),0):0),0);
- const measureHeadline=reps>0?{value:reps,label:'Total reps'}:holdSeconds>0?{value:compactMetricNumber(holdSeconds),label:'Hold seconds'}:distanceMeters>0?{value:compactMetricNumber(distanceFromMeters(distanceMeters)),label:'Distance ('+distanceUnitLabel()+')'}:{value:'—',label:'Tracked sets'};
+ const recapMetrics=[
+  {value:sessionCompletedExerciseCount(session),label:'Exercises'},
+  {value:workingSets,label:'Working sets'},
+  ...(reps>0?[{value:reps,label:'Total reps'}]:[]),
+  ...(holdSeconds>0?[{value:compactMetricNumber(holdSeconds),label:'Hold seconds'}]:[]),
+  ...(distanceMeters>0?[{value:compactMetricNumber(distanceFromMeters(distanceMeters)),label:'Distance ('+distanceUnitLabel()+')'}]:[]),
+  {value:sessionPRCount(session),label:'Exercises with PR'}
+ ];
  const savedRoutine=routineSavedFromSession(session.id);
  const linkedRoutine=!!(session.routineId&&state.routines.some(r=>r.id===session.routineId));
  const volume=Math.round(sessionVolume(session)),prs=sessionPRDetails(session),muscles=sessionMuscleGroups(session);
  const completedExercises=sessionCompletedExerciseCount(session),skipped=(session.exercises||[]).filter(e=>e.skipped).length;
+ const metricTotalsHtml=recapMetrics.map(card=>'<div class="recap-metric"><b>'+card.value+'</b><span>'+esc(card.label)+'</span></div>').join('');
  const exerciseRows=(session.exercises||[]).map(e=>{
    const ex=exById(e.exerciseId),done=completedSets(e),working=progressionSets(e);
    if(e.skipped)return `<div class="recap-exercise"><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">Skipped for this session</div></div>`;
@@ -385,10 +393,10 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
    const setRows=done.map((set,i)=>{
      const ordinal=e.sets.slice(0,e.sets.indexOf(set)+1).filter(x=>setType(x)===setType(set)).length;
      const load=Number(set.weight)||0,reps=Number(set.reps)||0;
-     return `<div class="recap-set-row"><span>${esc(setTypeLabel(setType(set)))} ${ordinal}</span><b>${measurement==='reps'?`${load} ${state.profile.unit} × ${reps}`:esc(setMeasurementText(e,set))+(load>0?' @ '+load+' '+state.profile.unit:'')}</b>${measurement==='reps'&&set.rir!==''&&set.rir!=null?`<span>${esc(String(set.rir))} RIR</span>`:'<span></span>'}${set.pr?`<span class="inline-pr-mark">PR</span>`:'<span></span>'}</div>`;
+     return `<div class="recap-set-row"><span>${esc(setTypeLabel(setType(set)))} ${ordinal}</span><b>${measurement==='reps'?`${load} ${state.profile.unit} × ${reps}`:esc(setMeasurementText(e,set))+(load>0?' @ '+load+' '+state.profile.unit+(measurement==='distance'?' ('+carryLoadLabel(ex)+')':''):'')}</b>${measurement==='reps'&&set.rir!==''&&set.rir!=null?`<span>${esc(String(set.rir))} RIR</span>`:'<span></span>'}${set.pr?`<span class="inline-pr-mark">PR</span>`:'<span></span>'}</div>`;
    }).join('');
    return `<div class="recap-exercise">
-     <div class="recap-exercise-top"><div><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">${working.length} working set${working.length===1?'':'s'} · ${measurement==='duration'?compactMetricNumber(metricTotal)+' total seconds':measurement==='distance'?compactMetricNumber(distanceFromMeters(metricTotal))+' '+distanceUnitLabel()+' total':totalReps+' total reps'}${topWeight>0?` · top ${topWeight} ${state.profile.unit}`:''}</div></div>${prCount?`<span class="preference-badge prefer">PR ×${prCount}</span>`:''}</div>
+     <div class="recap-exercise-top"><div><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">${working.length} working set${working.length===1?'':'s'} · ${measurement==='duration'?compactMetricNumber(metricTotal)+' total seconds':measurement==='distance'?compactMetricNumber(distanceFromMeters(metricTotal))+' '+distanceUnitLabel()+' total':totalReps+' total reps'}${topWeight>0?` · ${measurement==='distance'?carryLoadLabel(ex)+': ':'top '}${topWeight} ${state.profile.unit}`:''}</div></div>${prCount?`<span class="preference-badge prefer">PR ×${prCount}</span>`:''}</div>
      <div class="recap-set-list">${setRows}</div>
      ${e.notes?`<div class="muscle-map-note" style="margin-top:8px"><b>Notes</b><br>${esc(e.notes)}</div>`:''}
    </div>`;
@@ -407,14 +415,11 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
    </div>
    ${session.programPhase==='deload'?'<div class="workout-deload-note"><b>☾ Deload workout</b><span>This workload is saved in your training history, but it is not used to conclude that you lost strength or to lower your next normal target.</span></div>':''}
    <div class="recap-metrics">
-     <div class="recap-metric"><b>${completedExercises}</b><span>Exercises</span></div>
-     <div class="recap-metric"><b>${workingSets}</b><span>Working sets</span></div>
-     <div class="recap-metric"><b>${measureHeadline.value}</b><span>${measureHeadline.label}</span></div>
-     <div class="recap-metric"><b>${prs.length}</b><span>Exercises with PR</span></div>
+     ${metricTotalsHtml}
    </div>
    <div class="recap-section">
      <div class="recap-section-title">Training snapshot</div>
-     ${volume>0?`<div class="summary-win"><b>${volume.toLocaleString()} ${state.profile.unit} × reps</b><div class="mini">External-load volume from completed sets. Useful as context, not a score to maximize.</div></div>`:'<div class="notice">External-load volume is not meaningful for this session based on the logged weights.</div>'}
+     ${volume>0?`<div class="summary-win"><b>${volume.toLocaleString()} ${state.profile.unit} × reps</b><div class="mini">External resistance times repetitions for applicable sets only. Hold time and carry distance are shown separately above.</div></div>`:(holdSeconds>0||distanceMeters>0?'<div class="notice">Timed holds and loaded carries are tracked by seconds and distance. Standard weight × reps volume does not apply to those movements.</div>':'<div class="notice">No external-load training volume was recorded.</div>')}
      ${allSets!==workingSets?`<div class="mini" style="margin:8px 2px 0">${allSets} total completed sets including warm-up/drop/failure sets.</div>`:''}
      ${skipped?`<div class="mini" style="margin:5px 2px 0">${skipped} exercise${skipped===1?' was':'s were'} skipped today.</div>`:''}
      ${updateRoutine?'<div class="summary-win"><b>Routine updated</b><div class="mini">Today’s structural changes are now saved to the routine.</div></div>':''}

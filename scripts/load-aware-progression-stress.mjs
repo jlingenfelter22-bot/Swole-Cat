@@ -83,7 +83,7 @@ await wait(60);
 st=read();
 assert.equal(st.activeWorkout.exercises[0].exerciseId,'lib_31');
 assert.equal(st.activeWorkout.exercises[0].sets[0].weight,0);
-assert.match(w.document.getElementById('workoutArea')?.textContent||'',/Bodyweight · reps only/);
+assert.match(w.document.getElementById('workoutArea')?.textContent||'',/Bodyweight/,'bodyweight movement remains clearly identified without a redundant load field');
 assert.equal(w.document.querySelectorAll('#workout .focus-set-card input[aria-label="weight"]').length,0,'bodyweight set should not ask for weight');
 w.eval('state.activeWorkout=null;save()');
 

@@ -643,6 +643,7 @@ function pauseActiveWorkout(){
  const w=state.activeWorkout;
  if(!w){showToast('No active workout');return}
  if(!w.pausedAt)w.pausedAt=new Date().toISOString();
+ if(typeof stopWorkoutHoldTimer==='function')stopWorkoutHoldTimer(true);
  saveActiveWorkout();
  stopRestTimer();
  releaseWakeLock();
@@ -676,8 +677,10 @@ function activeSetsFromRoutineExercise(re,rec,ex){
  const working=Array.from({length:re.sets},(_,i)=>({
    weight:rec.weights?.[i]??rec.weight??0,
    reps:measurement==='reps'?(rec.targetReps?.[i]??re.minReps):0,
-   durationSeconds:measurement==='duration'?(rec.targetValues?.[i]??(Number(re.minDurationSeconds)||20)):0,
-   distanceMeters:measurement==='distance'?(rec.targetValues?.[i]??(Number(re.minDistanceMeters)||10)):0,
+   durationSeconds:0,
+   distanceMeters:0,
+   metricRecorded:false,
+   weightEntered:measurement==='distance'&&exerciseLoadType(re.exerciseId,re)==='external'?(Number(rec.weights?.[i]??rec.weight)||0)>0:true,
    done:false,rir:'',type:'working',pr:'',
    role:typeof coachAdaptiveSetRole==='function'?coachAdaptiveSetRole(re,i):'working',
    amrap:!!re.lastSetAmrap&&i===Math.max(0,re.sets-1)

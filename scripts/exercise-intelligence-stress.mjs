@@ -39,7 +39,7 @@ w.eval('state.routines[0].exercises=[exerciseDefaultRoutineConfig("lib_307")];st
 w.startRoutineFresh(rid);await wait(45);
 st=read();
 assert.equal(st.activeWorkout.exercises[0].sets[0].reps,0,'timed hold must not fabricate repetitions');
-assert.equal(st.activeWorkout.exercises[0].sets[0].durationSeconds,20);
+assert.equal(st.activeWorkout.exercises[0].sets[0].durationSeconds,0,'starting hold target is not a logged duration');
 assert(w.document.querySelector('#workout input[aria-label="durationSeconds"]'),'hold shows seconds input');
 assert(!w.document.querySelector('#workout input[aria-label="reps"]'),'hold must not show reps input');
 assert(!w.document.querySelector('#workout input[aria-label="weight"]'),'bodyweight hold must not show weight');
@@ -57,13 +57,15 @@ w.openExerciseProgress('lib_307');
 assert.match(w.document.getElementById('modalBody').textContent,/Best hold|hold time/i,'hold progress chart is time-based');
 w.startRoutineFresh(rid);await wait(30);
 st=read();
-assert.equal(st.activeWorkout.exercises[0].sets[0].durationSeconds,40,'next hold target adds seconds');
+assert.equal(st.activeWorkout.exercises[0].sets[0].durationSeconds,0,'new set remains unmeasured even with prior history');
+assert.match(w.document.querySelector('#workout .set-target')?.textContent||'',/40 sec/,'the 40-second suggestion is shown separately');
 w.eval('state.activeWorkout=null;save()');
 
 w.eval('state.routines[0].exercises=[exerciseDefaultRoutineConfig("lib_258")];save()');
 w.startRoutineFresh(rid);await wait(35);
 st=read();
-assert.equal(st.activeWorkout.exercises[0].sets[0].distanceMeters,10);
+assert.equal(st.activeWorkout.exercises[0].sets[0].distanceMeters,0,'new carry has no fabricated actual distance');
+assert.match(w.document.querySelector('#workout .set-target')?.textContent||'',/30 ft/,'imperial carry suggested target is a round 30 feet');
 assert.equal(st.activeWorkout.exercises[0].sets[0].reps,0,'farmer carry must not create fake rep target');
 assert(w.document.querySelector('#workout input[aria-label="distanceMeters"]'),'carry shows distance');
 assert(w.document.querySelector('#workout input[aria-label="weight"]'),'loaded carry still shows load');
