@@ -200,7 +200,14 @@ function buildRecommendation(config,prev,exerciseId=null){
  const enoughSets=done.length>=config.sets;
  const allTop=enoughSets && done.slice(0,config.sets).every(s=>finiteNumber(s.reps,0)>=config.maxReps);
  if(sameWeight && allTop){
-   const next=roundLoad(baseWeight+finiteNumber(config.increment,0));
+   const inc=Math.max(0,finiteNumber(config.increment,0));
+   if(config.programGuided&&(baseWeight<=0||inc<=0||inc/baseWeight>0.10)){
+     return {status:'hold',weight:baseWeight,weights:Array(config.sets).fill(baseWeight),
+       targetReps:Array(config.sets).fill(config.maxReps),headline:'Repeat this load or choose a smaller increment',
+       detail:baseWeight<=0?'Establish a positive external load before adding weight automatically. Bodyweight movements can continue with repetition progression.':
+         'The configured weight increase is more than 10% of your current load, or no increase is configured. Keep clean reps or select a smaller load step, then progress manually.'};
+   }
+   const next=roundLoad(baseWeight+inc);
    return {status:'load',weight:next,weights:Array(config.sets).fill(next),targetReps:Array(config.sets).fill(config.minReps),
      headline:`Increase to ${next} ${state.profile.unit}`,detail:`You earned one configured load step after reaching the top of the rep range across all working sets. ${goalRIRText(goal)}`};
  }
