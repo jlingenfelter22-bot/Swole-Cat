@@ -23,6 +23,14 @@ function exerciseMeasurementType(exerciseId,config=null){
  if(['carry','sled_push','sled_pull'].includes(ex?.pattern))return 'distance';
  return 'reps';
 }
+function loggedExerciseMeasurement(e){
+ const override=e?.config?.measurementType;
+ if(['reps','duration','distance'].includes(override))return override;
+ if((e?.sets||[]).some(set=>Number(set.durationSeconds)>0))return 'duration';
+ if((e?.sets||[]).some(set=>Number(set.distanceMeters)>0))return 'distance';
+ if((e?.sets||[]).some(set=>Number(set.reps)>0))return 'reps';
+ return exerciseMeasurementType(e?.exerciseId,e?.config);
+}
 function exerciseMovementProfile(exerciseId,config=null,goal='general'){
  const ex=exById(exerciseId)||{};
  const measurement=exerciseMeasurementType(exerciseId,config);
