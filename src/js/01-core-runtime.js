@@ -83,6 +83,7 @@ function normalizeState(saved){
  merged.routines.forEach(r=>{if(!Array.isArray(r.exercises))r.exercises=[];r.trainingMode=normalizeTrainingMode(r.trainingMode);r.description=typeof r.description==='string'?r.description:'';r.archivedAt=typeof r.archivedAt==='string'&&r.archivedAt?r.archivedAt:null});
  merged.programs.forEach(p=>{
    p.trainingMode=normalizeProgramTrainingMode(p.trainingMode);
+   p.deload=programDeloadConfig(p.deload);
    p.routineIds=Array.isArray(p.routineIds)?p.routineIds.filter(id=>merged.routines.some(r=>r.id===id)):[];
    p.frequency=Math.min(7,Math.max(1,Number(p.frequency)||3));
    p.preferredDays=Array.isArray(p.preferredDays)?p.preferredDays.filter(d=>Number.isInteger(d)&&d>=0&&d<=6):[];
@@ -688,13 +689,28 @@ function startRoutineFresh(id,programId=null){
  const programMode=normalizeProgramTrainingMode(program?.trainingMode);
  const effectiveMode=programMode!=='inherit'?normalizeTrainingMode(programMode):normalizeTrainingMode(r.trainingMode);
  const now=new Date().toISOString();
+ const weekContext=program?programDeloadContext(program,now):null;
+ if(weekContext?.needsReview){reviewProgramDeload(program,Math.max(0,program.routineIds.indexOf(id)));return}
+ const isDeload=effectiveMode==='guided'&&weekContext?.phase==='deload';
  const active={
-   id:uid(),routineId:id,routineName:r.name,trainingMode:effectiveMode,programId:programId||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,structureNoticeSeen:false,pausedAt:null,pausedDurationMs:0,focusExerciseIndex:0,focusSetIndex:0,deferredExerciseIndexes:[],
+   id:uid(),routineId:id,routineName:r.name,trainingMode:effectiveMode,programId:programId||null,
+   programPhase:isDeload?'deload':'normal',programWeekKey:weekContext?.key||null,programWeekIndex:weekContext?.weekIndex||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,structureNoticeSeen:false,pausedAt:null,pausedDurationMs:0,focusExerciseIndex:0,focusSetIndex:0,deferredExerciseIndexes:[],
    exercises:r.exercises.map((re,routineIndex)=>{
-     const prev=previousExercise(re.exerciseId);
-     const mode=effectiveMode,config={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode};
-     const rec=buildRecommendation(config,prev,re.exerciseId);
-     return {exerciseId:re.exerciseId,routineIndex,config,targetOverride:null,supersetId:re.supersetGroup||null,skipped:false,expanded:routineIndex===0,sets:activeSetsFromRoutineExercise(re,rec,exById(re.exerciseId)),notes:''};
+     const prev=previousExercise(re.exerciseId,programId);
+     const mode=effectiveMode,normalConfig={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode};
+     const reducedSets=isDeload?Math.max(1,Math.ceil((Number(re.sets)||1)/2)):Math.max(1,Number(re.sets)||1);
+     const config=isDeload?{...normalConfig,sets:reducedSets,setStructure:null,adaptiveProgression:false}:normalConfig;
+     const normalRec=buildRecommendation(normalConfig,prev,re.exerciseId);
+     const priorWorking=progressionSets(prev);
+     const rec=isDeload?{
+       status:'deload',
+       weights:Array.from({length:reducedSets},(_,i)=>Number(priorWorking[i]?.weight??priorWorking[0]?.weight??0)),
+       targetReps:Array(reducedSets).fill(Math.max(1,Number(config.minReps)||8)),
+       weight:Number(priorWorking[0]?.weight)||0,
+       headline:'Deload · Fewer working sets',
+       detail:'Lighter training stress by design. Performance from this week will not lower your normal progression baseline.'
+     }:normalRec;
+     return {exerciseId:re.exerciseId,routineIndex,config,targetOverride:null,supersetId:re.supersetGroup||null,skipped:false,expanded:routineIndex===0,sets:activeSetsFromRoutineExercise({...re,sets:reducedSets,setStructure:config.setStructure},rec,exById(re.exerciseId)),notes:''};
    })
  };
  state.activeWorkout=active;
