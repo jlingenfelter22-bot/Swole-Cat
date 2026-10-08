@@ -168,6 +168,9 @@ jobs:
       - name: Stress test v0.80.0 semantic visual language
         run: node scripts/visual-language-stress.mjs
 
+      - name: Stress test v0.82.0 Guided Progressive Overload programs and deloads
+        run: node scripts/guided-program-deload-stress.mjs
+
       - name: Stress test v0.67.0 cloud shell boundaries
         run: node scripts/cloud-shell-stress.mjs
 
@@ -561,6 +564,7 @@ jobs:
 
             // Custom program builder should allow a user-defined A/B rotation and preserve its order.
             w.newProgram();
+            w.changeProgramTrainingMode('inherit'); // New programs require an explicit mode choice.
             w.document.getElementById('programName').value='Custom AB';
             w.document.getElementById('programFrequency').value='2';
             w.addProgramRoutine(a);

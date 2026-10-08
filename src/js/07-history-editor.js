@@ -62,6 +62,7 @@ function renderHistory(){
          <div class="history-entry-heading">
            <div class="history-entry-date">${esc(when.date)}${when.time?` <span>· ${esc(when.time)}</span>`:''}</div>
            <div class="history-entry-title">${esc(s.routineName||'Workout')}</div>
+           ${s.programPhase==='deload'?'<div class="history-deload-label">☾ DELOAD WEEK · Training stress reduced intentionally</div>':''}
            <div class="history-entry-exercises">${exercises} exercise${exercises===1?'':'s'} · ${esc(historyExerciseSummary(s))}</div>
          </div>
          <button class="history-manage-btn" onclick="openHistorySessionMenu('${escAttr(s.id)}')" aria-label="Manage ${escAttr(s.routineName||'workout')}">•••</button>

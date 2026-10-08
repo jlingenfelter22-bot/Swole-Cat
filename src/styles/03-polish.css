@@ -2423,3 +2423,52 @@ html[data-workout-transition="back"]::view-transition-new(workout-exercise-stage
   font-size:.70rem;
  }
 }
+
+
+/* v0.82.0 · Guided program recovery phases, visible without relying on color alone. */
+.program-mode-validation{min-height:0;color:#ffadc0;font-size:.8rem;font-weight:750;margin-top:5px}
+.program-deload-config{
+ border:1px solid rgba(168,85,247,.35);border-radius:5px 16px 5px 16px;
+ background:rgba(17,15,34,.65);padding:13px;margin:12px 0;
+}
+.program-deload-toggle{display:flex;align-items:center;gap:12px;cursor:pointer;margin-top:8px;line-height:1.3}
+.program-deload-toggle input{height:21px;width:21px;flex:0 0 21px;accent-color:#a855f7}
+.program-deload-toggle span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.program-deload-toggle small{font-size:.71rem;color:#a7b6c9;font-weight:500}
+.program-deload-config .field{margin-top:13px}
+.program-deload-preview{
+ margin-top:10px;padding:10px 11px;border-radius:4px 10px 4px 10px;
+ background:rgba(34,211,238,.07);border:1px solid rgba(34,211,238,.19);
+ color:#dcfaff;font-size:.76rem;line-height:1.4;
+}
+.program-deload-state{
+ font-family:var(--display);font-size:.64rem;line-height:1.4;letter-spacing:.025em;
+ padding:8px 10px;margin:8px 0;border:1px solid rgba(87,103,135,.35);border-radius:4px 9px 4px 9px;color:#9eb4ca;
+}
+.program-deload-state.is-upcoming,.program-deload-state.is-deload{
+ border-color:rgba(245,158,11,.48);background:rgba(245,158,11,.09);color:#ffe2a8;
+}
+.program-deload-review h3{font-family:var(--display);margin:8px 0;font-size:1.15rem}
+.program-deload-review p{font-size:.89rem;color:#d5e1f1;line-height:1.5}
+.program-deload-choices{display:flex;flex-direction:column;gap:9px;margin-top:15px}
+.program-deload-choices .btn{min-height:44px;white-space:normal;text-align:center}
+.workout-deload-note{
+ display:flex;flex-direction:column;gap:4px;
+ margin:9px 0 11px;padding:10px 12px;background:rgba(245,158,11,.08);
+ border:1px solid rgba(245,158,11,.38);border-radius:4px 12px 4px 12px;
+ color:#ffe4b3;font-size:.77rem;line-height:1.38;
+}
+.workout-deload-note span{color:#d4c5a7}
+.history-deload-label{
+ font-family:var(--display);font-size:.6rem;letter-spacing:.02em;
+ color:#ffd8a1;margin-top:5px;white-space:normal;line-height:1.35;
+}
+
+#analytics .calendar-day.calendar-deload{
+ border-color:rgba(245,158,11,.58)!important;
+ background:rgba(245,158,11,.095)!important;
+}
+#analytics .calendar-day .calendar-deload-icon{
+ display:inline-block;position:absolute;right:5px;top:4px;
+ color:#ffe2ac;font-size:.71rem;line-height:1;
+}

@@ -1,4 +1,14 @@
-function previousExercise(exerciseId){return derivedSessionData().previousByExercise.get(exerciseId);}
+function previousExercise(exerciseId,programId=state.activeWorkout?.programId||null){
+ // Deload performances are genuine history, but not evidence of normal training capacity.
+ const candidates=(state.sessions||[]).filter(s=>s.programPhase!=='deload')
+  .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+ const bodyweight=exById(exerciseId)?.equipment==='bodyweight';
+ const eligible=s=>((s.exercises||[]).find(e=>e.exerciseId===exerciseId&&!e.skipped&&progressionSets(e).some(set=>bodyweight||Number(set.weight)>0)));
+ const selected=(programId?candidates.filter(s=>s.programId===programId):candidates).find(eligible)
+    ||candidates.find(eligible);
+ const exercise=selected&&eligible(selected);
+ return exercise?{...exercise,date:selected.date}:null;
+}
 function setType(set){return ['working','warmup','drop','failure'].includes(set?.type)?set.type:'working'}
 function isProgressionSet(set){return setType(set)==='working'}
 function completedSets(prev){return (prev?.sets||[]).filter(s=>s.done && Number(s.weight)>=0 && Number(s.reps)>0)}
@@ -57,7 +67,7 @@ function averageLoggedRIR(sets){
  return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
 }
 function recentExerciseSessions(exerciseId,n=4){
- return exerciseHistory(exerciseId).slice(-n);
+ return exerciseHistory(exerciseId).filter(row=>row.programPhase!=='deload').slice(-n);
 }
 function coachSignal(exerciseId,config){
  if(normalizeTrainingMode(config.routineMode)==='track')return null;
@@ -96,7 +106,7 @@ function coachSignal(exerciseId,config){
  return {level:'info',title:'On track',text:goalRIRText(config.trainingGoal||'general'),stalled:false,canReset:false};
 }
 function workoutCoachSignal(){
- const w=state.activeWorkout;if(!w)return null;
+ const w=state.activeWorkout;if(!w||w.programPhase==='deload')return null;
  const signals=w.exercises.filter(e=>!e.skipped).map(e=>coachSignal(e.exerciseId,e.config)).filter(Boolean);
  const reset=signals.filter(x=>x.canReset).length,stalls=signals.filter(x=>x.stalled).length;
  if(reset>=2)return {level:'reset',text:`${reset} exercises are showing repeated high-effort stalls. A lighter session may be worth considering, but it is optional.`};
@@ -190,7 +200,14 @@ function buildRecommendation(config,prev,exerciseId=null){
  const enoughSets=done.length>=config.sets;
  const allTop=enoughSets && done.slice(0,config.sets).every(s=>finiteNumber(s.reps,0)>=config.maxReps);
  if(sameWeight && allTop){
-   const next=roundLoad(baseWeight+finiteNumber(config.increment,0));
+   const inc=Math.max(0,finiteNumber(config.increment,0));
+   if(config.programGuided&&(baseWeight<=0||inc<=0||inc/baseWeight>0.10)){
+     return {status:'hold',weight:baseWeight,weights:Array(config.sets).fill(baseWeight),
+       targetReps:Array(config.sets).fill(config.maxReps),headline:'Repeat this load or choose a smaller increment',
+       detail:baseWeight<=0?(exById(exerciseId)?.equipment==='bodyweight'?'You reached the top of the bodyweight rep range. Consider a harder variation or add external resistance manually when appropriate.':'Establish a positive external load before adding weight automatically.'):
+         'The configured weight increase is more than 10% of your current load, or no increase is configured. Keep clean reps or select a smaller load step, then progress manually.'};
+   }
+   const next=roundLoad(baseWeight+inc);
    return {status:'load',weight:next,weights:Array(config.sets).fill(next),targetReps:Array(config.sets).fill(config.minReps),
      headline:`Increase to ${next} ${state.profile.unit}`,detail:`You earned one configured load step after reaching the top of the rep range across all working sets. ${goalRIRText(goal)}`};
  }
@@ -666,6 +683,9 @@ function routineExerciseFromWorkout(e){
 }
 function syncActiveWorkoutStructureToRoutine(){
  const w=state.activeWorkout;if(!w)return false;
+ if(w.programPhase==='deload'){
+  showToast('Deload set counts are temporary. Edit the saved routine separately.');return false;
+ }
  const r=state.routines.find(x=>x.id===w.routineId);if(!r)return false;
  r.name=w.routineName||r.name;
  r.exercises=w.exercises.map(routineExerciseFromWorkout);
@@ -1195,9 +1215,10 @@ function renderWorkout(){
  const focus=normalizeWorkoutFocusState(w);
  const counts=workoutCounts(),pct=counts.total?Math.round(counts.done/counts.total*100):0,workoutCoach=workoutCoachSignal();
  let html='<div class="focus-session-strip">'+
-  '<div class="focus-session-primary"><span class="focus-session-label"><span class="active-pulse"></span>ACTIVE</span><b class="focus-session-name" title="'+escAttr(w.routineName)+'">'+esc(w.routineName)+'</b></div>'+
+  '<div class="focus-session-primary"><span class="focus-session-label"><span class="active-pulse"></span>'+(w.programPhase==='deload'?'DELOAD':'ACTIVE')+'</span><b class="focus-session-name" title="'+escAttr(w.routineName)+'">'+esc(w.routineName)+'</b></div>'+
   '<div class="focus-session-stats"><span>'+counts.done+'/'+counts.total+' sets</span><span>'+pct+'%</span><span>'+workoutElapsed()+'</span></div></div>'+
   '<div class="focus-session-progress"><div style="width:'+pct+'%"></div></div>';
+ if(w.programPhase==='deload')html+='<div class="workout-deload-note"><b>☾ Deload week · intentionally lighter training</b><span>Fewer working sets and controlled reps. Your normal progression targets are preserved for the next training week. You can adjust today\'s sets.</span></div>';
  if(workoutCoach)html+='<details class="focus-session-coach"><summary>Coach session note</summary><div class="coachbox '+workoutCoach.level+'"><div class="coach-text">'+esc(workoutCoach.text)+'</div>'+
   (workoutCoach.level==='reset'?'<div class="actions"><button class="btn small secondary" onclick="applyLightSession()">Use a 7.5% lighter session</button></div>':'')+'</div></details>';
  html+=focus>=0?focusedExerciseCanvasHtml(w,focus):'<div class="empty">No available exercise.</div>';
@@ -1371,7 +1392,7 @@ function finishWorkout(allowIncomplete=false){
  if(unfinished.length&&!allowIncomplete){openUnfinishedWorkoutReview();return}
  closeModal();
  const routine=state.routines.find(function(x){return x.id===w.routineId});
- if(w.structureDirty&&routine){
+ if(w.structureDirty&&routine&&w.programPhase!=='deload'){
    openModal('Update your routine?',
     '<div class="notice">You changed today’s workout structure. Choose whether those structural changes stay only in this session or become the new saved version of <b>'+esc(routine.name)+'</b>.<br><br><b>Skip status is always today-only.</b> Updating the routine saves the current exercise order, today-only additions or removals, substitutions, supersets, and number of working sets.</div>'+
     '<div class="actions"><button class="btn green" onclick="finalizeWorkout(true)">Finish + Update Routine</button>'+
@@ -1384,10 +1405,13 @@ function finishWorkout(allowIncomplete=false){
 function finalizeWorkout(updateRoutine=false){
  const w=state.activeWorkout;if(!w)return;
  stopRestTimer();
- if(updateRoutine)syncActiveWorkoutStructureToRoutine();
+ if(updateRoutine&&!syncActiveWorkoutStructureToRoutine())updateRoutine=false;
  closeModal();
  const end=new Date(),duration=Math.max(0,Math.round(workoutElapsedMs(w,end.getTime())/60000));
- const session={id:w.id,routineId:w.routineId,routineName:w.routineName,trainingMode:normalizeTrainingMode(w.trainingMode),programId:w.programId||null,status:'finished',date:end.toISOString(),startDate:w.startDate,durationMinutes:duration,exercises:w.exercises};
+ const session={id:w.id,routineId:w.routineId,routineName:w.routineName,trainingMode:normalizeTrainingMode(w.trainingMode),
+  programId:w.programId||null,programPhase:w.programPhase==='deload'?'deload':'normal',
+  programWeekKey:w.programWeekKey||null,programWeekIndex:w.programWeekIndex||null,
+  status:'finished',date:end.toISOString(),startDate:w.startDate,durationMinutes:duration,exercises:w.exercises};
  const progressHighlights=sessionProgressHighlights(session,state.sessions);
  state.sessions=[...state.sessions,session];
  advanceProgramAfterWorkout(session);
