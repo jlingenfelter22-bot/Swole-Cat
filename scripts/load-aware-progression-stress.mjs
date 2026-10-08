@@ -102,6 +102,18 @@ await wait(55);
 assert.match(w.document.getElementById('workoutArea')?.textContent||'',/Assistance/);
 assert.equal(w.document.querySelectorAll('#workout .focus-set-card input[aria-label="weight"]').length,1,'assistance still needs numeric counterweight input');
 assert.match(w.document.querySelector('#workout .focus-set-card label')?.textContent||'',/Assistance/);
+w.swapWorkoutExercise(0,'lib_31',false);
+await wait(45);
+st=read();
+assert.equal(st.activeWorkout.exercises[0].config.loadType,'auto','substitutions must reset old assistance overrides');
+assert.equal(w.document.querySelectorAll('#workout .focus-set-card input[aria-label="weight"]').length,0,'substitute to regular pull-up becomes reps only');
+w.swapWorkoutExercise(0,'lib_116',true);
+await wait(45);
+st=read();
+assert.equal(st.routines[0].exercises[0].exerciseId,'lib_116','permanent substitution saves selected weighted variation');
+assert.equal(st.routines[0].exercises[0].loadType,'auto','saved substitution must clear stale assisted override');
+assert.equal(w.document.querySelectorAll('#workout .focus-set-card input[aria-label="weight"]').length,1,'weighted pull-up must expose added resistance');
+
 
 // Completed workouts are factual; assisted counterweight is not external-load volume
 // or estimated-1RM data. Historical PR re-evaluation uses direction-aware rules.
