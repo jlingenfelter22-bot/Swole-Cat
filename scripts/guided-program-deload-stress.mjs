@@ -121,5 +121,39 @@ assert.equal(Object.keys(imported.program.deload.decisions).length,0,'import sta
 w.eval('state.programs.find(p=>p.id==='+esc(programId)+').deload.enabled=false;save();');
 assert.equal(w.programDeloadContext(w.eval('programById('+esc(programId)+')')).needsReview,false,'opt-out must disable due status');
 
+
+// Guided progression must increase reps for every set, require all sets for
+// load increases, and avoid disproportionately large equipment jumps.
+const cfg={routineMode:'guided',programGuided:true,adaptiveProgression:false,
+ sets:3,minReps:8,maxReps:12,mode:'double',increment:5,trainingGoal:'general'};
+const history=(weight,reps,n=3)=>({sets:Array.from({length:n},()=>({
+ done:true,type:'working',weight,reps,rir:2,pr:''
+}))});
+const steps=w.buildRecommendation(cfg,history(100,9),exerciseId);
+assert.equal(steps.status,'reps');
+assert.equal(Array.from(steps.targetReps).join(','),'10,10,10','guided should add one rep to every working set');
+const ready=w.buildRecommendation(cfg,history(100,12),exerciseId);
+assert.equal(ready.status,'load','all completed sets at ceiling should permit reasonable increase');
+assert.equal(ready.weight,105);
+const incomplete=w.buildRecommendation(cfg,history(100,12,2),exerciseId);
+assert.notEqual(incomplete.status,'load','incomplete set count cannot earn higher load');
+const huge=w.buildRecommendation(cfg,history(20,12),exerciseId);
+assert.equal(huge.status,'hold','25% increment must not be pushed as automatic progression');
+assert.equal(w.buildRecommendation({...cfg,routineMode:'track'},history(100,12),exerciseId).status,'track','track only must never force progression');
+
+// Choosing Defer keeps the present week normal and offers a deload at the
+// next actual training week, without rewriting the underlying program.
+w.eval('state.activeWorkout=null;state.sessions='+JSON.stringify([sample(1),sample(2),sample(3)].map(s=>({...s,programId:created.id})))+
+ ';const p=state.programs.find(x=>x.id==='+esc(created.id)+');'+
+ 'p.deload={enabled:true,intervalWeeks:4,decisions:{},deferNext:false,deferredFrom:""};save()');
+assert.equal(w.programDeloadContext(w.eval('programById('+esc(created.id)+')')).needsReview,true);
+w.chooseProgramDeload(created.id,'defer',0);
+await wait(65);
+st=read();
+assert.equal(st.activeWorkout.programPhase,'normal','deferred deload should be a normal workout');
+assert.equal(st.programs.find(p=>p.id===created.id).deload.decisions[w.programWeekKey()], 'defer');
+assert.equal(w.programDeloadContext(w.eval('programById('+esc(created.id)+')'),weekAt(1)).needsReview,true,'defer should follow the next training week');
+w.eval('state.activeWorkout=null;save()');
+
 console.log('Guided program v0.82 PASS: required mode, opt-in/custom cadence, week-four review, active deload, protected normal baseline, history, Coach, sharing, and opt-out.');
 dom.window.close();
