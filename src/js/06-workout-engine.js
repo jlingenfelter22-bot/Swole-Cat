@@ -1360,17 +1360,36 @@ function focusedCoachTargetHtml(e,ei,ex,prev){
   '</div></details>';
 }
 function focusedSetCardHtml(e,ei,si,ex,prev){
- const base=e.sets[si],edit=workoutSetEditTarget(ei,si),s=edit?edit.draft:base,type=setType(s),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev),ref=type==='working'?setReference(prev,wi,e.exerciseId,e.config):'Not used for progression',pt=plateLoadText(s.weight||target.weight,ex);
- const rirOptions=[0,1,2,3,4,5].map(function(v){return '<option value="'+v+'" '+(String(s.rir)===String(v)?'selected':'')+'>'+v+'</option>'}).join('');
- const increment=Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5));
- const measurement=exerciseMeasurementType(e.exerciseId,e.config);
- const metric=measurement==='duration'?'durationSeconds':'distanceMeters';
- const metricLabel=measurement==='duration'?'Seconds':distanceUnitLabel();
- const metricValue=measurement==='duration'?compactMetricNumber(s.durationSeconds||0):compactMetricNumber(distanceFromMeters(s.distanceMeters||0));
- const metricIncrement=measurement==='duration'?5:(distanceUnitLabel()==='ft'?5:2.5);
- const measureField=measurement==='reps'?
-  measureField+
-  '<div class="live-input-wrap rir-small"><div class="input-label-row"><label>RIR</label></div><select onchange="updateSet('+ei+','+si+',\'rir\',this.value)"><option value="">—</option>'+rirOptions+'</select></div></div>'+
+ const base=e.sets[si],edit=workoutSetEditTarget(ei,si),s=edit?edit.draft:base;
+ const type=setType(s),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev);
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config),loadType=exerciseLoadType(e.exerciseId,e.config);
+ const ref=type==='working'?setReference(prev,wi,e.exerciseId,e.config):'Not used for progression';
+ const pt=plateLoadText(s.weight||target.weight,ex);
+ const inc=Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5));
+ const opts=[0,1,2,3,4,5].map(v=>'<option value="'+v+'" '+(String(s.rir)===String(v)?'selected':'')+'>'+v+'</option>').join('');
+ function numericField(label,key,value,step,mode='decimal'){
+  const displayed=key==='weight'?displaySetWeightValue(value):key==='distanceMeters'?compactMetricNumber(distanceFromMeters(value)):value;
+  const quoted='&quot;'+key+'&quot;';
+  return '<div class="live-input-wrap numeric-entry"><label>'+esc(label)+'</label><div class="numeric-stepper">'+
+   '<button class="numeric-step-btn" aria-label="decrease '+esc(label)+'" onclick="changeSetValue('+ei+','+si+','+quoted+','+(-step)+')">−</button>'+
+   '<input class="direct-number" type="number" inputmode="'+mode+'" enterkeyhint="done" step="'+(key==='reps'?1:.1)+'" min="0" value="'+displayed+'" placeholder="'+esc(label)+'" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+','+quoted+',this.value)" aria-label="'+key+'">'+
+   '<button class="numeric-step-btn" aria-label="increase '+esc(label)+'" onclick="changeSetValue('+ei+','+si+','+quoted+','+step+')">+</button></div></div>';
+ }
+ const loadField=loadType==='bodyweight'
+  ?'<div class="live-input-wrap numeric-entry bodyweight-entry-note"><label>Load</label><div class="mini">Bodyweight · no added weight</div></div>'
+  :numericField((loadType==='assistance'?'Assistance':ex?.equipment==='bodyweight'?'Added weight':'Weight')+' ('+state.profile.unit+')','weight',s.weight,inc);
+ const measureField=measurement==='duration'
+  ?numericField('Seconds','durationSeconds',s.durationSeconds||0,5)
+  :measurement==='distance'
+  ?numericField('Distance ('+distanceUnitLabel()+')','distanceMeters',s.distanceMeters||0,distanceUnitLabel()==='ft'?5:2.5)
+  :numericField('Reps','reps',s.reps,1,'numeric');
+ return '<div class="focus-set-card set-card type-'+type+' '+(base.done?'completed ':'')+(edit?'editing':'')+'" data-set-index="'+si+'">'+
+  '<div class="focus-set-head"><div><div class="exercise-kicker">'+esc(setDisplayLabel(e,si))+' · '+(si+1)+' OF '+e.sets.length+'</div><div class="focus-set-reference">'+(type==='working'?'Previous: '+esc(ref):'Logged separately from progression')+'</div></div>'+
+  (edit?'<button class="focus-set-edit-cancel" onclick="cancelWorkoutSetEdit()">Cancel</button>':'<button class="focus-set-options" onclick="openFocusedSetOptions('+ei+','+si+')" aria-label="Set options">•••</button>')+'</div>'+
+  (edit?'<div class="focus-set-edit-banner"><b>Editing completed set</b><span>Change the logged values below, then tap Update Set. Your workout position will not move.</span></div>':'')+
+  (type==='working'?'<div class="focus-set-target"><span class="set-target">'+esc(targetBadgeText(target,ex,e.config))+'</span></div>':'<div class="set-nonprogress-note">'+esc(setProgressionNote(type))+'</div>')+
+  '<div class="live-entry">'+loadField+measureField+
+  (measurement==='reps'?'<div class="live-input-wrap rir-small"><div class="input-label-row"><label>RIR</label></div><select onchange="updateSet('+ei+','+si+',&quot;rir&quot;,this.value)"><option value="">—</option>'+opts+'</select></div>':'')+'</div>'+
   (pt?'<div class="plates">'+esc(pt)+'</div>':'')+
   (edit?'<button class="complete-set update-set" onclick="commitWorkoutSetEdit()">Update Set</button>':'<button class="complete-set '+(base.done?'done':'')+'" onclick="'+(base.done?('beginWorkoutSetEdit('+ei+','+si+')'):('toggleSet('+ei+','+si+')'))+'">'+(base.done?'Edit Set':'Complete Set')+'</button>')+
   (!edit&&base.pr?'<div class="pr-banner"><span class="inline-pr-mark">PR</span> '+esc(base.pr)+'</div>':'')+'</div>';
