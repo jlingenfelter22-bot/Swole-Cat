@@ -27,6 +27,12 @@ The principles governing the free core, independence, ads, subscriptions, Lifeti
 
 For the exact current development state and the safest place to resume after lost chat/context, read [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md).
 
+## Training Science and Guided Progressive Overload
+
+The canonical evidence-backed reference for workout programming, strength and hypertrophy, guided progressive overload, deloading, fatigue interpretation, personalization and training-data quality is [docs/TRAINING_SCIENCE_FOUNDATION.md](docs/TRAINING_SCIENCE_FOUNDATION.md). **Read it before changing workout or progression behavior.** [AGENTS.md](AGENTS.md) provides the same mandatory developer/AI review checklist. Research documentation does not itself modify the running app.
+
+Coach-specific evidence and existing logic contracts remain documented in [docs/COACH_SWOLECAT_EVIDENCE.md](docs/COACH_SWOLECAT_EVIDENCE.md).
+
 ## Data
 
 Workout data is local to the device. Export backups periodically, especially before clearing browser/app storage or moving between the PWA and Android app.
