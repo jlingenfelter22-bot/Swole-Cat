@@ -365,7 +365,9 @@ function saveCompletedSessionAsRoutine(sessionId){
 }
 function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],historical=false}={}){
  const workingSets=sessionSetCount(session),allSets=sessionAllSetCount(session),reps=sessionTotalReps(session);
- const hasMetric=(session.exercises||[]).some(e=>exerciseMeasurementType(e.exerciseId,e.config)!=='reps'&&progressionSets(e).length);
+ const holdSeconds=(session.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='duration'?completedSets(e).reduce((a,set)=>a+(Number(set.durationSeconds)||0),0):0),0);
+ const distanceMeters=(session.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='distance'?completedSets(e).reduce((a,set)=>a+(Number(set.distanceMeters)||0),0):0),0);
+ const measureHeadline=reps>0?{value:reps,label:'Total reps'}:holdSeconds>0?{value:compactMetricNumber(holdSeconds),label:'Hold seconds'}:distanceMeters>0?{value:compactMetricNumber(distanceFromMeters(distanceMeters)),label:'Distance ('+distanceUnitLabel()+')'}:{value:'—',label:'Tracked sets'};
  const savedRoutine=routineSavedFromSession(session.id);
  const linkedRoutine=!!(session.routineId&&state.routines.some(r=>r.id===session.routineId));
  const volume=Math.round(sessionVolume(session)),prs=sessionPRDetails(session),muscles=sessionMuscleGroups(session);
@@ -406,7 +408,7 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
    <div class="recap-metrics">
      <div class="recap-metric"><b>${completedExercises}</b><span>Exercises</span></div>
      <div class="recap-metric"><b>${workingSets}</b><span>Working sets</span></div>
-     <div class="recap-metric"><b>${reps}</b><span>${hasMetric?'Rep-based sets only':'Total reps'}</span></div>
+     <div class="recap-metric"><b>${measureHeadline.value}</b><span>${measureHeadline.label}</span></div>
      <div class="recap-metric"><b>${prs.length}</b><span>Exercises with PR</span></div>
    </div>
    <div class="recap-section">
