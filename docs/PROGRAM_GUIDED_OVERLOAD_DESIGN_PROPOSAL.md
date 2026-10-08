@@ -136,3 +136,19 @@ New-program blank/required mode; legacy program opening/editing; imported/shared
 - These settings belong to each Guided Progressive Overload program and are not shown for Strength Focus, Track Only or Use each routine's mode under the initial scope.
 - **Science caveat:** Bell et al. (2023) expert Delphi and the 2024 athlete survey describe variable practices, not experimental proof of the best frequency. Default is UX convention, not a prescription.
 - The owner is still discussing program behavior; **no implementation authorization or runtime algorithm change** is implied by documenting these choices.
+
+
+## 2026-10-08 Implementation checkpoint (v0.82.0 Testing candidate)
+
+This design document was originally drafted before implementation. The following first-phase behavior is implemented on an isolated development branch pending CI and real-device Testing review:
+- New program training mode is required without a preset; existing programs retain saved selections.
+- Guided programs offer a scheduled deload toggle OFF by default, a suggested every-fourth-training-week interval, presets 3–8 and custom 2–52.
+- Weeks are counted by distinct calendar Monday-start weeks with **actual recorded program training**, ignoring completely missed weeks. Changing schedule mid-block is not a medical interpretation.
+- Starting a due workout opens an explicit choice: begin deload, defer one training week, skip, or decide later.
+- Deload workouts use approximately half as many working sets and minimum-range reps at the last eligible normal training load. This is a configurable-by-user-session illustrative implementation, not a proven optimal deload prescription.
+- Workout and history records carry deliberate deload-phase metadata, and guided baseline/Coach adaptive exposure calculations skip deload sessions. Factual volume and completed workout history remain visible.
+- Program shares carry the deload preference and cadence only, not another user's phase decisions or performance baselines.
+- Program-guided automatic load increases are conservatively held if the jump would exceed 10% of positive external load. This is an engineering guard, not a universal evidence-based threshold.
+- An automated JSDOM stress suite covers setup, phased launch, baseline isolation, history and sharing.
+
+Still subject to iterative refinement after hands-on Testing: missed-week semantics, deferral UX, load/equipment micro-increments, global PR interpretation, recovery prompting, multi-device synchronization, and longer-term performance trend presentation. **No Beta promotion without explicit owner approval.**
