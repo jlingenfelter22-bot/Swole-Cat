@@ -1,5 +1,36 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-08 · Testing v0.84.0 movement intelligence
+
+**Latest signed Swole Cat Testing:** v0.84.0, Android versionCode 120. Signature, release APK and in-app updater manifest verified.
+- Implementation PR: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/41 (merged).
+- Signed Testing release: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.84.0
+- Signed APK: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.84.0/swole-cat-testing-v0.84.0-signed.apk
+- Full source validation: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37834876971 (success, includes 308-profile and metric end-to-end tests).
+- Android signed release and updater publication: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37835229873 (success).
+- Testing update manifest `updates/testing.json`: v0.84.0, code 120, package `com.jlingenfelter.swolecat.testing`, SHA-256 `a9c10814d12c75a4d652c48d59685f0922681df53f8b5b9efea9da1fc37f9cc9`, persistent signing cert `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta untouched**, branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. Do not promote without explicit owner approval.
+
+### Phase 1 exercise intelligence shipped in Testing
+
+- One deterministic, offline movement profile resolver for **308 built-in exercises**, combining movement family, equipment, training goal, exercise-specific metadata and optional explicit routine overrides.
+- Introduced named **Dead Hang** and proper `durationSeconds` sets for Dead Hang/Plank/RKC Plank/Side Plank; `distanceMeters` sets for carries and sled moves. Distance displayed in ft for lb preference and meters for kg preference; stored as canonical meters. Regular reps/bodyweight, weighted pullups and assisted counterweight progress from v0.83 preserved.
+- Guided timed/distance recommendations and records, Track Only independence, user-editable goals and ranges. Routine editor, active set UI, recap, History, exercise progress, substitutes, sharing/imports all interpret these measurements rather than inventing reps.
+- Legacy rep-based Plank logs continue to mean reps and remain editable. Old user workout history is not rewritten; weight-first-session autosave/autofill fixed and tested.
+- Verified all built-in profiles have valid safe measurement classifications, and Dead Hang anatomy participates in 308-exercise heatmap audit.
+- Full existing regression suite succeeded, including v0.83 assisted/bodyweight, v0.82 guided deload, Coach, sharing, active workouts and longstanding weight-autofill testing.
+- Canonical design reference: [EXERCISE_INTELLIGENCE_FOUNDATION.md](EXERCISE_INTELLIGENCE_FOUNDATION.md), alongside [EXERCISE_LOAD_BEHAVIOR.md](EXERCISE_LOAD_BEHAVIOR.md) and [TRAINING_SCIENCE_FOUNDATION.md](TRAINING_SCIENCE_FOUNDATION.md).
+
+### Next work requiring field review / new approval
+
+1. Android Testing hands-on walkthrough: Dead Hang seconds only, Plank duration, Farmer Carry distance and weight, Pull-Up reps only, assisted/weighted Pull-Up, customizable exercise measurement.
+2. Check actual performance, text wrapping and comfort of these numeric inputs on phone; validate progress/history editing and continuing partially complete workouts.
+3. Potential additional features **not yet implemented**: start/stop timer for holds, simultaneous distance plus duration, per-side reps, machine equipment steps, extended individual movement exception audit, and profile-specific estimates beyond family heuristics.
+4. Keep Testing and Beta isolated. Beta promotion only when explicitly requested.
+
+Historical milestones below may include older version numbers. This block is the authoritative current baseline.
+
+
 ## Latest milestone: 2026-10-08 · Testing v0.83.0 exercise-aware loading
 
 **Current live Testing build:** v0.83.0, Android versionCode 119, signed Android prerelease and in-app updater manifest published and verified.
