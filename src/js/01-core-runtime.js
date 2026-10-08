@@ -703,7 +703,7 @@ function startRoutineFresh(id,programId=null){
    id:uid(),routineId:id,routineName:r.name,trainingMode:effectiveMode,programId:programId||null,
    programPhase:isDeload?'deload':'normal',programWeekKey:weekContext?.key||null,programWeekIndex:weekContext?.weekIndex||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,structureNoticeSeen:false,pausedAt:null,pausedDurationMs:0,focusExerciseIndex:0,focusSetIndex:0,deferredExerciseIndexes:[],
    exercises:r.exercises.map((re,routineIndex)=>{
-     const prev=previousExercise(re.exerciseId,programId);
+     const prev=previousExercise(re.exerciseId,programId,re);
      const loadType=exerciseLoadType(re.exerciseId,re);
      const mode=effectiveMode,normalConfig={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode,programGuided:!!(program&&programMode==='guided')};
      if(loadType!=='external'){normalConfig.adaptiveProgression=false;normalConfig.setStructure=null;normalConfig.progressionStrategy='double';}
