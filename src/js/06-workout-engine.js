@@ -146,7 +146,7 @@ function applyCoachReset(ei){
  saveActiveWorkout();renderWorkout();
 }
 function openTargetOverride(ei){
- const e=state.activeWorkout.exercises[ei],prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
+ const e=state.activeWorkout.exercises[ei],prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
  openModal('Override session target',`
  <div class="notice">This changes the target for this workout only. It does not rewrite your routine or old history.</div>
  <div class="form-grid" style="margin-top:12px">
@@ -163,15 +163,17 @@ function saveTargetOverride(ei){
 }
 function clearTargetOverride(ei){
  const e=state.activeWorkout.exercises[ei];e.targetOverride=null;
- const prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId);
+ const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),rec=buildRecommendation(e.config,prev,e.exerciseId);
  let wi=0;e.sets.forEach(s=>{if(!isProgressionSet(s))return;if(!s.done){s.weight=rec.weights?.[wi]??rec.weight??0;s.reps=rec.targetReps?.[wi]??e.config.minReps;}wi++;});
  saveActiveWorkout();closeModal();renderWorkout();
 }
 function applyLightSession(){
  const w=state.activeWorkout;if(!w)return;
  w.exercises.forEach(e=>{
-   const prev=previousExercise(e.exerciseId),base=liveSetTarget(e,firstWorkingSetIndex(e),prev);
-   const wt=roundLoad(base.weight*.925);
+   const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),base=liveSetTarget(e,firstWorkingSetIndex(e),prev);
+   const kind=exerciseLoadType(e.exerciseId,e.config);
+   const wt=kind==='bodyweight'?0:kind==='assistance'?
+     roundLoad(base.weight+Math.max(.25,Number(e.config.increment)||base.weight*.075)):roundLoad(base.weight*.925);
    e.targetOverride={weight:wt,reps:e.config.minReps,reason:'Light session'};
    e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=wt;s.reps=e.config.minReps;}});
  });
@@ -431,7 +433,7 @@ function warmupGuide(weight,ex){
  ].filter((x,i,a)=>x.weight>0 && (i===0||x.weight!==a[i-1].weight) && x.weight<w);
 }
 function openWarmupGuide(ei){
- const e=state.activeWorkout.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),sets=warmupGuide(t.weight,ex);
+ const e=state.activeWorkout.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),sets=warmupGuide(t.weight,ex);
  openModal(`${esc(ex?.name||'Exercise')} warm-up`,sets.length?`
  <div class="notice">Optional ramp-up sets before your working sets. Adjust or skip them based on how you feel and how heavy the working weight is.</div>
  <div class="card" style="margin-top:12px">${sets.map((s,i)=>`<div class="list-item"><div class="setnum">${i+1}</div><div class="grow"><b>${s.weight} ${state.profile.unit} × ${s.reps}</b><div class="mini">${plateLoadText(s.weight,ex)}</div></div></div>`).join('')}</div>
@@ -475,7 +477,7 @@ function addWorkoutSet(ei,type='working'){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei];if(!e)return;
  type=['working','warmup','drop','failure'].includes(type)?type:'working';
  const existingWorking=workingSetIndexes(e);
- const prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId);
+ const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),rec=buildRecommendation(e.config,prev,e.exerciseId);
  let weight=0,reps=e.config.minReps;
  if(type==='working'){
    const wi=existingWorking.length,lastWorking=existingWorking.length?e.sets[existingWorking.at(-1)]:null;
@@ -519,7 +521,7 @@ function addSuggestedWarmups(ei){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],ex=e?exById(e.exerciseId):null;if(!e||!ex)return;
  const existing=e.sets.filter(function(s){return setType(s)==='warmup'});
  if(existing.length){closeModal();showToast('Warm-up sets are already in this exercise');return}
- const prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),suggested=warmupGuide(t.weight,ex);
+ const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),suggested=warmupGuide(t.weight,ex);
  if(!suggested.length){closeModal();showToast('No warm-up ramp available for this target');return}
  const at=firstWorkingSetIndex(e);
  e.sets.splice.apply(e.sets,[at,0].concat(suggested.map(function(s){return {weight:s.weight,reps:s.reps,done:false,rir:'',type:'warmup',pr:''}})));
@@ -1195,7 +1197,7 @@ function openFocusedSetOptions(ei,si){
 }
 function openFocusedExerciseMore(ei){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],ex=e?exById(e.exerciseId):null;if(!e)return;
- const prev=previousExercise(e.exerciseId),target=liveSetTarget(e,firstWorkingSetIndex(e),prev),warmups=warmupGuide(target.weight,ex),superset=supersetMeta(ei),hasRemaining=workoutHasRemainingProgrammedWork(w);
+ const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),target=liveSetTarget(e,firstWorkingSetIndex(e),prev),warmups=warmupGuide(target.weight,ex),superset=supersetMeta(ei),hasRemaining=workoutHasRemainingProgrammedWork(w);
  openModal(esc(ex&&ex.name||'Exercise')+' · More',
   '<div class="notice">Keep the live screen focused on logging. Everything here stays available when you need to change the exercise or the session.</div>'+
   '<div class="workout-more-section"><div class="eyebrow">EXERCISE</div><div class="actions">'+
@@ -1249,7 +1251,7 @@ function focusedSetCardHtml(e,ei,si,ex,prev){
   (!edit&&base.pr?'<div class="pr-banner"><span class="inline-pr-mark">PR</span> '+esc(base.pr)+'</div>':'')+'</div>';
 }
 function focusedExerciseCanvasHtml(w,ei){
- const e=w.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),si=workoutFocusedSetIndex(w),prog=exerciseSetProgress(e),superset=supersetMeta(ei);
+ const e=w.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),si=workoutFocusedSetIndex(w),prog=exerciseSetProgress(e),superset=supersetMeta(ei);
  const next=nextWorkoutExerciseIndex(ei,w),allDone=!workoutHasRemainingProgrammedWork(w);
  return '<div class="focus-exercise-stage" data-exercise-index="'+ei+'">'+workoutExerciseNavigatorHtml(w,ei)+
   '<div id="workoutExercise-'+ei+'" class="focus-exercise-canvas tone-'+(ei%4)+' '+(prog.complete?'complete-block':'')+'">'+
