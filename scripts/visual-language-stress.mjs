@@ -29,6 +29,8 @@ assert.match(polish,/#history\{--screen-accent:var\(--signal-history\)/,
   'History should use record/history pink');
 assert.match(polish,/#analytics\{--screen-accent:var\(--signal-info\)/,
   'Progress should use information cyan');
+assert.match(polish,/#routines \.routine-view-tab\.active\{[\s\S]*var\(--signal-plan\)/,
+  'Routines/Programs segmented selection should use planning violet');
 
 assert.match(polish,/\.navbtn\[data-go="routines"\]\.active\{--nav-accent:var\(--signal-plan\)\}/,
   'Routines nav should inherit planning identity');
