@@ -205,10 +205,10 @@ function derivedSessionData(){
    (session.exercises||[]).forEach(e=>{
      const working=progressionSets(e),all=completedSets(e);
      if(all.length)loggedExerciseIds.add(e.exerciseId);
-     if(!previousByExercise.has(e.exerciseId))previousByExercise.set(e.exerciseId,{date:session.date,...e});
+     if(session.programPhase!=='deload'&&working.length&&!previousByExercise.has(e.exerciseId))previousByExercise.set(e.exerciseId,{date:session.date,...e});
      if(!working.length)return;
      if(!historyByExercise.has(e.exerciseId))historyByExercise.set(e.exerciseId,[]);
-     historyByExercise.get(e.exerciseId).push({date:session.date,routineName:session.routineName,sets:working,allSets:all,notes:e.notes||''});
+     historyByExercise.get(e.exerciseId).push({date:session.date,routineName:session.routineName,programId:session.programId||null,programPhase:session.programPhase||'normal',sets:working,allSets:all,notes:e.notes||''});
    });
  });
  historyByExercise.forEach(rows=>rows.sort((a,b)=>String(a.date).localeCompare(String(b.date))));
