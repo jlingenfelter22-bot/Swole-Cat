@@ -19,12 +19,14 @@ function programDeloadContext(p,date=new Date()){
    deload.deferNext&&deload.deferredFrom!==key||weekIndex%deload.intervalWeeks===0
  );
  const phase=enabled&&(choice==='deload'||recorded)?'deload':'normal';
- return {key,weekIndex,phase,due,needsReview:!!(due&&!choice&&!recorded),enabled,intervalWeeks:deload.intervalWeeks};
+ return {key,weekIndex,phase,due,decision:choice||null,needsReview:!!(due&&!choice&&!recorded),enabled,intervalWeeks:deload.intervalWeeks};
 }
 function programDeloadStatusHtml(p){
  const c=programDeloadContext(p);
  if(!c.enabled)return '';
  if(c.phase==='deload')return '<div class="program-deload-state is-deload">☾ DELOAD WEEK · Reduced training stress by choice</div>';
+ if(c.decision==='defer')return '<div class="program-deload-state is-upcoming">☾ DELOAD DEFERRED · Review next training week</div>';
+ if(c.decision==='skip')return '<div class="program-deload-state">DELOAD SKIPPED · Normal training this week</div>';
  if(c.needsReview)return '<div class="program-deload-state is-upcoming">☾ DELOAD DUE · Review before your next workout</div>';
  const at=((c.weekIndex-1)%c.intervalWeeks)+1;
  return '<div class="program-deload-state">TRAINING WEEK '+at+'/'+c.intervalWeeks+' · Deload every '+c.intervalWeeks+'th week</div>';
@@ -50,7 +52,7 @@ function chooseProgramDeload(id,choice,index=null){
  const p=programById(id);if(!p||!['deload','defer','skip'].includes(choice))return;
  const context=programDeloadContext(p);if(!context.needsReview)return;
  p.deload=programDeloadConfig(p.deload);
- p.deload.decisions[context.key]=choice==='deload'?'deload':'normal';
+ p.deload.decisions[context.key]=choice;
  if(choice==='defer'){p.deload.deferNext=true;p.deload.deferredFrom=context.key}
  else {p.deload.deferNext=false;p.deload.deferredFrom=''}
  save();closeModal();renderPrograms();renderActiveProgramHome();
@@ -145,8 +147,8 @@ function startProgramWorkout(programId,index=null){
  if(!state.activeWorkout&&reviewProgramDeload(p,targetIndex))return;
  if(state.activeProgramId!==programId){state.activeProgramId=programId;save()}
  if(state.activeWorkout?.routineId===rid&&!state.activeWorkout.programId){
-   if(programDeloadContext(p).needsReview){
-    showToast('Finish or cancel the standalone workout before deciding on deload.');resumeActiveWorkout();return;
+   if(normalizeProgramTrainingMode(p.trainingMode)!=='inherit'){
+    showToast('Finish or cancel the standalone workout before starting this program mode.');resumeActiveWorkout();return;
    }
    state.activeWorkout.programId=programId;
    state.activeWorkout.programWeekKey=programWeekKey(state.activeWorkout.startDate);
