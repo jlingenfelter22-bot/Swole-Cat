@@ -22,11 +22,11 @@ function progressionLoadSets(prev,type){
  return progressionSets(prev).filter(s=>type==='bodyweight'||Number(s.weight)>=0);
 }
 
-function previousExercise(exerciseId,programId=state.activeWorkout?.programId||null){
+function previousExercise(exerciseId,programId=state.activeWorkout?.programId||null,config=null){
  // Deload performances are genuine history, but not evidence of normal training capacity.
  const candidates=(state.sessions||[]).filter(s=>s.programPhase!=='deload')
   .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
- const type=exerciseLoadType(exerciseId);
+ const type=exerciseLoadType(exerciseId,config);
  const eligible=s=>((s.exercises||[]).find(e=>e.exerciseId===exerciseId&&!e.skipped&&progressionSets(e).some(set=>type!=='external'||Number(set.weight)>0)));
  const selected=(programId?candidates.filter(s=>s.programId===programId):candidates).find(eligible)
     ||candidates.find(eligible);
@@ -387,7 +387,7 @@ function loadAwarePR(prior,set,exerciseId,config=null){
  const priorE1=Math.max(0,...prior.map(p=>estimated1RM(p.weight,p.reps)));
  const curE1=estimated1RM(w,r);
  if(w>maxWeight)return 'Load PR: '+w+' '+state.profile.unit;
- if(r>sameWeightMax)return 'Rep PR: '+w+' '+state.profile.unit+' × '+r;
+ if(prior.some(p=>Number(p.weight)===w)&&r>sameWeightMax)return 'Rep PR: '+w+' '+state.profile.unit+' × '+r;
  if(curE1>priorE1*1.01)return 'Estimated strength PR';
  return '';
 }
