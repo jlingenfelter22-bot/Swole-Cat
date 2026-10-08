@@ -89,7 +89,9 @@ function previousExercise(exerciseId,programId=state.activeWorkout?.programId||n
  const candidates=(state.sessions||[]).filter(s=>s.programPhase!=='deload')
   .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
  const type=exerciseLoadType(exerciseId,config);
- const eligible=s=>((s.exercises||[]).find(e=>e.exerciseId===exerciseId&&!e.skipped&&progressionSets(e).some(set=>type!=='external'||Number(set.weight)>0)));
+ const measure=exerciseMeasurementType(exerciseId,config);
+ const eligible=s=>((s.exercises||[]).find(e=>e.exerciseId===exerciseId&&!e.skipped&&progressionSets(e).some(set=>
+    (measure==='reps'||exerciseMetricValue(set,measure)>0)&&(type!=='external'||measure!=='reps'||Number(set.weight)>0))));
  const selected=(programId?candidates.filter(s=>s.programId===programId):candidates).find(eligible)
     ||candidates.find(eligible);
  const exercise=selected&&eligible(selected);
@@ -97,7 +99,11 @@ function previousExercise(exerciseId,programId=state.activeWorkout?.programId||n
 }
 function setType(set){return ['working','warmup','drop','failure'].includes(set?.type)?set.type:'working'}
 function isProgressionSet(set){return setType(set)==='working'}
-function completedSets(prev){return (prev?.sets||[]).filter(s=>s.done && Number(s.weight)>=0 && Number(s.reps)>0)}
+function completedSets(prev){
+ const kind=exerciseMeasurementType(prev?.exerciseId,prev?.config);
+ return (prev?.sets||[]).filter(s=>s.done && Number(s.weight)>=0 &&
+   (exerciseMetricValue(s,kind)>0||(kind!=='reps'&&Number(s.reps)>0)));
+}
 function progressionSets(prev){return completedSets(prev).filter(isProgressionSet)}
 function workingSetIndexes(e){return (e?.sets||[]).map((s,i)=>isProgressionSet(s)?i:-1).filter(i=>i>=0)}
 function workingSetOrdinal(e,si){
@@ -242,7 +248,61 @@ function applyLightSession(){
  saveActiveWorkout();renderWorkout();
 }
 
+function buildMetricRecommendation(config,prev,exerciseId,measurement){
+ const profile=exerciseMovementProfile(exerciseId,config,config.trainingGoal||'general');
+ const count=Math.max(1,Math.trunc(Number(config.sets)||3));
+ const key=measurement==='duration'?'durationSeconds':'distanceMeters';
+ const done=progressionSets(prev).filter(set=>exerciseMetricValue(set,measurement)>0);
+ const prior=done.slice(0,count);
+ const values=prior.map(set=>exerciseMetricValue(set,measurement));
+ const previousWeights=prior.map(set=>Math.max(0,Number(set.weight)||0));
+ const weight=previousWeights[0]||0;
+ const loadType=exerciseLoadType(exerciseId,config);
+ const weights=Array.from({length:count},(_,i)=>loadType==='bodyweight'?0:previousWeights[i]??weight);
+ const units=measurement==='duration'?'seconds':distanceUnitLabel();
+ const display=n=>measurement==='duration'?compactMetricNumber(n):compactMetricNumber(distanceFromMeters(n));
+ const min=Math.max(1,profile.min),max=Math.max(min,profile.max);
+ const mode=normalizeTrainingMode(config.routineMode);
+ if(!done.length){
+  return {status:'baseline',weight:0,weights:Array(count).fill(0),targetValues:Array(count).fill(min),
+   headline:measurement==='duration'?'Log your hold time':'Log your distance',
+   detail:'Record actual '+units+' for this movement. This is a starting suggestion, not a mandatory result.'};
+ }
+ const target=Array.from({length:count},(_,i)=>values[i]??min);
+ if(mode==='track'||config.mode==='manual'){
+  return {status:mode==='track'?'track':'manual',weight,weights,targetValues:target,
+   headline:'Track your '+(measurement==='duration'?'hold time':'distance'),
+   detail:'No automatic progression target is active. Log the actual '+units+' achieved.'};
+ }
+ const allAtMax=prior.length>=count&&prior.every(set=>exerciseMetricValue(set,measurement)>=max);
+ const minMet=prior.length>=count&&prior.every(set=>exerciseMetricValue(set,measurement)>=min);
+ const ready=allAtMax||(mode==='strength'&&minMet&&loadType==='external');
+ if(ready&&loadType==='external'&&weight>0){
+  const increment=Math.max(0,Number(config.increment)||0);
+  if(increment>0&&increment/weight<=.1){
+   return {status:'load',weight:roundLoad(weight+increment),weights:Array(count).fill(roundLoad(weight+increment)),targetValues:Array(count).fill(min),
+    headline:'Increase load, reset '+(measurement==='duration'?'hold time':'distance'),
+    detail:'You met the programmed goal at the previous load. Increase only if equipment and technique allow it.'};
+  }
+ }
+ if(allAtMax)return {status:'hold',weight,weights,targetValues:Array(count).fill(max),
+  headline:measurement==='duration'?'Hold quality or choose a harder variation':'Distance goal reached · hold or adjust load',
+  detail:'You reached the target range. Maintain quality or manually customize the movement, duration or resistance.'};
+ let next=values.map(v=>Math.min(max,Math.max(min,v+profile.increment)));
+ while(next.length<count)next.push(min);
+ if(config.mode==='total'&&values.length){
+  next=values.map(v=>Math.min(max,Math.max(min,v)));
+  while(next.length<count)next.push(min);
+  const idx=next.findIndex(v=>v<max);
+  if(idx>=0)next[idx]=Math.min(max,next[idx]+profile.increment);
+ }
+ return {status:'reps',weight,weights,targetValues:next,
+  headline:measurement==='duration'?'Build hold time':'Build distance',
+  detail:'Suggested next target: '+next.map(display).join(' / ')+' '+units+'. Progress gradually with repeatable technique.'};
+}
 function buildRecommendation(config,prev,exerciseId=null){
+ const measurement=exerciseMeasurementType(exerciseId,config);
+ if(measurement!=='reps')return buildMetricRecommendation(config,prev,exerciseId,measurement);
  const loadType=exerciseLoadType(exerciseId,config);
  const done=progressionLoadSets(prev,loadType);
  const goal=config.trainingGoal||'general';
