@@ -1417,7 +1417,7 @@ function focusedSetCardHtml(e,ei,si,ex,prev){
   const quoted='&quot;'+key+'&quot;';
   return '<div class="live-input-wrap numeric-entry"><label>'+esc(label)+'</label><div class="numeric-stepper">'+
    '<button class="numeric-step-btn" aria-label="decrease '+esc(label)+'" onclick="changeSetValue('+ei+','+si+','+quoted+','+(-step)+')">−</button>'+
-   '<input class="direct-number" type="number" inputmode="'+mode+'" enterkeyhint="done" step="'+(key==='reps'?1:.1)+'" min="0" value="'+displayed+'" placeholder="'+esc(label)+'" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+','+quoted+',this.value)" aria-label="'+key+'">'+
+   '<input class="direct-number" type="number" inputmode="'+mode+'" enterkeyhint="done" step="'+(key==='reps'?1:.1)+'" min="0" value="'+displayed+'" placeholder="'+esc(label)+'" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+','+quoted+',this.value)" '+(key==='weight'&&!edit?'onblur="commitFirstExerciseWeightAutofill('+ei+','+si+')"':'')+' aria-label="'+key+'">'+
    '<button class="numeric-step-btn" aria-label="increase '+esc(label)+'" onclick="changeSetValue('+ei+','+si+','+quoted+','+step+')">+</button></div></div>';
  }
  const loadField=loadType==='bodyweight'
