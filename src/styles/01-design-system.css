@@ -343,6 +343,20 @@
     --cyan:#22d3ee;
     --pink:#ff2e88;
     --success:#35e98a;
+
+    /* Semantic color language — colors communicate state, not decoration. */
+    --signal-info:#22d3ee;
+    --signal-plan:#a855f7;
+    --signal-coach:#a855f7;
+    --signal-active:#35e98a;
+    --signal-pr:#ff4fa3;
+    --signal-history:#f472b6;
+    --signal-warning:#f59e0b;
+    --signal-danger:#fb7185;
+    --signal-superset:#facc15;
+    --signal-superset-soft:#fff0a0;
+    --signal-neutral:#8fa3b8;
+
     --display:"Arial Narrow","Roboto Condensed","Segoe UI",system-ui,sans-serif;
     --body:Inter,"Segoe UI",Roboto,system-ui,sans-serif;
     --panel-cut:4px 17px 4px 17px;
