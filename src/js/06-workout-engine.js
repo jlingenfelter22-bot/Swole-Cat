@@ -499,7 +499,17 @@ function estimated1RM(weight,reps){
  return weight*(1+Math.min(reps,15)/30);
 }
 function loadAwarePR(prior,set,exerciseId,config=null){
- if(!prior?.length||!Number.isFinite(Number(set.reps))||Number(set.reps)<=0)return '';
+ if(!prior?.length)return '';
+ const measurement=exerciseMeasurementType(exerciseId,config);
+ if(measurement!=='reps'){
+  const value=exerciseMetricValue(set,measurement);
+  if(value<=0)return '';
+  const comparable=prior.filter(x=>exerciseMetricValue(x,measurement)>0&&(Number(x.weight)||0)>=(Number(set.weight)||0));
+  const previousBest=Math.max(0,...comparable.map(x=>exerciseMetricValue(x,measurement)));
+  if(previousBest&&value>previousBest)return measurement==='duration'?'Hold time PR: '+compactMetricNumber(value)+' sec':'Distance PR: '+compactMetricNumber(distanceFromMeters(value))+' '+distanceUnitLabel();
+  return '';
+ }
+ if(!Number.isFinite(Number(set.reps))||Number(set.reps)<=0)return '';
  const kind=exerciseLoadType(exerciseId,config),w=Math.max(0,Number(set.weight)||0),r=Number(set.reps);
  if(kind==='bodyweight'){
    const best=Math.max(0,...prior.map(p=>Number(p.reps)||0));
@@ -612,6 +622,7 @@ function addWorkoutSet(ei,type='working'){
  const existingWorking=workingSetIndexes(e);
  const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),rec=buildRecommendation(e.config,prev,e.exerciseId);
  let weight=0,reps=e.config.minReps;
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config),profile=exerciseMovementProfile(e.exerciseId,e.config);
  if(type==='working'){
    const wi=existingWorking.length,lastWorking=existingWorking.length?e.sets[existingWorking.at(-1)]:null;
    weight=Number((rec.weights&&rec.weights[wi])??rec.weight??(lastWorking&&lastWorking.weight)??0);
@@ -620,7 +631,10 @@ function addWorkoutSet(ei,type='working'){
    const source=existingWorking.length?e.sets[existingWorking.at(-1)]:e.sets.at(-1);
    weight=Number(source&&source.weight)||0;reps=Number(source&&source.reps)||e.config.minReps;
  }
- const item={weight:roundLoad(weight),reps:Math.max(1,Math.round(reps)),done:false,rir:'',type:type,pr:'',
+ const metricValue=type==='working'?(rec.targetValues?.[existingWorking.length]??rec.targetValues?.at(-1)??profile.min):profile.min;
+ const item={weight:roundLoad(weight),reps:measurement==='reps'?Math.max(1,Math.round(reps)):0,
+   durationSeconds:measurement==='duration'?metricValue:0,distanceMeters:measurement==='distance'?metricValue:0,
+   done:false,rir:'',type:type,pr:'',
    role:type==='working'&&typeof coachAdaptiveSetRole==='function'?coachAdaptiveSetRole(e.config,existingWorking.length):undefined};
  let at=e.sets.length;
  if(type==='warmup')at=existingWorking.length?existingWorking[0]:0;
@@ -886,6 +900,11 @@ function routineExerciseFromWorkout(e){
    trainingGoal:cfg.trainingGoal||'general',
    resetPercent:Number(cfg.resetPercent)||7.5,
    loadType:cfg.loadType||'auto',
+   measurementType:cfg.measurementType||'auto',
+   minDurationSeconds:Math.max(1,Number(cfg.minDurationSeconds)||20),
+   maxDurationSeconds:Math.max(1,Number(cfg.maxDurationSeconds)||45),
+   minDistanceMeters:Math.max(.25,Number(cfg.minDistanceMeters)||10),
+   maxDistanceMeters:Math.max(.25,Number(cfg.maxDistanceMeters)||30),
    restSeconds:Math.max(15,Number(cfg.restSeconds)||120),
    targetRIR:Number.isFinite(Number(cfg.targetRIR))?Number(cfg.targetRIR):null,
    supersetGroup:e.supersetId||null
@@ -1131,6 +1150,7 @@ function syncWorkoutStickyOffsets(){
 }
 function compactTargetText(e,ex,prev){
  const t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
+ if(exerciseMeasurementType(e.exerciseId,e.config)!=='reps')return targetBadgeText(t,ex,e.config);
  if(e.targetOverride)return exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?`Target ${e.targetOverride.reps} bodyweight reps`:`Target ${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`;
  const type=exerciseLoadType(e.exerciseId,e.config);
  if(type==='bodyweight')return `${t.reps} reps · bodyweight`;
@@ -1346,9 +1366,9 @@ function openFocusedExerciseMore(ei){
   '<button class="btn danger" onclick="closeModal();cancelWorkout()">Cancel workout</button></div></div>');
 }
 function focusedCoachTargetHtml(e,ei,ex,prev){
- const rec=buildRecommendation(e.config,prev,e.exerciseId),coach=exerciseLoadType(e.exerciseId,e.config)==='external'?coachSignal(e.exerciseId,e.config):null;
+ const rec=buildRecommendation(e.config,prev,e.exerciseId),coach=exerciseMeasurementType(e.exerciseId,e.config)==='reps'&&exerciseLoadType(e.exerciseId,e.config)==='external'?coachSignal(e.exerciseId,e.config):null;
  const firstWorking=firstWorkingSetIndex(e),firstTarget=liveSetTarget(e,firstWorking,prev),plateText=plateLoadText(firstTarget.weight,ex),compactTarget=compactTargetText(e,ex,prev);
- const title=e.targetOverride?(exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?(e.targetOverride.reps+' bodyweight reps'):(e.targetOverride.weight+' '+state.profile.unit+' × '+e.targetOverride.reps)):rec.headline;
+ const title=e.targetOverride?targetBadgeText(firstTarget,ex,e.config):rec.headline;
  const detail=e.targetOverride?('Session-only '+(e.targetOverride.reason||'override')+'. Routine progression is unchanged.'):rec.detail;
  return '<details class="workout-guidance focus-guidance" '+(e.targetOverride?'open':'')+'><summary>'+
   '<div class="workout-guidance-copy"><div class="eyebrow">COACH TARGET</div><div class="workout-guidance-title">'+esc(title)+'</div>'+
