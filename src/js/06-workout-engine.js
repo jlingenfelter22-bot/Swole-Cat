@@ -403,14 +403,25 @@ function buildRecommendation(config,prev,exerciseId=null){
 function roundLoad(n){return Math.round(Number(n)*4)/4}
 
 function setReference(prev,workingIndex,exerciseId=null,config=null){
- const done=progressionSets(prev),s=done[workingIndex]||done[done.length-1];
- if(!s)return 'No prior set';
- const type=exerciseLoadType(exerciseId,config);
- const load=type==='bodyweight'?'Bodyweight':type==='assistance'?s.weight+' '+state.profile.unit+' assist':s.weight+' '+state.profile.unit;
- return load+' × '+s.reps+(s.rir!==''&&s.rir!=null?' @'+s.rir+' RIR':'');
+ const measurement=exerciseMeasurementType(exerciseId,config);
+ const done=progressionSets(prev).filter(set=>measurement==='reps'||exerciseMetricValue(set,measurement)>0);
+ const set=done[workingIndex]||done[done.length-1];
+ if(!set)return 'No comparable prior set';
+ if(measurement!=='reps')return setMeasurementText({exerciseId,config},set)+(exerciseLoadType(exerciseId,config)==='external'&&Number(set.weight)>0?' @ '+set.weight+' '+state.profile.unit:'');
+ const loadType=exerciseLoadType(exerciseId,config);
+ const weight=loadType==='bodyweight'?'Bodyweight':loadType==='assistance'?set.weight+' '+state.profile.unit+' assist':set.weight+' '+state.profile.unit;
+ return weight+' × '+set.reps+(set.rir!==''&&set.rir!=null?' @'+set.rir+' RIR':'');
 }
 function liveSetTarget(e,si,prev){
- const current=e.sets?.[si],type=setType(current);
+ const current=e.sets?.[si],type=setType(current),measurement=exerciseMeasurementType(e.exerciseId,e.config);
+ if(measurement!=='reps'){
+  const key=measurement==='duration'?'durationSeconds':'distanceMeters';
+  const kind=exerciseLoadType(e.exerciseId,e.config);
+  const base=type==='working'?buildRecommendation(e.config,prev,e.exerciseId):null;
+  const wi=workingSetOrdinal(e,si);
+  return {weight:roundLoad(Number(e.targetOverride?.weight??base?.weights?.[wi]??base?.weight??current?.weight??0)),
+   [key]:Math.max(0,Number(e.targetOverride?.[key]??(normalizeTrainingMode(e.config.routineMode)==='track'?current?.[key]:base?.targetValues?.[wi])??current?.[key]??exerciseMovementProfile(e.exerciseId,e.config).min)||0)};
+ }
  if(type!=='working')return {weight:roundLoad(Number(current?.weight)||0),reps:Math.max(1,Number(current?.reps)||e.config.minReps)};
  const wi=workingSetOrdinal(e,si);
  if(e.targetOverride)return {weight:roundLoad(e.targetOverride.weight),reps:Math.max(1,Number(e.targetOverride.reps)||e.config.minReps)};
@@ -431,9 +442,6 @@ function liveSetTarget(e,si,prev){
    else if(miss>=2) reps=Math.min(roleRange.max,reps+1);
    if(last.rir!=='' && Number(last.rir)===0) reps=Math.max(Math.max(1,roleRange.min-2),reps-1);
  }
- // Strong in-session performance can adjust a target inside the programmed
- // range, but Coach never prescribes reps above that role's saved ceiling.
- // The user can still manually log whatever they actually perform.
  reps=Math.min(roleRange.max,reps);
  return {weight:roundLoad(weight),reps:Math.max(1,reps)};
 }
@@ -445,6 +453,9 @@ function displaySetWeightValue(value){
  return n>0?n:'';
 }
 function targetBadgeText(target,ex,config=null){
+ const measurement=exerciseMeasurementType(ex?.id,config);
+ if(measurement==='duration')return 'Target '+compactMetricNumber(target?.durationSeconds||0)+' sec';
+ if(measurement==='distance')return 'Target '+compactMetricNumber(distanceFromMeters(target?.distanceMeters||0))+' '+distanceUnitLabel()+(Number(target?.weight)>0?' @ '+target.weight+' '+state.profile.unit:'');
  const wt=Number(target?.weight)||0,reps=Math.max(1,Number(target?.reps)||1);
  const kind=exerciseLoadType(ex?.id,config);
  if(kind==='bodyweight')return 'Bodyweight · '+reps+' reps';
@@ -455,12 +466,12 @@ function targetBadgeText(target,ex,config=null){
 function changeSetValue(ei,si,key,delta){
  const edit=workoutSetEditTarget(ei,si),set=edit?edit.draft:state.activeWorkout?.exercises?.[ei]?.sets?.[si];if(!set)return;
  let v=Number(set[key])||0;
- v=Math.max(0,roundLoad(v+delta));
+ v=Math.max(0,roundLoad(v+(key==='distanceMeters'?distanceToMeters(delta):delta)));
  set[key]=key==='reps'?Math.round(v):v;
  if(key!=='rir')set.pr='';
  const card=document.querySelector(`#workoutExercise-${ei} .set-card[data-set-index="${si}"]`);
  const input=card?.querySelector(`input[aria-label="${key}"]`);
- if(input)input.value=key==='weight'?displaySetWeightValue(set[key]):set[key];
+ if(input)input.value=key==='weight'?displaySetWeightValue(set[key]):key==='distanceMeters'?compactMetricNumber(distanceFromMeters(set[key])):set[key];
  haptic(8);
  if(edit)return;
  saveActiveWorkout(true,false);
