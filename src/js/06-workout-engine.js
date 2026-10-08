@@ -149,13 +149,13 @@ function openTargetOverride(ei){
  openModal('Override session target',`
  <div class="notice">This changes the target for this workout only. It does not rewrite your routine or old history.</div>
  <div class="form-grid" style="margin-top:12px">
-   <div><label>Target weight (${state.profile.unit})</label><input id="ovWeight" type="number" step=".25" value="${e.targetOverride?.weight??t.weight}"></div>
+   ${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?'':`<div><label>${exerciseLoadLabel(exerciseLoadType(e.exerciseId,e.config))} (${state.profile.unit})</label><input id="ovWeight" type="number" step=".25" value="${e.targetOverride?.weight??t.weight}"></div>`}
    <div><label>Target reps</label><input id="ovReps" type="number" min="1" value="${e.targetOverride?.reps??t.reps}"></div>
  </div>
  <div class="actions"><button class="btn" onclick="saveTargetOverride(${ei})">Use for this session</button>${e.targetOverride?`<button class="btn secondary" onclick="clearTargetOverride(${ei})">Clear override</button>`:''}<button class="btn secondary" onclick="closeModal()">Cancel</button></div>`);
 }
 function saveTargetOverride(ei){
- const e=state.activeWorkout.exercises[ei],weight=Math.max(0,+document.getElementById('ovWeight').value||0),reps=Math.max(1,+document.getElementById('ovReps').value||1);
+ const e=state.activeWorkout.exercises[ei],weight=exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?0:Math.max(0,+document.getElementById('ovWeight').value||0),reps=Math.max(1,+document.getElementById('ovReps').value||1);
  e.targetOverride={weight:roundLoad(weight),reps:Math.round(reps),reason:'Manual override'};
  e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=e.targetOverride.weight;s.reps=e.targetOverride.reps;}});
  saveActiveWorkout();closeModal();renderWorkout();
@@ -404,7 +404,7 @@ function plateLoadText(weight,ex){
 }
 function warmupGuide(weight,ex){
  const compound=['horizontal_press','incline_press','vertical_press','horizontal_pull','squat','hinge','lunge'];
- if(!ex||!compound.includes(ex.pattern)||Number(weight)<=0)return [];
+ if(!ex||exerciseLoadType(ex.id)!=='external'||!compound.includes(ex.pattern)||Number(weight)<=0)return [];
  const inc=state.profile.unit==='kg'?2.5:5;
  const round=x=>Math.max(0,Math.round(x/inc)*inc);
  const w=Number(weight);
@@ -734,6 +734,7 @@ function routineExerciseFromWorkout(e){
    setStructure:savedStructure,
    trainingGoal:cfg.trainingGoal||'general',
    resetPercent:Number(cfg.resetPercent)||7.5,
+   loadType:cfg.loadType||'auto',
    restSeconds:Math.max(15,Number(cfg.restSeconds)||120),
    targetRIR:Number.isFinite(Number(cfg.targetRIR))?Number(cfg.targetRIR):null,
    supersetGroup:e.supersetId||null
@@ -1303,6 +1304,7 @@ function paintWorkoutSetWeight(ei,si){
 }
 function applyFirstExerciseWeightAutofill(ei,sourceSi){
  const e=state.activeWorkout?.exercises?.[ei],source=e?.sets?.[sourceSi];
+ if(e&&exerciseLoadType(e.exerciseId,e.config)==='bodyweight')return false;
  if(!e||!source||e.firstWeightAutofillDone)return false;
  if(exerciseHasLoggedWeightHistory(e.exerciseId))return false;
  if(!isProgressionSet(source))return false;
