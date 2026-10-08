@@ -2198,7 +2198,10 @@ html[data-workout-transition="back"]::view-transition-new(workout-exercise-stage
 .navbtn.active .nav-glyph{filter:drop-shadow(0 0 4px color-mix(in srgb,var(--nav-accent) 28%,transparent))}
 
 /* Universal state meanings. */
-.btn.green,
+.btn.green{
+ background:linear-gradient(135deg,#19c96c,var(--signal-active))!important;
+ border-color:color-mix(in srgb,var(--signal-active) 34%,transparent)!important;
+}
 .complete-set.done{background:var(--signal-active)!important}
 .btn.danger,
 .set-icon-btn.danger{border-color:color-mix(in srgb,var(--signal-danger) 42%,transparent)!important}
@@ -2225,6 +2228,20 @@ html[data-workout-transition="back"]::view-transition-new(workout-exercise-stage
 #routines .program-card.active-program{
  border-color:color-mix(in srgb,var(--signal-plan) 48%,transparent)!important;
  box-shadow:inset 2px 0 0 color-mix(in srgb,var(--signal-plan) 62%,transparent)!important;
+}
+#routines .routine-view-tab.active{
+ border-color:color-mix(in srgb,var(--signal-plan) 72%,transparent)!important;
+ background:
+   linear-gradient(100deg,color-mix(in srgb,var(--signal-plan) 17%,transparent),rgba(34,211,238,.07) 52%,color-mix(in srgb,var(--signal-plan) 15%,transparent))!important;
+ box-shadow:
+   inset 0 1px 0 rgba(255,255,255,.07),
+   0 0 0 1px color-mix(in srgb,var(--signal-plan) 12%,transparent),
+   0 0 18px color-mix(in srgb,var(--signal-plan) 12%,transparent)!important;
+}
+#routines .routine-view-tab.active span{
+ border-color:color-mix(in srgb,var(--signal-plan) 52%,transparent)!important;
+ background:color-mix(in srgb,var(--signal-plan) 10%,transparent)!important;
+ color:#eadbff!important;
 }
 .home-coach-launcher,
 .home-coach-insight,
