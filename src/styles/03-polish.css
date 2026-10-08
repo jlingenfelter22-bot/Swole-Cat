@@ -2156,3 +2156,167 @@ html[data-workout-transition="back"]::view-transition-new(workout-exercise-stage
  .app-update-version-card{grid-template-columns:1fr}
  .app-update-state{max-width:none;justify-self:start}
 }
+
+
+/* v0.80.0 SEMANTIC VISUAL LANGUAGE
+   Cyan = info/navigation/data
+   Violet = planning/creation/Coach
+   Green = active/completed/success
+   Pink = PR/achievement/history
+   Orange = warning/drop-set
+   Red = destructive/failure
+   Yellow = SUPERSET ONLY for workout-linkage language
+*/
+
+/* Screen identity is consistent without turning every surface into a neon card. */
+#routines{--screen-accent:var(--signal-plan);--screen-accent-soft:rgba(168,85,247,.12)}
+#exercises{--screen-accent:var(--signal-info);--screen-accent-soft:rgba(34,211,238,.10)}
+#history{--screen-accent:var(--signal-history);--screen-accent-soft:rgba(244,114,182,.10)}
+#analytics{--screen-accent:var(--signal-info);--screen-accent-soft:rgba(34,211,238,.10)}
+.screen-banner{
+ border-color:color-mix(in srgb,var(--screen-accent,var(--signal-info)) 24%,rgba(81,108,147,.48));
+ background:
+   linear-gradient(145deg,rgba(255,255,255,.018),transparent 38%),
+   linear-gradient(105deg,var(--screen-accent-soft,rgba(34,211,238,.07)),transparent 44%),
+   linear-gradient(180deg,rgba(9,15,28,.98),rgba(6,11,20,.98));
+}
+.screen-banner:before{
+ background:linear-gradient(90deg,var(--screen-accent,var(--signal-info)),color-mix(in srgb,var(--screen-accent,var(--signal-info)) 55%,var(--violet)),transparent);
+}
+.screen-code{color:var(--screen-accent,var(--signal-info))}
+
+/* Bottom navigation inherits the destination's identity. */
+.navbtn.active{--nav-accent:var(--signal-info)}
+.navbtn[data-go="routines"].active{--nav-accent:var(--signal-plan)}
+.navbtn[data-go="history"].active{--nav-accent:var(--signal-history)}
+.navbtn[data-go="home"].active{--nav-accent:var(--signal-info)}
+.navbtn[data-go="exercises"].active{--nav-accent:var(--signal-info)}
+.navbtn[data-go="analytics"].active{--nav-accent:var(--signal-info)}
+.navbtn.active .nav-glyph,
+.navbtn.active .nav-label{color:var(--nav-accent)!important}
+.navbtn.active:before{background:var(--nav-accent)!important}
+.navbtn.active .nav-glyph{filter:drop-shadow(0 0 4px color-mix(in srgb,var(--nav-accent) 28%,transparent))}
+
+/* Universal state meanings. */
+.btn.green,
+.complete-set.done{background:var(--signal-active)!important}
+.btn.danger,
+.set-icon-btn.danger{border-color:color-mix(in srgb,var(--signal-danger) 42%,transparent)!important}
+.good,.trend-up{color:var(--signal-active)}
+.warn{color:var(--signal-warning)}
+.danger-note{border-color:color-mix(in srgb,var(--signal-danger) 40%,transparent)!important;background:color-mix(in srgb,var(--signal-danger) 6%,transparent)!important}
+
+/* Active workout/session state is always green. */
+#home .home-active-stats,
+#home .home-active-now,
+#routines .active-routine{
+ border-color:color-mix(in srgb,var(--signal-active) 38%,transparent)!important;
+}
+#home .home-active-stats{border-left-color:color-mix(in srgb,var(--signal-active) 72%,transparent)!important}
+#home .home-active-now-head>span,
+#home .home-active-route-item.current i{color:var(--signal-active)}
+#routines .active-routine{
+ background:
+   linear-gradient(90deg,color-mix(in srgb,var(--signal-active) 4%,transparent),transparent 38%),
+   linear-gradient(180deg,rgba(10,17,30,.97),rgba(7,12,22,.98))!important;
+}
+
+/* Planning + Coach intelligence are violet. */
+#routines .program-card.active-program{
+ border-color:color-mix(in srgb,var(--signal-plan) 48%,transparent)!important;
+ box-shadow:inset 2px 0 0 color-mix(in srgb,var(--signal-plan) 62%,transparent)!important;
+}
+.home-coach-launcher,
+.home-coach-insight,
+.coach-console,
+.coach-rationale{
+ border-color:color-mix(in srgb,var(--signal-coach) 38%,rgba(71,93,130,.48))!important;
+}
+.home-coach-launcher,
+.home-coach-insight{
+ border-left-color:color-mix(in srgb,var(--signal-coach) 68%,transparent)!important;
+}
+.coach-rationale{border-left-color:color-mix(in srgb,var(--signal-coach) 68%,transparent)!important}
+.coach-exercise-index{
+ border-color:color-mix(in srgb,var(--signal-coach) 30%,transparent)!important;
+ background:color-mix(in srgb,var(--signal-coach) 6%,transparent)!important;
+ color:#e6d8ff!important;
+}
+
+/* PR/achievement language is pink everywhere, not yellow. */
+.pr-glyph,.inline-pr-mark{color:var(--signal-pr)!important}
+.pr-icon,.pr-tag,.summary-pr,.pr-banner{
+ border-color:color-mix(in srgb,var(--signal-pr) 34%,transparent)!important;
+}
+.pr-icon,.summary-pr,.pr-banner{
+ background:color-mix(in srgb,var(--signal-pr) 8%,transparent)!important;
+}
+.pr-banner{color:#ffd2e8!important}
+.summary-pr b{color:#ffe0ef}
+.history-metrics .has-pr b{color:var(--signal-pr)!important}
+
+/* Warning and special-set language stays separate from supersets. */
+.set-card.type-drop,
+.set-card.type-drop .app-select-compact .app-select-trigger{
+ border-color:color-mix(in srgb,var(--signal-warning) 42%,transparent)!important;
+}
+.set-card.type-drop .app-select-compact .app-select-trigger{color:#ffd38a!important}
+.set-card.type-failure,
+.set-card.type-failure .app-select-compact .app-select-trigger{
+ border-color:color-mix(in srgb,var(--signal-danger) 42%,transparent)!important;
+}
+.set-card.type-failure .app-select-compact .app-select-trigger{color:#fecdd3!important}
+
+/* SUPERSETS: protected yellow semantic language across every presentation. */
+.superset-badge,
+#workout .superset-flow-badge{
+ border-color:color-mix(in srgb,var(--signal-superset) 58%,transparent)!important;
+ background:color-mix(in srgb,var(--signal-superset) 11%,transparent)!important;
+ color:var(--signal-superset-soft)!important;
+}
+.superset-note{
+ border-color:color-mix(in srgb,var(--signal-superset) 34%,transparent)!important;
+ background:color-mix(in srgb,var(--signal-superset) 6%,transparent)!important;
+ color:#eadb91!important;
+}
+.exercise-block.superset-member{
+ box-shadow:
+   inset 4px 0 0 var(--ex-accent),
+   inset 0 3px 0 color-mix(in srgb,var(--signal-superset) 72%,transparent),
+   0 10px 26px rgba(0,0,0,.16)!important;
+}
+#workout .superset-flow{
+ border-color:color-mix(in srgb,var(--signal-superset) 62%,transparent)!important;
+ background:
+   linear-gradient(125deg,color-mix(in srgb,var(--signal-superset) 12%,transparent),rgba(245,158,11,.055) 52%,rgba(34,211,238,.025)),
+   rgba(9,15,25,.96)!important;
+ box-shadow:inset 3px 0 0 color-mix(in srgb,var(--signal-superset) 72%,transparent),0 0 22px color-mix(in srgb,var(--signal-superset) 5%,transparent)!important;
+}
+#workout .superset-flow-bolt,
+#workout .superset-flow-order span.active,
+#workout .superset-flow-step.active,
+#workout .superset-flow-step.active .superset-flow-letter{
+ border-color:color-mix(in srgb,var(--signal-superset) 76%,transparent)!important;
+}
+#workout .superset-flow-bolt,
+#workout .superset-flow-order span.active,
+#workout .superset-flow-step.active{
+ background:color-mix(in srgb,var(--signal-superset) 13%,rgba(12,20,32,.82))!important;
+}
+#workout .superset-flow-bolt,
+#workout .superset-flow-head .eyebrow,
+#workout .superset-flow-order span.active,
+#workout .superset-flow-step.active .superset-flow-letter,
+#workout .superset-flow-step.active small,
+#workout .superset-flow-step.active .superset-flow-state{
+ color:var(--signal-superset-soft)!important;
+}
+
+/* Neutral UI stays neutral so semantic colors retain meaning. */
+.tag:not(.pr-tag):not(.superset-badge),
+.toolchip,
+.home-route-btn,
+.history-manage-btn,
+.routine-manage-btn{
+ box-shadow:none;
+}
