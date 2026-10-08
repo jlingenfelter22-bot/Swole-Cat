@@ -94,8 +94,10 @@ function swapWorkoutExercise(ei,newId,permanent){
  const measure=exerciseMeasurementType(newId,cfg);
  e.sets=Array.from({length:cfg.sets},(_,i)=>({
   weight:rec.weights?.[i]??rec.weight??0,reps:measure==='reps'?(rec.targetReps?.[i]??cfg.minReps):0,
-  durationSeconds:measure==='duration'?(rec.targetValues?.[i]??cfg.minDurationSeconds):0,
-  distanceMeters:measure==='distance'?(rec.targetValues?.[i]??cfg.minDistanceMeters):0,
+  durationSeconds:0,
+  distanceMeters:0,
+  metricRecorded:false,
+  weightEntered:measure!=='distance'||exerciseLoadType(newId,cfg)!=='external'||Number(rec.weights?.[i]??rec.weight)>0,
   done:false,rir:'',type:'working',pr:''
  }));
  e.notes='';
@@ -226,8 +228,10 @@ function addExerciseToWorkout(exerciseId,permanent){
    sets:Array.from({length:cfg.sets},(_,i)=>({
      weight:rec.weights?.[i]??rec.weight??0,
      reps:exerciseMeasurementType(exerciseId,cfg)==='reps'?(rec.targetReps?.[i]??cfg.minReps):0,
-     durationSeconds:exerciseMeasurementType(exerciseId,cfg)==='duration'?(rec.targetValues?.[i]??cfg.minDurationSeconds):0,
-     distanceMeters:exerciseMeasurementType(exerciseId,cfg)==='distance'?(rec.targetValues?.[i]??cfg.minDistanceMeters):0,
+     durationSeconds:0,
+     distanceMeters:0,
+     metricRecorded:false,
+     weightEntered:exerciseMeasurementType(exerciseId,cfg)!=='distance'||exerciseLoadType(exerciseId,cfg)!=='external'||Number(rec.weights?.[i]??rec.weight)>0,
      done:false,
      rir:'',
      type:'working'
