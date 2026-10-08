@@ -145,6 +145,9 @@ function startProgramWorkout(programId,index=null){
  if(!state.activeWorkout&&reviewProgramDeload(p,targetIndex))return;
  if(state.activeProgramId!==programId){state.activeProgramId=programId;save()}
  if(state.activeWorkout?.routineId===rid&&!state.activeWorkout.programId){
+   if(programDeloadContext(p).needsReview){
+    showToast('Finish or cancel the standalone workout before deciding on deload.');resumeActiveWorkout();return;
+   }
    state.activeWorkout.programId=programId;
    state.activeWorkout.programWeekKey=programWeekKey(state.activeWorkout.startDate);
    state.activeWorkout.programWeekIndex=programDeloadContext(p,state.activeWorkout.startDate).weekIndex;
