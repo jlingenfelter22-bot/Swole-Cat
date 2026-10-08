@@ -1,3 +1,10 @@
+function programDeloadConfig(source){
+ const d=source&&typeof source==='object'?source:{};
+ return {enabled:d.enabled===true,intervalWeeks:Math.min(52,Math.max(2,Math.trunc(Number(d.intervalWeeks)||4))),
+   decisions:d.decisions&&typeof d.decisions==='object'&&!Array.isArray(d.decisions)?{...d.decisions}:{},
+   deferNext:d.deferNext===true,deferredFrom:typeof d.deferredFrom==='string'?d.deferredFrom:''};
+}
+
 const LSKEY='overload_v3';
 const APP_VERSION='__SWOLE_CAT_VERSION__';
 const DATA_SCHEMA_VERSION=1;
