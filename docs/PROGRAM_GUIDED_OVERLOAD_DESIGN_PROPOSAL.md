@@ -1,6 +1,6 @@
 # Program-Based Guided Progressive Overload: Design Proposal
 
-**Status: DESIGN SPECIFICATION IN PROGRESS / NOT APPROVED FOR IMPLEMENTATION**
+**Status: PHASE 1 IMPLEMENTED AND AUTOMATED-TESTED IN SWOLE CAT TESTING v0.82.0; FURTHER DESIGN DECISIONS OPEN**
 **Design discussion:** 2026-10-08; deload opt-in and cadence confirmed in follow-up.
 **Scope:** Multi-workout Programs and program-launched workouts. Existing standalone routines and Track Only behavior remain unchanged unless separately approved.
 **Research:** [TRAINING_SCIENCE_FOUNDATION.md](TRAINING_SCIENCE_FOUNDATION.md), [COACH_SWOLECAT_EVIDENCE.md](COACH_SWOLECAT_EVIDENCE.md).
