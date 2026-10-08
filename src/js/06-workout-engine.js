@@ -38,10 +38,14 @@ function exerciseMovementProfile(exerciseId,config=null,goal='general'){
  const family=EXERCISE_FAMILY_PRESETS[ex.pattern]||null;
  const range=family?.[goal]||family?.general||[8,12];
  const isTimed=measurement==='duration',isDistance=measurement==='distance';
+ // Retain explicit choices; offer natural feet rather than a raw 10m conversion
+ // for legacy automatic carry templates in the imperial UI.
+ const naturalFeet=state.profile.unit!=='kg'&&config?.measurementType!=='distance'&&
+  Number(config?.minDistanceMeters)===10&&Number(config?.maxDistanceMeters)===30;
  return {measurement,loadType,pattern:ex.pattern||'unknown',source:config?.measurementType&&config.measurementType!=='auto'?'routine':ex.measurementType?'library':family?'family':'fallback',
-  min: isTimed?Math.max(1,Number(config?.minDurationSeconds)||20):isDistance?Math.max(1,Number(config?.minDistanceMeters)||10):range[0],
-  max: isTimed?Math.max(1,Number(config?.maxDurationSeconds)||45):isDistance?Math.max(1,Number(config?.maxDistanceMeters)||30):range[1],
-  increment: isTimed?5:isDistance?2.5:1,
+  min: isTimed?Math.max(1,Number(config?.minDurationSeconds)||20):isDistance?naturalFeet?distanceToMeters(30):Math.max(1,Number(config?.minDistanceMeters)||10):range[0],
+  max: isTimed?Math.max(1,Number(config?.maxDurationSeconds)||45):isDistance?naturalFeet?distanceToMeters(100):Math.max(1,Number(config?.maxDistanceMeters)||30):range[1],
+  increment: isTimed?5:isDistance?state.profile.unit==='kg'?2.5:distanceToMeters(5):1,
   suggestedReps:range};
 }
 function exerciseDefaultRoutineConfig(exerciseId,settings=state.settings,goal='general'){
@@ -49,11 +53,36 @@ function exerciseDefaultRoutineConfig(exerciseId,settings=state.settings,goal='g
  const honorCustomReps=Number(settings?.defaultMin)!==8||Number(settings?.defaultMax)!==12;
  const repRange=honorCustomReps?[Math.max(1,Number(settings.defaultMin)||8),Math.max(1,Number(settings.defaultMax)||12)]:profile.suggestedReps;
  return {exerciseId,sets:Math.max(1,Number(settings?.defaultSets)||3),minReps:repRange[0],maxReps:Math.max(repRange[0],repRange[1]),
-   minDurationSeconds:20,maxDurationSeconds:45,minDistanceMeters:10,maxDistanceMeters:30,
-   measurementType:'auto',loadType:'auto',increment:Math.max(0,Number(settings?.defaultIncrement)||5),mode:'double',restSeconds:120};
+   minDurationSeconds:20,maxDurationSeconds:45,minDistanceMeters:state.profile.unit==='kg'?10:distanceToMeters(30),
+   maxDistanceMeters:state.profile.unit==='kg'?30:distanceToMeters(100),
+   measurementType:'auto',loadType:'auto',increment:Math.max(0,Number(settings?.defaultIncrement)||5),mode:'double',
+   restSeconds:profile.measurement==='duration'?75:profile.measurement==='distance'?90:120};
 }
 function exerciseMetricValue(set,measurement){
  return measurement==='duration'?Math.max(0,Number(set?.durationSeconds)||0):measurement==='distance'?Math.max(0,Number(set?.distanceMeters)||0):Math.max(0,Number(set?.reps)||0);
+}
+function actualMetricValue(e,set){
+ const measurement=exerciseMeasurementType(e?.exerciseId,e?.config);
+ if(measurement==='reps')return Number(set?.reps)||0;
+ // A previously seeded but untouched recommendation is not an actual result.
+ if(!set?.done&&set?.metricRecorded!==true)return 0;
+ return exerciseMetricValue(set,measurement);
+}
+function workoutMetricPreviousSet(e,si){
+ if(!e)return null;
+ for(let i=si-1;i>=0;i--){
+  const previous=e.sets[i];
+  if(previous?.done&&isProgressionSet(previous)&&actualMetricValue(e,previous)>0)return previous;
+ }
+ return null;
+}
+function carryLoadLabel(ex){
+ const name=String(ex?.name||'').toLowerCase();
+ if(name.includes('dumbbell')||name.includes('kettlebell'))return 'Weight per hand';
+ if(name.includes('trap bar'))return 'Total carry weight';
+ if(name.includes('plate pinch'))return 'Weight of plate';
+ if(name.includes('sled'))return 'Added sled load';
+ return 'Carried weight';
 }
 function distanceUnitLabel(){return state.profile.unit==='kg'?'m':'ft'}
 function distanceFromMeters(m){return state.profile.unit==='kg'?Number(m)||0:(Number(m)||0)*3.280839895}
@@ -290,8 +319,8 @@ function buildMetricRecommendation(config,prev,exerciseId,measurement){
  const mode=normalizeTrainingMode(config.routineMode);
  if(!done.length){
   return {status:'baseline',weight:0,weights:Array(count).fill(0),targetValues:Array(count).fill(min),
-   headline:measurement==='duration'?'Log your hold time':'Log your distance',
-   detail:'Record actual '+units+' for this movement. This is a starting suggestion, not a mandatory result.'};
+   headline:measurement==='duration'?'First hold · establish a baseline':'First carry · establish a baseline',
+   detail:'Suggested starting target: '+display(min)+' '+units+'. Actual performance stays blank until you log it.'};
  }
  const target=Array.from({length:count},(_,i)=>values[i]??min);
  if(mode==='track'||config.mode==='manual'){
