@@ -86,17 +86,8 @@ function renderHistory(){
    </article>`;
  }).join('');
 }
-function calculateHistoricalPR(prior,set){
- if(!prior.length)return '';
- const w=Number(set.weight)||0,r=Number(set.reps)||0;
- const maxWeight=Math.max(...prior.map(x=>Number(x.weight)||0));
- const sameWeightMax=Math.max(0,...prior.filter(x=>Number(x.weight)===w).map(x=>Number(x.reps)||0));
- const priorE1=Math.max(0,...prior.map(x=>estimated1RM(x.weight,x.reps)));
- const curE1=estimated1RM(w,r);
- if(w>maxWeight)return `Load PR: ${w} ${state.profile.unit}`;
- if(r>sameWeightMax)return `Rep PR: ${w} ${state.profile.unit} × ${r}`;
- if(curE1>priorE1*1.01)return 'Estimated strength PR';
- return '';
+function calculateHistoricalPR(prior,set,exerciseId=null,config=null){
+ return loadAwarePR(prior,set,exerciseId,config);
 }
 function rebuildAllPRs(){
  const priorByExercise={};
@@ -106,7 +97,7 @@ function rebuildAllPRs(){
    const prior=priorByExercise[e.exerciseId]||(priorByExercise[e.exerciseId]=[]);
    (e.sets||[]).forEach(set=>{
      if(!set.done||!isProgressionSet(set)||Number(set.reps)<=0)return;
-     set.pr=calculateHistoricalPR(prior,set);
+     set.pr=calculateHistoricalPR(prior,set,e.exerciseId,e.config);
      prior.push({weight:Number(set.weight)||0,reps:Number(set.reps)||0,rir:set.rir});
    });
  }));
@@ -127,7 +118,7 @@ function renderCompletedWorkoutEditor(){
        <div class="row"><div><div class="exercise-name">${esc(ex?.name||'Exercise')}</div><div class="mini">${esc(ex?.muscle||'')} · ${esc(ex?.equipment||'')}</div></div><button class="btn small secondary" onclick="addSessionDraftSet(${ei})">+ Set</button></div>
        ${(e.sets||[]).map((set,si)=>`<div class="history-edit-set">
          <div class="set-type-field"><label>Type</label><select id="sessType-${ei}-${si}">${setTypeOptions(setType(set))}</select></div>
-         <div><label>Weight (${state.profile.unit})</label><input id="sessWeight-${ei}-${si}" type="number" step=".25" min="0" value="${Number(set.weight)||0}"></div>
+         <div><label>${exerciseLoadLabel(exerciseLoadType(e.exerciseId,e.config))} ${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?'(reps-only)':('('+state.profile.unit+')')}</label><input id="sessWeight-${ei}-${si}" type="number" step=".25" min="0" value="${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?0:(Number(set.weight)||0)}" ${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?'readonly aria-label="Bodyweight exercise: no external load"':''}></div>
          <div><label>Reps</label><input id="sessReps-${ei}-${si}" type="number" min="0" value="${Number(set.reps)||0}"></div>
          <div><label>RIR</label><select id="sessRir-${ei}-${si}"><option value="">—</option>${[0,1,2,3,4,5].map(v=>`<option value="${v}" ${String(set.rir)===String(v)?'selected':''}>${v}</option>`).join('')}</select></div>
          <button class="btn danger history-edit-remove" onclick="removeSessionDraftSet(${ei},${si})" aria-label="Remove set">×</button>

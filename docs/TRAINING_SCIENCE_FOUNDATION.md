@@ -80,6 +80,10 @@ These are **questions to resolve during design**, not newly approved feature req
 - Treat unusual durations, incomplete data and zero-weight logs cautiously. Testing data in Swole Cat Testing may intentionally include synthetic sessions.
 - Respect side-specific loads, unit conversions, exercise substitutions and varying equipment load increments.
 
+## 4A. Loading semantics for assisted and bodyweight movements
+
+**Required review before any exercise-target, progress, PR or strength analytics changes:** [EXERCISE_LOAD_BEHAVIOR.md](EXERCISE_LOAD_BEHAVIOR.md). Counterweight assistance decreases as the person grows capable, whereas external resistance usually increases. Pure bodyweight exercise can progress in repetitions without any external load. Weight numbers are meaningful only alongside their `external`, `assistance` or `bodyweight` interpretation. Never treat machine assistance as heavier resistance, or as data suitable for standard estimated 1RM. Evidence and behavior limitations are explained in the linked specification. This is a product data-model and interpretation rule informed by biomechanics, not a prescription for specific target increases.
+
 ## 5. Fatigue, stalls, and deload research: decision boundaries
 
 **Confirmed from research:** Coaches use deloads to reduce training stress; there is no validated universal calendar for everyone, and there are few direct intervention trials. Expert guidance often describes approximately 4–6 weeks [6], while a 2024 convenience survey of 246 competitive strength and physique athletes reported deloads every 5.6 ± 2.3 weeks on average [14]. These are coaching/athlete practices, *not* a biological deadline or evidence that any given interval produces superior gains. A full week off and a lower-volume training week are not equivalent [7, 8].

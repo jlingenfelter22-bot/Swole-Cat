@@ -215,7 +215,7 @@ function derivedSessionData(){
      if(session.programPhase!=='deload'&&working.length&&!previousByExercise.has(e.exerciseId))previousByExercise.set(e.exerciseId,{date:session.date,...e});
      if(!working.length)return;
      if(!historyByExercise.has(e.exerciseId))historyByExercise.set(e.exerciseId,[]);
-     historyByExercise.get(e.exerciseId).push({date:session.date,routineName:session.routineName,programId:session.programId||null,programPhase:session.programPhase||'normal',sets:working,allSets:all,notes:e.notes||''});
+     historyByExercise.get(e.exerciseId).push({date:session.date,routineName:session.routineName,programId:session.programId||null,programPhase:session.programPhase||'normal',loadType:exerciseLoadType(e.exerciseId,e.config),sets:working,allSets:all,notes:e.notes||''});
    });
  });
  historyByExercise.forEach(rows=>rows.sort((a,b)=>String(a.date).localeCompare(String(b.date))));
@@ -679,7 +679,7 @@ function activeSetsFromRoutineExercise(re,rec,ex){
    role:typeof coachAdaptiveSetRole==='function'?coachAdaptiveSetRole(re,i):'working',
    amrap:!!re.lastSetAmrap&&i===Math.max(0,re.sets-1)
  }));
- if(!re.autoWarmup||!ex||!COACH_COMPOUND_PATTERNS.has(ex.pattern))return working;
+ if(!re.autoWarmup||!ex||exerciseLoadType(re.exerciseId,re)!=='external'||!COACH_COMPOUND_PATTERNS.has(ex.pattern))return working;
  const targetWeight=Number(rec.weights?.[0]??rec.weight??0);
  let warmups=warmupGuide(targetWeight,ex);
  if(!warmups.length&&ex.equipment!=='bodyweight'){
@@ -703,8 +703,10 @@ function startRoutineFresh(id,programId=null){
    id:uid(),routineId:id,routineName:r.name,trainingMode:effectiveMode,programId:programId||null,
    programPhase:isDeload?'deload':'normal',programWeekKey:weekContext?.key||null,programWeekIndex:weekContext?.weekIndex||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,structureNoticeSeen:false,pausedAt:null,pausedDurationMs:0,focusExerciseIndex:0,focusSetIndex:0,deferredExerciseIndexes:[],
    exercises:r.exercises.map((re,routineIndex)=>{
-     const prev=previousExercise(re.exerciseId,programId);
+     const prev=previousExercise(re.exerciseId,programId,re);
+     const loadType=exerciseLoadType(re.exerciseId,re);
      const mode=effectiveMode,normalConfig={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode,programGuided:!!(program&&programMode==='guided')};
+     if(loadType!=='external'){normalConfig.adaptiveProgression=false;normalConfig.setStructure=null;normalConfig.progressionStrategy='double';}
      const reducedSets=isDeload?Math.max(1,Math.ceil((Number(re.sets)||1)/2)):Math.max(1,Number(re.sets)||1);
      const config=isDeload?{...normalConfig,sets:reducedSets,setStructure:null,adaptiveProgression:false}:normalConfig;
      const normalRec=buildRecommendation(normalConfig,prev,re.exerciseId);

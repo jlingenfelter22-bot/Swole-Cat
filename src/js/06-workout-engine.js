@@ -1,9 +1,34 @@
-function previousExercise(exerciseId,programId=state.activeWorkout?.programId||null){
+// Loading semantics are intentionally separate from numeric weights:
+// an assistance value decreases as performance improves, while an unweighted
+// bodyweight exercise records reps without treating body mass as external load.
+function exerciseLoadType(exerciseId,config=null){
+ const override=config?.loadType;
+ if(['external','assistance','bodyweight'].includes(override))return override;
+ const ex=exById(exerciseId),name=String(ex?.name||'').toLowerCase();
+ if(['external','assistance','bodyweight'].includes(ex?.loadType))return ex.loadType;
+ if(/\bweighted\b|\badded.weight\b/.test(name))return 'external';
+ if(/\bassisted\b|\bcounterweight\b/.test(name))return 'assistance';
+ if(ex?.equipment==='bodyweight')return 'bodyweight';
+ return 'external';
+}
+function exerciseLoadLabel(type){
+ return type==='assistance'?'Assistance':type==='bodyweight'?'Bodyweight reps':'Weight';
+}
+function exerciseLoadExplanation(type){
+ return type==='assistance'?'A lower counterweight means more of your bodyweight is lifted. Once all sets reach the rep target, reduce assistance by your configured step.':
+  type==='bodyweight'?'Track repetitions and effort. No external weight is needed; use the weighted exercise variation if you add resistance.':
+  'Build repetitions and increase resistance when the programmed sets meet the progression criteria.';
+}
+function progressionLoadSets(prev,type){
+ return progressionSets(prev).filter(s=>type==='bodyweight'||Number(s.weight)>=0);
+}
+
+function previousExercise(exerciseId,programId=state.activeWorkout?.programId||null,config=null){
  // Deload performances are genuine history, but not evidence of normal training capacity.
  const candidates=(state.sessions||[]).filter(s=>s.programPhase!=='deload')
   .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
- const bodyweight=exById(exerciseId)?.equipment==='bodyweight';
- const eligible=s=>((s.exercises||[]).find(e=>e.exerciseId===exerciseId&&!e.skipped&&progressionSets(e).some(set=>bodyweight||Number(set.weight)>0)));
+ const type=exerciseLoadType(exerciseId,config);
+ const eligible=s=>((s.exercises||[]).find(e=>e.exerciseId===exerciseId&&!e.skipped&&progressionSets(e).some(set=>type!=='external'||Number(set.weight)>0)));
  const selected=(programId?candidates.filter(s=>s.programId===programId):candidates).find(eligible)
     ||candidates.find(eligible);
  const exercise=selected&&eligible(selected);
@@ -72,6 +97,7 @@ function recentExerciseSessions(exerciseId,n=4){
 function coachSignal(exerciseId,config){
  if(normalizeTrainingMode(config.routineMode)==='track')return null;
  const hist=recentExerciseSessions(exerciseId,4);
+ if(exerciseLoadType(exerciseId,config)!=='external')return null;
  if(hist.length<2)return {level:'info',title:'Building baseline',text:`Keep logging this movement. The coach waits for repeated sessions before calling anything a stall.`,stalled:false,canReset:false};
  const scores=hist.map(h=>({
    e1:Math.max(...h.sets.map(s=>estimated1RM(s.weight,s.reps))),
@@ -121,32 +147,34 @@ function applyCoachReset(ei){
  saveActiveWorkout();renderWorkout();
 }
 function openTargetOverride(ei){
- const e=state.activeWorkout.exercises[ei],prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
+ const e=state.activeWorkout.exercises[ei],prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
  openModal('Override session target',`
  <div class="notice">This changes the target for this workout only. It does not rewrite your routine or old history.</div>
  <div class="form-grid" style="margin-top:12px">
-   <div><label>Target weight (${state.profile.unit})</label><input id="ovWeight" type="number" step=".25" value="${e.targetOverride?.weight??t.weight}"></div>
+   ${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?'':`<div><label>${exerciseLoadLabel(exerciseLoadType(e.exerciseId,e.config))} (${state.profile.unit})</label><input id="ovWeight" type="number" step=".25" value="${e.targetOverride?.weight??t.weight}"></div>`}
    <div><label>Target reps</label><input id="ovReps" type="number" min="1" value="${e.targetOverride?.reps??t.reps}"></div>
  </div>
  <div class="actions"><button class="btn" onclick="saveTargetOverride(${ei})">Use for this session</button>${e.targetOverride?`<button class="btn secondary" onclick="clearTargetOverride(${ei})">Clear override</button>`:''}<button class="btn secondary" onclick="closeModal()">Cancel</button></div>`);
 }
 function saveTargetOverride(ei){
- const e=state.activeWorkout.exercises[ei],weight=Math.max(0,+document.getElementById('ovWeight').value||0),reps=Math.max(1,+document.getElementById('ovReps').value||1);
+ const e=state.activeWorkout.exercises[ei],weight=exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?0:Math.max(0,+document.getElementById('ovWeight').value||0),reps=Math.max(1,+document.getElementById('ovReps').value||1);
  e.targetOverride={weight:roundLoad(weight),reps:Math.round(reps),reason:'Manual override'};
  e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=e.targetOverride.weight;s.reps=e.targetOverride.reps;}});
  saveActiveWorkout();closeModal();renderWorkout();
 }
 function clearTargetOverride(ei){
  const e=state.activeWorkout.exercises[ei];e.targetOverride=null;
- const prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId);
+ const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),rec=buildRecommendation(e.config,prev,e.exerciseId);
  let wi=0;e.sets.forEach(s=>{if(!isProgressionSet(s))return;if(!s.done){s.weight=rec.weights?.[wi]??rec.weight??0;s.reps=rec.targetReps?.[wi]??e.config.minReps;}wi++;});
  saveActiveWorkout();closeModal();renderWorkout();
 }
 function applyLightSession(){
  const w=state.activeWorkout;if(!w)return;
  w.exercises.forEach(e=>{
-   const prev=previousExercise(e.exerciseId),base=liveSetTarget(e,firstWorkingSetIndex(e),prev);
-   const wt=roundLoad(base.weight*.925);
+   const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),base=liveSetTarget(e,firstWorkingSetIndex(e),prev);
+   const kind=exerciseLoadType(e.exerciseId,e.config);
+   const wt=kind==='bodyweight'?0:kind==='assistance'?
+     roundLoad(base.weight+Math.max(.25,Number(e.config.increment)||base.weight*.075)):roundLoad(base.weight*.925);
    e.targetOverride={weight:wt,reps:e.config.minReps,reason:'Light session'};
    e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=wt;s.reps=e.config.minReps;}});
  });
@@ -154,28 +182,59 @@ function applyLightSession(){
 }
 
 function buildRecommendation(config,prev,exerciseId=null){
- const done=progressionSets(prev);
+ const loadType=exerciseLoadType(exerciseId,config);
+ const done=progressionLoadSets(prev,loadType);
  const goal=config.trainingGoal||'general';
  const routineMode=normalizeTrainingMode(config.routineMode);
  const avgRIR=averageLoggedRIR(done);
- if(routineMode!=='track'&&typeof coachAdaptiveRecommendation==='function'){
+ if(loadType==='external'&&routineMode!=='track'&&typeof coachAdaptiveRecommendation==='function'){
    const adaptive=coachAdaptiveRecommendation(config,prev,exerciseId);
    if(adaptive)return adaptive;
  }
  if(!done.length){
    const mode=normalizeTrainingMode(config.routineMode);
-   const headline=mode==='track'?'Log your starting sets':mode==='strength'?'Choose a strength starting load':'Set your starting weight';
-   const detail=mode==='track'?`No automatic progression target is active. Log the weight and reps you actually perform.`:mode==='strength'?`Choose a controlled load you can perform for at least ${config.minReps} clean reps across the programmed sets. Once the minimum is established, Strength Focus can prioritize small load increases.`:`Choose a clean starting load for about ${config.minReps}-${config.maxReps} reps. ${goalRIRText(goal)}`;
+   const headline=loadType==='bodyweight'?'Start with controlled reps':loadType==='assistance'?'Set your starting assistance':mode==='track'?'Log your starting sets':mode==='strength'?'Choose a strength starting load':'Set your starting weight';
+   const detail=loadType!=='external'?exerciseLoadExplanation(loadType):mode==='track'?`No automatic progression target is active. Log the weight and reps you actually perform.`:mode==='strength'?`Choose a controlled load you can perform for at least ${config.minReps} clean reps across the programmed sets. Once the minimum is established, Strength Focus can prioritize small load increases.`:`Choose a clean starting load for about ${config.minReps}-${config.maxReps} reps. ${goalRIRText(goal)}`;
    return {status:'baseline',weight:0,weights:Array(config.sets).fill(0),targetReps:Array(config.sets).fill(config.minReps),headline,detail};
  }
- const weights=done.map(s=>Math.max(0,finiteNumber(s.weight,0)));
+ const weights=done.map(s=>loadType==='bodyweight'?0:Math.max(0,finiteNumber(s.weight,0)));
  const reps=done.map(s=>Math.max(0,finiteNumber(s.reps,0)));
  const sameWeight=weights.every(w=>w===weights[0]);
  const baseWeight=weights[0]||0;
  const total=reps.reduce((a,b)=>a+b,0);
  if(routineMode==='track'){
-   return {status:'track',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),headline:'Track your working sets',detail:`Previous session: ${done.map(s=>`${s.weight}×${s.reps}`).join(' · ')}. No automatic progression target is active for this routine.`};
+   return {status:'track',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),
+     targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),
+     headline:'Track your working sets',detail:'No automatic progression target is active. '+exerciseLoadExplanation(loadType)};
  }
+ // Unweighted movements progress in repetitions only. A weighted variant is a
+ // different exercise and must be selected explicitly, not invented from zero.
+ if(loadType==='bodyweight'){
+   if(config.mode==='manual')return {status:'manual',weight:0,weights:Array(config.sets).fill(0),targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),headline:'Repeat or adjust bodyweight reps',detail:exerciseLoadExplanation(loadType)};
+   const complete=done.length>=config.sets&&done.slice(0,config.sets).every(s=>Number(s.reps)>=config.maxReps);
+   const target=complete?Array(config.sets).fill(config.maxReps):config.mode==='total'?distributeTarget(reps,config.minReps,config.maxReps,config.sets):progressEverySetTarget(reps,config.minReps,config.maxReps,config.sets);
+   return {status:complete?'hold':'reps',weight:0,weights:Array(config.sets).fill(0),targetReps:target,
+     headline:complete?'Rep goal reached · Keep quality or choose a harder variation':'Add a rep to each bodyweight set',
+     detail:complete?'You reached the top of the rep range. Repeat the reps cleanly or manually choose a harder or weighted variation; no load is automatically invented.':exerciseLoadExplanation(loadType)};
+ }
+ // Assistance weight is a counterweight, not the resistance lifted.
+ if(loadType==='assistance'){
+   if(config.mode==='manual')return {status:'manual',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),headline:'Repeat or adjust assistance manually',detail:exerciseLoadExplanation(loadType)};
+   const repGoal=routineMode==='strength'?config.minReps:config.maxReps;
+   const ready=done.length>=config.sets&&sameWeight&&done.slice(0,config.sets).every(s=>Number(s.reps)>=repGoal);
+   const step=Math.max(0,finiteNumber(config.increment,0));
+   if(ready&&step>0&&baseWeight>0){
+     const next=Math.max(0,roundLoad(baseWeight-step));
+     return {status:'load',weight:next,weights:Array(config.sets).fill(next),targetReps:Array(config.sets).fill(config.minReps),
+       headline:'Reduce assistance to '+next+' '+state.profile.unit,
+       detail:'All programmed working sets met the rep goal at the same assistance. Less assistance increases the challenge. The suggestion never goes below zero.'};
+   }
+   const target=ready?Array(config.sets).fill(repGoal):config.mode==='total'?distributeTarget(reps,config.minReps,config.maxReps,config.sets):progressEverySetTarget(reps,config.minReps,config.maxReps,config.sets);
+   return {status:ready?'hold':'reps',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:target,
+     headline:baseWeight===0?'No assistance left · Build reps or switch to pull-ups':ready?'Maintain assistance or choose a smaller decrement':'Keep assistance and build reps',
+     detail:baseWeight===0?'You are already at zero assistance. Improve repetitions and technique or switch to an unassisted movement.':step===0?'Choose a positive assistance reduction step to progress the counterweight.':exerciseLoadExplanation(loadType)};
+ }
+
  if(routineMode==='strength'){
    const enoughSets=done.length>=config.sets;
    const completedMinimum=enoughSets&&done.slice(0,config.sets).every(s=>finiteNumber(s.reps,0)>=config.minReps);
@@ -222,9 +281,12 @@ function buildRecommendation(config,prev,exerciseId=null){
 }
 function roundLoad(n){return Math.round(Number(n)*4)/4}
 
-function setReference(prev,workingIndex){
+function setReference(prev,workingIndex,exerciseId=null,config=null){
  const done=progressionSets(prev),s=done[workingIndex]||done[done.length-1];
- return s?`${s.weight} ${state.profile.unit} × ${s.reps}${s.rir!==''&&s.rir!=null?` @${s.rir} RIR`:''}`:'No prior set';
+ if(!s)return 'No prior set';
+ const type=exerciseLoadType(exerciseId,config);
+ const load=type==='bodyweight'?'Bodyweight':type==='assistance'?s.weight+' '+state.profile.unit+' assist':s.weight+' '+state.profile.unit;
+ return load+' × '+s.reps+(s.rir!==''&&s.rir!=null?' @'+s.rir+' RIR':'');
 }
 function liveSetTarget(e,si,prev){
  const current=e.sets?.[si],type=setType(current);
@@ -261,12 +323,12 @@ function displaySetWeightValue(value){
  const n=Number(value);
  return n>0?n:'';
 }
-function targetBadgeText(target,ex){
+function targetBadgeText(target,ex,config=null){
  const wt=Number(target?.weight)||0,reps=Math.max(1,Number(target?.reps)||1);
- if(wt<=0){
-   return ex?.equipment==='bodyweight'?`Bodyweight · ${reps} reps`:`Choose weight · ${reps} reps`;
- }
- return `Target ${wt} × ${reps}`;
+ const kind=exerciseLoadType(ex?.id,config);
+ if(kind==='bodyweight')return 'Bodyweight · '+reps+' reps';
+ if(kind==='assistance')return 'Target '+wt+' '+state.profile.unit+' assistance × '+reps;
+ return wt<=0?'Choose starting weight · '+reps+' reps':'Target '+wt+' × '+reps;
 }
 
 function changeSetValue(ei,si,key,delta){
@@ -304,32 +366,47 @@ function estimated1RM(weight,reps){
  if(weight<=0||reps<=0)return 0;
  return weight*(1+Math.min(reps,15)/30);
 }
+function loadAwarePR(prior,set,exerciseId,config=null){
+ if(!prior?.length||!Number.isFinite(Number(set.reps))||Number(set.reps)<=0)return '';
+ const kind=exerciseLoadType(exerciseId,config),w=Math.max(0,Number(set.weight)||0),r=Number(set.reps);
+ if(kind==='bodyweight'){
+   const best=Math.max(0,...prior.map(p=>Number(p.reps)||0));
+   return r>best?'Bodyweight rep PR: '+r+' reps':'';
+ }
+ if(kind==='assistance'){
+   const same=prior.filter(p=>Number(p.weight)===w);
+   const bestSame=Math.max(0,...same.map(p=>Number(p.reps)||0));
+   // Lower assistance is only a comparable record if at least as many reps
+   // were completed as on some previous exposure using more assistance.
+   const comparable=prior.filter(p=>Number(p.reps)<=r&&Number(p.weight)>w);
+   if(comparable.length){
+     const bestPrior=Math.min(...prior.filter(p=>Number(p.reps)<=r).map(p=>Number(p.weight)||0));
+     if(w<bestPrior)return 'Less assistance PR: '+w+' '+state.profile.unit+' × '+r;
+   }
+   return same.length&&r>bestSame?'Rep PR: '+r+' reps at '+w+' '+state.profile.unit+' assistance':'';
+ }
+ const maxWeight=Math.max(...prior.map(p=>Number(p.weight)||0));
+ const sameWeightMax=Math.max(0,...prior.filter(p=>Number(p.weight)===w).map(p=>Number(p.reps)||0));
+ const priorE1=Math.max(0,...prior.map(p=>estimated1RM(p.weight,p.reps)));
+ const curE1=estimated1RM(w,r);
+ if(w>maxWeight)return 'Load PR: '+w+' '+state.profile.unit;
+ if(prior.some(p=>Number(p.weight)===w)&&r>sameWeightMax)return 'Rep PR: '+w+' '+state.profile.unit+' × '+r;
+ if(curE1>priorE1*1.01)return 'Estimated strength PR';
+ return '';
+}
 function detectPR(exerciseId,set){
  if(!isProgressionSet(set))return '';
  const prior=[];
- state.sessions.forEach(s=>s.exercises.forEach(e=>{
+ state.sessions.forEach(s=>(s.exercises||[]).forEach(e=>{
    if(e.exerciseId===exerciseId)progressionSets(e).forEach(x=>prior.push(x));
  }));
- // Include earlier completed working sets from the current active workout, but not the
- // set currently being evaluated. This prevents duplicate PR badges when
- // multiple sets tie the same newly achieved record in one session.
  if(state.activeWorkout){
    state.activeWorkout.exercises.forEach(e=>{
      if(e.exerciseId===exerciseId)progressionSets(e).forEach(x=>{if(x!==set)prior.push(x)});
    });
  }
- // A first-ever logged performance establishes the baseline. It is not counted
- // as a PR until a future performance actually beats it.
- if(!prior.length)return '';
- const w=Number(set.weight)||0,r=Number(set.reps)||0;
- const maxWeight=Math.max(...prior.map(x=>Number(x.weight)||0));
- const sameWeightMax=Math.max(0,...prior.filter(x=>Number(x.weight)===w).map(x=>Number(x.reps)||0));
- const priorE1=Math.max(0,...prior.map(x=>estimated1RM(x.weight,x.reps)));
- const curE1=estimated1RM(w,r);
- if(w>maxWeight)return `Load PR: ${w} ${state.profile.unit}`;
- if(r>sameWeightMax)return `Rep PR: ${w} ${state.profile.unit} × ${r}`;
- if(curE1>priorE1*1.01)return `Estimated strength PR`;
- return '';
+ const current=state.activeWorkout?.exercises.find(e=>e.exerciseId===exerciseId);
+ return loadAwarePR(prior,set,exerciseId,current?.config);
 }
 function plateLoadText(weight,ex){
  if(!ex || !['barbell','trap bar'].includes(ex.equipment) || Number(weight)<=0)return '';
@@ -346,7 +423,7 @@ function plateLoadText(weight,ex){
 }
 function warmupGuide(weight,ex){
  const compound=['horizontal_press','incline_press','vertical_press','horizontal_pull','squat','hinge','lunge'];
- if(!ex||!compound.includes(ex.pattern)||Number(weight)<=0)return [];
+ if(!ex||exerciseLoadType(ex.id)!=='external'||!compound.includes(ex.pattern)||Number(weight)<=0)return [];
  const inc=state.profile.unit==='kg'?2.5:5;
  const round=x=>Math.max(0,Math.round(x/inc)*inc);
  const w=Number(weight);
@@ -357,7 +434,7 @@ function warmupGuide(weight,ex){
  ].filter((x,i,a)=>x.weight>0 && (i===0||x.weight!==a[i-1].weight) && x.weight<w);
 }
 function openWarmupGuide(ei){
- const e=state.activeWorkout.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),sets=warmupGuide(t.weight,ex);
+ const e=state.activeWorkout.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),sets=warmupGuide(t.weight,ex);
  openModal(`${esc(ex?.name||'Exercise')} warm-up`,sets.length?`
  <div class="notice">Optional ramp-up sets before your working sets. Adjust or skip them based on how you feel and how heavy the working weight is.</div>
  <div class="card" style="margin-top:12px">${sets.map((s,i)=>`<div class="list-item"><div class="setnum">${i+1}</div><div class="grow"><b>${s.weight} ${state.profile.unit} × ${s.reps}</b><div class="mini">${plateLoadText(s.weight,ex)}</div></div></div>`).join('')}</div>
@@ -401,7 +478,7 @@ function addWorkoutSet(ei,type='working'){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei];if(!e)return;
  type=['working','warmup','drop','failure'].includes(type)?type:'working';
  const existingWorking=workingSetIndexes(e);
- const prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId);
+ const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),rec=buildRecommendation(e.config,prev,e.exerciseId);
  let weight=0,reps=e.config.minReps;
  if(type==='working'){
    const wi=existingWorking.length,lastWorking=existingWorking.length?e.sets[existingWorking.at(-1)]:null;
@@ -445,7 +522,7 @@ function addSuggestedWarmups(ei){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],ex=e?exById(e.exerciseId):null;if(!e||!ex)return;
  const existing=e.sets.filter(function(s){return setType(s)==='warmup'});
  if(existing.length){closeModal();showToast('Warm-up sets are already in this exercise');return}
- const prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),suggested=warmupGuide(t.weight,ex);
+ const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),suggested=warmupGuide(t.weight,ex);
  if(!suggested.length){closeModal();showToast('No warm-up ramp available for this target');return}
  const at=firstWorkingSetIndex(e);
  e.sets.splice.apply(e.sets,[at,0].concat(suggested.map(function(s){return {weight:s.weight,reps:s.reps,done:false,rir:'',type:'warmup',pr:''}})));
@@ -676,6 +753,7 @@ function routineExerciseFromWorkout(e){
    setStructure:savedStructure,
    trainingGoal:cfg.trainingGoal||'general',
    resetPercent:Number(cfg.resetPercent)||7.5,
+   loadType:cfg.loadType||'auto',
    restSeconds:Math.max(15,Number(cfg.restSeconds)||120),
    targetRIR:Number.isFinite(Number(cfg.targetRIR))?Number(cfg.targetRIR):null,
    supersetGroup:e.supersetId||null
@@ -921,8 +999,11 @@ function syncWorkoutStickyOffsets(){
 }
 function compactTargetText(e,ex,prev){
  const t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
- if(e.targetOverride)return `Target ${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`;
- if((Number(t.weight)||0)<=0)return ex?.equipment==='bodyweight'?`${t.reps} reps · bodyweight`:`Choose starting weight · ${t.reps} reps`;
+ if(e.targetOverride)return exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?`Target ${e.targetOverride.reps} bodyweight reps`:`Target ${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`;
+ const type=exerciseLoadType(e.exerciseId,e.config);
+ if(type==='bodyweight')return `${t.reps} reps · bodyweight`;
+ if(type==='assistance')return `${t.weight} ${state.profile.unit} assistance × ${t.reps}`;
+ if((Number(t.weight)||0)<=0)return `Choose starting weight · ${t.reps} reps`;
  return `${t.weight} ${state.profile.unit} × ${t.reps} target`;
 }
 
@@ -1117,7 +1198,7 @@ function openFocusedSetOptions(ei,si){
 }
 function openFocusedExerciseMore(ei){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],ex=e?exById(e.exerciseId):null;if(!e)return;
- const prev=previousExercise(e.exerciseId),target=liveSetTarget(e,firstWorkingSetIndex(e),prev),warmups=warmupGuide(target.weight,ex),superset=supersetMeta(ei),hasRemaining=workoutHasRemainingProgrammedWork(w);
+ const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),target=liveSetTarget(e,firstWorkingSetIndex(e),prev),warmups=warmupGuide(target.weight,ex),superset=supersetMeta(ei),hasRemaining=workoutHasRemainingProgrammedWork(w);
  openModal(esc(ex&&ex.name||'Exercise')+' · More',
   '<div class="notice">Keep the live screen focused on logging. Everything here stays available when you need to change the exercise or the session.</div>'+
   '<div class="workout-more-section"><div class="eyebrow">EXERCISE</div><div class="actions">'+
@@ -1133,9 +1214,9 @@ function openFocusedExerciseMore(ei){
   '<button class="btn danger" onclick="closeModal();cancelWorkout()">Cancel workout</button></div></div>');
 }
 function focusedCoachTargetHtml(e,ei,ex,prev){
- const rec=buildRecommendation(e.config,prev,e.exerciseId),coach=coachSignal(e.exerciseId,e.config);
+ const rec=buildRecommendation(e.config,prev,e.exerciseId),coach=exerciseLoadType(e.exerciseId,e.config)==='external'?coachSignal(e.exerciseId,e.config):null;
  const firstWorking=firstWorkingSetIndex(e),firstTarget=liveSetTarget(e,firstWorking,prev),plateText=plateLoadText(firstTarget.weight,ex),compactTarget=compactTargetText(e,ex,prev);
- const title=e.targetOverride?(e.targetOverride.weight+' '+state.profile.unit+' × '+e.targetOverride.reps):rec.headline;
+ const title=e.targetOverride?(exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?(e.targetOverride.reps+' bodyweight reps'):(e.targetOverride.weight+' '+state.profile.unit+' × '+e.targetOverride.reps)):rec.headline;
  const detail=e.targetOverride?('Session-only '+(e.targetOverride.reason||'override')+'. Routine progression is unchanged.'):rec.detail;
  return '<details class="workout-guidance focus-guidance" '+(e.targetOverride?'open':'')+'><summary>'+
   '<div class="workout-guidance-copy"><div class="eyebrow">COACH TARGET</div><div class="workout-guidance-title">'+esc(title)+'</div>'+
@@ -1147,18 +1228,20 @@ function focusedCoachTargetHtml(e,ei,ex,prev){
   '</div></details>';
 }
 function focusedSetCardHtml(e,ei,si,ex,prev){
- const base=e.sets[si],edit=workoutSetEditTarget(ei,si),s=edit?edit.draft:base,type=setType(s),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev),ref=type==='working'?setReference(prev,wi):'Not used for progression',pt=plateLoadText(s.weight||target.weight,ex);
+ const base=e.sets[si],edit=workoutSetEditTarget(ei,si),s=edit?edit.draft:base,type=setType(s),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev),ref=type==='working'?setReference(prev,wi,e.exerciseId,e.config):'Not used for progression',pt=plateLoadText(s.weight||target.weight,ex);
  const rirOptions=[0,1,2,3,4,5].map(function(v){return '<option value="'+v+'" '+(String(s.rir)===String(v)?'selected':'')+'>'+v+'</option>'}).join('');
  const increment=Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5));
  return '<div class="focus-set-card set-card type-'+type+' '+(base.done?'completed ':'')+(edit?'editing':'')+'" data-set-index="'+si+'">'+
   '<div class="focus-set-head"><div><div class="exercise-kicker">'+esc(setDisplayLabel(e,si))+' · '+(si+1)+' OF '+e.sets.length+'</div><div class="focus-set-reference">'+(type==='working'?('Previous: '+esc(ref)):'Logged separately from progression')+'</div></div>'+
   (edit?'<button class="focus-set-edit-cancel" onclick="cancelWorkoutSetEdit()">Cancel</button>':'<button class="focus-set-options" onclick="openFocusedSetOptions('+ei+','+si+')" aria-label="Set options">•••</button>')+'</div>'+
   (edit?'<div class="focus-set-edit-banner"><b>Editing completed set</b><span>Change the logged values below, then tap Update Set. Your workout position will not move.</span></div>':'')+
-  (type==='working'?'<div class="focus-set-target"><span class="set-target">'+esc(targetBadgeText(target,ex))+'</span></div>':'<div class="set-nonprogress-note">'+esc(setProgressionNote(type))+'</div>')+
-  '<div class="live-entry"><div class="live-input-wrap numeric-entry"><label>'+((ex&&ex.equipment)==='bodyweight'?'Added weight':'Weight')+' ('+state.profile.unit+')</label><div class="numeric-stepper">'+
+  (type==='working'?'<div class="focus-set-target"><span class="set-target">'+esc(targetBadgeText(target,ex,e.config))+'</span></div>':'<div class="set-nonprogress-note">'+esc(setProgressionNote(type))+'</div>')+
+  '<div class="live-entry">'+(exerciseLoadType(e.exerciseId,e.config)==='bodyweight'
+    ?'<div class="live-input-wrap numeric-entry bodyweight-entry-note"><label>Load</label><div class="mini">Bodyweight · reps only</div></div>'
+    :'<div class="live-input-wrap numeric-entry"><label>'+(exerciseLoadType(e.exerciseId,e.config)==='assistance'?'Assistance':ex?.equipment==='bodyweight'?'Added weight':'Weight')+' ('+state.profile.unit+')</label><div class="numeric-stepper">'+
   '<button class="numeric-step-btn" aria-label="decrease weight" onclick="changeSetValue('+ei+','+si+',\'weight\',-'+increment+')">−</button>'+
   '<input class="direct-number" type="number" inputmode="decimal" enterkeyhint="done" step=".25" min="0" value="'+displaySetWeightValue(s.weight)+'" placeholder="'+((ex&&ex.equipment)==='bodyweight'?'0':'Enter')+'" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+',\'weight\',this.value)" onblur="'+(edit?'':'commitFirstExerciseWeightAutofill('+ei+','+si+')')+'" aria-label="weight">'+
-  '<button class="numeric-step-btn" aria-label="increase weight" onclick="changeSetValue('+ei+','+si+',\'weight\','+increment+')">+</button></div></div>'+
+  '<button class="numeric-step-btn" aria-label="increase weight" onclick="changeSetValue('+ei+','+si+',\'weight\','+increment+')">+</button></div></div>')+
   '<div class="live-input-wrap numeric-entry"><label>Reps</label><div class="numeric-stepper">'+
   '<button class="numeric-step-btn" aria-label="decrease reps" onclick="changeSetValue('+ei+','+si+',\'reps\',-1)">−</button>'+
   '<input class="direct-number" type="number" inputmode="numeric" enterkeyhint="done" min="0" value="'+s.reps+'" placeholder="Reps" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+',\'reps\',this.value)" aria-label="reps">'+
@@ -1169,7 +1252,7 @@ function focusedSetCardHtml(e,ei,si,ex,prev){
   (!edit&&base.pr?'<div class="pr-banner"><span class="inline-pr-mark">PR</span> '+esc(base.pr)+'</div>':'')+'</div>';
 }
 function focusedExerciseCanvasHtml(w,ei){
- const e=w.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),si=workoutFocusedSetIndex(w),prog=exerciseSetProgress(e),superset=supersetMeta(ei);
+ const e=w.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),si=workoutFocusedSetIndex(w),prog=exerciseSetProgress(e),superset=supersetMeta(ei);
  const next=nextWorkoutExerciseIndex(ei,w),allDone=!workoutHasRemainingProgrammedWork(w);
  return '<div class="focus-exercise-stage" data-exercise-index="'+ei+'">'+workoutExerciseNavigatorHtml(w,ei)+
   '<div id="workoutExercise-'+ei+'" class="focus-exercise-canvas tone-'+(ei%4)+' '+(prog.complete?'complete-block':'')+'">'+
@@ -1240,6 +1323,7 @@ function paintWorkoutSetWeight(ei,si){
 }
 function applyFirstExerciseWeightAutofill(ei,sourceSi){
  const e=state.activeWorkout?.exercises?.[ei],source=e?.sets?.[sourceSi];
+ if(e&&exerciseLoadType(e.exerciseId,e.config)==='bodyweight')return false;
  if(!e||!source||e.firstWeightAutofillDone)return false;
  if(exerciseHasLoggedWeightHistory(e.exerciseId))return false;
  if(!isProgressionSet(source))return false;
