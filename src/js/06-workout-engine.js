@@ -26,8 +26,8 @@ function previousExercise(exerciseId,programId=state.activeWorkout?.programId||n
  // Deload performances are genuine history, but not evidence of normal training capacity.
  const candidates=(state.sessions||[]).filter(s=>s.programPhase!=='deload')
   .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
- const bodyweight=exById(exerciseId)?.equipment==='bodyweight';
- const eligible=s=>((s.exercises||[]).find(e=>e.exerciseId===exerciseId&&!e.skipped&&progressionSets(e).some(set=>bodyweight||Number(set.weight)>0)));
+ const type=exerciseLoadType(exerciseId);
+ const eligible=s=>((s.exercises||[]).find(e=>e.exerciseId===exerciseId&&!e.skipped&&progressionSets(e).some(set=>type!=='external'||Number(set.weight)>0)));
  const selected=(programId?candidates.filter(s=>s.programId===programId):candidates).find(eligible)
     ||candidates.find(eligible);
  const exercise=selected&&eligible(selected);
@@ -96,6 +96,7 @@ function recentExerciseSessions(exerciseId,n=4){
 function coachSignal(exerciseId,config){
  if(normalizeTrainingMode(config.routineMode)==='track')return null;
  const hist=recentExerciseSessions(exerciseId,4);
+ if(exerciseLoadType(exerciseId,config)!=='external')return null;
  if(hist.length<2)return {level:'info',title:'Building baseline',text:`Keep logging this movement. The coach waits for repeated sessions before calling anything a stall.`,stalled:false,canReset:false};
  const scores=hist.map(h=>({
    e1:Math.max(...h.sets.map(s=>estimated1RM(s.weight,s.reps))),
@@ -362,32 +363,47 @@ function estimated1RM(weight,reps){
  if(weight<=0||reps<=0)return 0;
  return weight*(1+Math.min(reps,15)/30);
 }
+function loadAwarePR(prior,set,exerciseId,config=null){
+ if(!prior?.length||!Number.isFinite(Number(set.reps))||Number(set.reps)<=0)return '';
+ const kind=exerciseLoadType(exerciseId,config),w=Math.max(0,Number(set.weight)||0),r=Number(set.reps);
+ if(kind==='bodyweight'){
+   const best=Math.max(0,...prior.map(p=>Number(p.reps)||0));
+   return r>best?'Bodyweight rep PR: '+r+' reps':'';
+ }
+ if(kind==='assistance'){
+   const same=prior.filter(p=>Number(p.weight)===w);
+   const bestSame=Math.max(0,...same.map(p=>Number(p.reps)||0));
+   // Lower assistance is only a comparable record if at least as many reps
+   // were completed as on some previous exposure using more assistance.
+   const comparable=prior.filter(p=>Number(p.reps)<=r&&Number(p.weight)>w);
+   if(comparable.length){
+     const bestPrior=Math.min(...prior.filter(p=>Number(p.reps)<=r).map(p=>Number(p.weight)||0));
+     if(w<bestPrior)return 'Less assistance PR: '+w+' '+state.profile.unit+' × '+r;
+   }
+   return same.length&&r>bestSame?'Rep PR: '+r+' reps at '+w+' '+state.profile.unit+' assistance':'';
+ }
+ const maxWeight=Math.max(...prior.map(p=>Number(p.weight)||0));
+ const sameWeightMax=Math.max(0,...prior.filter(p=>Number(p.weight)===w).map(p=>Number(p.reps)||0));
+ const priorE1=Math.max(0,...prior.map(p=>estimated1RM(p.weight,p.reps)));
+ const curE1=estimated1RM(w,r);
+ if(w>maxWeight)return 'Load PR: '+w+' '+state.profile.unit;
+ if(r>sameWeightMax)return 'Rep PR: '+w+' '+state.profile.unit+' × '+r;
+ if(curE1>priorE1*1.01)return 'Estimated strength PR';
+ return '';
+}
 function detectPR(exerciseId,set){
  if(!isProgressionSet(set))return '';
  const prior=[];
- state.sessions.forEach(s=>s.exercises.forEach(e=>{
+ state.sessions.forEach(s=>(s.exercises||[]).forEach(e=>{
    if(e.exerciseId===exerciseId)progressionSets(e).forEach(x=>prior.push(x));
  }));
- // Include earlier completed working sets from the current active workout, but not the
- // set currently being evaluated. This prevents duplicate PR badges when
- // multiple sets tie the same newly achieved record in one session.
  if(state.activeWorkout){
    state.activeWorkout.exercises.forEach(e=>{
      if(e.exerciseId===exerciseId)progressionSets(e).forEach(x=>{if(x!==set)prior.push(x)});
    });
  }
- // A first-ever logged performance establishes the baseline. It is not counted
- // as a PR until a future performance actually beats it.
- if(!prior.length)return '';
- const w=Number(set.weight)||0,r=Number(set.reps)||0;
- const maxWeight=Math.max(...prior.map(x=>Number(x.weight)||0));
- const sameWeightMax=Math.max(0,...prior.filter(x=>Number(x.weight)===w).map(x=>Number(x.reps)||0));
- const priorE1=Math.max(0,...prior.map(x=>estimated1RM(x.weight,x.reps)));
- const curE1=estimated1RM(w,r);
- if(w>maxWeight)return `Load PR: ${w} ${state.profile.unit}`;
- if(r>sameWeightMax)return `Rep PR: ${w} ${state.profile.unit} × ${r}`;
- if(curE1>priorE1*1.01)return `Estimated strength PR`;
- return '';
+ const current=state.activeWorkout?.exercises.find(e=>e.exerciseId===exerciseId);
+ return loadAwarePR(prior,set,exerciseId,current?.config);
 }
 function plateLoadText(weight,ex){
  if(!ex || !['barbell','trap bar'].includes(ex.equipment) || Number(weight)<=0)return '';
