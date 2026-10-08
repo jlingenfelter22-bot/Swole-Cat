@@ -2337,3 +2337,89 @@ html[data-workout-transition="back"]::view-transition-new(workout-exercise-stage
 .routine-manage-btn{
  box-shadow:none;
 }
+
+
+/* v0.81.0 COMPACT ROUTINE / EXERCISE NAVIGATION POLISH
+   Keep the existing Routine / Program segmented switch unchanged. */
+#routines .routine-page-section > .section-title.routine-compact-head{
+ display:grid;
+ grid-template-columns:minmax(0,1fr) auto;
+ align-items:center;
+ column-gap:8px;
+ margin:9px 2px 10px;
+}
+#routines .routine-compact-head h2{
+ min-width:0;
+ font-size:clamp(.84rem,3.4vw,1.12rem);
+ line-height:1.18;
+}
+#routines .routine-compact-head .section-title-actions{
+ display:flex;
+ align-items:center;
+ justify-content:flex-end;
+ gap:6px;
+ flex-wrap:nowrap;
+ min-width:0;
+}
+#routines .routine-compact-head .btn.small{
+ flex:0 0 auto;
+ min-height:36px;
+ padding:8px 9px;
+ white-space:nowrap;
+ font-size:.76rem;
+ line-height:1.1;
+}
+#exercises .exercise-filter-controls{
+ display:grid;
+ grid-template-columns:minmax(0,1fr);
+ gap:8px;
+ margin:0 0 10px;
+}
+#exercises .exercise-status-field,
+#exercises .exercise-attribute-fields{
+ min-width:0;
+}
+#exercises .exercise-attribute-fields{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:8px;
+}
+#exercises .exercise-filter-controls .app-select-trigger{
+ min-height:42px;
+ padding:8px 10px;
+ gap:8px;
+}
+#exercises .exercise-filter-controls .app-select-value{
+ white-space:normal;
+ overflow:visible;
+ text-overflow:clip;
+ line-height:1.24;
+ font-size:.76rem;
+}
+#exercises #exerciseSearch{margin-bottom:8px}
+#history .history-sequence{
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ gap:3px;
+ padding:5px 2px;
+}
+#history .history-sequence small{
+ order:0;
+ font-size:.39rem;
+ letter-spacing:.09em;
+ line-height:1;
+}
+#history .history-sequence span{
+ order:1;
+ font-size:.97rem;
+ line-height:1.05;
+}
+@media(max-width:355px){
+ #routines .routine-compact-head .section-title-actions{gap:4px}
+ #routines .routine-compact-head .btn.small{
+  padding:7px 6px;
+  font-size:.70rem;
+ }
+}
