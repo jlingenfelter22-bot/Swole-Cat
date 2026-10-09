@@ -29,23 +29,24 @@ assert.deepEqual([...tray.children].filter(el=>el.tagName==='BUTTON').map(el=>el
   'the only collapsed button is the timer/expand target');
 const microStyle=css.slice(css.indexOf('/* v0.87.1 // COMPACT CYBER REST COMMAND POD'));
 const notchStyle=css.slice(css.indexOf('/* v0.87.2 // Recessed rest notch'));
-const seamStyle=css.slice(css.indexOf('/* v0.87.3 // CONTINUOUS REST NOTCH SEAM'));
-assert(notchStyle.startsWith('/* v0.87.2'),'v0.87.2 recessed behavior is preserved');
-assert(seamStyle.startsWith('/* v0.87.3'),'v0.87.3 visual integration is the latest style');
-assert.match(seamStyle,/nav\.rest-notch-integrated\{\s*border-top-color:transparent!important/,
- 'nav hides its original solid top border around the passive notch');
-assert.match(seamStyle,/nav\.rest-notch-integrated::before\{[\s\S]*?calc\(50% - 92px\)/,
- 'nav top line is split at the molded notch shoulders, not drawn behind it');
-assert.match(seamStyle,/#restTimer\.resttimer:not\(\.expanded\)\{[\s\S]*?border-top:1px solid/,
- 'notch and nav use a shared subtle seam weight');
-assert.match(seamStyle,/#restTimer\.resttimer:not\(\.expanded\)::before,[\s\S]*?height:calc\(100% - var\(--rest-notch-recess,16px\)\)/,
- 'bevel shoulders terminate at the nav upper edge instead of forming hooks');
-assert.match(seamStyle,/#restTimer\.resttimer:not\(\.expanded\)::before\{[\s\S]*?linear-gradient\(130deg/,
- 'left notch transition uses an angular bevel');
-assert.match(seamStyle,/#restTimer\.resttimer:not\(\.expanded\)::after\{[\s\S]*?linear-gradient\(230deg/,
- 'right notch transition mirrors the bevel');
-assert.match(seamStyle,/html\.workout-keyboard-active nav\.rest-notch-integrated/,
- 'nav top line restores when the timer is hidden during keyboard input');
+const housingStyle=css.slice(css.indexOf('/* v0.87.4 // UNIFIED REST DOCK HOUSING'));
+assert(notchStyle.startsWith('/* v0.87.2'),'v0.87.2 recessed position remains authoritative');
+assert(housingStyle.startsWith('/* v0.87.4'),'single-contour housing is the final visual style');
+assert.match(housingStyle,/nav \.rest-nav-housing\{/,'the nav owns the shared housing silhouette');
+assert.match(housingStyle,/nav \.rest-nav-housing-contour\{/,'one stroke follows the full nav and crest outline');
+assert.match(housingStyle,/#restTimer\.resttimer:not\(\.expanded\)\{[\s\S]*?background:transparent!important/,
+ 'the countdown panel no longer paints a separate rectangular background');
+assert.match(housingStyle,/#restTimer\.resttimer:not\(\.expanded\)::before,[\s\S]*?content:none!important/,
+ 'old decorative hooked wings must be removed from the final style');
+assert.match(housingStyle,/nav\.rest-notch-integrated::before\{[\s\S]*?content:none!important/,
+ 'the old straight nav rail cannot show through the new crest');
+assert.match(housingStyle,/html\.workout-keyboard-active nav \.rest-nav-housing/,
+ 'keyboard visibility still reverts to ordinary navigation');
+const housing=w.document.getElementById('restNavHousing');
+const housingFill=w.document.getElementById('restNavHousingFill');
+const housingContour=w.document.getElementById('restNavHousingContour');
+assert(housing&&housingFill&&housingContour,'nav contains one decorative contour and its matching fill');
+assert.equal(housing.getAttribute('aria-hidden'),'true','housing must remain decorative and unfocusable');
 assert.match(notchStyle,/#restTimer\.resttimer:not\(\.expanded\)\{[\s\S]*?width:154px!important/,
  'passive notch narrows to 154px');
 assert.match(notchStyle,/#restTimer\.resttimer:not\(\.expanded\)\{[\s\S]*?min-height:35px!important/,
@@ -90,6 +91,11 @@ w.syncRestNotchClearance();
 assert.equal(tray.classList.contains('rest-notch-obstructed'),false,'default notch must fit below the Complete Set button');
 assert.equal(tray.style.getPropertyValue('--rest-notch-recess'),'17px','notch recesses into the nav without reaching its icons');
 assert(nav.classList.contains('rest-notch-integrated'),'visible collapsed timer opens the nav seam');
+assert.match(housingContour.getAttribute('d')||'',/^M 0 18 L /,'contour starts on the nav top and rises to the original notch');
+assert.match(housingContour.getAttribute('d')||'',/ C /,'notch shoulders are continuous curved segments, not detached wings');
+assert.equal(housing.getAttribute('viewBox'),'0 0 378 25','SVG contour precisely follows the measured nav width and recess');
+assert(housingFill.getAttribute('d').includes('Z'),'a single filled silhouette sits behind the countdown');
+const shapeAtRest=housingContour.getAttribute('d');
 const countBefore=scrolls.length;
 actionBottom=675; // 28px clearance, less than the previous floating tray height
 w.syncRestNotchClearance();
@@ -99,10 +105,12 @@ actionBottom=696; // impossible to display full countdown above the glyphs witho
 w.syncRestNotchClearance();
 assert(tray.classList.contains('rest-notch-obstructed'),'critical collision hides the passive notch instead of overlaying Complete Set');
 assert(!nav.classList.contains('rest-notch-integrated'),'hidden timer restores uninterrupted nav border');
+assert.equal(housing.classList.contains('visible'),false,'decorative housing does not need a separate show state');
 actionBottom=650;
 w.syncRestNotchClearance();
 assert(!tray.classList.contains('rest-notch-obstructed'),'notch returns as soon as the primary action has clearance');
 assert(nav.classList.contains('rest-notch-integrated'),'recovered timer restores seamless nav cutout');
+assert.equal(housingContour.getAttribute('d'),shapeAtRest,'recovered contour returns to the exact approved position');
 assert.equal(scrolls.length,countBefore,'collision resolution never repositions the workout');
 // An explicit expansion may take space and preserve Complete Set by scrolling.
 w.toggleRestTimerExpanded();
@@ -138,8 +146,8 @@ assert.match(notchStyle,/#restTimer\.resttimer\.expanded\{[\s\S]*?bottom:calc\(v
  'expanded controls rise out of their recessed position to sit above nav');
 assert.match(css,/#restTimer\.resttimer\.show\{[\s\S]*?transform:translate\(-50%,0\)!important/,
  'tray slides up into place');
-assert.match(css,/#restTimer\.resttimer::before,[\s\S]*?#restTimer\.resttimer::after/,
- 'rounded shoulders extend the nav outline');
+assert.match(housingStyle,/#restTimer\.resttimer:not\(\.expanded\)::before,[\s\S]*?display:none!important/,
+ 'there must be no legacy hook pseudo-elements in the final silhouette');
 assert.match(css,/html\.workout-keyboard-active #restTimer\.resttimer\.show,[\s\S]*?display:none!important/,
  'typing must hide tray entirely');
 assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{\s*#restTimer\.resttimer/,
@@ -161,4 +169,4 @@ assert.equal(w.document.getElementById('restTimerText').textContent,'1:30','stop
 assert(scrolls.length>=countBefore,'timer keeps normal workout navigation behavior');
 nav.getBoundingClientRect=originalNavRect;
 dom.window.close();
-console.log('PASS v0.87.3: continuous nav/notch seam, beveled shoulders, keyboard/collision/expanded cutout cleanup, no placement changes.');
+console.log('PASS v0.87.4: one molded SVG nav/crest contour, no sticker rectangle or hooks; stable position, keyboard/collision/expanded cleanup.');
