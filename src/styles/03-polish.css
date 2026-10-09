@@ -3159,3 +3159,130 @@ nav.rest-notch-integrated .rest-nav-housing{
  #restTimer.resttimer .rest-actions,
  #restTimer.resttimer.expanded .rest-actions{transition:none!important}
 }
+
+/* v0.87.6 // RIGID WHOLE-RAIL LIFT
+   One unchanged full-width SVG contour (left rail + raised center bump + right
+   rail) translates upward as a unit. Countdown translates the SAME distance.
+   The nav buttons never move. No shape morph, no height-driven redraw. */
+:root{--rest-rail-lift:62px;--rest-rail-duration:290ms;--rest-rail-ease:cubic-bezier(.22,.82,.22,1)}
+nav .rest-nav-housing{
+ transform:translate3d(0,0,0);
+ transition:transform var(--rest-rail-duration) var(--rest-rail-ease);
+ will-change:transform;
+}
+nav.rest-notch-integrated.rest-rail-raised .rest-nav-housing{
+ transform:translate3d(0,calc(-1 * var(--rest-rail-lift)),0);
+}
+/* The rest header remains the exact original 154px by ~35px bump. An absolute
+   shelf beneath it keeps expanded actions out of layout sizing, ensuring SVG
+   viewBox and full-width rail path are IDENTICAL in both states. */
+#restTimer.resttimer,
+#restTimer.resttimer.expanded,
+#restTimer.resttimer:not(.expanded){
+ display:block!important;
+ box-sizing:border-box;
+ width:154px!important;
+ min-height:35px!important;
+ height:35px!important;
+ padding:1px 5px 0!important;
+ bottom:calc(var(--rest-nav-offset,82px) - var(--rest-notch-recess,17px))!important;
+ background:transparent!important;
+ border:0!important;
+ box-shadow:none!important;
+ transition:
+  transform var(--rest-rail-duration) var(--rest-rail-ease),
+  opacity 180ms ease,visibility 0s linear var(--rest-rail-duration)!important;
+}
+#restTimer.resttimer.show{
+ transition:
+  transform var(--rest-rail-duration) var(--rest-rail-ease),
+  opacity 180ms ease!important;
+}
+#restTimer.resttimer.show.expanded{
+ transform:translate3d(-50%,calc(-1 * var(--rest-rail-lift)),0)!important;
+}
+#restTimer.resttimer.show:not(.expanded){
+ transform:translate3d(-50%,0,0)!important;
+}
+#restTimer.resttimer .rest-main{
+ display:grid;
+ min-height:33px!important;
+ height:33px!important;
+}
+/* Actions occupy a separate fixed-height shelf *below* the lifted timer.
+   The shelf is uncovered by lifting the whole contour, not grown inside it. */
+#restTimer.resttimer .rest-actions,
+#restTimer.resttimer.expanded .rest-actions{
+ position:absolute!important;
+ top:34px!important;
+ left:0!important;
+ width:100%!important;
+ height:59px!important;
+ max-height:none!important;
+ min-height:0!important;
+ display:grid!important;
+ grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ align-items:start;
+ gap:4px!important;
+ margin:0!important;
+ padding:7px 3px 8px!important;
+ border:0!important;
+ overflow:visible!important;
+ box-sizing:border-box;
+ opacity:0;
+ visibility:hidden;
+ pointer-events:none;
+ transition:opacity 130ms ease,visibility 0s linear 130ms!important;
+}
+#restTimer.resttimer.expanded .rest-actions{
+ opacity:1;
+ visibility:visible;
+ pointer-events:auto;
+ transition:opacity 130ms ease 70ms!important;
+}
+#restTimer.resttimer .rest-actions button{
+ min-height:44px;
+ width:100%;
+ padding:6px 1px;
+}
+/* Dark inner shelf exposed below the raised crest. It is not a second outer
+   outline or a taller center bump, and it disappears with the controls. */
+#restTimer.resttimer.expanded::before{
+ content:""!important;
+ display:block!important;
+ position:absolute;
+ left:0;
+ right:0;
+ top:34px;
+ height:59px;
+ width:auto;
+ z-index:-1;
+ border:0!important;
+ border-radius:0!important;
+ background:linear-gradient(180deg,rgba(8,14,25,.985),rgba(8,14,25,.96))!important;
+ box-shadow:none!important;
+ pointer-events:none;
+}
+#restTimer.resttimer:not(.expanded)::before{
+ content:none!important;
+ display:none!important;
+}
+@media(max-width:350px){
+ #restTimer.resttimer,
+ #restTimer.resttimer.expanded,
+ #restTimer.resttimer:not(.expanded){width:146px!important}
+ #restTimer.resttimer .rest-actions{gap:3px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ nav .rest-nav-housing,
+ #restTimer.resttimer,
+ #restTimer.resttimer.show,
+ #restTimer.resttimer .rest-actions,
+ #restTimer.resttimer.expanded .rest-actions{transition:none!important}
+}
+
+/* Last in cascade: input focus always wins over the visual rail layout. */
+html.workout-keyboard-active #restTimer.resttimer.show,
+html.native-app.keyboard-open #restTimer.resttimer.show{
+ display:none!important;
+}

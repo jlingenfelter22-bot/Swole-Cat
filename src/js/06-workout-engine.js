@@ -1298,8 +1298,9 @@ function focusWorkoutViewportAfterAdvance(){
   !document.documentElement.classList.contains('keyboard-open');
  // Passive rest is recessed into the nav housing. It must never push the
  // Complete Set button upward. Only an intentionally expanded tray reserves room.
- const expandedRest=restVisible&&restTray.classList.contains('expanded');
- const trayHeight=expandedRest?Math.max(0,Number(restTray.offsetHeight)||0):0;
+ // The user deliberately opens rest controls as an overlay, not a new
+ // layout obstruction. Completing sets must never chase the lifted rail.
+ const trayHeight=0;
  const visibleBottom=Math.min((Number(viewport?.offsetTop)||0)+(Number(viewport?.height)||window.innerHeight),
    dockTop>0?dockTop-trayHeight:Infinity)-12;
  // Keep the sticky exercise header, target, fields, and primary action together.
@@ -1812,9 +1813,10 @@ function syncRestNotchSeam(){
  if(!nav)return;
  const visible=!!box?.classList.contains('show')&&!root.classList.contains('workout-keyboard-active')&&
   !root.classList.contains('keyboard-open');
- // Keep the nav-owned housing present throughout expansion, rather than
- // exchanging a recessed notch for a detached wide panel.
+ // One complete full-width rail lifts rigidly; the notch geometry never
+ // changes when the controls open. The five nav buttons remain stationary.
  nav.classList.toggle('rest-notch-integrated',visible);
+ nav.classList.toggle('rest-rail-raised',visible&&box.classList.contains('expanded'));
  if(visible)syncRestDockHousing();
 }
 function syncRestNotchClearance(){
@@ -1834,19 +1836,6 @@ function syncRestNotchClearance(){
  box.classList.remove('rest-notch-obstructed');
  box.style.setProperty('--rest-notch-recess',Math.round(recess)+'px');
  syncRestNotchSeam();
-}
-let restDockSlideEpoch=0;
-function followSlidingRestHousing(){
- const epoch=++restDockSlideEpoch;
- const reduced=workoutReducedMotion();
- const end=(typeof performance!=='undefined'?performance.now():Date.now())+(reduced?0:360);
- function frame(){
-  if(epoch!==restDockSlideEpoch)return;
-  syncRestNotchSeam();
-  const now=typeof performance!=='undefined'?performance.now():Date.now();
-  if(now<end)requestAnimationFrame(frame);
- }
- requestAnimationFrame(frame);
 }
 function queueRestNotchClearance(){
  if(restNotchClearanceFrame)return;
@@ -1887,13 +1876,11 @@ function syncRestTrayControls(){
 function toggleRestTimerExpanded(){
  const box=document.getElementById('restTimer');if(!box?.classList.contains('show'))return;
  box.classList.toggle('expanded');
+ // The entire nav contour and the countdown translate together. Buttons
+ // appear beneath the lifted crest. Overlaying workout content while expanded
+ // is intentional: never shift the user's carefully positioned workout.
  syncRestTrayControls();
- followSlidingRestHousing();
- if(box.classList.contains('expanded')){
-  // Only an intentional expansion may reposition the workout to preserve
-  // access to Complete Set on small phones.
-  requestAnimationFrame(()=>requestAnimationFrame(focusWorkoutViewportAfterAdvance));
- }else queueRestNotchClearance();
+ if(!box.classList.contains('expanded'))queueRestNotchClearance();
 }
 function startRestTimer(seconds){
  stopRestTimer();

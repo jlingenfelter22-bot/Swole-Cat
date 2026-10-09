@@ -31,6 +31,20 @@ const microStyle=css.slice(css.indexOf('/* v0.87.1 // COMPACT CYBER REST COMMAND
 const notchStyle=css.slice(css.indexOf('/* v0.87.2 // Recessed rest notch'));
 const housingStyle=css.slice(css.indexOf('/* v0.87.4 // UNIFIED REST DOCK HOUSING'));
 const slidingStyle=css.slice(css.indexOf('/* v0.87.5 // SLIDING REST DOCK'));
+const liftStyle=css.slice(css.indexOf('/* v0.87.6 // RIGID WHOLE-RAIL LIFT'));
+assert(liftStyle.startsWith('/* v0.87.6'),'rigid full-width rail must be the final visual override');
+assert.match(liftStyle,/nav\.rest-notch-integrated\.rest-rail-raised \.rest-nav-housing\{[\s\S]*?translate3d\(0,calc\(-1 \* var\(--rest-rail-lift\)\),0\)/,
+ 'the entire full-width nav rail, not the center only, moves upward');
+assert.match(liftStyle,/#restTimer\.resttimer\.show\.expanded\{[\s\S]*?translate3d\(-50%,calc\(-1 \* var\(--rest-rail-lift\)\),0\)/,
+ 'the timer and entire rail use the exact same translation distance');
+assert.match(liftStyle,/#restTimer\.resttimer\.expanded,[\s\S]*?height:35px!important/,
+ 'expanding may not increase the main timer height and morph the contour');
+assert.match(liftStyle,/#restTimer\.resttimer \.rest-actions,[\s\S]*?position:absolute!important/,
+ 'three controls reveal under the rail without changing the crest geometry');
+assert.match(liftStyle,/#restTimer\.resttimer\.expanded::before\{[\s\S]*?height:59px/,
+ 'a clean under-rail backing may appear without changing the rail shape');
+assert.match(liftStyle,/@media\(prefers-reduced-motion:reduce\)/,
+ 'rail lift honors reduced-motion settings');
 assert(slidingStyle.startsWith('/* v0.87.5'),'sliding dock rules must be the final visual override');
 assert.match(slidingStyle,/#restTimer\.resttimer\.expanded,[\s\S]*?width:154px!important/,
  'expanded timer must retain identical narrow width instead of becoming a wide panel');
@@ -95,7 +109,7 @@ assert(primary&&focusHeader,'the actual Complete Set control is available');
 let actionBottom=650;
 primary.getBoundingClientRect=()=>({top:actionBottom-48,bottom:actionBottom,height:48});
 focusHeader.getBoundingClientRect=()=>({top:220,bottom:307,height:87});
-Object.defineProperty(tray,'offsetHeight',{configurable:true,get:()=>tray.classList.contains('expanded')?110:35});
+Object.defineProperty(tray,'offsetHeight',{configurable:true,get:()=>35});
 await wait(45);
 w.syncRestNotchClearance();
 assert.equal(tray.classList.contains('rest-notch-obstructed'),false,'default notch must fit below the Complete Set button');
@@ -123,15 +137,15 @@ assert.equal(scrolls.length,countBefore,'timer never scrolls the workout for pas
 actionBottom=650;
 w.syncRestNotchClearance();
 assert(nav.classList.contains('rest-notch-integrated'),'normal scroll recovery requires no visibility transition');
-// An explicit expansion may take space and preserve Complete Set by scrolling.
+// Expansion is deliberately overlaid above the workout, without moving it.
 w.toggleRestTimerExpanded();
 await wait(55);
-assert(scrolls.length>countBefore,'expanded tray triggers protective scroll when needed');
-assert(scrolls[scrolls.length-1].top>=60,'expanded tray reserves enough height for controls');
-// Continue expanded controls test.
-assert(tray.classList.contains('expanded'),'tap opens expanded controls');
-assert(nav.classList.contains('rest-notch-integrated'),'expanding keeps the very same molded nav housing');
-assert.equal(housing.getAttribute('viewBox'),'0 0 378 100','shared contour rises to cover the taller shelf without widening');
+assert.equal(scrolls.length,countBefore,'raising the whole rail does not auto-scroll the workout');
+assert(tray.classList.contains('expanded'),'tap expands the controls');
+assert(nav.classList.contains('rest-notch-integrated'),'full-width rail remains connected');
+assert(nav.classList.contains('rest-rail-raised'),'the entire full-width rail gets the lifted state');
+assert.equal(housing.getAttribute('viewBox'),'0 0 378 25','the housing viewBox does not morph or get taller');
+assert.equal(housingContour.getAttribute('d'),shapeAtRest,'the full-width contour path remains pixel-identical');
 assert.equal(action.getAttribute('aria-expanded'),'true');
 assert.equal(controls.getAttribute('aria-hidden'),'false');
 assert(buttons.every(b=>b.tabIndex===0),'expanded buttons become keyboard accessible');
@@ -145,6 +159,9 @@ w.toggleRestTimerExpanded();
 assert(!tray.classList.contains('expanded'),'second tap collapses');
 await wait(45);
 assert(nav.classList.contains('rest-notch-integrated'),'collapsing returns to the integrated notch seam');
+assert(!nav.classList.contains('rest-rail-raised'),'rail returns to original resting position on collapse');
+assert.equal(housingContour.getAttribute('d'),shapeAtRest,'the same rail shape is preserved throughout collapse');
+assert.equal(scrolls.length,countBefore,'collapsing the rail does not shift workout scroll');
 assert.equal(action.getAttribute('aria-expanded'),'false');
 assert(buttons.every(b=>b.tabIndex===-1),'collapsed actions leave keyboard tab order');
 assert.equal(housing.getAttribute('viewBox'),'0 0 378 25','collapse slides housing back to original resting size');
@@ -169,6 +186,7 @@ assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{\s*#restTimer\.restti
 root.classList.add('workout-keyboard-active');
 w.syncRestNotchSeam();
 assert(!nav.classList.contains('rest-notch-integrated'),'hidden-for-keyboard timer should not leave a cutout in nav');
+assert(!nav.classList.contains('rest-rail-raised'),'keyboard concealment removes any lifted rail state');
 assert.equal(w.getComputedStyle(tray).display,'none','visible tray hides when keyboard focus starts');
 root.classList.remove('workout-keyboard-active');
 w.syncRestNotchSeam();
@@ -182,4 +200,4 @@ assert.equal(w.document.getElementById('restTimerText').textContent,'1:30','stop
 assert(scrolls.length>=countBefore,'timer keeps normal workout navigation behavior');
 nav.getBoundingClientRect=originalNavRect;
 dom.window.close();
-console.log('PASS v0.87.5: persistent narrow rest dock, one SVG housing during slide, accessible 3-way controls, keyboard safety, no scroll disappearance.');
+console.log('PASS v0.87.6: entire full-width rail lifts rigidly, exact same contour at both heights, actions revealed below, no scroll hijack.');
