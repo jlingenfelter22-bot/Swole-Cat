@@ -1,5 +1,35 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-09 · Testing v0.87.5 Sliding Rest Dock
+
+**Latest signed Testing:** v0.87.5, Android build **128**, merged into `main`, signed APK and in-app Testing updater verified.
+- Implementation PR #49: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/49; merged `68ba2c51f4cd4e0b566dbfe331904e53963db18f`.
+- Full PR regression PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37979464907.
+- Full main regression PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37979808037.
+- Signed Android build + publication PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37979808085.
+- Signed release: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.5
+- `updates/testing.json`: enabled, `0.87.5`, build 128, package `com.jlingenfelter.swolecat.testing`, APK SHA-256 `8ed4613c2d29cd355c4c1789d2d20101bb23f8abbb3f8772a7949d685d638aab`, unchanged permanent Testing cert `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta untouched**: v0.73.1, branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. Never promote without explicit owner approval.
+
+### Owner's Android video feedback
+
+Video file `1000004562.mp4`, ~96 seconds, reviewed frame-by-frame. User **loves** the v0.87.4 recessed, stealthy idle notch, but disliked (1) countdown disappearing during scroll because collision-aware passive hiding was too sensitive, and (2) clicking Expand turning the narrow built-in notch into a separate wide popup. Asked to leave countdown visible throughout workout scrolling and to **raise the existing same-shaped panel just enough to reveal −30/+30/Skip underneath**, then slide it back down to its recessed position. No new colors/shapes or larger width.
+
+### v0.87.5 implementation
+
+- Retains the nav-owned unified SVG housing from v0.87.4, narrow ~154px wide timer in BOTH collapsed and expanded states (146px on narrow screens). The nav crest remains active while expanded.
+- The three existing adjustment/Skip actions remain a three-column row within the same footprint. CSS animates the action shelf's height over ~260ms. As it grows, the whole anchored timer moves upward. `followSlidingRestHousing()` redraws the **same SVG contour** against the live measured height across the animation, rather than replacing it with a different panel.
+- Removed action-position-based scroll hiding, collision `rest-notch-obstructed` fades, and passive shifting. The timer stays pinned at a fixed recess near 17px as the user scrolls. Note design tradeoff: exceptionally tight scrolling positions may bring active content near the fixed countdown, so Android acceptance should verify Complete Set and nav hit targets remain usable; the old automatic disappearance is intentionally gone.
+- Only deliberate expansion may invoke the existing workout focus clearance scroll on small screens. Keyboard concealment and reduced-motion behavior retained; the timer is still separate from the five navigation tabs.
+- Existing timing, history, progression, cloud and Beta logic unchanged. `scripts/rest-tray-stress.mjs` validates scroll persistence, same-width expansion, shared housing geometry in both states, timing controls, keyboard accessibility and no unwanted passive scrolling. All regression suites green.
+
+### Next real-phone acceptance
+
+Install Testing v0.87.5 / build 128 through Settings > App & Updates. Start a multi-set workout, complete a set and scroll up/down, verify countdown **remains visible without shifting or jumping**. Tap to expand: same narrow body should slide upward to reveal all three controls; tap to collapse: it should settle into the original stealthy resting spot. Verify usable touch targets, Complete Set and nav access, timer auto-end, keyboard hiding. Real Android video is final judge of smoothness; await owner feedback before more changes.
+
+Older milestones below are archival.
+
+
 ## Latest milestone: 2026-10-09 · Testing v0.87.4 Unified Rest Dock Housing
 
 **Signed Testing now:** v0.87.4, Android versionCode 127. Source merged into `main`. Signed APK release, permanent Testing identity and in-app update feed verified.
