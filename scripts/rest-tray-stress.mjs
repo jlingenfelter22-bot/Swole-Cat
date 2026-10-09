@@ -30,6 +30,16 @@ assert.deepEqual([...tray.children].filter(el=>el.tagName==='BUTTON').map(el=>el
 const microStyle=css.slice(css.indexOf('/* v0.87.1 // COMPACT CYBER REST COMMAND POD'));
 const notchStyle=css.slice(css.indexOf('/* v0.87.2 // Recessed rest notch'));
 const housingStyle=css.slice(css.indexOf('/* v0.87.4 // UNIFIED REST DOCK HOUSING'));
+const slidingStyle=css.slice(css.indexOf('/* v0.87.5 // SLIDING REST DOCK'));
+assert(slidingStyle.startsWith('/* v0.87.5'),'sliding dock rules must be the final visual override');
+assert.match(slidingStyle,/#restTimer\.resttimer\.expanded,[\s\S]*?width:154px!important/,
+ 'expanded timer must retain identical narrow width instead of becoming a wide panel');
+assert.match(slidingStyle,/#restTimer\.resttimer\.expanded \.rest-actions\{[\s\S]*?max-height:60px/,
+ 'expanded controls are unveiled below countdown by animated shelf height');
+assert.match(slidingStyle,/max-height 260ms cubic-bezier/,
+ 'rest controls move with a measured upward slide');
+assert.match(slidingStyle,/#restTimer\.resttimer \.rest-actions button\{[\s\S]*?min-height:44px/,
+ 'all three action targets remain tall enough for touch');
 assert(notchStyle.startsWith('/* v0.87.2'),'v0.87.2 recessed position remains authoritative');
 assert(housingStyle.startsWith('/* v0.87.4'),'single-contour housing is the final visual style');
 assert.match(housingStyle,/nav \.rest-nav-housing\{/,'the nav owns the shared housing silhouette');
@@ -51,8 +61,8 @@ assert.match(notchStyle,/#restTimer\.resttimer:not\(\.expanded\)\{[\s\S]*?width:
  'passive notch narrows to 154px');
 assert.match(notchStyle,/#restTimer\.resttimer:not\(\.expanded\)\{[\s\S]*?min-height:35px!important/,
  'passive notch shrinks to ~35px');
-assert.match(notchStyle,/#restTimer\.resttimer\.expanded\{[\s\S]*?width:270px!important/,
- 'expanded tray stays wide enough for three actions');
+assert.match(slidingStyle,/#restTimer\.resttimer\.expanded,[\s\S]*?width:154px!important/,
+ 'the original large expanded width is overridden by the fixed narrow housing');
 assert.match(notchStyle, /--rest-notch-recess,16px/,'notch sinks into the top of nav instead of floating above it');
 assert.match(microStyle,/rgba\(194,81,243,\.94\)/,'neon-magenta to cyan trim adds dimensionality');
 assert.match(microStyle,/repeating-linear-gradient\(135deg/,'micro-etched panel texture avoids a flat face');
@@ -101,17 +111,18 @@ actionBottom=675; // 28px clearance, less than the previous floating tray height
 w.syncRestNotchClearance();
 assert.equal(tray.classList.contains('rest-notch-obstructed'),false,'passive notch fits without moving Complete Set');
 assert.equal(scrolls.length,countBefore,'passive timer must never force a workout scroll');
-actionBottom=696; // impossible to display full countdown above the glyphs without obstructing the action
-w.syncRestNotchClearance();
-assert(tray.classList.contains('rest-notch-obstructed'),'critical collision hides the passive notch instead of overlaying Complete Set');
-assert(!nav.classList.contains('rest-notch-integrated'),'hidden timer restores uninterrupted nav border');
-assert.equal(housing.classList.contains('visible'),false,'decorative housing does not need a separate show state');
+actionBottom=696; // scrolling used to hide the timer here; now the timer remains pinned
+w.dispatchEvent(new w.Event('scroll'));
+await wait(50);
+assert(!tray.classList.contains('rest-notch-obstructed'),'passive countdown no longer disappears while scrolling');
+assert(tray.classList.contains('show'),'timer remains visible in workout even at tight scroll positions');
+assert(nav.classList.contains('rest-notch-integrated'),'housing never pops out during a workout scroll');
+assert.equal(tray.style.getPropertyValue('--rest-notch-recess'),'17px','scroll does not reposition the recessed notch');
+assert.equal(housingContour.getAttribute('d'),shapeAtRest,'nav contour does not shift on scroll');
+assert.equal(scrolls.length,countBefore,'timer never scrolls the workout for passive information');
 actionBottom=650;
 w.syncRestNotchClearance();
-assert(!tray.classList.contains('rest-notch-obstructed'),'notch returns as soon as the primary action has clearance');
-assert(nav.classList.contains('rest-notch-integrated'),'recovered timer restores seamless nav cutout');
-assert.equal(housingContour.getAttribute('d'),shapeAtRest,'recovered contour returns to the exact approved position');
-assert.equal(scrolls.length,countBefore,'collision resolution never repositions the workout');
+assert(nav.classList.contains('rest-notch-integrated'),'normal scroll recovery requires no visibility transition');
 // An explicit expansion may take space and preserve Complete Set by scrolling.
 w.toggleRestTimerExpanded();
 await wait(55);
@@ -119,7 +130,8 @@ assert(scrolls.length>countBefore,'expanded tray triggers protective scroll when
 assert(scrolls[scrolls.length-1].top>=60,'expanded tray reserves enough height for controls');
 // Continue expanded controls test.
 assert(tray.classList.contains('expanded'),'tap opens expanded controls');
-assert(!nav.classList.contains('rest-notch-integrated'),'expanded tray restores full-width nav top border');
+assert(nav.classList.contains('rest-notch-integrated'),'expanding keeps the very same molded nav housing');
+assert.equal(housing.getAttribute('viewBox'),'0 0 378 100','shared contour rises to cover the taller shelf without widening');
 assert.equal(action.getAttribute('aria-expanded'),'true');
 assert.equal(controls.getAttribute('aria-hidden'),'false');
 assert(buttons.every(b=>b.tabIndex===0),'expanded buttons become keyboard accessible');
@@ -135,6 +147,7 @@ await wait(45);
 assert(nav.classList.contains('rest-notch-integrated'),'collapsing returns to the integrated notch seam');
 assert.equal(action.getAttribute('aria-expanded'),'false');
 assert(buttons.every(b=>b.tabIndex===-1),'collapsed actions leave keyboard tab order');
+assert.equal(housing.getAttribute('viewBox'),'0 0 378 25','collapse slides housing back to original resting size');
 
 w.dispatchEvent(new w.Event('resize'));
 await wait(45);
@@ -142,8 +155,8 @@ assert.equal(root.style.getPropertyValue('--rest-nav-offset'),'97px','device res
 
 assert.match(css,/#restTimer\.resttimer\{[\s\S]*?bottom:calc\(var\(--rest-nav-offset,82px\) - 1px\)/,
  'tray uses measured nav top instead of floating bottom offset');
-assert.match(notchStyle,/#restTimer\.resttimer\.expanded\{[\s\S]*?bottom:calc\(var\(--rest-nav-offset,82px\) - 1px\)!important/,
- 'expanded controls rise out of their recessed position to sit above nav');
+assert.match(slidingStyle,/#restTimer\.resttimer\.expanded,[\s\S]*?bottom:calc\(var\(--rest-nav-offset,82px\) - var\(--rest-notch-recess,17px\)\)!important/,
+ 'expanded tray retains the same recessed base as collapsed countdown');
 assert.match(css,/#restTimer\.resttimer\.show\{[\s\S]*?transform:translate\(-50%,0\)!important/,
  'tray slides up into place');
 assert.match(housingStyle,/#restTimer\.resttimer:not\(\.expanded\)::before,[\s\S]*?display:none!important/,
@@ -169,4 +182,4 @@ assert.equal(w.document.getElementById('restTimerText').textContent,'1:30','stop
 assert(scrolls.length>=countBefore,'timer keeps normal workout navigation behavior');
 nav.getBoundingClientRect=originalNavRect;
 dom.window.close();
-console.log('PASS v0.87.4: one molded SVG nav/crest contour, no sticker rectangle or hooks; stable position, keyboard/collision/expanded cleanup.');
+console.log('PASS v0.87.5: persistent narrow rest dock, one SVG housing during slide, accessible 3-way controls, keyboard safety, no scroll disappearance.');
