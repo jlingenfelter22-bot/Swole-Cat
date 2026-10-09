@@ -2897,3 +2897,91 @@ html.native-app.keyboard-open #restTimer.resttimer.show{
  #restTimer.resttimer,
  #restTimer.resttimer.show{transition:none!important}
 }
+
+/* v0.87.3 // CONTINUOUS REST NOTCH SEAM
+   CSS-only visual polish. The nav owns the cutout, while the separate rest
+   control supplies the inset display. No placement, dimensions, or controls
+   change from v0.87.2. */
+nav.rest-notch-integrated{
+ border-top-color:transparent!important;
+}
+/* Interrupt the rail rather than letting a straight line cross underneath
+   the timer. The 92px half-gap tracks the 154px notch plus its 15px bevels. */
+nav.rest-notch-integrated::before{
+ content:"";
+ position:absolute;
+ top:-1px;
+ left:0;
+ right:0;
+ width:auto;
+ height:1px;
+ pointer-events:none;
+ opacity:.75;
+ background:
+  linear-gradient(90deg,rgba(172,88,204,.55),rgba(87,142,176,.70)) left top/calc(50% - 92px) 1px no-repeat,
+  linear-gradient(90deg,rgba(87,142,176,.70),rgba(49,175,198,.53)) right top/calc(50% - 92px) 1px no-repeat;
+ box-shadow:none;
+}
+/* Match the nav's top ink and surface colors; avoid an independently
+   outlined "sticker" below the bar's upper edge. */
+#restTimer.resttimer:not(.expanded){
+ border:0!important;
+ border-top:1px solid rgba(89,142,171,.72)!important;
+ border-radius:5px 11px 0 0!important;
+ background:
+  linear-gradient(90deg,rgba(172,88,204,.62),rgba(86,160,189,.64),rgba(49,175,198,.56)) top/100% 1px no-repeat,
+  linear-gradient(180deg,rgba(89,142,171,.63),rgba(89,142,171,.49)) top left/1px calc(100% - var(--rest-notch-recess,16px)) no-repeat,
+  linear-gradient(180deg,rgba(89,142,171,.63),rgba(89,142,171,.49)) top right/1px calc(100% - var(--rest-notch-recess,16px)) no-repeat,
+  linear-gradient(180deg,rgba(11,19,33,.985),rgba(8,14,25,.98) 78%,rgba(8,14,25,.965))!important;
+ box-shadow:inset 0 1px 0 rgba(233,251,255,.035),0 -2px 10px rgba(34,177,204,.045)!important;
+}
+/* Short beveled ramps make a molded path from the upper notch corners back to
+   the rail. They terminate at nav top, rather than curling into visible hooks. */
+#restTimer.resttimer:not(.expanded)::before,
+#restTimer.resttimer:not(.expanded)::after{
+ position:absolute;
+ top:0;
+ bottom:auto;
+ height:calc(100% - var(--rest-notch-recess,16px));
+ width:15px;
+ border:0;
+ border-radius:0;
+ box-shadow:none;
+ pointer-events:none;
+}
+#restTimer.resttimer:not(.expanded)::before{
+ left:-15px;
+ right:auto;
+ background:
+  linear-gradient(130deg,transparent 45%,rgba(89,142,171,.65) 48%,rgba(89,142,171,.65) 50%,transparent 53%),
+  linear-gradient(130deg,transparent 49%,rgba(8,14,25,.97) 51%);
+}
+#restTimer.resttimer:not(.expanded)::after{
+ left:auto;
+ right:-15px;
+ background:
+  linear-gradient(230deg,transparent 45%,rgba(89,142,171,.65) 48%,rgba(89,142,171,.65) 50%,transparent 53%),
+  linear-gradient(230deg,transparent 49%,rgba(8,14,25,.97) 51%);
+}
+/* When passive rest is hidden for typing, the nav returns to its normal
+   uninterrupted top line without any remaining notch-shaped cutout. */
+html.workout-keyboard-active nav.rest-notch-integrated,
+html.native-app.keyboard-open nav.rest-notch-integrated{
+ border-top-color:rgba(84,110,152,.48)!important;
+}
+html.workout-keyboard-active nav.rest-notch-integrated::before,
+html.native-app.keyboard-open nav.rest-notch-integrated::before{
+ left:22px;
+ right:22px;
+ background:linear-gradient(90deg,var(--pink),var(--violet),var(--cyan));
+ opacity:.72;
+ box-shadow:0 0 13px rgba(168,85,247,.28);
+}
+@media(max-width:350px){
+ nav.rest-notch-integrated::before{
+  background:
+   linear-gradient(90deg,rgba(172,88,204,.55),rgba(87,142,176,.70)) left top/calc(50% - 88px) 1px no-repeat,
+   linear-gradient(90deg,rgba(87,142,176,.70),rgba(49,175,198,.53)) right top/calc(50% - 88px) 1px no-repeat;
+ }
+}
+/* Expanded controls retain the separate upward command tray from v0.87.2. */
