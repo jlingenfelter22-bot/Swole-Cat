@@ -4,6 +4,17 @@ Last updated: 2026-10-09
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
 
+## CURRENT RESUME CHECKPOINT (v0.87.4 supersedes older instructions)
+
+- **Latest Testing:** v0.87.4, Android versionCode 127 on `main`. PR #48 merged after green full regression suite: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/48. Signed permanent-identity Testing APK and in-app update feed live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.4.
+- **Why:** Owner approved v0.87.2 notch size/position/no-overlap, but v0.87.3 real Android screenshot still looked crudely assembled, with diagonal wings and timer's black base visible on the nav. Asked to implement a unified molded outline instead of extra decorations.
+- **v0.87.4:** One decorative `#restNavHousing` SVG inside the existing nav, with one continuous contour and matching shared fill across the rail and the raised notch crest. Path generated from existing centered notch width and rest recess by `syncRestDockHousing()` on visible passive state and viewport updates. Collapsed timer becomes transparent with no own borders, shadows, or hooked pseudo-wings; text sits over the shared nav housing. No changes to approved 154px / ~35px footprint, bottom offset, Complete Set collision handling, tap to expand, 3 expanded controls, keyboard or workouts. Default nav restores in all non-passive states.
+- **Validation:** PR full PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37969150495, main full PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37969468006, signed Android PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37969467800. Testing APK SHA-256 `d12da094a1ecc7149bd6288c8323b36e382ae05d484b6f4ec9ce6ef383983431`; permanent cert SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta:** v0.73.1 on branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, untouched. Requires separate explicit owner permission to promote.
+- **Next:** Have owner update Testing via in-app updater and report real Android visual result. Check seamless molded surface, no rectangle/wings, same Complete Set clearance, expanded timer and navigation controls. Await feedback, do not assume on-device visual approval from DOM tests. Older checkpoints below archival.
+
+---
+
 ## CURRENT RESUME CHECKPOINT (v0.87.3 supersedes older instructions)
 
 - **Current Testing:** v0.87.3 / Android build 126, `main`. PR #47 merged after successful complete regression suite https://github.com/jlingenfelter22-bot/Swole-Cat/pull/47. Signed APK and updater live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.3.
