@@ -4,6 +4,18 @@ Last updated: 2026-10-08
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
 
+## CURRENT RESUME CHECKPOINT (supersedes older version instructions)
+
+- **Current Testing:** v0.87.0 / Android versionCode 123, source `main`, signed Testing APK and in-app Testing update feed published. https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.0. PR #44: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/44.
+- **User-approved v0.87:** a sliding compact rest tray visually extends the bottom navigation without being part of nav or a sixth tab. Dark nav-matched panel, rounded shoulder seam, quick +30, expanded −30/+30/Skip, measured nav alignment, keyboard concealment, reduced motion, correct accessible states. Smart Workout Focus accounts for tray height so Complete Set is not covered.
+- **PR validation and main validation successful; Android signed workflow successful.** APK SHA-256 `0cb09996b7eb515076394933d255d16286c11a03d2db3cf9b6f0bc7f8618f538`, Testing cert `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`; release run 37870364765.
+- **Field Beta:** still v0.73.1 at `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, unchanged. Never promote Testing to Beta without explicit user approval.
+- **Immediate next action:** Have owner update Testing to v0.87 via Settings > App & Updates, then review actual visual result from a real Android workout. Focus on whether the rest tray's silhouette appears integrated with the navigation, whether its slide motion and collapsed/expanded controls look/feel right, and whether it avoids covering Complete Set or keyboard inputs. Iterate only after feedback.
+- **Last approved v0.86:** Smart Workout Focus with full-width Repeat previous set values and Complete Set, sticky workout progress and Session Note. User explicitly loved the real-phone result. Preserve it.
+- **All older v0.86 and v0.72 instructions below are archival; do not mistake them for the active next task.**
+
+---
+
 ## CURRENT RESUME CHECKPOINT (supersedes older v0.72 text below)
 
 - **Swole Cat Testing:** v0.86.0, Android build 122, source `main`. Signed Testing APK and in-app update channel published and verified. https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.86.0
