@@ -1791,7 +1791,7 @@ function syncRestDockHousing(){
  const notchWidth=box.offsetWidth||parseFloat(window.getComputedStyle(box).width)||154;
  const notchHeight=box.offsetHeight||parseFloat(window.getComputedStyle(box).height)||35;
  const recess=parseFloat(box.style.getPropertyValue('--rest-notch-recess'))||17;
- const rise=Math.max(3,Math.min(40,Math.round(notchHeight-recess)));
+ const rise=Math.max(3,Math.min(150,Math.round(notchHeight-recess)));
  const center=width/2,left=center-notchWidth/2,right=center+notchWidth/2;
  const a=Math.max(4,left-20),b=Math.min(width-4,right+20);
  const fmt=n=>Math.round(n*10)/10;
@@ -1810,37 +1810,43 @@ function syncRestDockHousing(){
 function syncRestNotchSeam(){
  const box=document.getElementById('restTimer'),nav=document.querySelector('nav'),root=document.documentElement;
  if(!nav)return;
- const visible=!!box?.classList.contains('show')&&!box.classList.contains('expanded')&&
-  !box.classList.contains('rest-notch-obstructed')&&!root.classList.contains('workout-keyboard-active')&&
+ const visible=!!box?.classList.contains('show')&&!root.classList.contains('workout-keyboard-active')&&
   !root.classList.contains('keyboard-open');
+ // Keep the nav-owned housing present throughout expansion, rather than
+ // exchanging a recessed notch for a detached wide panel.
  nav.classList.toggle('rest-notch-integrated',visible);
  if(visible)syncRestDockHousing();
 }
 function syncRestNotchClearance(){
  const box=document.getElementById('restTimer'),nav=document.querySelector('nav');
  if(!box||!nav)return;
- if(!box.classList.contains('show')||box.classList.contains('expanded')){
+ if(!box.classList.contains('show')){
   box.classList.remove('rest-notch-obstructed');
   syncRestNotchSeam();return;
  }
  const navRect=nav.getBoundingClientRect();
  const centerGlyph=nav.querySelector('[data-go="exercises"] .nav-glyph');
  const glyphTop=Number(centerGlyph?.getBoundingClientRect().top);
- // The resting notch may enter only the empty strip above the nav icons.
- const maxRecess=Number.isFinite(glyphTop)?Math.max(0,glyphTop-navRect.top-5):16;
- const height=Math.max(30,Number(box.offsetHeight)||34);
- let recess=Math.min(17,maxRecess);
- const action=document.querySelector('#workout .focus-set-card .complete-set, #workout .focus-workout-complete button');
- const actionRect=action?.getBoundingClientRect();
- if(actionRect&&actionRect.bottom>0&&actionRect.top<navRect.top+maxRecess){
-  // Follow the natural user scroll position, not the other way around.
-  const available=Math.max(0,navRect.top-actionRect.bottom-6);
-  recess=Math.max(recess,height-available);
- }
- const obstructed=recess>maxRecess+0.5;
- box.classList.toggle('rest-notch-obstructed',obstructed);
- box.style.setProperty('--rest-notch-recess',Math.round(Math.min(recess,maxRecess))+'px');
+ const maxRecess=Number.isFinite(glyphTop)?Math.max(0,glyphTop-navRect.top-5):17;
+ // The rest countdown stays pinned while the user reviews their workout.
+ // No action-position-based hiding, sliding, or scrolling on scroll events.
+ const recess=Math.min(17,maxRecess);
+ box.classList.remove('rest-notch-obstructed');
+ box.style.setProperty('--rest-notch-recess',Math.round(recess)+'px');
  syncRestNotchSeam();
+}
+let restDockSlideEpoch=0;
+function followSlidingRestHousing(){
+ const epoch=++restDockSlideEpoch;
+ const reduced=workoutReducedMotion();
+ const end=(typeof performance!=='undefined'?performance.now():Date.now())+(reduced?0:360);
+ function frame(){
+  if(epoch!==restDockSlideEpoch)return;
+  syncRestNotchSeam();
+  const now=typeof performance!=='undefined'?performance.now():Date.now();
+  if(now<end)requestAnimationFrame(frame);
+ }
+ requestAnimationFrame(frame);
 }
 function queueRestNotchClearance(){
  if(restNotchClearanceFrame)return;
@@ -1881,10 +1887,11 @@ function syncRestTrayControls(){
 function toggleRestTimerExpanded(){
  const box=document.getElementById('restTimer');if(!box?.classList.contains('show'))return;
  box.classList.toggle('expanded');
- box.classList.remove('rest-notch-obstructed');
  syncRestTrayControls();
+ followSlidingRestHousing();
  if(box.classList.contains('expanded')){
-  // User explicitly opened the larger tray: protect the primary workout action.
+  // Only an intentional expansion may reposition the workout to preserve
+  // access to Complete Set on small phones.
   requestAnimationFrame(()=>requestAnimationFrame(focusWorkoutViewportAfterAdvance));
  }else queueRestNotchClearance();
 }

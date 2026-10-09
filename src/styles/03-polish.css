@@ -3062,3 +3062,100 @@ html.native-app.keyboard-open nav .rest-nav-housing{
  opacity:0!important;
  visibility:hidden!important;
 }
+
+/* v0.87.5 // SLIDING REST DOCK
+   Reuse one 154px nav-owned housing in both states. As the action shelf reveals
+   itself, the panel grows upward from its recessed base. No wide popup, no
+   scroll-triggered hiding or passive repositioning. */
+#restTimer.resttimer,
+#restTimer.resttimer.expanded,
+#restTimer.resttimer:not(.expanded){
+ width:154px!important;
+ max-width:calc(100vw - 42px)!important;
+ bottom:calc(var(--rest-nav-offset,82px) - var(--rest-notch-recess,17px))!important;
+ grid-template-columns:minmax(0,1fr)!important;
+ grid-template-rows:auto auto!important;
+ min-height:35px!important;
+ padding:1px 5px 0!important;
+ border:0!important;
+ border-radius:0!important;
+ background:transparent!important;
+ box-shadow:none!important;
+}
+#restTimer.resttimer::before,
+#restTimer.resttimer::after{
+ content:none!important;
+ display:none!important;
+}
+#restTimer.resttimer .rest-main{
+ min-height:33px!important;
+ height:33px!important;
+ padding:3px 5px!important;
+ gap:5px;
+ border:0!important;
+ border-radius:0!important;
+ background:transparent!important;
+ box-shadow:none!important;
+}
+#restTimer.resttimer .rest-main small{font-size:.57rem}
+#restTimer.resttimer .rest-main span#restTimerText{font-size:1.03rem}
+#restTimer.resttimer .rest-chevron{font-size:.62rem}
+/* Keep the action row in the layout at zero height, so it unfolds upward
+   smoothly instead of being abruptly inserted after the timer label. */
+#restTimer.resttimer .rest-actions,
+#restTimer.resttimer.expanded .rest-actions{
+ grid-column:1/-1;
+ display:grid!important;
+ grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:4px!important;
+ box-sizing:border-box;
+ max-height:0;
+ min-height:0;
+ padding:0 2px;
+ margin:0;
+ border:0;
+ overflow:hidden;
+ opacity:0;
+ visibility:hidden;
+ pointer-events:none;
+ transition:max-height 260ms cubic-bezier(.2,.8,.2,1),
+  padding 260ms cubic-bezier(.2,.8,.2,1),
+  opacity 160ms ease,visibility 0s linear 260ms;
+}
+#restTimer.resttimer.expanded .rest-actions{
+ max-height:60px;
+ padding:5px 2px 7px;
+ opacity:1;
+ visibility:visible;
+ pointer-events:auto;
+ transition:max-height 260ms cubic-bezier(.2,.8,.2,1),
+  padding 260ms cubic-bezier(.2,.8,.2,1),
+  opacity 160ms ease;
+}
+#restTimer.resttimer .rest-actions button{
+ box-sizing:border-box;
+ width:100%;
+ min-width:0;
+ min-height:44px;
+ padding:6px 1px;
+ border-radius:5px 7px 5px 7px;
+ font-size:.68rem;
+ white-space:nowrap;
+}
+/* The single responsive contour remains continuous while the pod rises.
+   The SVG itself is redrawn to the real animated height each frame. */
+nav.rest-notch-integrated .rest-nav-housing{
+ opacity:1;
+ visibility:visible;
+}
+@media(max-width:350px){
+ #restTimer.resttimer,
+ #restTimer.resttimer.expanded,
+ #restTimer.resttimer:not(.expanded){width:146px!important}
+ #restTimer.resttimer .rest-actions{gap:3px!important;padding-left:1px;padding-right:1px}
+ #restTimer.resttimer .rest-actions button{font-size:.63rem}
+}
+@media(prefers-reduced-motion:reduce){
+ #restTimer.resttimer .rest-actions,
+ #restTimer.resttimer.expanded .rest-actions{transition:none!important}
+}
