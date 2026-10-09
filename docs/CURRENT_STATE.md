@@ -1,5 +1,35 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-08 · Testing v0.87.0 Rest Timer Navigation Tray
+
+**Latest signed Swole Cat Testing:** v0.87.0, Android build 123, published and verified in the Testing in-app updater feed.
+- Implementation: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/44, merged into `main` at `53d136dce6d365caf5d6286d6613a526d937e0c7`.
+- PR validation PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37870200439; main validation PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37870364772.
+- GitHub Pages PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37870364736.
+- Signed Testing Android build, signature verification and channel publication PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37870364765.
+- Signed APK release: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.0
+- `updates/testing.json`: v0.87.0, code 123, package `com.jlingenfelter.swolecat.testing`. APK SHA-256 `0cb09996b7eb515076394933d255d16286c11a03d2db3cf9b6f0bc7f8618f538`; original permanent Testing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta was not touched**. Branch `beta` remains `7ac10d9e8eecdf9570221d96250a16c2cc5459d3` (v0.73.1). No Beta promotion without explicit owner permission.
+
+### Why v0.87 exists and what changed
+
+After approving v0.86 Smart Workout Focus on a real Android screenshot, the owner highlighted the old rest timer as a disconnected floating pill. The approved design direction is **a separate tray visually emerging from the existing bottom navigation shell**, *not* an additional navigation tab or a timer built inside nav. Yellow markup on user screenshot showed the suggested shoulders/silhouette, not a literal yellow theme.
+
+- Rest timer stays outside semantic `<nav>`, which retains all five original app tabs.
+- The compact tray has rounded shoulder seams, dark cyan/violet/nav panel language, a sliding emerge/retract treatment, and a visible `Rest` countdown + quick `+30` action.
+- Opening the tray expands *upward* with existing `−30`, `+30` and `Skip` actions. No rest prescription/progression changes and no new pause algorithm were introduced.
+- Dock positioning measures the actual Android nav geometry including inset: CSS variables `--rest-nav-offset`, `--rest-nav-center`, `--rest-nav-width` updated on timer start/viewport resize.
+- Existing keyboard focus hiding and reduced-motion support preserved. `aria-expanded`, `aria-hidden`, and keyboard tab order reflect collapsed/expanded state.
+- Smart Workout Focus takes visible tray height into account before positioning the Complete Set button. Opening the expanded tray will make a minimal extra scroll when necessary rather than obscuring the primary action.
+- New `scripts/rest-tray-stress.mjs` verifies dock alignment, semantic nav separation, countdown adjustments, expand/collapse accessibility, short-device Complete Set clearance, keyboard hiding and animation fallback. All established regression checks passed.
+
+### Immediate next device acceptance
+
+Install Testing v0.87.0 / Android build 123 using Settings > App & Updates. Start a workout and complete a set. Visually assess whether the compact rest tray actually *flows out of* the existing nav, how smoothly it rises, legibility, tab tap-target clearance, timer and quick add, expansion and Skip, and Complete Set accessibility. Try opening the number keyboard during rest to verify it hides and reappears. Test a shorter screen and with reduced motion if useful. Adjust only after owner walkthrough; automated DOM checks do not prove the aesthetic result on device.
+
+Earlier milestones remain historical; this is the authoritative Testing baseline.
+
+
 ## Latest milestone: 2026-10-08 · Testing v0.86.0 Smart Workout Focus
 
 **Latest signed Testing:** v0.86.0 / Android build 122, signed APK published and updater feed verified.
