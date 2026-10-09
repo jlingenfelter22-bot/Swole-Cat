@@ -32,7 +32,29 @@ const notchStyle=css.slice(css.indexOf('/* v0.87.2 // Recessed rest notch'));
 const housingStyle=css.slice(css.indexOf('/* v0.87.4 // UNIFIED REST DOCK HOUSING'));
 const slidingStyle=css.slice(css.indexOf('/* v0.87.5 // SLIDING REST DOCK'));
 const liftStyle=css.slice(css.indexOf('/* v0.87.6 // RIGID WHOLE-RAIL LIFT'));
-assert(liftStyle.startsWith('/* v0.87.6'),'rigid full-width rail must be the final visual override');
+const pocketStyle=css.slice(css.indexOf('/* v0.87.7 // SOLID COMPACT UNDER-RAIL ACTION POCKET'));
+assert(liftStyle.startsWith('/* v0.87.6'),'the rigid full-width rail remains the underlying mechanism');
+assert(pocketStyle.startsWith('/* v0.87.7'),'the solid compact pocket must be the final rest visual style');
+assert.match(pocketStyle,/:root\{--rest-rail-lift:57px\}/,
+ 'shorten the lift from 62px to 57px without affecting the resting geometry');
+assert.match(pocketStyle,/nav \.rest-dock-pocket\{[\s\S]*?top:calc\(-1 \* var\(--rest-rail-lift\)\);[\s\S]*?height:var\(--rest-rail-lift\)/,
+ 'the solid pocket connects the lifted line back to nav edge across its full width');
+assert.match(pocketStyle,/background:linear-gradient\(180deg,#0a1525 0%,#080f1b 56%,#060c16 100%\)/,
+ 'backing gradient uses only opaque colors and cannot show the workout underneath');
+assert.match(pocketStyle,/transform:scaleY\(0\);[\s\S]*?transform-origin:center bottom/,
+ 'pocket reveals from the nav edge without changing the lifted rail shape');
+assert.match(pocketStyle,/nav\.rest-notch-integrated\.rest-rail-raised \.rest-dock-pocket\{[\s\S]*?transform:scaleY\(1\)/,
+ 'the opaque pocket fully covers the revealed area while expanded');
+assert.match(pocketStyle,/#restTimer\.resttimer\.expanded::before,[\s\S]*?content:none!important/,
+ 'old negative-z-index backing that caused a see-through rectangle is disabled');
+assert.match(pocketStyle,/#restTimer\.resttimer \.rest-actions button\{[\s\S]*?height:42px!important/,
+ 'each compact button retains a 42px touch target');
+assert.match(pocketStyle,/#restTimer\.resttimer \.rest-actions button::before\{[\s\S]*?inset:4px 1px/,
+ 'visible sharp button surface is 34px tall within its larger touch target');
+assert.match(pocketStyle,/#restTimer\.resttimer\.expanded \.rest-actions\{[\s\S]*?height:53px!important/,
+ 'control shelf is tighter than its original 59px height');
+assert.match(pocketStyle,/@media\(prefers-reduced-motion:reduce\)/,
+ 'pocket reveal respects reduced motion');
 assert.match(liftStyle,/nav\.rest-notch-integrated\.rest-rail-raised \.rest-nav-housing\{[\s\S]*?translate3d\(0,calc\(-1 \* var\(--rest-rail-lift\)\),0\)/,
  'the entire full-width nav rail, not the center only, moves upward');
 assert.match(liftStyle,/#restTimer\.resttimer\.show\.expanded\{[\s\S]*?translate3d\(-50%,calc\(-1 \* var\(--rest-rail-lift\)\),0\)/,
@@ -67,6 +89,10 @@ assert.match(housingStyle,/nav\.rest-notch-integrated::before\{[\s\S]*?content:n
 assert.match(housingStyle,/html\.workout-keyboard-active nav \.rest-nav-housing/,
  'keyboard visibility still reverts to ordinary navigation');
 const housing=w.document.getElementById('restNavHousing');
+const pocket=w.document.getElementById('restDockPocket');
+assert(pocket,'solid pocket element is mounted inside the nav');
+assert.equal(pocket.parentElement,nav,'opaque surface belongs to nav housing, not a separate floating timer');
+assert.equal(pocket.getAttribute('aria-hidden'),'true','solid backing is decorative, not a sixth tab');
 const housingFill=w.document.getElementById('restNavHousingFill');
 const housingContour=w.document.getElementById('restNavHousingContour');
 assert(housing&&housingFill&&housingContour,'nav contains one decorative contour and its matching fill');
@@ -144,9 +170,11 @@ assert.equal(scrolls.length,countBefore,'raising the whole rail does not auto-sc
 assert(tray.classList.contains('expanded'),'tap expands the controls');
 assert(nav.classList.contains('rest-notch-integrated'),'full-width rail remains connected');
 assert(nav.classList.contains('rest-rail-raised'),'the entire full-width rail gets the lifted state');
+assert(pocket.isConnected,'opaque pocket remains mounted during expansion');
 assert.equal(housing.getAttribute('viewBox'),'0 0 378 25','the housing viewBox does not morph or get taller');
 assert.equal(housingContour.getAttribute('d'),shapeAtRest,'the full-width contour path remains pixel-identical');
 assert.equal(action.getAttribute('aria-expanded'),'true');
+assert.equal(w.document.querySelectorAll('.rest-actions button').length,3,'the three compact controls stay intact');
 assert.equal(controls.getAttribute('aria-hidden'),'false');
 assert(buttons.every(b=>b.tabIndex===0),'expanded buttons become keyboard accessible');
 assert.equal(tray.querySelectorAll('.rest-actions button').length,3,'existing -30/+30/Skip retained');
@@ -164,6 +192,7 @@ assert.equal(housingContour.getAttribute('d'),shapeAtRest,'the same rail shape i
 assert.equal(scrolls.length,countBefore,'collapsing the rail does not shift workout scroll');
 assert.equal(action.getAttribute('aria-expanded'),'false');
 assert(buttons.every(b=>b.tabIndex===-1),'collapsed actions leave keyboard tab order');
+assert(!nav.classList.contains('rest-rail-raised'),'solid pocket is retracted into nav in collapsed state');
 assert.equal(housing.getAttribute('viewBox'),'0 0 378 25','collapse slides housing back to original resting size');
 
 w.dispatchEvent(new w.Event('resize'));
@@ -200,4 +229,4 @@ assert.equal(w.document.getElementById('restTimerText').textContent,'1:30','stop
 assert(scrolls.length>=countBefore,'timer keeps normal workout navigation behavior');
 nav.getBoundingClientRect=originalNavRect;
 dom.window.close();
-console.log('PASS v0.87.6: entire full-width rail lifts rigidly, exact same contour at both heights, actions revealed below, no scroll hijack.');
+console.log('PASS v0.87.7: fully opaque nav pocket, compact 34px visible/42px touch buttons, 57px rigid rail lift, unchanged idle geometry and interactions.');
