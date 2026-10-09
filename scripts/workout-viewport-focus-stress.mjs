@@ -29,13 +29,14 @@ const state=()=>JSON.parse(w.localStorage.getItem('overload_v3'));
 const rid=state().routines[0].id;
 w.openRoutine(rid);
 await wait(50);
+const scrollCountAtStart=scrolls.length; // go('workout') legitimately resets to top.
 let progress=w.document.querySelector('#workout .focus-exercise-overall-progress');
 assert(progress,'the sticky exercise header must expose overall workout progress');
 assert.equal(progress.getAttribute('aria-valuenow'),'0','a new workout starts with zero completed sets');
 assert.equal(progress.querySelector('span')?.style.width,'0%');
 assert.match(w.document.querySelector('#workout .focus-session-mini-count')?.textContent||'',/0\/\d+ sets/);
 assert.match(css,/\.focus-exercise-overall-progress\{[\s\S]*position:absolute/,'progress track overlays the existing header without a new row');
-assert.equal(scrolls.length,0,'starting a workout must preserve the normal overview position');
+assert.equal(scrolls.length,scrollCountAtStart,'the workout renderer must not add any focus scroll at startup');
 
 w.updateSet(0,0,'reps','8');
 w.toggleSet(0,0);
@@ -47,7 +48,7 @@ assert(repeat&&complete,'repeat values and complete set remain distinct, full-wi
 assert.equal(repeat.textContent.trim(),'↻ Repeat previous set values','repeat button keeps its explanatory wording');
 assert.equal(repeat.parentElement,complete.parentElement,'repeat remains in the original vertical set-card flow');
 assert.match(css,/#workout \.repeat-previous-set\{\s*width:100%/,'repeat retains full width');
-assert(scrolls.length>0,'advancing Set 1 must focus the workout without manual scrolling');
+assert(scrolls.length>scrollCountAtStart,'advancing Set 1 must focus the workout without manual scrolling');
 assert(scrolls[scrolls.length-1].top>=110,'scroll accounts for the sticky header and bottom dock');
 assert.match(w.document.querySelector('#workout .focus-session-mini-count')?.textContent||'',/1\/\d+ sets/);
 assert.equal(w.document.querySelector('#workout .focus-exercise-overall-progress')?.getAttribute('aria-valuenow'),'1');
