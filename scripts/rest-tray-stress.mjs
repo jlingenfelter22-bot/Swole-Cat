@@ -28,15 +28,15 @@ assert.equal(tray.querySelector('.rest-quick-add'),null,'collapsed state has no 
 assert.deepEqual([...tray.children].filter(el=>el.tagName==='BUTTON').map(el=>el.className),['rest-main'],
   'the only collapsed button is the timer/expand target');
 const microStyle=css.slice(css.indexOf('/* v0.87.1 // COMPACT CYBER REST COMMAND POD'));
-assert(microStyle.startsWith('/* v0.87.1'),'compact override must be the active style');
-assert.match(microStyle,/#restTimer\.resttimer\{[\s\S]*?width:188px!important/,
-  'collapsed width is 188px, not a large panel');
-assert.match(microStyle,/#restTimer\.resttimer\.expanded\{\s*width:282px!important/,
-  'expanded controls have room without dominating the screen');
-assert.match(microStyle,/#restTimer\.resttimer\{[\s\S]*?min-height:44px/,
-  'collapsed height stays compact');
-assert.match(microStyle,/#restTimer\.resttimer\{[\s\S]*?border-radius:10px 17px 0 0!important/,
-  'asymmetric cyber silhouette remains attached to the navigation');
+const notchStyle=css.slice(css.indexOf('/* v0.87.2 // Recessed rest notch'));
+assert(notchStyle.startsWith('/* v0.87.2'),'the recessed notch must be the latest style');
+assert.match(notchStyle,/#restTimer\.resttimer:not\(\.expanded\)\{[\s\S]*?width:154px!important/,
+ 'passive notch narrows to 154px');
+assert.match(notchStyle,/#restTimer\.resttimer:not\(\.expanded\)\{[\s\S]*?min-height:35px!important/,
+ 'passive notch shrinks to ~35px');
+assert.match(notchStyle,/#restTimer\.resttimer\.expanded\{[\s\S]*?width:270px!important/,
+ 'expanded tray stays wide enough for three actions');
+assert.match(notchStyle, /--rest-notch-recess,16px/,'notch sinks into the top of nav instead of floating above it');
 assert.match(microStyle,/rgba\(194,81,243,\.94\)/,'neon-magenta to cyan trim adds dimensionality');
 assert.match(microStyle,/repeating-linear-gradient\(135deg/,'micro-etched panel texture avoids a flat face');
 assert.match(microStyle,/#restTimer \.rest-main small::before/,'the rest label retains a small status light');
@@ -46,6 +46,8 @@ assert(buttons.every(b=>b.tabIndex===-1),'hidden actions are not tabbable');
 
 const originalNavRect=nav.getBoundingClientRect.bind(nav);
 nav.getBoundingClientRect=()=>({left:11,right:389,top:703,bottom:789,width:378,height:86});
+const glyph=nav.querySelector('[data-go="exercises"] .nav-glyph');
+glyph.getBoundingClientRect=()=>({left:180,right:210,top:730,bottom:755,width:30,height:25});
 Object.defineProperty(w,'innerHeight',{value:800,configurable:true});
 w.syncRestTimerDock();
 const root=w.document.documentElement;
@@ -59,20 +61,36 @@ assert(!tray.classList.contains('expanded'),'rest starts compact');
 assert.equal(w.document.getElementById('restTimerText').textContent,'1:30');
 assert.equal(action.getAttribute('aria-expanded'),'false');
 const timerBefore=tray.querySelector('#restTimerText').textContent;
-assert.equal(timerBefore,'1:30','collapsed rest timer is a countdown, not an adjustment control');
-
-// Simulate a short Android viewport: the expanded tray must clear Complete Set.
+assert.equal(timerBefore,'1:30','collapsed rest timer remains countdown-only');
 const primary=w.document.querySelector('#workout .focus-set-card .complete-set');
 const focusHeader=w.document.querySelector('#workout .focus-exercise-nav-shell');
-assert(primary&&focusHeader,'real active workout controls are mounted');
-primary.getBoundingClientRect=()=>({top:602,bottom:650,height:48});
+assert(primary&&focusHeader,'the actual Complete Set control is available');
+let actionBottom=650;
+primary.getBoundingClientRect=()=>({top:actionBottom-48,bottom:actionBottom,height:48});
 focusHeader.getBoundingClientRect=()=>({top:220,bottom:307,height:87});
-Object.defineProperty(tray,'offsetHeight',{configurable:true,get:()=>tray.classList.contains('expanded')?110:54});
+Object.defineProperty(tray,'offsetHeight',{configurable:true,get:()=>tray.classList.contains('expanded')?110:35});
+await wait(45);
+w.syncRestNotchClearance();
+assert.equal(tray.classList.contains('rest-notch-obstructed'),false,'default notch must fit below the Complete Set button');
+assert.equal(tray.style.getPropertyValue('--rest-notch-recess'),'17px','notch recesses into the nav without reaching its icons');
 const countBefore=scrolls.length;
+actionBottom=675; // 28px clearance, less than the previous floating tray height
+w.syncRestNotchClearance();
+assert.equal(tray.classList.contains('rest-notch-obstructed'),false,'passive notch fits without moving Complete Set');
+assert.equal(scrolls.length,countBefore,'passive timer must never force a workout scroll');
+actionBottom=696; // impossible to display full countdown above the glyphs without obstructing the action
+w.syncRestNotchClearance();
+assert(tray.classList.contains('rest-notch-obstructed'),'critical collision hides the passive notch instead of overlaying Complete Set');
+actionBottom=650;
+w.syncRestNotchClearance();
+assert(!tray.classList.contains('rest-notch-obstructed'),'notch returns as soon as the primary action has clearance');
+assert.equal(scrolls.length,countBefore,'collision resolution never repositions the workout');
+// An explicit expansion may take space and preserve Complete Set by scrolling.
 w.toggleRestTimerExpanded();
 await wait(55);
-assert(scrolls.length>countBefore,'expanding a tray covering Complete Set triggers a protective focus correction');
-assert(scrolls[scrolls.length-1].top>=60,'protective scroll accounts for expanded tray height');
+assert(scrolls.length>countBefore,'expanded tray triggers protective scroll when needed');
+assert(scrolls[scrolls.length-1].top>=60,'expanded tray reserves enough height for controls');
+// Continue expanded controls test.
 assert(tray.classList.contains('expanded'),'tap opens expanded controls');
 assert.equal(action.getAttribute('aria-expanded'),'true');
 assert.equal(controls.getAttribute('aria-hidden'),'false');
@@ -89,12 +107,13 @@ assert.equal(action.getAttribute('aria-expanded'),'false');
 assert(buttons.every(b=>b.tabIndex===-1),'collapsed actions leave keyboard tab order');
 
 w.dispatchEvent(new w.Event('resize'));
+await wait(45);
 assert.equal(root.style.getPropertyValue('--rest-nav-offset'),'97px','device resize updates nav alignment');
 
 assert.match(css,/#restTimer\.resttimer\{[\s\S]*?bottom:calc\(var\(--rest-nav-offset,82px\) - 1px\)/,
  'tray uses measured nav top instead of floating bottom offset');
-assert.match(microStyle,/#restTimer\.resttimer\{[\s\S]*?border-radius:10px 17px 0 0!important/,
- 'tray retains a sharp asymmetrical open-bottom nav silhouette');
+assert.match(notchStyle,/#restTimer\.resttimer\.expanded\{[\s\S]*?bottom:calc\(var\(--rest-nav-offset,82px\) - 1px\)!important/,
+ 'expanded controls rise out of their recessed position to sit above nav');
 assert.match(css,/#restTimer\.resttimer\.show\{[\s\S]*?transform:translate\(-50%,0\)!important/,
  'tray slides up into place');
 assert.match(css,/#restTimer\.resttimer::before,[\s\S]*?#restTimer\.resttimer::after/,
@@ -115,4 +134,4 @@ assert.equal(w.document.getElementById('restTimerText').textContent,'1:30','stop
 assert(scrolls.length>=countBefore,'timer keeps normal workout navigation behavior');
 nav.getBoundingClientRect=originalNavRect;
 dom.window.close();
-console.log('PASS v0.87.1: 188px compact cyber rest pod, separate nav, no collapsed controls, expanded +/-30/Skip, safe clearance, keyboard and reduced motion.');
+console.log('PASS v0.87.2: recessed passive notch, no Complete Set collisions or passive scrolling, expanded action clearance, nav separation, keyboard, motion.');
