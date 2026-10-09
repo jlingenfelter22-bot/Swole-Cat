@@ -1778,11 +1778,20 @@ function workoutHasRemainingProgrammedWork(w=state.activeWorkout){
  return !!w?.exercises?.some(e=>!e.skipped&&(e.sets||[]).some(s=>!s.done));
 }
 let restNotchClearanceFrame=0;
+function syncRestNotchSeam(){
+ const box=document.getElementById('restTimer'),nav=document.querySelector('nav'),root=document.documentElement;
+ if(!nav)return;
+ const visible=!!box?.classList.contains('show')&&!box.classList.contains('expanded')&&
+  !box.classList.contains('rest-notch-obstructed')&&!root.classList.contains('workout-keyboard-active')&&
+  !root.classList.contains('keyboard-open');
+ nav.classList.toggle('rest-notch-integrated',visible);
+}
 function syncRestNotchClearance(){
  const box=document.getElementById('restTimer'),nav=document.querySelector('nav');
  if(!box||!nav)return;
  if(!box.classList.contains('show')||box.classList.contains('expanded')){
-  box.classList.remove('rest-notch-obstructed');return;
+  box.classList.remove('rest-notch-obstructed');
+  syncRestNotchSeam();return;
  }
  const navRect=nav.getBoundingClientRect();
  const centerGlyph=nav.querySelector('[data-go="exercises"] .nav-glyph');
@@ -1801,6 +1810,7 @@ function syncRestNotchClearance(){
  const obstructed=recess>maxRecess+0.5;
  box.classList.toggle('rest-notch-obstructed',obstructed);
  box.style.setProperty('--rest-notch-recess',Math.round(Math.min(recess,maxRecess))+'px');
+ syncRestNotchSeam();
 }
 function queueRestNotchClearance(){
  if(restNotchClearanceFrame)return;
@@ -1836,6 +1846,7 @@ function syncRestTrayControls(){
  main?.setAttribute('aria-label',expanded?'Hide rest timer controls':'Show rest timer controls');
  actions?.setAttribute('aria-hidden',String(!expanded));
  actions?.querySelectorAll('button').forEach(button=>{button.tabIndex=expanded?0:-1});
+ syncRestNotchSeam();
 }
 function toggleRestTimerExpanded(){
  const box=document.getElementById('restTimer');if(!box?.classList.contains('show'))return;
