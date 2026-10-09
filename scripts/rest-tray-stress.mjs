@@ -46,9 +46,18 @@ assert.equal(action.getAttribute('aria-expanded'),'false');
 w.adjustRestTimer(30);
 assert.equal(w.document.getElementById('restTimerText').textContent,'2:00','collapsed +30 still adjusts timer');
 
+// Simulate a short Android viewport: the expanded tray must clear Complete Set.
+const primary=w.document.querySelector('#workout .focus-set-card .complete-set');
+const focusHeader=w.document.querySelector('#workout .focus-exercise-nav-shell');
+assert(primary&&focusHeader,'real active workout controls are mounted');
+primary.getBoundingClientRect=()=>({top:602,bottom:650,height:48});
+focusHeader.getBoundingClientRect=()=>({top:220,bottom:307,height:87});
+Object.defineProperty(tray,'offsetHeight',{configurable:true,get:()=>tray.classList.contains('expanded')?110:54});
 const countBefore=scrolls.length;
 w.toggleRestTimerExpanded();
-await wait(35);
+await wait(55);
+assert(scrolls.length>countBefore,'expanding a tray covering Complete Set triggers a protective focus correction');
+assert(scrolls[scrolls.length-1].top>=60,'protective scroll accounts for expanded tray height');
 assert(tray.classList.contains('expanded'),'tap opens expanded controls');
 assert.equal(action.getAttribute('aria-expanded'),'true');
 assert.equal(controls.getAttribute('aria-hidden'),'false');
