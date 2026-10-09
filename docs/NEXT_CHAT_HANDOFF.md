@@ -4,6 +4,17 @@ Last updated: 2026-10-09
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
 
+## CURRENT RESUME CHECKPOINT (v0.87.5 supersedes older instructions)
+
+- **Latest Testing:** v0.87.5, Android build 128, source `main`. PR #49 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/49 merged after full validation. Signed Testing APK and updater live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.5.
+- **Driving feedback:** In ~96 sec real Android video `1000004562.mp4`, user **loves v0.87.4 passive stealth-rest shape**, but it sometimes disappears while scrolling and expansion becomes an entirely different much wider control panel. User approved keeping the notch visible during scrolling and letting the **same narrow shell slide upward to expose −30/+30/Skip**, then back down on collapse. No more visual redesign.
+- **v0.87.5:** Removed scroll/action collision-based hiding and passive repositioning. Same 154px width in collapsed and expanded (146px small screens); three equal columns of ~44px touch buttons. CSS action shelf unfolds ~260ms while timer grows upward from fixed nav recess. `followSlidingRestHousing()` redraws one shared SVG nav contour against the changing measured height; notch and nav stay one continuous silhouette throughout. Auto protective scroll only when user intentionally expands, keyboard concealment and reduced-motion preserved.
+- **Regression and build:** PR full PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37979464907, main PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37979808037, signed Android PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37979808085. Testing APK SHA-256 `8ed4613c2d29cd355c4c1789d2d20101bb23f8abbb3f8772a7949d685d638aab`; original permanent Testing signing certificate `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta:** remains v0.73.1 at SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. Never promote without user's express approval.
+- **Next:** user installs v0.87.5 using in-app update and tests continuous countdown visibility while scrolling, same-body upward slide to three controls and collapse, Complete Set and nav taps, keyboard handling. Because old collision hiding was removed at user request, visually verify unusual near-nav scroll positions do not create obstructions. Await real-phone feedback before another change. Earlier checkpoints below archival.
+
+---
+
 ## CURRENT RESUME CHECKPOINT (v0.87.4 supersedes older instructions)
 
 - **Latest Testing:** v0.87.4, Android versionCode 127 on `main`. PR #48 merged after green full regression suite: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/48. Signed permanent-identity Testing APK and in-app update feed live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.4.
