@@ -3286,3 +3286,106 @@ html.workout-keyboard-active #restTimer.resttimer.show,
 html.native-app.keyboard-open #restTimer.resttimer.show{
  display:none!important;
 }
+
+/* v0.87.7 // SOLID COMPACT UNDER-RAIL ACTION POCKET
+   The top contour and idle notch remain pixel-identical. A nav-owned fully
+   opaque pocket grows upward from the fixed bottom rail as the entire rigid
+   contour lifts. This replaces the transparent and negatively-stacked
+   countdown-only backing, which let the workout show through the drawer. */
+:root{--rest-rail-lift:57px}
+nav .rest-dock-pocket{
+ position:absolute;
+ z-index:1;
+ box-sizing:border-box;
+ left:0;
+ right:0;
+ top:calc(-1 * var(--rest-rail-lift));
+ height:var(--rest-rail-lift);
+ background:linear-gradient(180deg,#0a1525 0%,#080f1b 56%,#060c16 100%);
+ box-shadow:inset 1px 0 rgba(84,110,152,.30),inset -1px 0 rgba(84,110,152,.30);
+ transform:scaleY(0);
+ transform-origin:center bottom;
+ visibility:hidden;
+ pointer-events:none;
+ transition:transform var(--rest-rail-duration) var(--rest-rail-ease),
+  visibility 0s linear var(--rest-rail-duration);
+}
+nav.rest-notch-integrated.rest-rail-raised .rest-dock-pocket{
+ transform:scaleY(1);
+ visibility:visible;
+ transition:transform var(--rest-rail-duration) var(--rest-rail-ease);
+}
+nav.rest-notch-integrated.rest-rail-raised .rest-nav-housing-fill{
+ fill:#0a1525;
+}
+/* Never display the old negative-z-index rectangular backing. The single
+   opaque nav pocket is what makes this one coherent slide-out drawer. */
+#restTimer.resttimer.expanded::before,
+#restTimer.resttimer:not(.expanded)::before{
+ content:none!important;
+ display:none!important;
+}
+/* Keep an honest 42px touch target but inset each visible button by 4px,
+   creating compact 34px-tall cyber controls with sharp beveled corners. */
+#restTimer.resttimer .rest-actions,
+#restTimer.resttimer.expanded .rest-actions{
+ top:32px!important;
+ height:53px!important;
+ padding:1px 3px 4px!important;
+ gap:3px!important;
+ align-items:start!important;
+}
+#restTimer.resttimer .rest-actions button{
+ position:relative;
+ isolation:isolate;
+ box-sizing:border-box;
+ display:grid;
+ place-items:center;
+ height:42px!important;
+ min-height:42px!important;
+ padding:0!important;
+ border:0!important;
+ border-radius:0!important;
+ background:transparent!important;
+ box-shadow:none!important;
+ font-size:.68rem!important;
+ line-height:1!important;
+ font-weight:850;
+ color:#dff8ff;
+ -webkit-tap-highlight-color:transparent;
+}
+#restTimer.resttimer .rest-actions button::before{
+ content:"";
+ position:absolute;
+ inset:4px 1px;
+ z-index:-1;
+ border:1px solid rgba(84,154,178,.58);
+ border-radius:3px 7px 3px 7px;
+ background:linear-gradient(155deg,#193147,#0b1d2f);
+ box-shadow:inset 0 1px 0 rgba(233,251,255,.055);
+ pointer-events:none;
+}
+#restTimer.resttimer .rest-actions button:last-child{
+ color:#ffd6e1;
+}
+#restTimer.resttimer .rest-actions button:last-child::before{
+ border-color:rgba(222,105,154,.57);
+ background:linear-gradient(150deg,#381827,#1b1020);
+}
+#restTimer.resttimer .rest-actions button:active::before{
+ filter:brightness(1.23);
+}
+@media(max-width:350px){
+ #restTimer.resttimer .rest-actions button{font-size:.64rem!important}
+}
+@media(prefers-reduced-motion:reduce){
+ nav .rest-dock-pocket,
+ nav.rest-notch-integrated.rest-rail-raised .rest-dock-pocket{
+  transition:none!important;
+ }
+}
+/* Keyboard safety outranks all timer geometry. */
+html.workout-keyboard-active #restTimer.resttimer.show,
+html.native-app.keyboard-open #restTimer.resttimer.show{
+ display:none!important;
+}
