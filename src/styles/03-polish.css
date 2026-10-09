@@ -2985,3 +2985,80 @@ html.native-app.keyboard-open nav.rest-notch-integrated::before{
  }
 }
 /* Expanded controls retain the separate upward command tray from v0.87.2. */
+
+/* v0.87.4 // UNIFIED REST DOCK HOUSING
+   A single SVG-filled contour now draws the nav rail and the raised rest crest.
+   It replaces all pseudo-element "hooks", extra base rectangles, and competing
+   borders. Rest position, 154px footprint, control sizes and timer logic unchanged. */
+nav.rest-notch-integrated{
+ border-top-color:transparent!important;
+}
+nav.rest-notch-integrated::before{
+ content:none!important;
+ box-shadow:none!important;
+}
+nav .rest-nav-housing{
+ position:absolute;
+ top:calc(-1px - var(--rest-housing-rise,18px));
+ left:0;
+ width:100%;
+ height:calc(var(--rest-housing-rise,18px) + 7px);
+ display:block;
+ overflow:visible;
+ z-index:1;
+ opacity:0;
+ visibility:hidden;
+ pointer-events:none;
+}
+nav.rest-notch-integrated .rest-nav-housing{
+ opacity:1;
+ visibility:visible;
+}
+nav .rest-nav-housing-fill{
+ fill:rgba(8,14,25,.985);
+ stroke:none;
+}
+nav .rest-nav-housing-contour{
+ fill:none;
+ stroke:rgba(91,139,168,.69);
+ stroke-width:1.2;
+ stroke-linecap:round;
+ stroke-linejoin:round;
+ vector-effect:non-scaling-stroke;
+}
+nav.rest-notch-integrated .inner{z-index:2}
+/* The timer now provides only typography and the tap target, not a second
+   painted panel. The continuous nav surface below it supplies the background. */
+#restTimer.resttimer:not(.expanded){
+ border:0!important;
+ border-radius:0!important;
+ background:transparent!important;
+ box-shadow:none!important;
+}
+#restTimer.resttimer:not(.expanded)::before,
+#restTimer.resttimer:not(.expanded)::after{
+ content:none!important;
+ display:none!important;
+ background:none!important;
+ border:0!important;
+}
+#restTimer.resttimer:not(.expanded) .rest-main{
+ background:transparent!important;
+ border:0!important;
+ box-shadow:none!important;
+}
+/* Keyboard overlay may hide the rest timer while the nav is still classed
+   as integrated for one frame. In that case restore the plain nav outline. */
+html.workout-keyboard-active nav.rest-notch-integrated,
+html.native-app.keyboard-open nav.rest-notch-integrated{
+ border-top-color:rgba(84,110,152,.48)!important;
+}
+html.workout-keyboard-active nav.rest-notch-integrated::before,
+html.native-app.keyboard-open nav.rest-notch-integrated::before{
+ content:""!important;
+}
+html.workout-keyboard-active nav .rest-nav-housing,
+html.native-app.keyboard-open nav .rest-nav-housing{
+ opacity:0!important;
+ visibility:hidden!important;
+}

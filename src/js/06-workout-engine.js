@@ -1778,6 +1778,35 @@ function workoutHasRemainingProgrammedWork(w=state.activeWorkout){
  return !!w?.exercises?.some(e=>!e.skipped&&(e.sets||[]).some(s=>!s.done));
 }
 let restNotchClearanceFrame=0;
+function syncRestDockHousing(){
+ const nav=document.querySelector('nav'),box=document.getElementById('restTimer');
+ const svg=document.getElementById('restNavHousing');
+ const fill=document.getElementById('restNavHousingFill');
+ const contour=document.getElementById('restNavHousingContour');
+ if(!nav||!box||!svg||!fill||!contour||!nav.classList.contains('rest-notch-integrated'))return;
+ const width=nav.getBoundingClientRect().width;
+ if(!Number.isFinite(width)||width<120)return;
+ // One contour owns the entire nav rail and the raised countdown crest.
+ // Reuse existing notch geometry, rather than moving or resizing the timer.
+ const notchWidth=box.offsetWidth||parseFloat(window.getComputedStyle(box).width)||154;
+ const notchHeight=box.offsetHeight||parseFloat(window.getComputedStyle(box).height)||35;
+ const recess=parseFloat(box.style.getPropertyValue('--rest-notch-recess'))||17;
+ const rise=Math.max(3,Math.min(40,Math.round(notchHeight-recess)));
+ const center=width/2,left=center-notchWidth/2,right=center+notchWidth/2;
+ const a=Math.max(4,left-20),b=Math.min(width-4,right+20);
+ const fmt=n=>Math.round(n*10)/10;
+ const edge='M 0 '+rise+' L '+fmt(a)+' '+rise+
+  ' C '+fmt(left-8)+' '+rise+' '+fmt(left-10)+' 1 '+fmt(left+4)+' 1'+
+  ' L '+fmt(right-4)+' 1'+
+  ' C '+fmt(right+10)+' 1 '+fmt(right+8)+' '+rise+' '+fmt(b)+' '+rise+
+  ' L '+fmt(width)+' '+rise;
+ const bottom=rise+7;
+ const shape=edge+' L '+fmt(width)+' '+bottom+' L 0 '+bottom+' Z';
+ svg.setAttribute('viewBox','0 0 '+fmt(width)+' '+bottom);
+ svg.style.setProperty('--rest-housing-rise',rise+'px');
+ fill.setAttribute('d',shape);
+ contour.setAttribute('d',edge);
+}
 function syncRestNotchSeam(){
  const box=document.getElementById('restTimer'),nav=document.querySelector('nav'),root=document.documentElement;
  if(!nav)return;
@@ -1785,6 +1814,7 @@ function syncRestNotchSeam(){
   !box.classList.contains('rest-notch-obstructed')&&!root.classList.contains('workout-keyboard-active')&&
   !root.classList.contains('keyboard-open');
  nav.classList.toggle('rest-notch-integrated',visible);
+ if(visible)syncRestDockHousing();
 }
 function syncRestNotchClearance(){
  const box=document.getElementById('restTimer'),nav=document.querySelector('nav');
