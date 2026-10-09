@@ -105,9 +105,11 @@ w.startRestTimer(90);
 const timer=w.document.getElementById('restTimer');
 assert(timer.classList.contains('show'),'rest timer should appear while programmed work remains');
 assert(!timer.classList.contains('expanded'),'rest timer should start in compact mode');
-assert(timer.querySelector('.rest-quick-add'),'compact rest timer should retain one-tap +30 access');
+assert.equal(timer.querySelector('.rest-quick-add'),null,'collapsed timer remains countdown-only in v0.87.1');
 w.toggleRestTimerExpanded();
 assert(timer.classList.contains('expanded'),'rest controls should expand on demand');
+assert([...timer.querySelectorAll('.rest-actions button')].some(b=>b.textContent.trim()==='+30'),
+  'expanded rest controls must retain access to +30 seconds');
 w.toggleSet(lastEi,lastSi);
 await wait(40);
 assert.equal(w.workoutHasRemainingProgrammedWork(),false,'final set should leave no programmed work');
