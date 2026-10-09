@@ -1,5 +1,35 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-09 · Testing v0.87.6 Whole-Rail Lift
+
+**Latest signed Swole Cat Testing:** v0.87.6, Android build **129**, released through permanent Testing signing and updater feed.
+- PR #50: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/50, squash-merged into `main` as `8fb0feb4e2e3a4b7da9fd9284589eb82649738e3`.
+- Full PR regression PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37987273404 (initial failure was a CSS keyboard-hiding conflict, fixed before final successful run).
+- Full main regression PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37987624116.
+- Signed Android build and updater publication PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37987624164.
+- Signed APK release: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.6.
+- `updates/testing.json`: version `0.87.6`, versionCode `129`, package `com.jlingenfelter.swolecat.testing`, APK SHA-256 `48a2f2fed2df6846ee51ac354a8b934b568823043c05398d0b1d2216ce3463c5`, permanent Testing signing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta unchanged:** v0.73.1 on `beta`, SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`; no promotion without explicit owner approval.
+
+### Owner's v0.87.5 feedback, clarified target
+
+Owner provided actual Android screenshot showing expanded timer as an oversized crest with long sloping sides, and initially received a suggestion to protect Complete Set. Owner corrected the design intent: **covering Complete Set while actively expanding is fine and expected**. The real issue was the *shape morphing*. The desired motion is that the **entire full-width rail fixture** (left rail, raised center countdown, right rail) translates upward together, keeping EXACTLY the same line silhouette. Controls are revealed underneath the lifted contour; on collapse it slides down as one fixture. The five nav buttons themselves must remain stationary.
+
+### v0.87.6 implementation
+
+- Preserves the approved v0.87.4/5 stealth idle state, center countdown 154px wide (~35px tall), measured nav anchoring, fixed ~17px recess, and the nav-owned responsive single SVG housing.
+- The original single full-width nav path and SVG viewBox are now **constant** across expansion. `nav.rest-rail-raised .rest-nav-housing` translates the complete rail upward using `--rest-rail-lift:62px`; `#restTimer.show.expanded` moves upward by **the identical CSS variable**, with identical duration/easing. Never redraw the path to make the center bump taller.
+- `−30`, `+30`, `Skip` live in a fixed absolute shelf just below the countdown. This shelf reveals with a small fade as the whole rail lifts. It does not increase the timer's measured height or modify the SVG shape, unlike v0.87.5.
+- Deliberate expansion no longer triggers workout auto-scroll. Temporary overlap with Complete Set is explicitly user-approved. Countdown remains visible on ordinary workout scroll, and the nav buttons remain stationary.
+- Keyboard hiding takes priority over the new block layout, fixed after a failing regression run. Reduced-motion setting retains instant transitions. Timer math, workout logging, progression, cloud and signed update system unchanged.
+- `scripts/rest-tray-stress.mjs` now checks whole-width rail lift and equal translations, absolutely positioned controls, exact same SVG path/viewBox in both states, no forced workout scroll, accessible buttons, keyboard and rest-stop behavior. Full PR and main validations passed.
+
+### Next real-phone acceptance
+
+Owner installs Swole Cat Testing v0.87.6 through Settings > App & Updates and opens rest timer during an active workout. Critically verify **left line + timer crest + right line all rise the same distance**, with no swelling, stretching or angled tent silhouette, and reveal the 3 controls beneath the unchanged shape. Collapse and watch all segments slide down as one unit. Check stationary nav tabs, keyboard handling and tap targets. Aesthetic and motion still need actual Android validation, no further design pass until owner feedback.
+
+Older milestones below are historical.
+
 ## Latest milestone: 2026-10-09 · Testing v0.87.5 Sliding Rest Dock
 
 **Latest signed Testing:** v0.87.5, Android build **128**, merged into `main`, signed APK and in-app Testing updater verified.
