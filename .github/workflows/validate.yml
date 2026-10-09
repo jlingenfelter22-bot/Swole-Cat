@@ -102,6 +102,9 @@ jobs:
       - name: Stress test v0.86.0 smart workout viewport and sticky overview
         run: node scripts/workout-viewport-focus-stress.mjs
 
+      - name: Stress test v0.87.0 rest timer navigation tray
+        run: node scripts/rest-tray-stress.mjs
+
       - name: Stress test Coach Swolecat prompt matrix
         run: node scripts/coach-stress.mjs
 
