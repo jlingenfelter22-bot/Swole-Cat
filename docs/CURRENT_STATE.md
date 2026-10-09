@@ -1,5 +1,35 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-09 · Testing v0.87.2 Recessed Rest Notch
+
+**Latest signed Testing:** v0.87.2 / Android versionCode **125**, APK published and updater feed verified.
+- PR #46 merged into `main` at `246de256b66c52868518553bd279bbe358a9b271`: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/46.
+- Branch validation PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37953019259.
+- Main validation PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37953366178.
+- Signed Android build and release PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37953366078.
+- GitHub Pages deploy PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37953366172.
+- Release https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.2.
+- `updates/testing.json`: enabled, version `0.87.2`, versionCode `125`, package `com.jlingenfelter.swolecat.testing`; APK SHA-256 `8ce83daa5e60b63ae91bf4e7e1cb6181922c656c8d0daec6e095c5f51b2603c0`, Testing signing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta unchanged:** branch `beta`, SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, v0.73.1. No promotion without explicit owner instruction.
+
+### Motivation and exact v0.87.2 decisions
+
+User reviewed v0.87.1 on physical Android and said that despite smaller styling, the countdown still obscured the bottom of **Complete Set** in the natural workout viewport. The user approved trying a fundamentally different *recessed notch* instead of shrinking the same floating tray.
+
+- Passive state now ~154px wide and ~35px tall, positioned partially **inside** the upper edge of bottom nav's visual housing, separate from `<nav>` and its five tabs. Existing angled, luminous cyan-violet cyber styling stays.
+- The notch's allowed recess measures the center nav icon top rather than covering the center tab icon. It dynamically checks Complete Set's real screen position; when clear, it remains available without moving the workout. If physical space becomes impossible, the passive notch yields temporarily rather than covering Complete Set.
+- Passive rest is no longer deducted from `focusWorkoutViewportAfterAdvance()` scroll clearance. The **user's chosen workout viewport wins**. Normal scroll events may reposition the notch within the available nav strip, not the workout.
+- Only when the user *intentionally opens* the timer does it expand upward to the ~270px control tray and reserve screen clearance for `−30`, `+30`, `Skip`. The button and workout data logic are unchanged.
+- Keyboard hiding, reduced motion, nav safe-area measurements and true countdown semantics retained.
+- `scripts/rest-tray-stress.mjs` now checks nav attachment, no passive scrolling, no collision in near and impossible layouts, recovery after collision, expanded button clearance, keyboard and motion contracts. All regression checks passed.
+
+### Next action
+
+Owner installs Testing v0.87.2 via Settings > App & Updates and assesses the passive notch with Complete Set visible, nav icon hit targets, expand/collapse, keyboard and any situations where the timer temporarily yields. The desktop/DOM tests cannot prove real-device visual appearance. **Wait for feedback; don't start another redesign by assumption.**
+
+Older sections below are historical and superseded by this latest Testing checkpoint.
+
+
 ## Latest milestone: 2026-10-09 · Testing v0.87.1 Compact Cyber Rest Timer
 
 **Latest signed Swole Cat Testing:** v0.87.1 / Android versionCode 124, published and verified on the Testing channel.
