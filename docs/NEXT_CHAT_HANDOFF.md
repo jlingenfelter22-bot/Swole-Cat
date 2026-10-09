@@ -1,8 +1,19 @@
 # Swole Cat - Next Chat Handoff
 
-Last updated: 2026-10-06
+Last updated: 2026-10-08
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
+
+## CURRENT RESUME CHECKPOINT (supersedes older v0.72 text below)
+
+- **Swole Cat Testing:** v0.86.0, Android build 122, source `main`. Signed Testing APK and in-app update channel published and verified. https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.86.0
+- **Field Beta:** v0.73.1, `beta` branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`; separate signing/channel, still untouched by v0.74–v0.86 Testing passes. Only promote on explicit owner instruction.
+- PR #43 implemented **Smart Workout Focus** after user reviewed v0.85 Android screenshot. Full-width "Repeat Previous Set Values" was explicitly kept, not replaced with ambiguous "Repeat" next to Complete Set. After a set advance, the screen now positions the sticky exercise header, Coach Target and set inputs/action together, while retaining user manual scroll. Sticky exercise header shows overall set progress with a thin bar and a **Session note** control for accessing complete Coach guidance.
+- PR full validation and main validation both passed; signed Testing Android publication completed. Refer to `docs/CURRENT_STATE.md` top section for workflow links, cert/hash, implementation and limitations.
+- **Immediate task:** user installs v0.86.0 using Settings → App & Updates, then reports real-device comfort of automatic scroll, visibility of Complete Set, clear Repeat wording, session progress + Coach note, subsequent set/exercise transitions, and keyboard/timed/carry edge cases. No further design/code changes until their impressions.
+- **Older sections below are archival** and contain older versions and superseded "next task" instructions. Do not resume from v0.72.3 or assume Settings cleanup is the active task. Do not begin unrelated cloud phases.
+
+---
 
 ## Immediate resume instruction
 
