@@ -33,6 +33,28 @@ const housingStyle=css.slice(css.indexOf('/* v0.87.4 // UNIFIED REST DOCK HOUSIN
 const slidingStyle=css.slice(css.indexOf('/* v0.87.5 // SLIDING REST DOCK'));
 const liftStyle=css.slice(css.indexOf('/* v0.87.6 // RIGID WHOLE-RAIL LIFT'));
 const pocketStyle=css.slice(css.indexOf('/* v0.87.7 // SOLID COMPACT UNDER-RAIL ACTION POCKET'));
+const bayStyle=css.slice(css.indexOf('/* v0.87.8 // SLEEK ACTION BAY'));
+assert(bayStyle.startsWith('/* v0.87.8'),'sleek action bay must be the final rest-timer styling');
+assert.match(bayStyle,/:root\{--rest-rail-lift:53px\}/,'rail rises only 53px');
+assert.match(bayStyle,/nav \.rest-dock-pocket::before,[\s\S]*?nav \.rest-dock-pocket::after\{[\s\S]*?pointer-events:none/,
+ 'side details must be decorative and noninteractive');
+assert.match(bayStyle,/nav \.rest-dock-pocket::before\{left:11px\}/,'cyan side detail stays in left cavity');
+assert.match(bayStyle,/nav \.rest-dock-pocket::after\{[\s\S]*?right:11px;[\s\S]*?transform:scaleX\(-1\)/,
+ 'violet side detail mirrors the left without affecting the center buttons');
+assert.match(bayStyle,/opacity:\.46/,'side graphics stay low contrast');
+assert.match(bayStyle,/repeating-linear-gradient\(120deg/,'engine bay includes faint etched vent-like cuts');
+assert.match(bayStyle,/#restTimer\.resttimer\.expanded \.rest-actions\{[\s\S]*?height:49px!important/,
+ 'shelf is 4px tighter than the previous 53px');
+assert.match(bayStyle,/#restTimer\.resttimer \.rest-actions button\{[\s\S]*?height:42px!important;[\s\S]*?min-height:42px!important/,
+ 'three actions retain their 42px touch areas');
+assert.match(bayStyle,/#restTimer\.resttimer \.rest-actions button::before\{[\s\S]*?inset:5px 2px!important/,
+ 'button faces shrink to 32px tall while touch areas remain 42px');
+assert.match(bayStyle,/clip-path:polygon\(0 6px,6px 0/,
+ 'control faces use a crisp corner-cut silhouette');
+assert.match(bayStyle,/@media\(max-width:350px\)/,'decorations and controls scale down on narrow phones');
+assert.doesNotMatch(bayStyle,/#restTimer\.resttimer\.show\.expanded\s*\{[\s\S]*?transform:/,
+ 'new styling must not replace the rigid rail motion');
+
 assert(liftStyle.startsWith('/* v0.87.6'),'the rigid full-width rail remains the underlying mechanism');
 assert(pocketStyle.startsWith('/* v0.87.7'),'the solid compact pocket must be the final rest visual style');
 assert.match(pocketStyle,/:root\{--rest-rail-lift:57px\}/,
@@ -229,4 +251,4 @@ assert.equal(w.document.getElementById('restTimerText').textContent,'1:30','stop
 assert(scrolls.length>=countBefore,'timer keeps normal workout navigation behavior');
 nav.getBoundingClientRect=originalNavRect;
 dom.window.close();
-console.log('PASS v0.87.7: fully opaque nav pocket, compact 34px visible/42px touch buttons, 57px rigid rail lift, unchanged idle geometry and interactions.');
+console.log('PASS v0.87.8: etched cyan/violet side bays, 32px visible/42px touch control faces, 53px unchanged-shape whole-rail lift.');
