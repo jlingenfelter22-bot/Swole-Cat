@@ -1,5 +1,34 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-08 · Testing v0.86.0 Smart Workout Focus
+
+**Latest signed Testing:** v0.86.0 / Android build 122, signed APK published and updater feed verified.
+- Approved implementation PR #43: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/43 (squash merged).
+- PR full validation passed: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37868479708; main validation passed: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37868679554.
+- Signed Android build/signing and release publication: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37868679589 (success).
+- Release and signed APK: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.86.0
+- `updates/testing.json` enabled for v0.86.0, build 122, package `com.jlingenfelter.swolecat.testing`, APK SHA-256 `21645a2920a235ec6c0df1528756f0a6cd855f27bac6e3cae587220e01093183`, persistent Testing signing cert SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta untouched:** `beta` remains at v0.73.1, commit `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`; no promotion without explicit user approval.
+
+### Why this pass shipped
+
+User likes v0.85.0's one-tap **Repeat Previous Set Values**, but on physical Android, revealing its full-width row after Set 1 caused Complete Set to require scrolling. The user supplied a screenshot of a comfortable viewport where the sticky exercise header, Coach Target, set rail, numeric inputs, Repeat and Complete Set fit together with the earlier session overview scrolled offscreen. User specifically rejected a cryptic side-by-side "Repeat" button and approved viewport-focused navigation.
+
+### v0.86.0 implementation
+
+- Keep **both full-width Repeat Previous Set Values and Complete Set controls** unchanged and vertically separated, with explanatory Repeat wording.
+- After completing a set or moving to a different exercise after work has been logged, measure the actual sticky exercise header, Android viewport, primary action and bottom navigation, then scroll only the minimum amount necessary to keep the action visible. Normal renders, tapping Repeat, and intentional manual scrolling do not force another auto-position. Reduce Motion uses instant movement.
+- Overall workout completion counts and a thin progress indicator now live within the existing sticky exercise navigator, rather than requiring the user to keep the top overview in frame. The header's new **Session note** shortcut opens the full Coach note without toggling exercise navigation.
+- New `scripts/workout-viewport-focus-stress.mjs` covers startup, after-first-set focus, unchanged Repeat semantics, no redundant positioning, accessible progress, and modal access. All historical regression tests passed.
+- No changes to workout progression, logged history, cloud, signing, or Beta.
+
+### Next real-device acceptance
+
+Install v0.86.0 via the Testing in-app updater. Use a multi-set routine: start with the session overview visible; complete Set 1; verify Swole Cat automatically scrolls into the compact screenshot-like composition, with Repeat and Complete Set both visible and tappable; continue across further sets and an exercise transition; try manual upward scrolling, Session note access, smaller screen / keyboard and stopwatch/carry layouts. Evaluate feel and avoid claiming perfect zero-scroll across every viewport until Android testing confirms. **Do not implement additional changes until feedback.**
+
+Earlier milestones below are historical records; this block is the authoritative latest Testing baseline.
+
+
 ## Latest milestone: 2026-10-08 · Testing v0.85.0 measurement logging UX
 
 **Latest signed Swole Cat Testing:** v0.85.0, Android versionCode 121, published and verified.
