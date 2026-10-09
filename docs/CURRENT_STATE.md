@@ -1,5 +1,34 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-09 · Testing v0.87.8 Sleek Action Tray Polish
+
+**Current signed Testing:** v0.87.8 / Android build **131**, on `main`, updater manifest and permanent signing identity verified.
+- PR #52: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/52, squash merged at `627c836040e1be1de961d3be485001cd791f8706`.
+- PR full validation PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38005935548; main full validation PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38006156361.
+- Android signed build, certificate check and Testing updater publication PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38006156392.
+- Release: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.8.
+- `updates/testing.json`: enabled version `0.87.8`, versionCode `131`, package `com.jlingenfelter.swolecat.testing`, signed APK SHA-256 `9a2e0b7632fbba4c2d6bf9c1063106d11b59f728cdd5be3672789cf0a3dea81a`, original Testing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta unchanged:** v0.73.1 branch `beta` SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. Never promote without explicit owner direction.
+
+### Owner-approved direction
+
+Android screenshot of v0.87.7 confirmed the full-width rail with raised central timer, solid concealed action pocket and compact controls was finally working visually. Owner requested *pure polish*: slim the visible −30, +30 and Skip faces further without shrinking real touch targets, sharpen them, shorten the lift just a little, and fill the empty left/right exposed pocket space with **restrained combination of A (technical engine-bay details) and C (minimal cyan/violet ambient glow)**. No extra buttons or gimmicky bright illustration. Preserve stealthy collapsed notch, whole-rail rigid shape, nav tab positions, all training/logging behavior and keyboard handling.
+
+### v0.87.8 implementation
+
+- Visual action key face height reduced from **34px to 32px** by `inset:5px 2px` pseudo-faces inside the existing **42px actual touch targets**. Low-profile sharply cut top corners, restrained border, less gradient bulk and tighter font weight/letter spacing.
+- Expanded control shelf reduced from **53px to 49px** with adjusted padding. Same entire-rail lift is only **53px** instead of 57px. Original contour and 154px collapsed notch are unchanged.
+- Left/right exposed *nav-owned* opaque pocket gains CSS-only side pseudo-elements, symmetrical subtle service-panel seams, micro vent hatches, very faint cyan on left and violet on right. They are noninteractive, opacity 0.46 normally, 0.28 on narrow screens, never part of the idle look, no added text or icons.
+- No JS interaction changes, new controls, data changes, keyboard/scroll semantics changes, Beta changes or migration. `scripts/rest-tray-stress.mjs` extended to guard new visual sizes, lift height, subtle decorative details and no changes to rigid rail transform.
+- All existing workout, Coach, keyboard, cloud and timer regressions green.
+
+### Next real-phone acceptance
+
+Install Testing v0.87.8 / build 131 via Settings > App & Updates. Expand rest after a set, evaluate visible button slenderness, the slightly reduced lift and the quiet side-bay etched cyan/violet details; confirm they are not too busy and the nav rail still lifts as one unchanged shape. Test button hits, collapse, scroll, keyboard and skip. Real Android visual acceptance is still pending; await screenshot/walkthrough and owner feedback before further design changes.
+
+Older sections below are historical.
+
+
 ## Latest milestone: 2026-10-09 · Testing v0.87.7 Filled Action Pocket
 
 **Latest signed Testing:** v0.87.7 / Android build **130**, published and verified in the Testing updater.
