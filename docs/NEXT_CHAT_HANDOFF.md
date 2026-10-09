@@ -4,6 +4,16 @@ Last updated: 2026-10-09
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
 
+## CURRENT RESUME CHECKPOINT (v0.87.8 supersedes older instructions)
+
+- **Latest Testing:** v0.87.8 / Android build 131, signed permanent Testing APK and in-app updater live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.8. PR #52 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/52 merged into `main`, full tests passed. Beta remains v0.73.1 at SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, untouched. Do not promote to Beta without explicit owner approval.
+- **User's approved v0.87.8 design:** After screenshot of expanded v0.87.7 opaque whole-rail rest pocket, requested slimmer, sharper button faces with less bulk and tighter padding, a modestly shorter lift, and subtle *blend of A+C* in blank left/right spaces: etched tech-panel/mechanical vents plus minimal cyan/violet ambient accents. Not additional controls or brighter busy styling. Do NOT change the approved idle stealth timer, one rigid unchanged full-width rail shape, fixed nav tabs, scroll behavior or timer math.
+- **Implemented:** pure CSS visual pass in `src/styles/03-polish.css`. Rail lift **57→53px**, shelf **53→49px**, visible button faces **34→32px** within unchanged **42px tap targets**, sharper asymmetric clipped corners and lower-weight text. Nav-owned `.rest-dock-pocket::before/::after` provide pointer-events-none low opacity mirrored technical lines/vents, left cyan and right violet, scaling back on narrow screens. No new images, control elements or JS changes. `scripts/rest-tray-stress.mjs` includes visual contract tests.
+- **Verified:** PR full regression PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38005935548, main regression PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38006156361, Testing APK signed/published PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38006156392. `updates/testing.json`: v0.87.8 build 131, package `com.jlingenfelter.swolecat.testing`, APK SHA-256 `9a2e0b7632fbba4c2d6bf9c1063106d11b59f728cdd5be3672789cf0a3dea81a`, Testing signing SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Next:** user installs via Settings > App & Updates and inspects real Android expanded timer and normal idle position. Assess tight visible button weight, real tap comfort, restrained side engine-bay style, minimal lift and seamless complete-rail translation. Await physical-device feedback before future polish. Older checkpoints below archival.
+
+---
+
 ## CURRENT RESUME CHECKPOINT (v0.87.7 supersedes older instructions)
 
 - **Latest Testing:** v0.87.7 / Android build 130, signed permanent Testing APK and in-app updater live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.7. PR #51 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/51 merged into `main` with full validations passing. Beta remains v0.73.1 (branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`), untouched.
