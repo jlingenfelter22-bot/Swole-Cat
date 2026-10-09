@@ -4,6 +4,17 @@ Last updated: 2026-10-09
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
 
+## CURRENT RESUME CHECKPOINT (v0.87.6 supersedes older instructions)
+
+- **Latest Testing:** v0.87.6 / Android build 129, signed permanent Testing APK and in-app updater live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.6. PR #50 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/50 merged into `main` as `8fb0feb4e2e3a4b7da9fd9284589eb82649738e3`.
+- **User's clarified design intent:** v0.87.5 expanded screenshot showed a tall crest with sloped sides and attached-looking controls. **Do not solve this by making room for Complete Set**; the user explicitly accepts deliberate expansion overlapping Complete Set. What they want is the **entire full-width bottom fixture**, with its left rail, timer bump and right rail, to translate upward in the SAME unchanged shape, reveal the three buttons *below*, then slide the entire rail back down upon collapse. The five nav tabs do not move.
+- **v0.87.6 changes:** Fixed `#restTimer` height to ~35px in all states. The three buttons are absolutely positioned beneath the countdown, no longer expanding the timer box or changing nav SVG geometry. `nav.rest-rail-raised` and `#restTimer.show.expanded` use identical `--rest-rail-lift:62px` and matching 290ms easing. Nav SVG path/viewBox remain identical in both states, only entire rail translates. Resting visual and scroll persistence preserved. Removed expansion-triggered workout scrolling. Keyboard hiding CSS was corrected after CI found an override; reduced motion and timer logic unchanged.
+- **Validated:** PR full PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37987273404, main full PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37987624116, signed Android PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37987624164. Manifest `updates/testing.json` says v0.87.6, build 129, APK SHA-256 `48a2f2fed2df6846ee51ac354a8b934b568823043c05398d0b1d2216ce3463c5`, permanent Testing cert `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta unchanged** v0.73.1 on `beta` SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. Never promote without owner's explicit direction.
+- **Immediate next action:** user installs Testing v0.87.6 and shares Android screenshot/video of expanding/collapsing rail. Assess same silhouette from left to right, all segments rising together, action reveal under lifted rail, stationary tab buttons and preservation of stealth idle state. Await real-device feedback before changes. Older checkpoints below archival.
+
+---
+
 ## CURRENT RESUME CHECKPOINT (v0.87.5 supersedes older instructions)
 
 - **Latest Testing:** v0.87.5, Android build 128, source `main`. PR #49 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/49 merged after full validation. Signed Testing APK and updater live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.5.
