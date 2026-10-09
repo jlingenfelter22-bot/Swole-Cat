@@ -1,8 +1,20 @@
 # Swole Cat - Next Chat Handoff
 
-Last updated: 2026-10-08
+Last updated: 2026-10-09
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
+
+## CURRENT RESUME CHECKPOINT (v0.87.1 supersedes older instructions)
+
+- **Current Testing:** v0.87.1 / Android build 124, `main`. PR #45 merged, full validation passed; signed APK released: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.1. Testing updater `updates/testing.json` verified for v0.87.1, code 124.
+- **Micro-pass decision:** user liked v0.87.0 nav-connected tray, but shared Android screenshot and said its resting state was far too large and visually boring. Explicitly approved a smaller, sharper cyberpunk timer: ~188px width/~44px height with only REST, countdown and expand cue; compact state removes quick +30. Tapping expands to ~282px panel showing −30, +30, Skip. Angular asymmetric corners, violet-cyan edge detail, fine technical texture and small illuminated status dot, in existing Swole Cat theme.
+- Keep the separate-from-nav structure, 5 nav tabs, slide-out behavior, keyboard concealment, reduced-motion handling, and Complete Set clearance. `scripts/rest-tray-stress.mjs` tests new states. Two older tests had contradictory +30-in-collapsed expectations and were corrected to honor the new approved behavior.
+- Signed Android release workflow https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37949452821 completed successfully. Testing APK checksum `2e2f592616792b8f5ab282810f42b18e73e044e64754b5ac0e95e43691d12ac9`, original persistent Testing signing cert `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta** stays v0.73.1 on branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`; never promote without user approval.
+- **Immediate next task:** user updates on Android, checks the compact/expanded timer aesthetic against their screenshot and exercises +30, -30, Skip, keyboard concealment, and touch/scroll clearance. Wait for their feedback before another pass.
+- Earlier "CURRENT RESUME CHECKPOINT" headings below are archival.
+
+---
 
 ## CURRENT RESUME CHECKPOINT (supersedes older version instructions)
 
