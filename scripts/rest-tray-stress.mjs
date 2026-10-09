@@ -29,7 +29,23 @@ assert.deepEqual([...tray.children].filter(el=>el.tagName==='BUTTON').map(el=>el
   'the only collapsed button is the timer/expand target');
 const microStyle=css.slice(css.indexOf('/* v0.87.1 // COMPACT CYBER REST COMMAND POD'));
 const notchStyle=css.slice(css.indexOf('/* v0.87.2 // Recessed rest notch'));
-assert(notchStyle.startsWith('/* v0.87.2'),'the recessed notch must be the latest style');
+const seamStyle=css.slice(css.indexOf('/* v0.87.3 // CONTINUOUS REST NOTCH SEAM'));
+assert(notchStyle.startsWith('/* v0.87.2'),'v0.87.2 recessed behavior is preserved');
+assert(seamStyle.startsWith('/* v0.87.3'),'v0.87.3 visual integration is the latest style');
+assert.match(seamStyle,/nav\.rest-notch-integrated\{\s*border-top-color:transparent!important/,
+ 'nav hides its original solid top border around the passive notch');
+assert.match(seamStyle,/nav\.rest-notch-integrated::before\{[\s\S]*?calc\(50% - 92px\)/,
+ 'nav top line is split at the molded notch shoulders, not drawn behind it');
+assert.match(seamStyle,/#restTimer\.resttimer:not\(\.expanded\)\{[\s\S]*?border-top:1px solid/,
+ 'notch and nav use a shared subtle seam weight');
+assert.match(seamStyle,/#restTimer\.resttimer:not\(\.expanded\)::before,[\s\S]*?height:calc\(100% - var\(--rest-notch-recess,16px\)\)/,
+ 'bevel shoulders terminate at the nav upper edge instead of forming hooks');
+assert.match(seamStyle,/#restTimer\.resttimer:not\(\.expanded\)::before\{[\s\S]*?linear-gradient\(130deg/,
+ 'left notch transition uses an angular bevel');
+assert.match(seamStyle,/#restTimer\.resttimer:not\(\.expanded\)::after\{[\s\S]*?linear-gradient\(230deg/,
+ 'right notch transition mirrors the bevel');
+assert.match(seamStyle,/html\.workout-keyboard-active nav\.rest-notch-integrated/,
+ 'nav top line restores when the timer is hidden during keyboard input');
 assert.match(notchStyle,/#restTimer\.resttimer:not\(\.expanded\)\{[\s\S]*?width:154px!important/,
  'passive notch narrows to 154px');
 assert.match(notchStyle,/#restTimer\.resttimer:not\(\.expanded\)\{[\s\S]*?min-height:35px!important/,
@@ -73,6 +89,7 @@ await wait(45);
 w.syncRestNotchClearance();
 assert.equal(tray.classList.contains('rest-notch-obstructed'),false,'default notch must fit below the Complete Set button');
 assert.equal(tray.style.getPropertyValue('--rest-notch-recess'),'17px','notch recesses into the nav without reaching its icons');
+assert(nav.classList.contains('rest-notch-integrated'),'visible collapsed timer opens the nav seam');
 const countBefore=scrolls.length;
 actionBottom=675; // 28px clearance, less than the previous floating tray height
 w.syncRestNotchClearance();
@@ -81,9 +98,11 @@ assert.equal(scrolls.length,countBefore,'passive timer must never force a workou
 actionBottom=696; // impossible to display full countdown above the glyphs without obstructing the action
 w.syncRestNotchClearance();
 assert(tray.classList.contains('rest-notch-obstructed'),'critical collision hides the passive notch instead of overlaying Complete Set');
+assert(!nav.classList.contains('rest-notch-integrated'),'hidden timer restores uninterrupted nav border');
 actionBottom=650;
 w.syncRestNotchClearance();
 assert(!tray.classList.contains('rest-notch-obstructed'),'notch returns as soon as the primary action has clearance');
+assert(nav.classList.contains('rest-notch-integrated'),'recovered timer restores seamless nav cutout');
 assert.equal(scrolls.length,countBefore,'collision resolution never repositions the workout');
 // An explicit expansion may take space and preserve Complete Set by scrolling.
 w.toggleRestTimerExpanded();
@@ -92,6 +111,7 @@ assert(scrolls.length>countBefore,'expanded tray triggers protective scroll when
 assert(scrolls[scrolls.length-1].top>=60,'expanded tray reserves enough height for controls');
 // Continue expanded controls test.
 assert(tray.classList.contains('expanded'),'tap opens expanded controls');
+assert(!nav.classList.contains('rest-notch-integrated'),'expanded tray restores full-width nav top border');
 assert.equal(action.getAttribute('aria-expanded'),'true');
 assert.equal(controls.getAttribute('aria-hidden'),'false');
 assert(buttons.every(b=>b.tabIndex===0),'expanded buttons become keyboard accessible');
@@ -103,6 +123,8 @@ assert.equal(w.document.getElementById('restTimerText').textContent,'1:30','expa
 
 w.toggleRestTimerExpanded();
 assert(!tray.classList.contains('expanded'),'second tap collapses');
+await wait(45);
+assert(nav.classList.contains('rest-notch-integrated'),'collapsing returns to the integrated notch seam');
 assert.equal(action.getAttribute('aria-expanded'),'false');
 assert(buttons.every(b=>b.tabIndex===-1),'collapsed actions leave keyboard tab order');
 
@@ -124,9 +146,14 @@ assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{\s*#restTimer\.restti
  'reduced motion uses an immediate display');
 
 root.classList.add('workout-keyboard-active');
+w.syncRestNotchSeam();
+assert(!nav.classList.contains('rest-notch-integrated'),'hidden-for-keyboard timer should not leave a cutout in nav');
 assert.equal(w.getComputedStyle(tray).display,'none','visible tray hides when keyboard focus starts');
 root.classList.remove('workout-keyboard-active');
+w.syncRestNotchSeam();
+assert(nav.classList.contains('rest-notch-integrated'),'restored countdown returns seam after keyboard dismissal');
 w.stopRestTimer();
+assert(!nav.classList.contains('rest-notch-integrated'),'stopped rest must leave nav edge whole');
 assert(!tray.classList.contains('show'),'Skip/stop hides tray');
 assert.equal(action.getAttribute('aria-expanded'),'false');
 assert.equal(controls.getAttribute('aria-hidden'),'true');
@@ -134,4 +161,4 @@ assert.equal(w.document.getElementById('restTimerText').textContent,'1:30','stop
 assert(scrolls.length>=countBefore,'timer keeps normal workout navigation behavior');
 nav.getBoundingClientRect=originalNavRect;
 dom.window.close();
-console.log('PASS v0.87.2: recessed passive notch, no Complete Set collisions or passive scrolling, expanded action clearance, nav separation, keyboard, motion.');
+console.log('PASS v0.87.3: continuous nav/notch seam, beveled shoulders, keyboard/collision/expanded cutout cleanup, no placement changes.');
