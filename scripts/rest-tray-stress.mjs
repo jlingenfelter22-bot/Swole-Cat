@@ -24,7 +24,22 @@ const action=tray.querySelector('.rest-main'),controls=tray.querySelector('.rest
 const buttons=[...controls.querySelectorAll('button')];
 assert.equal(w.document.querySelectorAll('nav .navbtn').length,5,'timer must not become a sixth nav tab');
 assert.equal(tray.closest('nav'),null,'rest tray must remain outside semantic nav');
-assert(tray.querySelector('.rest-quick-add'),'collapsed +30 stays available');
+assert.equal(tray.querySelector('.rest-quick-add'),null,'collapsed state has no visible or focusable adjustment button');
+assert.deepEqual([...tray.children].filter(el=>el.tagName==='BUTTON').map(el=>el.className),['rest-main'],
+  'the only collapsed button is the timer/expand target');
+const microStyle=css.slice(css.indexOf('/* v0.87.1 // COMPACT CYBER REST COMMAND POD'));
+assert(microStyle.startsWith('/* v0.87.1'),'compact override must be the active style');
+assert.match(microStyle,/#restTimer\.resttimer\{[\s\S]*?width:188px!important/,
+  'collapsed width is 188px, not a large panel');
+assert.match(microStyle,/#restTimer\.resttimer\.expanded\{\s*width:282px!important/,
+  'expanded controls have room without dominating the screen');
+assert.match(microStyle,/#restTimer\.resttimer\{[\s\S]*?min-height:44px/,
+  'collapsed height stays compact');
+assert.match(microStyle,/#restTimer\.resttimer\{[\s\S]*?border-radius:10px 17px 0 0!important/,
+  'asymmetric cyber silhouette remains attached to the navigation');
+assert.match(microStyle,/rgba\(194,81,243,\.94\)/,'neon-magenta to cyan trim adds dimensionality');
+assert.match(microStyle,/repeating-linear-gradient\(135deg/,'micro-etched panel texture avoids a flat face');
+assert.match(microStyle,/#restTimer \.rest-main small::before/,'the rest label retains a small status light');
 assert.equal(action.getAttribute('aria-expanded'),'false');
 assert.equal(controls.getAttribute('aria-hidden'),'true');
 assert(buttons.every(b=>b.tabIndex===-1),'hidden actions are not tabbable');
@@ -43,8 +58,8 @@ assert(tray.classList.contains('show'),'rest starts visible');
 assert(!tray.classList.contains('expanded'),'rest starts compact');
 assert.equal(w.document.getElementById('restTimerText').textContent,'1:30');
 assert.equal(action.getAttribute('aria-expanded'),'false');
-w.adjustRestTimer(30);
-assert.equal(w.document.getElementById('restTimerText').textContent,'2:00','collapsed +30 still adjusts timer');
+const timerBefore=tray.querySelector('#restTimerText').textContent;
+assert.equal(timerBefore,'1:30','collapsed rest timer is a countdown, not an adjustment control');
 
 // Simulate a short Android viewport: the expanded tray must clear Complete Set.
 const primary=w.document.querySelector('#workout .focus-set-card .complete-set');
@@ -63,8 +78,10 @@ assert.equal(action.getAttribute('aria-expanded'),'true');
 assert.equal(controls.getAttribute('aria-hidden'),'false');
 assert(buttons.every(b=>b.tabIndex===0),'expanded buttons become keyboard accessible');
 assert.equal(tray.querySelectorAll('.rest-actions button').length,3,'existing -30/+30/Skip retained');
-w.adjustRestTimer(-30);
-assert.equal(w.document.getElementById('restTimerText').textContent,'1:30');
+buttons[1].click();
+assert.equal(w.document.getElementById('restTimerText').textContent,'2:00','expanded +30 adjusts time');
+buttons[0].click();
+assert.equal(w.document.getElementById('restTimerText').textContent,'1:30','expanded -30 adjusts time');
 
 w.toggleRestTimerExpanded();
 assert(!tray.classList.contains('expanded'),'second tap collapses');
@@ -76,8 +93,8 @@ assert.equal(root.style.getPropertyValue('--rest-nav-offset'),'97px','device res
 
 assert.match(css,/#restTimer\.resttimer\{[\s\S]*?bottom:calc\(var\(--rest-nav-offset,82px\) - 1px\)/,
  'tray uses measured nav top instead of floating bottom offset');
-assert.match(css,/#restTimer\.resttimer\{[\s\S]*?border-radius:18px 18px 0 0!important/,
- 'tray adopts a nav-connected open-bottom silhouette');
+assert.match(microStyle,/#restTimer\.resttimer\{[\s\S]*?border-radius:10px 17px 0 0!important/,
+ 'tray retains a sharp asymmetrical open-bottom nav silhouette');
 assert.match(css,/#restTimer\.resttimer\.show\{[\s\S]*?transform:translate\(-50%,0\)!important/,
  'tray slides up into place');
 assert.match(css,/#restTimer\.resttimer::before,[\s\S]*?#restTimer\.resttimer::after/,
@@ -98,4 +115,4 @@ assert.equal(w.document.getElementById('restTimerText').textContent,'1:30','stop
 assert(scrolls.length>=countBefore,'timer keeps normal workout navigation behavior');
 nav.getBoundingClientRect=originalNavRect;
 dom.window.close();
-console.log('PASS v0.87: nav geometry, separate sliding tray, accessible compact/expanded controls, +30/-30/Skip, keyboard and reduced motion.');
+console.log('PASS v0.87.1: 188px compact cyber rest pod, separate nav, no collapsed controls, expanded +/-30/Skip, safe clearance, keyboard and reduced motion.');
