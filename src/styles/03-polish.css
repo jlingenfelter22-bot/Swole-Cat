@@ -3280,3 +3280,9 @@ nav.rest-notch-integrated.rest-rail-raised .rest-nav-housing{
  #restTimer.resttimer .rest-actions,
  #restTimer.resttimer.expanded .rest-actions{transition:none!important}
 }
+
+/* Last in cascade: input focus always wins over the visual rail layout. */
+html.workout-keyboard-active #restTimer.resttimer.show,
+html.native-app.keyboard-open #restTimer.resttimer.show{
+ display:none!important;
+}
