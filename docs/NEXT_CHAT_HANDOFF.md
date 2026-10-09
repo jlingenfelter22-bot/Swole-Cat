@@ -4,6 +4,17 @@ Last updated: 2026-10-09
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
 
+## CURRENT RESUME CHECKPOINT (v0.87.3 supersedes older instructions)
+
+- **Current Testing:** v0.87.3 / Android build 126, `main`. PR #47 merged after successful complete regression suite https://github.com/jlingenfelter22-bot/Swole-Cat/pull/47. Signed APK and updater live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.3.
+- **User feedback:** v0.87.2 successfully fixed timer size, location and no-overlap with Complete Set on real Android, but showed a visual **sticker effect**, old curled side hooks, mismatched timer/nav borders and straight nav highlight passing behind the module. User explicitly approved **pure visual seam polish** preserving v0.87.2 positioning and all functionality.
+- **v0.87.3:** Added state-aware nav class `rest-notch-integrated` for visible collapsed notch only, top rail is broken across the notch's width plus beveled shoulders. Removed full sticker-style border and heavy independent glow from passive timer, matched nav ink and background, replaced side hooks with short diagonal beveled ramps terminating at nav top. Nav rail restores during expanded controls, stopped rest, keyboard hiding, and obstructed fallback. Countdown, time controls, scroll protection, timer size and position unchanged.
+- **Validation:** full PR run https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37966245495 PASS, main run https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37966558650 PASS, Testing APK signed and published by https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37966558602 PASS. Build 126. APK SHA-256 `97274f6a1a1d27b1161035aaef5f68c9e25f0906b78106374cb7e4a3f0b6a340`, permanent cert `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta:** v0.73.1 on `beta` at `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. Untouched; do not promote without explicit user approval.
+- **Next:** Have owner update Swole Cat Testing to 0.87.3 and share real phone screenshot. Judge seam continuity, whether timer finally feels recessed and molded into bar, and whether the approved positioning is still intact. Continue only after their feedback. Older v0.87.2/v0.87.1 checkpoints below are archival.
+
+---
+
 ## CURRENT RESUME CHECKPOINT (v0.87.2 supersedes older instructions)
 
 - **Current Testing:** v0.87.2, Android build 125, source `main`; PR #46 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/46 merged and full validation passed. Signed APK released https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.2. Testing in-app updater manifest verified, signing identity unchanged.
