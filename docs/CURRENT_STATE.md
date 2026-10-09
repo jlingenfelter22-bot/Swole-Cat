@@ -1,5 +1,34 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-09 · Testing v0.87.3 Rest-Notch Seam Polish
+
+**Latest signed Testing:** v0.87.3, Android versionCode **126**, signed APK and updater manifest published and verified.
+- PR #47: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/47, squash merged into `main` at `f90008226c4e9db3bc14f0f86ed477cf207da4e1`.
+- Full PR validation PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37966245495.
+- Main validation PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37966558650.
+- Signed Android build, signature verification and Testing channel publication PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37966558602.
+- Versioned release and signed APK: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.3.
+- `updates/testing.json`: schema 1, enabled Testing, version `0.87.3`, build `126`, package `com.jlingenfelter.swolecat.testing`, APK SHA-256 `97274f6a1a1d27b1161035aaef5f68c9e25f0906b78106374cb7e4a3f0b6a340`, permanent Testing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta untouched:** v0.73.1 branch `beta` SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`; do not promote without explicit owner approval.
+
+### Why v0.87.3 shipped
+
+Owner approved v0.87.2 passive notch **size, location and behavior** after Android screenshot, but said the timer still appeared like a sticker: floating hooked side shoulders and a visible straight nav top rail behind it. They explicitly requested a highly polished visual blend, not another movement/resizing or any new training behavior.
+
+### Implemented visual-only changes
+
+- **No changes** to passive dimensions (~154px x 35px), recess position, collision avoidance, user-controlled expansion, countdown, time adjustments, workout viewport, keyboard handling or logging. No changes to training prescriptions, progress, data, cloud, signing.
+- The navigation gets a temporary `rest-notch-integrated` CSS class only while the passive timer is visible and not obstructed, expanded, or hidden by keyboard. Its top border and highlight are interrupted cleanly at the 154px notch plus two 15px angled shoulder transitions. When timer stops, expands or is hidden, full normal nav rail returns.
+- The timer's outlined sticker border and separate heavy neon glow were softened to match nav top ink and surface gradients; side hooks became short *angular* bevels that end exactly at the nav top and do not curl into the housing. These changes are in the final `v0.87.3 // CONTINUOUS REST NOTCH SEAM` block of `src/styles/03-polish.css`.
+- The `scripts/rest-tray-stress.mjs` regression now tests notch/nav seam state on rest, expansion, collision, recovery, keyboard hide and stop, along with CSS contract that preserves exact v0.87.2 dimensions and working controls. All historical regression tests passed.
+
+### Immediate next action
+
+User updates Swole Cat Testing to v0.87.3 through Settings > App & Updates. Inspect resting timer in the exact comfortable workout viewport: whether the upper bar and notch now look like a single piece, without detached curved hooks or overbright sticker edges; check the expanded state, and confirm nav, keyboard, and Complete Set remain untouched. Await real-device screenshot/feedback before declaring aesthetic acceptance or building another pass.
+
+Older milestones below are historical, this is authoritative Testing baseline.
+
+
 ## Latest milestone: 2026-10-09 · Testing v0.87.2 Recessed Rest Notch
 
 **Latest signed Testing:** v0.87.2 / Android versionCode **125**, APK published and updater feed verified.
