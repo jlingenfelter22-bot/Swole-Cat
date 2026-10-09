@@ -1,5 +1,35 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-09 · Testing v0.87.4 Unified Rest Dock Housing
+
+**Signed Testing now:** v0.87.4, Android versionCode 127. Source merged into `main`. Signed APK release, permanent Testing identity and in-app update feed verified.
+- PR #48: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/48, squash merge commit `551ce9802eb48d6e98810a4455ec97eb89072c57`.
+- PR full regression PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37969150495.
+- Main full regression PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37969468006.
+- Signed Android Testing build, signature check and update publication PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37969467800.
+- Release: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.4
+- `updates/testing.json`: v0.87.4 / build 127, package `com.jlingenfelter.swolecat.testing`, APK SHA-256 `d12da094a1ecc7149bd6288c8323b36e382ae05d484b6f4ec9ce6ef383983431`, permanent Testing signing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta unchanged:** branch `beta` at `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, v0.73.1. Never promote without explicit owner permission.
+
+### Reason for v0.87.4
+
+Owner evaluated v0.87.3 on an actual Android screenshot. Timer size, location, behavior and Complete Set clearance remained approved, but the panel's **construction still looked clunky**: separate angled wings, timer/nav outlines not actually sharing a silhouette, and a dark rectangular panel base visible over the navigation. Owner approved a *structural visual* fix rather than more glow or decoration.
+
+### Implemented visual architecture
+
+- The existing semantic five-tab `<nav>` now owns a **single responsive SVG housing** (`#restNavHousing` with a single continuous contour path and matching fill path). This shared shape follows the full top rail, smoothly rises around the centered countdown notch, and returns to the rail. Nav width, original notch width and existing recess are measured by `syncRestDockHousing()`, invoked through current rest seam synchronization/resize/scroll handling.
+- The collapsed `#restTimer` keeps **exactly the v0.87.2/3 footprint**, width ~154px, min-height ~35px, unchanged bottom offset/recess, countdown text and single expand affordance. Its own opaque background, competing top/side borders, pseudo-element wings, and panel shadows are now suppressed only in collapsed state so the timer appears inside the one nav shell instead of pasted atop it.
+- The original nav top highlight is suppressed while the one-piece housing is visible; default nav styling returns if timer is stopped, expanded, hidden for keyboard, or temporarily obscured by Complete Set collision avoidance. The new path remains decorative, noninteractive and aria-hidden. All nav tab actions stay unchanged.
+- Expanded `−30`, `+30`, `Skip`, timer math, keyboard hiding, Smart Workout Focus, data/progression, and rest-target prescriptions unchanged.
+- `scripts/rest-tray-stress.mjs` extended for single-contour geometry, zero legacy wing visibility, transparency of collapsed panel, nav state cleanup and accessibility. Full PR/main suite green.
+
+### Next acceptance
+
+User installs Testing v0.87.4 through Settings > App & Updates and sends a real-phone screenshot from the natural workout position. Evaluate whether nav/timer now share one surface and stroke, without stray wings/rectangle, and confirm Complete Set, timer expansion, keyboard and five nav tabs still behave correctly. No claim of visual perfection until that actual Android review. Await feedback before making further cosmetic changes.
+
+Earlier sections below are historical, superseded by this Testing checkpoint.
+
+
 ## Latest milestone: 2026-10-09 · Testing v0.87.3 Rest-Notch Seam Polish
 
 **Latest signed Testing:** v0.87.3, Android versionCode **126**, signed APK and updater manifest published and verified.
