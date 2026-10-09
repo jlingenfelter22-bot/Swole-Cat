@@ -1296,7 +1296,10 @@ function focusWorkoutViewportAfterAdvance(){
  const restTray=document.querySelector('#restTimer.resttimer.show');
  const restVisible=restTray&&!document.documentElement.classList.contains('workout-keyboard-active')&&
   !document.documentElement.classList.contains('keyboard-open');
- const trayHeight=restVisible?Math.max(0,Number(restTray.offsetHeight)||0):0;
+ // Passive rest is recessed into the nav housing. It must never push the
+ // Complete Set button upward. Only an intentionally expanded tray reserves room.
+ const expandedRest=restVisible&&restTray.classList.contains('expanded');
+ const trayHeight=expandedRest?Math.max(0,Number(restTray.offsetHeight)||0):0;
  const visibleBottom=Math.min((Number(viewport?.offsetTop)||0)+(Number(viewport?.height)||window.innerHeight),
    dockTop>0?dockTop-trayHeight:Infinity)-12;
  // Keep the sticky exercise header, target, fields, and primary action together.
@@ -1774,17 +1777,50 @@ let restInterval=null,restLeft=0;
 function workoutHasRemainingProgrammedWork(w=state.activeWorkout){
  return !!w?.exercises?.some(e=>!e.skipped&&(e.sets||[]).some(s=>!s.done));
 }
+let restNotchClearanceFrame=0;
+function syncRestNotchClearance(){
+ const box=document.getElementById('restTimer'),nav=document.querySelector('nav');
+ if(!box||!nav)return;
+ if(!box.classList.contains('show')||box.classList.contains('expanded')){
+  box.classList.remove('rest-notch-obstructed');return;
+ }
+ const navRect=nav.getBoundingClientRect();
+ const centerGlyph=nav.querySelector('[data-go="exercises"] .nav-glyph');
+ const glyphTop=Number(centerGlyph?.getBoundingClientRect().top);
+ // The resting notch may enter only the empty strip above the nav icons.
+ const maxRecess=Number.isFinite(glyphTop)?Math.max(0,glyphTop-navRect.top-5):16;
+ const height=Math.max(30,Number(box.offsetHeight)||34);
+ let recess=Math.min(17,maxRecess);
+ const action=document.querySelector('#workout .focus-set-card .complete-set, #workout .focus-workout-complete button');
+ const actionRect=action?.getBoundingClientRect();
+ if(actionRect&&actionRect.bottom>0&&actionRect.top<navRect.top+maxRecess){
+  // Follow the natural user scroll position, not the other way around.
+  const available=Math.max(0,navRect.top-actionRect.bottom-6);
+  recess=Math.max(recess,height-available);
+ }
+ const obstructed=recess>maxRecess+0.5;
+ box.classList.toggle('rest-notch-obstructed',obstructed);
+ box.style.setProperty('--rest-notch-recess',Math.round(Math.min(recess,maxRecess))+'px');
+}
+function queueRestNotchClearance(){
+ if(restNotchClearanceFrame)return;
+ restNotchClearanceFrame=requestAnimationFrame(()=>{
+  restNotchClearanceFrame=0;
+  syncRestTimerDock();
+  syncRestNotchClearance();
+ });
+}
 function syncRestTimerDock(){
  const nav=document.querySelector('nav');if(!nav)return;
  const root=document.documentElement,rect=nav.getBoundingClientRect();
- // Use the visible nav shell instead of assuming an Android safe-area offset.
  root.style.setProperty('--rest-nav-height',Math.max(58,Math.round(rect.height||0))+'px');
  root.style.setProperty('--rest-nav-offset',Math.max(0,Math.round(window.innerHeight-rect.top))+'px');
  root.style.setProperty('--rest-nav-center',Math.round(rect.left+rect.width/2)+'px');
  root.style.setProperty('--rest-nav-width',Math.round(rect.width)+'px');
 }
-window.addEventListener('resize',syncRestTimerDock,{passive:true});
-window.visualViewport?.addEventListener('resize',syncRestTimerDock,{passive:true});
+window.addEventListener('resize',queueRestNotchClearance,{passive:true});
+window.visualViewport?.addEventListener('resize',queueRestNotchClearance,{passive:true});
+window.addEventListener('scroll',queueRestNotchClearance,{passive:true});
 function paintRestTimer(){
  const box=document.getElementById('restTimer'),txt=document.getElementById('restTimerText');
  const m=Math.floor(restLeft/60),s=String(Math.max(0,restLeft%60)).padStart(2,'0'),time=`${m}:${s}`;
@@ -1804,9 +1840,12 @@ function syncRestTrayControls(){
 function toggleRestTimerExpanded(){
  const box=document.getElementById('restTimer');if(!box?.classList.contains('show'))return;
  box.classList.toggle('expanded');
+ box.classList.remove('rest-notch-obstructed');
  syncRestTrayControls();
- // Expanding the tray must not cover Complete Set on short Android viewports.
- if(box.classList.contains('expanded'))requestAnimationFrame(focusWorkoutViewportAfterAdvance);
+ if(box.classList.contains('expanded')){
+  // User explicitly opened the larger tray: protect the primary workout action.
+  requestAnimationFrame(()=>requestAnimationFrame(focusWorkoutViewportAfterAdvance));
+ }else queueRestNotchClearance();
 }
 function startRestTimer(seconds){
  stopRestTimer();
@@ -1814,13 +1853,15 @@ function startRestTimer(seconds){
  restLeft=Math.max(0,Number(seconds)||120);
  syncRestTimerDock();
  const box=document.getElementById('restTimer');
- box?.classList.remove('expanded');box?.classList.add('show');syncRestTrayControls();paintRestTimer();
+ box?.classList.remove('expanded','rest-notch-obstructed');
+ box?.classList.add('show');syncRestTrayControls();paintRestTimer();
+ queueRestNotchClearance();
  restInterval=setInterval(()=>{restLeft--;paintRestTimer();if(restLeft<=0){stopRestTimer();haptic([120,80,120]);}},1000);
 }
 function adjustRestTimer(delta){restLeft=Math.max(0,restLeft+delta);paintRestTimer();if(restLeft===0)stopRestTimer();}
 function stopRestTimer(){
  if(restInterval)clearInterval(restInterval);restInterval=null;restLeft=0;
- const box=document.getElementById('restTimer');box?.classList.remove('show','expanded');
+ const box=document.getElementById('restTimer');box?.classList.remove('show','expanded','rest-notch-obstructed');
  syncRestTrayControls();
 }
 function cancelWorkout(){confirmAction('Cancel active workout?','This deletes the autosaved active workout draft. Completed workout history is not affected.',()=>{stopRestTimer();stopWorkoutHoldTimer(false);state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();go('home',{resetHistory:true});showToast('Active workout cancelled');});}
