@@ -1,5 +1,29 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-09 · Testing v0.87.1 Compact Cyber Rest Timer
+
+**Latest signed Swole Cat Testing:** v0.87.1 / Android versionCode 124, published and verified on the Testing channel.
+- Owner-approved micro-pass after a real Android v0.87.0 screenshot showed the integrated rest timer remained too large and visually flat. User requested a significantly smaller resting state, sharper cyberpunk identity within current theme, and adjustments only after tapping to expand.
+- PR #45: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/45 (merged at `8a95982ed79aec6cfb27a53433bd0588d9832565`).
+- PR full validation PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37949119980; main full validation PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37949452767.
+- Signed Android workflow PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37949452821.
+- Published release: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.1.
+- `updates/testing.json`: version `0.87.1`, versionCode `124`, package `com.jlingenfelter.swolecat.testing`, APK SHA-256 `2e2f592616792b8f5ab282810f42b18e73e044e64754b5ac0e95e43691d12ac9`, persistent Testing signing SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta untouched**: `beta` SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3` (v0.73.1). Do not promote without explicit owner instruction.
+
+### Changes shipped in v0.87.1
+
+- Resting state now ~188px wide and ~44px tall (172px variant for narrow devices). Only REST label, dynamic countdown, expand caret. Full-width tray and collapsed quick `+30` removed.
+- Expanding creates an ~282px command pod (252px narrow) with existing `−30`, `+30`, `Skip`. Countdown math and logged set behavior unchanged.
+- Dark nav-matched panel now includes asymmetric angular top corners, etched microtexture, subtle layered shadow/inner depth, violet-to-cyan luminous trim and a small status light. The short curved shoulder seams remain visually connected to the nav, but timer stays separate from the five semantic navigation tabs.
+- Preserves compact/expanded accessibility, keyboard concealment, reduced-motion alternative, nav geometry alignment and Smart Workout Focus/Complete Set clearance.
+- `scripts/rest-tray-stress.mjs` now tests collapsed-only countdown and expanded time controls, size/style guards and no regression. Superseded assertions in `scripts/beta-first-user-clarity-stress.mjs` and `scripts/focus-mode-qol-stress.mjs` updated to new owner-approved design. Entire suite and Android signing checks passed.
+
+### Immediate next task
+
+Owner updates **Swole Cat Testing** to 0.87.1 via Settings > App & Updates, evaluates real-phone visual size, sharp styling, closed countdown and expanded actions, and confirms no interference with workout Complete Set, nav tabs or number keyboard. Await screenshot/walkthrough and owner feedback before another change. Earlier headings below are historical and superseded.
+
+
 ## Latest milestone: 2026-10-08 · Testing v0.87.0 Rest Timer Navigation Tray
 
 **Latest signed Swole Cat Testing:** v0.87.0, Android build 123, published and verified in the Testing in-app updater feed.
