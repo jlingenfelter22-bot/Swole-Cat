@@ -87,10 +87,12 @@ const timer=w.document.getElementById('restTimer');
 assert(timer.classList.contains('show'),'rest timer should appear while work remains');
 const dockHeight=w.document.documentElement.style.getPropertyValue('--rest-nav-height');
 assert(dockHeight&&parseFloat(dockHeight)>=58,'rest timer should measure and dock to the real bottom-nav height');
-assert.match(html,/bottom:calc\(var\(--rest-nav-height,68px\) - 1px\)/i,'rest timer should be visually anchored to the nav edge');
-assert(timer.querySelector('.rest-quick-add'),'docked timer should preserve one-tap +30');
+assert.match(html,/bottom:calc\(var\(--rest-nav-offset,82px\) - 1px\)/i,'timer should dock to the measured nav top');
+assert.equal(timer.querySelector('.rest-quick-add'),null,'compact resting timer should show countdown only');
 w.toggleRestTimerExpanded();
 assert(timer.classList.contains('expanded'),'docked timer should still expand to full controls');
+assert([...timer.querySelectorAll('.rest-actions button')].some(b=>b.textContent.trim()==='+30'),
+ 'expanded timer should offer the existing +30 control');
 w.toggleRestTimerExpanded();
 assert(!timer.classList.contains('expanded'),'timer controls should collapse back into the dock');
 w.stopRestTimer();
