@@ -1,5 +1,34 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-09 · Testing v0.87.7 Filled Action Pocket
+
+**Latest signed Testing:** v0.87.7 / Android build **130**, published and verified in the Testing updater.
+- Implementation PR #51: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/51; squash merged into `main` at `a92b621c7536169b83bce037907018929dcb7490`.
+- Full PR validation PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37993571101; main validation PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37993817592.
+- Signed Android build, certificate verification and release publication PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37993817611.
+- Release: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.7.
+- `updates/testing.json`: version `0.87.7`, versionCode `130`, package `com.jlingenfelter.swolecat.testing`; APK SHA-256 `7a52c0f6cf5a6e44b1dd4d7bd752caec380102886b749b6b8b3a5899b32e5622`; unchanged permanent Testing signing SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta still untouched:** v0.73.1, `beta` SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. Require explicit owner approval for any promotion.
+
+### Why the micro-pass shipped
+
+User shared a real Android v0.87.6 screenshot in expanded timer state. The *entire full-width rail lifting rigidly without changing contour* was finally correct, but the area beneath was visibly transparent with the workout showing through; three buttons were overly chunky and forced more vertical lift than necessary. Owner asked for a properly filled dark hidden action pocket, smaller visually crisp clickable buttons, and a slightly shorter upward movement. Preserve the agreed idle stealth notch, fixed contour, exact same full-width rail movement, separate stationary nav tabs, no forced workout scroll when expanded.
+
+### v0.87.7 implementation
+
+- Added `#restDockPocket`, an aria-hidden and pointer-events-none **nav-owned full-width opaque backing** under the lifted rail. Its dark, theme-matched fill is solid hex (not transparency). It grows from the nav top using `scaleY` with the identical easing and duration as rail lift, covering the formerly see-through area in expanded mode. Hidden/retracted at idle.
+- Removed the old negative-z-index `#restTimer.expanded::before` backing responsible for the apparently hollow/transparent rectangle. Maintained one unchanged SVG crest silhouette in both states, with an opaque fill while lifted.
+- Shortened lift from `62px` to **57px**, action shelf from `59px` to **53px**. Three action buttons keep **42px real hit targets**, while their crisply beveled *visible faces* are **34px tall** inset within those targets. Smaller labels/gaps, same −30/+30/Skip action semantics.
+- Rest countdown, collapsed width/height and nav-relative position, full-width rigid motion, keyboard avoidance, reduced-motion fallback, focus/scroll behavior, workout data/progression and Beta unchanged.
+- `scripts/rest-tray-stress.mjs` checks opaque pocket semantics, fill, reveal from nav, 57px shared lift, compact 34px visible faces /42px targets, preserved SVG path and interactions. Full test suite passed.
+- **Actual Android appearance pending:** tests do not guarantee aesthetically correct fill or alignment. Wait for owner's real-phone screenshot/video.
+
+### Immediate next step
+
+Install Testing v0.87.7 with Settings > App & Updates. Expand during a workout, confirm no workout content shows through the newly solid rail pocket, buttons are tighter and contained, full rail still rises rigidly, and collapse restores approved stealth idle appearance. Check −30/+30/Skip, nav tabs, keyboard and no unexpected scroll. Wait for feedback before another polish pass.
+
+Older milestone sections below are historical.
+
 ## Latest milestone: 2026-10-09 · Testing v0.87.6 Whole-Rail Lift
 
 **Latest signed Swole Cat Testing:** v0.87.6, Android build **129**, released through permanent Testing signing and updater feed.
