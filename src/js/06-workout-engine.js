@@ -1283,7 +1283,25 @@ function applyWorkoutMotionCues(){
    setTimeout(()=>{pill?.classList.remove('set-advance-pulse');card?.classList.remove('set-advance-settle')},520);
  }
 }
+let workoutViewportFocusQueued=false;
+function queueWorkoutViewportFocus(){workoutViewportFocusQueued=true;}
+function focusWorkoutViewportAfterAdvance(){
+ if(!state.activeWorkout||document.activeElement?.matches?.('#workout .focus-set-card input.direct-number'))return;
+ const shell=document.querySelector('#workout .focus-exercise-nav-shell');
+ const action=document.querySelector('#workout .focus-workout-complete button, #workout .focus-set-card .complete-set');
+ if(!shell||!action)return;
+ const viewport=window.visualViewport,header=document.querySelector('header'),dock=document.querySelector('nav');
+ const visibleTop=Math.max(0,Number(viewport?.offsetTop)||0,Number(header?.getBoundingClientRect().bottom)||0)+8;
+ const dockTop=Number(dock?.getBoundingClientRect().top);
+ const visibleBottom=Math.min((Number(viewport?.offsetTop)||0)+(Number(viewport?.height)||window.innerHeight),
+   dockTop>0?dockTop:Infinity)-12;
+ // Keep the sticky exercise header, target, fields, and primary action together.
+ // Do not jump on ordinary input changes or take away manual overview scrolling.
+ const delta=Math.max(0,shell.getBoundingClientRect().top-visibleTop,action.getBoundingClientRect().bottom-visibleBottom);
+ if(delta>5)window.scrollTo({top:Math.max(0,window.scrollY+Math.ceil(delta)),behavior:workoutReducedMotion()?'auto':'smooth'});
+}
 function renderWorkoutExerciseTransition(fromEi,toEi){
+ if(workoutCounts().done>0)queueWorkoutViewportFocus();
  if(fromEi===toEi||workoutReducedMotion()){renderWorkout();return}
  const direction=toEi>fromEi?'forward':'back';
  if(typeof document.startViewTransition==='function'){
@@ -1336,8 +1354,10 @@ function nextWorkoutExerciseIndex(from,w){
  }
  return -1;
 }
-function workoutExerciseNavigatorHtml(w,ei){
+function workoutExerciseNavigatorHtml(w,ei,workoutCoach=null,counts=null){
  const e=w.exercises[ei],ex=exById(e.exerciseId),p=exerciseSetProgress(e);
+ counts=counts||workoutCounts();
+ const percent=counts.total?Math.round(counts.done/counts.total*100):0;
  const rows=w.exercises.map(function(row,i){
    const rx=exById(row.exerciseId),status=workoutExerciseFocusStatus(w,row,i),rp=exerciseSetProgress(row);
    return '<button class="focus-nav-row '+status.cls+' '+(i===ei?'selected':'')+'" onclick="event.preventDefault();event.stopPropagation();selectWorkoutExercise('+i+')" '+(row.skipped?'disabled':'')+'>'+
@@ -1349,13 +1369,24 @@ function workoutExerciseNavigatorHtml(w,ei){
    '<span class="focus-nav-add-icon">＋</span><span class="focus-nav-copy"><b>Add exercise</b><small>Add another movement to today\'s workout</small></span><span class="focus-nav-go">›</span></button>';
  return '<div class="focus-exercise-nav-shell">'+
    '<details class="focus-exercise-nav"><summary>'+
-   '<div class="focus-exercise-position">EXERCISE '+(ei+1)+' OF '+w.exercises.length+'</div>'+
+   '<div class="focus-exercise-kicker-row"><div class="focus-exercise-position">EXERCISE '+(ei+1)+' OF '+w.exercises.length+'</div>'+
+   '<div class="focus-session-mini-tools"><span class="focus-session-mini-count">'+counts.done+'/'+counts.total+' sets</span>'+
+   (workoutCoach?'<button type="button" class="focus-session-note-link" onclick="event.preventDefault();event.stopPropagation();openFocusedSessionCoachNote()" aria-label="Read Coach session note">Session note</button>':'')+'</div></div>'+
    '<div class="focus-exercise-title-line"><span class="focus-exercise-name">'+esc(ex&&ex.name||'Exercise')+'</span>'+
    '<button type="button" class="focus-howto-inline" onclick="event.preventDefault();event.stopPropagation();openFocusedExerciseHowTo('+ei+')" aria-label="How to do '+esc(ex&&ex.name||'this exercise')+'" title="How to"><span aria-hidden="true">i</span></button></div>'+
    '<div class="focus-exercise-bottom-row"><div class="focus-exercise-meta">'+esc(p.complete?'Complete':workoutActiveSetText(e))+' · '+esc(ex&&ex.muscle||'')+' · '+workingSetIndexes(e).length+' working sets</div>'+
    '<span class="focus-nav-switch" aria-hidden="true">Switch exercise</span></div>'+
+   '<div class="focus-exercise-overall-progress" role="progressbar" aria-label="Overall workout progress" aria-valuemin="0" aria-valuemax="'+counts.total+'" aria-valuenow="'+counts.done+'"><span style="width:'+percent+'%"></span></div>'+
    '</summary><div class="focus-nav-list">'+rows+addRow+'</div></details>'+
    '</div>';
+}
+function openFocusedSessionCoachNote(){
+ const note=workoutCoachSignal();
+ if(!state.activeWorkout||!note)return;
+ openModal('Coach session note',
+  '<div class="coachbox '+esc(note.level)+'"><div class="coach-text">'+esc(note.text)+'</div>'+
+  (note.level==='reset'?'<div class="actions"><button class="btn small secondary" onclick="closeModal();applyLightSession()">Use a 7.5% lighter session</button></div>':'')+
+  '</div><div class="actions" style="margin-top:16px"><button class="btn" onclick="closeModal()">Back to workout</button></div>');
 }
 function openFocusedExerciseHowTo(ei){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],ex=e?exById(e.exerciseId):null;if(!w||!e||!ex)return;
@@ -1553,10 +1584,10 @@ function focusedSetCardHtml(e,ei,si,ex,prev){
   (edit?'<button class="complete-set update-set" onclick="commitWorkoutSetEdit()">Update Set</button>':'<button class="complete-set '+(base.done?'done':'')+'" onclick="'+(base.done?('beginWorkoutSetEdit('+ei+','+si+')'):('toggleSet('+ei+','+si+')'))+'">'+(base.done?'Edit Set':'Complete Set')+'</button>')+
   (!edit&&base.pr?'<div class="pr-banner"><span class="inline-pr-mark">PR</span> '+esc(base.pr)+'</div>':'')+'</div>';
 }
-function focusedExerciseCanvasHtml(w,ei){
+function focusedExerciseCanvasHtml(w,ei,workoutCoach=null,counts=null){
  const e=w.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),si=workoutFocusedSetIndex(w),prog=exerciseSetProgress(e),superset=supersetMeta(ei);
  const next=nextWorkoutExerciseIndex(ei,w),allDone=!workoutHasRemainingProgrammedWork(w);
- return '<div class="focus-exercise-stage" data-exercise-index="'+ei+'">'+workoutExerciseNavigatorHtml(w,ei)+
+ return '<div class="focus-exercise-stage" data-exercise-index="'+ei+'">'+workoutExerciseNavigatorHtml(w,ei,workoutCoach,counts)+
   '<div id="workoutExercise-'+ei+'" class="focus-exercise-canvas tone-'+(ei%4)+' '+(prog.complete?'complete-block':'')+'">'+
   '<div class="focus-exercise-actions"><button class="btn secondary" onclick="openWorkoutSubstitute('+ei+')">⇄ Substitute</button>'+
   '<button class="btn secondary focus-more-btn" onclick="openFocusedExerciseMore('+ei+')">More ···</button></div>'+
@@ -1629,11 +1660,15 @@ function renderWorkout(){
  if(w.programPhase==='deload')html+='<div class="workout-deload-note"><b>☾ Deload week · intentionally lighter training</b><span>Fewer working sets and controlled reps. Your normal progression targets are preserved for the next training week. You can adjust today\'s sets.</span></div>';
  if(workoutCoach)html+='<details class="focus-session-coach"><summary>Coach session note</summary><div class="coachbox '+workoutCoach.level+'"><div class="coach-text">'+esc(workoutCoach.text)+'</div>'+
   (workoutCoach.level==='reset'?'<div class="actions"><button class="btn small secondary" onclick="applyLightSession()">Use a 7.5% lighter session</button></div>':'')+'</div></details>';
- html+=focus>=0?focusedExerciseCanvasHtml(w,focus):'<div class="empty">No available exercise.</div>';
+ html+=focus>=0?focusedExerciseCanvasHtml(w,focus,workoutCoach,counts):'<div class="empty">No available exercise.</div>';
  document.getElementById('workoutArea').innerHTML=html;
  bindWorkoutKeyboardAnchor();
  applyWorkoutMotionCues();
  requestAnimationFrame(syncWorkoutStickyOffsets);
+ if(workoutViewportFocusQueued){
+  workoutViewportFocusQueued=false;
+  requestAnimationFrame(()=>requestAnimationFrame(focusWorkoutViewportAfterAdvance));
+ }
 }
 
 const firstExerciseWeightSeedTimers=new Map();
@@ -1715,6 +1750,7 @@ function toggleSet(ei,si){
  }
  set.done=!set.done;w.focusExerciseIndex=ei;
  if(set.done){
+  queueWorkoutViewportFocus();
    set.pr=isProgressionSet(set)?detectPR(e.exerciseId,set):'';
    haptic(set.pr?[35,40,70]:25);
    if(isProgressionSet(set)&&advanceSupersetAfterSet(ei,si))return;
