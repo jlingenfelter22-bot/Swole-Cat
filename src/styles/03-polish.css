@@ -2620,3 +2620,39 @@ html.workout-keyboard-active #restTimer.resttimer.show{
 #workout .focus-guidance .workout-guidance-title{font-size:.9rem}
 .recap-metrics .recap-metric span{white-space:normal;overflow-wrap:break-word;line-height:1.35}
 .recap-metrics .recap-metric b{font-variant-numeric:tabular-nums}
+
+/* v0.86: Always-visible session context in the existing sticky exercise header.
+   The progress track and mini controls do not add a new row to the set card. */
+#workout .focus-exercise-kicker-row{position:relative;min-height:0}
+#workout .focus-session-mini-tools{
+ position:absolute;right:0;top:-6px;display:flex;align-items:center;justify-content:flex-end;
+ gap:7px;max-width:66%;white-space:nowrap;
+}
+#workout .focus-session-mini-count{
+ color:#a1ccda;font-size:.61rem;font-weight:850;font-variant-numeric:tabular-nums;
+}
+#workout .focus-session-note-link{
+ min-height:25px;padding:3px 8px;border:1px solid rgba(164,122,247,.4);
+ border-radius:999px;background:rgba(126,79,197,.085);color:#d6c5ff;
+ font-size:.6rem;font-weight:820;white-space:nowrap;
+}
+#workout .focus-session-note-link:focus-visible{
+ outline:2px solid #c8b7ff;outline-offset:2px;
+}
+#workout .focus-exercise-overall-progress{
+ position:absolute;left:0;right:0;bottom:0;height:3px;overflow:hidden;
+ pointer-events:none;background:rgba(86,111,138,.35);
+ border-radius:0 0 8px 8px;
+}
+#workout .focus-exercise-overall-progress>span{
+ display:block;height:100%;background:linear-gradient(90deg,#3bcfea,#49d2a8);
+ transition:width .2s ease;
+}
+@media(max-width:350px){
+ #workout .focus-session-mini-tools{gap:4px}
+ #workout .focus-session-note-link{padding:3px 6px;font-size:.56rem}
+ #workout .focus-session-mini-count{font-size:.56rem}
+}
+@media(prefers-reduced-motion:reduce){
+ #workout .focus-exercise-overall-progress>span{transition:none}
+}
