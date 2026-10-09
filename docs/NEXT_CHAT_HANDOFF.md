@@ -4,6 +4,17 @@ Last updated: 2026-10-09
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
 
+## CURRENT RESUME CHECKPOINT (v0.87.7 supersedes older instructions)
+
+- **Latest Testing:** v0.87.7 / Android build 130, signed permanent Testing APK and in-app updater live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.7. PR #51 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/51 merged into `main` with full validations passing. Beta remains v0.73.1 (branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`), untouched.
+- **User feedback:** Real Android v0.87.6 screenshot demonstrated the correct rigid lift of the *entire* full-width rail and unchanged raised center timer bump. Expanded area beneath it was hollow/see-through, and −30/+30/Skip controls looked oversized and chunky. User wanted a solid dark pocket, tighter sharp cyber buttons, and smaller rise, **not** another rail redesign. User permits temporary Complete Set overlap when intentionally expanded and does not want forced workout scrolling.
+- **v0.87.7 solution:** Added `#restDockPocket` inside nav (decorative, fully opaque, click-through). Nav-owned backing scales from bottom to cover the whole revealed width during the rigid rail lift, exactly matching original timing and shape. Removed ineffective negative-z-index timer pseudo-backdrop. Rail lift shortened 62→57px; action shelf 59→53px; buttons keep 42px touch area but visually inset to 34px crisp beveled faces. Timer collapsed size/location, original SVG outline, stationary nav tabs, keyboard/scroll and workout logic unchanged.
+- **Checks:** PR full PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37993571101; main PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37993817592; signed Android PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37993817611. Testing package `com.jlingenfelter.swolecat.testing`, APK SHA-256 `7a52c0f6cf5a6e44b1dd4d7bd752caec380102886b749b6b8b3a5899b32e5622`; original Testing signing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Next:** user installs Testing v0.87.7, shares screenshot of expanded pocket and possibly video of movement. Focus on truly opaque action backing, slim/sharp button look, whole-rail rigidity, restored idle state and nav/keyboard usability. Await physical-device acceptance. Do not promote to Beta without explicit instruction.
+- Older checkpoint sections below are archival.
+
+---
+
 ## CURRENT RESUME CHECKPOINT (v0.87.6 supersedes older instructions)
 
 - **Latest Testing:** v0.87.6 / Android build 129, signed permanent Testing APK and in-app updater live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.6. PR #50 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/50 merged into `main` as `8fb0feb4e2e3a4b7da9fd9284589eb82649738e3`.
