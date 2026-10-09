@@ -4,6 +4,18 @@ Last updated: 2026-10-09
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
 
+## CURRENT RESUME CHECKPOINT (v0.87.2 supersedes older instructions)
+
+- **Current Testing:** v0.87.2, Android build 125, source `main`; PR #46 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/46 merged and full validation passed. Signed APK released https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.2. Testing in-app updater manifest verified, signing identity unchanged.
+- **User feedback driving this pass:** v0.87.1 rest timer was still intrusive and overlapped the lower Complete Set button at the exact desired natural workout scroll position. Owner explicitly approved trying a **recessed notch** mostly embedded into the nav visual housing, not another floating timer.
+- **v0.87.2 changes:** collapsed timer ~154px wide and ~35px high, partially recessed into the top edge of bottom nav. It remains a separate overlay/component, not a sixth nav tab. Measures top of middle nav icon to avoid obscuring it. Passive countdown never forces workout scroll; notch checks Complete Set clearance and yields when available geometry makes no-overlap impossible. Expanded controls remain −30/+30/Skip, rise only after user tap and can invoke protective scroll. Retains cyber styling, keyboard hiding, reduced motion and nav alignment.
+- **Validation:** PR regression PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37953019259, main PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37953366178; signed APK workflow PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37953366078. Published Testing APK SHA-256 `8ce83daa5e60b63ae91bf4e7e1cb6181922c656c8d0daec6e095c5f51b2603c0`, persistent Testing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta:** v0.73.1 branch at SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, untouched. Owner must separately approve any Beta update.
+- **Next task:** owner updates Testing APK via Settings > App & Updates, screenshots passive timer with Complete Set in natural workout position, taps to expand, verifies buttons/keyboard/nav tab hitboxes. Await honest real-phone visual feedback. Do not claim final aesthetic acceptance from tests.
+- Older checkpoint headings below are archival.
+
+---
+
 ## CURRENT RESUME CHECKPOINT (v0.87.1 supersedes older instructions)
 
 - **Current Testing:** v0.87.1 / Android build 124, `main`. PR #45 merged, full validation passed; signed APK released: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.1. Testing updater `updates/testing.json` verified for v0.87.1, code 124.
