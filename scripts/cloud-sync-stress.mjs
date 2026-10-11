@@ -357,4 +357,71 @@ assert(!backend.records.has(recordKey('sync-user-1','routine','never-synced')),'
 
 a.dom.window.close();
 b.dom.window.close();
-console.log('Swole Cat v0.69.0 record-level multi-device sync PASS');
+
+// An established local account must never cross-upload history to another
+// Google identity merely because the user signs out and signs in differently.
+backend.devices.clear();
+backend.records.clear();
+backend.seq=0;
+const accountState=baseState('Account A training');
+accountState.sessions=[{id:'private-session-a',date:'2026-10-10T10:00:00.000Z',routineName:'Private A',exercises:[]}];
+const accountApp=await makeApp(accountState);
+await accountApp.sync.registerProvider(backendProvider());
+await accountApp.sync.syncNow();
+assert(backend.records.has(recordKey('sync-user-1','session','private-session-a')),
+  'initial cloud owner receives its own completed workout');
+await accountApp.identity.signOut();
+const secondIdentityProvider={
+ async restoreSession(){return {user:{id:'sync-user-2',email:'other@example.com',provider:'google'}};},
+ async signInWithGoogle(){return {user:{id:'sync-user-2',email:'other@example.com',provider:'google'}};},
+ async reauthenticateWithGoogle(){return {redirecting:true};},
+ async deleteAccount(){return {ok:true};},
+ async signOut(){return {ok:true};}
+};
+await accountApp.identity.registerProvider(secondIdentityProvider);
+assert.equal(accountApp.identity.snapshot().user.id,'sync-user-2');
+assert.equal(accountApp.sync.canUse(),false,'foreign owner must be blocked until local data is safely separated');
+assert.match(accountApp.w.cloudSyncSettingsHtml(),/Sync stopped to keep cloud accounts separate/,
+ 'settings must clearly explain blocked account switching');
+const accountLocalBefore=accountApp.w.localStorage.getItem('overload_v3');
+await assert.rejects(()=>accountApp.sync.syncNow(),/different cloud account/i,
+ 'a different cloud account must not accept another account local data');
+await accountApp.sync.captureLocalChanges();
+assert.equal(accountApp.w.localStorage.getItem('overload_v3'),accountLocalBefore,
+ 'blocked sync must not rewrite local history');
+assert(![...backend.records.values()].some(row=>row.owner_id==='sync-user-2'),
+ 'foreign account cannot receive workouts, routines, or settings from previous account');
+
+// Erase data AFTER signing in to B. The erased device remains fresh and pauses
+// automatic repopulation, while explicit Sync Now can safely adopt B.
+accountApp.sync.resetLocalMetadata();
+accountApp.w.eval('state=freshState();save()');
+let isolated=JSON.parse(accountApp.w.localStorage.getItem('swolecat-sync-local-v1'));
+assert.equal(isolated.ownerId,'sync-user-2','erase adopts the currently signed-in identity, never the old owner');
+assert.equal(isolated.pausedAfterErase,true,'erase must pause automatic cloud download and upload');
+accountApp.sync.scheduleAuto('erase-test',5,true);
+await wait(70);
+assert.equal(isolated.pausedAfterErase,true,'automatic timer cannot silently restore an erased account');
+assert(![...backend.records.values()].some(row=>row.owner_id==='sync-user-2'),
+ 'automatic sync after erase must do no cloud writes');
+assert.equal(JSON.parse(accountApp.w.localStorage.getItem('overload_v3')).sessions.length,0,
+ 'erased local history stays empty until explicit restore or sync');
+await accountApp.sync.syncNow();
+isolated=JSON.parse(accountApp.w.localStorage.getItem('swolecat-sync-local-v1'));
+assert.equal(isolated.pausedAfterErase,false,'only intentional manual sync unpauses');
+assert(!backend.records.has(recordKey('sync-user-2','session','private-session-a')),
+ 'manual sync after reset still cannot upload old account workout');
+
+// An unexpected analytics calculation must show a useful state instead of
+// replacing the entire Progress area with a blank screen.
+accountApp.w.eval("renderAnalyticsContent=()=>{throw new Error('Synthetic analytics mismatch')}");
+accountApp.w.renderAnalytics();
+const visible=accountApp.w.document.getElementById('analyticsArea').textContent;
+assert.match(visible,/Progress could not display/);
+assert.match(visible,/Synthetic analytics mismatch/);
+assert.match(visible,/Export safety backup/);
+assert.equal(accountApp.w.localStorage.getItem('overload_v3')!==null,true,
+ 'analytics fallback must never erase local workout data');
+accountApp.dom.window.close();
+
+console.log('Swole Cat v0.87.8 cross-account isolation, erase pause, Progress fallback PASS');
