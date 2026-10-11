@@ -412,6 +412,15 @@ assert.equal(isolated.pausedAfterErase,false,'only intentional manual sync unpau
 assert(!backend.records.has(recordKey('sync-user-2','session','private-session-a')),
  'manual sync after reset still cannot upload old account workout');
 
+// Assisted/bodyweight movements legitimately have no external-load Coach
+// signal. They still need to render the complete Progress dashboard.
+const assistanceExercise=accountApp.w.allExercises().find(ex=>ex.loadType==='assistance'||/assisted pull.?up/i.test(ex.name));
+assert(assistanceExercise,'the movement library should include an assisted exercise');
+accountApp.w.eval('state.sessions=[{id:"progress-assistance-fixture",date:new Date().toISOString(),routineName:"Training",exercises:[{exerciseId:'+JSON.stringify(assistanceExercise.id)+',sets:[{done:true,type:"working",weight:15,reps:12}]}]}];save()');
+accountApp.w.renderAnalytics();
+assert.match(accountApp.w.document.getElementById('analyticsArea').textContent,/Progress at a glance/,
+ 'assistance movements must show normal Progress, not a blank screen or recovery fallback');
+
 // An unexpected analytics calculation must show a useful state instead of
 // replacing the entire Progress area with a blank screen.
 accountApp.w.eval("renderAnalyticsContent=()=>{throw new Error('Synthetic analytics mismatch')}");
