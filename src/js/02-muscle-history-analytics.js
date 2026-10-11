@@ -949,7 +949,7 @@ function renderAnalyticsContent(host){
  const coachInsights=used.map(id=>{
    const r=state.routines.flatMap(x=>x.exercises).find(e=>e.exerciseId===id)||{trainingGoal:'general',resetPercent:7.5,increment:state.settings.defaultIncrement,minReps:state.settings.defaultMin,maxReps:state.settings.defaultMax,sets:state.settings.defaultSets};
    return {id,ex:exById(id),signal:coachSignal(id,r)};
- }).filter(x=>x.signal.stalled||x.signal.level==='good').slice(0,8);
+ }).filter(x=>x.signal&&(x.signal.stalled||x.signal.level==='good')).slice(0,8);
 
  host.innerHTML=`
  <div class="progress-hero telemetry-hero progress-snapshot-hero">
