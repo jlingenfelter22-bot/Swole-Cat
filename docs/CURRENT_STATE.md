@@ -1,5 +1,44 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-11 · Testing v0.87.9 Account Isolation and Progress Recovery
+
+**Current signed Testing:** v0.87.9, Android build **132**, signed by the permanent Testing key; in-app updater verified.
+- PR #53: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/53, merged into `main` as `90830ab11deb78e5cd1ada3d273b554f9a49a071`.
+- PR full validation PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38161922914; main validation PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38162099922.
+- Signed Android APK publication PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38162099916.
+- Published release: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.9.
+- Updater manifest version `0.87.9`, versionCode `132`, package `com.jlingenfelter.swolecat.testing`, APK SHA-256 `c1e0119ab329abb377b6cff28a7307687e06a848f7dcc2b7e0c166de6c737d89`, permanent Testing signing cert SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta untouched** at `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, v0.73.1. Do not promote without explicit user permission.
+
+### Critical real-device incident
+
+After using the Testing APK with a secondary Google account, user cleared local data, signed out, signed in to their main Google account, and synced. They then saw testing histories merged into the everyday account, and the Progress page rendered only its fixed header with no analytics cards.
+
+**Confirmed root causes:**
+1. `syncEnsureOwner()` previously reset only sync metadata on an owner change, not the device's local workout state; this allowed A's local sessions/routines to be uploaded to B on automatic sync. Furthermore, Erase All Local Data reset metadata, but the signed-in old account could immediately auto-sync and repopulate local state before signout.
+2. `renderAnalytics()` included every used exercise in `coachInsights` but assumed `coachSignal()` always returned an object. For bodyweight and assistance loads it intentionally returns null; the subsequent `x.signal.stalled` dereference crashed the entire analytics function. This can reproduce the blank Progress page and is distinct from account mixing.
+
+**Read-only cloud audit:** Supabase project has 3 owner IDs with synced records, 82 currently live session rows across those owners and **38 distinct session IDs represented under multiple owners**. Counts don't establish which copies should be kept or who owns each original session. All session payloads inspected structurally had array exercises and valid string date fields. There are six recorded cloud backup metadata entries. No remote record, backup, auth account, or SQL table was modified, deleted or restored.
+
+### v0.87.9 safeguards
+
+- Rejects cross-owner sync when the device contains nonfresh data still associated with another sync owner. This is fail-closed, and the cloud settings view shows a clear backup-first warning. Local workouts are preserved; this is a guard, **not yet true per-account local data partitioning**.
+- After explicit local erase, automatic cloud sync is paused until user chooses Sync Now (or a genuinely fresh local state adopts a different owner). This prevents immediate silent re-download from the old account.
+- In-flight pull/push operations recheck that the signed-in owner has not changed, before they apply local/remote mutations.
+- Progress now filters out null Coach signals for assisted/bodyweight movements. Additional non-destructive catch displays a useful recovery panel, the locally held session count, error message and Export safety backup action rather than rendering blank.
+- `scripts/cloud-sync-stress.mjs` now simulates two distinct cloud accounts and confirms no unintended cross-owner upload, erase pause, controlled manual sync, normal assisted exercise Progress, and fallback on simulated analytic error.
+
+### Safest next user flow and remaining work
+
+1. Update Testing v0.87.9 **without uninstalling**. Do not erase, sign out again, restore backups or try to manually clean mixed history.
+2. In existing Testing app, turn off Automatic Sync temporarily and **Export backup** to a location outside Swole Cat. Make sure user has a verified copy before any recovery.
+3. Test Progress screen with logged assisted/bodyweight workout; should render, rather than blank.
+4. Design controlled recovery and **separate per-account local data storage/switching UX** after user consent. Compare historical cloud backup snapshots and provenance to separate original training sessions from copied records. Never delete or overwrite cloud records without explicit scope approval. Automated code fix does not undo prior merges.
+5. Consider hardening cloud Settings account-switch banner and a backup-first separation workflow, preserving offline-local guarantees.
+
+Old milestones below are archival.
+
+
 ## Latest milestone: 2026-10-09 · Testing v0.87.8 Sleek Action Tray Polish
 
 **Current signed Testing:** v0.87.8 / Android build **131**, on `main`, updater manifest and permanent signing identity verified.
