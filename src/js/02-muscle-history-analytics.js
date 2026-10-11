@@ -909,6 +909,24 @@ function openProgressMethodology(topic='overview'){
 }
 function renderAnalytics(){
  const host=document.getElementById('analyticsArea');if(!host)return;
+ try{
+   renderAnalyticsContent(host);
+ }catch(error){
+   // A single legacy or mixed-history record must not leave Progress blank.
+   // Never remove or rewrite history as a side effect of an analytics failure.
+   console.error('Swole Cat Progress rendering failed',error);
+   const count=Array.isArray(state.sessions)?state.sessions.length:0;
+   const message=String(error?.message||'Unexpected analytics error').slice(0,200);
+   host.innerHTML='<div class="card"><div class="eyebrow">TRAINING TELEMETRY · RECOVERY MODE</div>'+
+     '<h2>Progress could not display</h2>'+
+     '<p class="mini">Your '+count+' locally stored workout record'+(count===1?' is':'s are')+
+     ' still available. No workouts were deleted or changed. One analytics calculation failed.</p>'+
+     '<div class="notice">'+esc(message)+'</div>'+
+     '<div class="actions"><button class="btn" onclick="renderAnalytics()">Retry Progress</button>'+
+     '<button class="btn secondary" onclick="exportBackup()">Export safety backup</button></div></div>';
+ }
+}
+function renderAnalyticsContent(host){
  const now=Date.now(),last30=state.sessions.filter(s=>now-new Date(s.date).getTime()<=30*86400000);
  const weekStart=startOfWeek(),thisWeek=state.sessions.filter(s=>new Date(s.date)>=weekStart);
  const prs30=last30.reduce((a,s)=>a+sessionPRCount(s),0);
