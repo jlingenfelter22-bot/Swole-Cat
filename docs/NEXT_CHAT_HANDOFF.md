@@ -1,8 +1,21 @@
 # Swole Cat - Next Chat Handoff
 
-Last updated: 2026-10-09
+Last updated: 2026-10-11
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
+
+## CURRENT RESUME CHECKPOINT (v0.87.9 supersedes older instructions)
+
+- **Latest Testing:** v0.87.9 / Android build 132, signed APK and Testing updater published: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.9; PR #53 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/53 merged into `main`. PR CI https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38161922914 PASS, main CI https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38162099922 PASS, signed Android https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38162099916 PASS. Testing SHA-256 APK `c1e0119ab329abb377b6cff28a7307687e06a848f7dcc2b7e0c166de6c737d89`; original Testing cert unchanged.
+- **Critical user incident:** Real Android Testing user moved from secondary test Google account back to everyday main Google account after clearing local data and sync. Histories from both accounts mixed; Progress tab went blank (header still visible).
+- **Confirmed cloud bug:** `syncEnsureOwner` previously cleared metadata on account switch but not actual local workout state, allowing old account data to sync into the new account. Erase while still signed into the old account could auto-sync and repopulate immediately. Read-only Supabase audit: 38 session IDs occurred under multiple owners, structural session rows intact; six backup metadata records. We have **not** modified the cloud DB, restored or deleted anything. Do not automatically clean up copied sessions.
+- **Confirmed Progress bug:** analytics filtered `x.signal.stalled` even though `coachSignal()` intentionally returns null for assistance/bodyweight movements. Direct null guard fixed in v0.87.9. Non-destructive error fallback prevents blank screen for future unexpected analytics exceptions.
+- **Safeguards shipped:** fail-closed guard on account switch when previous owner's local data still present; backup-first alert in Cloud settings; reset local metadata pauses auto-sync after erase until explicit Sync Now; owner checks mid-network pull and push. Tests added in existing `scripts/cloud-sync-stress.mjs`, full suite green. This is NOT yet automatic per-owner local partitioning and does not repair already copied cloud records.
+- **Beta unchanged:** v0.73.1 branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. No promotion without explicit user instruction.
+- **Immediate follow-up:** user updates Testing and confirms Progress renders. Advise user to turn off automatic sync for now, export current local backup (Settings > Cloud settings > Data safety > Export backup), and preserve each cloud account unchanged. Ask before any record-level recovery. Review cloud backup histories/provenance, identify original sessions, separate accounts safely, and later implement account-partitioned local state with explicit switching.
+- Earlier checkpoint headings below are archival.
+
+---
 
 ## CURRENT RESUME CHECKPOINT (v0.87.8 supersedes older instructions)
 
