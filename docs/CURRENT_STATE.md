@@ -1,5 +1,40 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-13 · Testing v0.88.0 Protected Cloud Account Handoff
+
+**Current signed Testing:** v0.88.0 / Android build **133**, permanent Testing signature unchanged and updater live.
+- PR #54: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/54; squash-merged to `main` as `5e141cb15d6ef4a5171de1caa5e6d1217087ba67`.
+- Complete PR validation PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413146562.
+- Main validation PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413588809.
+- Signed Android release PASS: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413588869.
+- Release: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.88.0.
+- `updates/testing.json`: version `0.88.0`, versionCode `133`, package `com.jlingenfelter.swolecat.testing`, APK SHA-256 `e28302b7bc268119be1d493db3f56a59c4828a548fc71ceb1e72205d656b5bb9`, unchanged Testing signing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta unchanged** v0.73.1, beta branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. Do not promote without owner authorization.
+
+### User-approved safer account switching
+
+Following the real data crossover in Testing v0.87.8/9, user explicitly requested that **each cloud account stay separate**. When a signed-in user chooses to change Google accounts, final sync must complete for the current account before logout. Next account starts with a clean local workspace and pulls *only its own* cloud records. Existing cloud accounts, backups, and records must not be deleted, cleaned, migrated or arbitrarily edited. Existing historical crossover needs separate recovery consent, not part of this feature.
+
+### Implemented v0.88.0 transaction
+
+- Cloud account UI action is **Sync & sign out**; it shows progress and suppresses double taps.
+- `cloudSignOut()` first invokes `cloudSync.prepareAccountExit(ownerId)`, requiring working cloud sync, no active/unfinished workout, writable device storage, stable local data, no queued unsynced mutations, and no unresolved conflicts. A failed/offline sync cancels logout and retains data.
+- Before logging out, an owner-specific `swolecat-account-exit-snapshot-v1:<ownerId>` is durably written and read back for verification; it includes the last synced full local state and sync metadata. Prepared / signed_out transaction marker supports conservative restart recovery. A canceled sign-out preserves old login/local state.
+- Only after auth provider sign-out succeeds, `cloudSync.completeAccountExit()` replaces the active `overload_v3` state with fresh state, resets cloud-sync owner and manifest, clears **generic** old-account recovery / pre-import keys that could otherwise reintroduce the previous account's data, and preserves the per-owner safety snapshot. Sign-in to account B then downloads B's cloud history into the clean workspace.
+- Unsolicited OAuth identity changes without the verified logout pathway remain fail-closed via v0.87.9 mismatched-owner checks, rather than silently wiping or mixing.
+- A → B → A regression checks confirm account-specific cloud history, pre-exit snapshots, offline signout denial, unfinished workout denial, failed identity provider rollback, existing erase-pause behavior, and generic recovery snapshot isolation. Other cloud shell/backup tests intentionally fake offline sync so no external SDK is loaded.
+- **No Supabase management mutation or remote record cleanup occurred.** Ordinary app syncs from user's eventual real-device usage behave as designed.
+- Note v0.88.0 is an *on-signout clean workspace* workflow, not multi-account local caching with instant offline switching. Any previously contaminated cloud record ownership is left untouched. App owner acceptance testing on physical Android pending.
+
+### Next real Android acceptance
+
+1. Install signed Testing v0.88.0 **in place**. Before switching, export safety backup in Cloud settings.
+2. In a TEST-only scenario, verify `Sync & sign out` performs final sync then lands on a clean local screen; sign into a different test Google account and confirm only its routines, history, Progress appear. Switch back and confirm A's cloud data returns without B's workouts.
+3. Test offline sign-out (should refuse and preserve local). Test unfinished workout guard (should refuse until finished).
+4. Avoid operating on or deleting accounts/records that were previously mixed; recovery remains a separate supervised step. Beta stays untouched.
+
+Older milestones below are historical.
+
 ## Latest milestone: 2026-10-11 · Testing v0.87.9 Account Isolation and Progress Recovery
 
 **Current signed Testing:** v0.87.9, Android build **132**, signed by the permanent Testing key; in-app updater verified.
