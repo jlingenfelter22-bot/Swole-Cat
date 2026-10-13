@@ -147,8 +147,16 @@ async function configuredShellCase(){
     assert(cloudSettingsHeadings.includes(expected),expected+' should live under Cloud settings');
   }
   assert.equal(w.SwoleCatRuntime.getService('cloudSync').snapshot().queued,0,'sign-in alone must not queue workout sync records');
-  // Fail closed: the identity-only shell has no cloud sync provider.
-  await assert.rejects(()=>identity.signOut(),/Cloud sync is not available/);
+  // The production sync adapter is registered by default. Override it with
+  // an offline fake so this identity-only test never loads a real SDK/network.
+  w.SwoleCatRuntime.getService('cloudSync').registerProvider({
+    async registerDevice(){throw new Error('Cloud sync offline');},
+    async pullChanges(){throw new Error('Cloud sync offline');},
+    async getRecord(){return null;},
+    async insertRecord(){throw new Error('Cloud sync offline');},
+    async updateRecord(){throw new Error('Cloud sync offline');}
+  });
+  await assert.rejects(()=>identity.signOut(),/Cloud sync offline/);
   assert.equal(signedOut,0,'sign-out cannot bypass verified sync');
   assert.equal(identity.snapshot().signedIn,true);
   assert.deepEqual(cloudKeys(w),['swolecat_cloud_auth_v1:fake-session']);
