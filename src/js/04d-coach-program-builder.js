@@ -335,7 +335,7 @@ function coachContinueProgramRequest(){
  }
  if(!coachGenerateProgram(req,intent,d)){
   coachProgramQuestion('That combination needs a few adjustments.',
-   '<div class="mini">Some days need more time, a different focus, or different available equipment. Coach will not invent equipment.</div><div class="actions"><button class="btn" onclick="coachRetryProgramBrainEquipment()">Change equipment</button><button class="btn secondary" onclick="coachRestartProgramSplit()">Change split</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New request</button></div>');
+   '<div class="mini">Some days need more time, a different focus, or different available equipment. Coach will not invent equipment.</div><div class="actions"><button class="btn" onclick="coachRetryProgramBrainEquipment()">Change equipment</button><button class="btn secondary" onclick="coachRestartProgramSplit()">Change split</button><button class="btn secondary" onclick="coachReviseProgramDuration()">Change time</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New request</button></div>');
   return;
  }
  renderCoachProgramPreview();
@@ -361,6 +361,10 @@ function coachAnswerProgramCustomDay(key){
 function coachUndoProgramCustomDay(){
  const d=coachProgramBuildDraft;if(!d||d.intent.split!=='custom')return;
  d.intent.customSlots=(d.intent.customSlots||[]).slice(0,-1);coachContinueProgramRequest();
+}
+function coachReviseProgramDuration(){
+ const d=coachProgramBuildDraft;if(!d)return;
+ d.request.duration=0;d.days=[];coachContinueProgramRequest();
 }
 function coachAnswerProgramDuration(minutes){
  const d=coachProgramBuildDraft;if(!d)return;
