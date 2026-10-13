@@ -147,11 +147,12 @@ async function configuredShellCase(){
     assert(cloudSettingsHeadings.includes(expected),expected+' should live under Cloud settings');
   }
   assert.equal(w.SwoleCatRuntime.getService('cloudSync').snapshot().queued,0,'sign-in alone must not queue workout sync records');
-  await identity.signOut();
-  assert.equal(signedOut,1);
-  assert.equal(identity.snapshot().signedIn,false);
-  assert.deepEqual(cloudKeys(w),[],'sign-out should remove provider auth material');
-  assert.deepEqual(workoutSnapshot(w),before,'sign-out must leave workout data intact');
+  // Fail closed: the identity-only shell has no cloud sync provider.
+  await assert.rejects(()=>identity.signOut(),/Cloud sync is not available/);
+  assert.equal(signedOut,0,'sign-out cannot bypass verified sync');
+  assert.equal(identity.snapshot().signedIn,true);
+  assert.deepEqual(cloudKeys(w),['swolecat_cloud_auth_v1:fake-session']);
+  assert.deepEqual(workoutSnapshot(w),before,'blocked sign-out preserves local data');
   dom.window.close();
 }
 
