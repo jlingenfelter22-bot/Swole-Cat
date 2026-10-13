@@ -69,7 +69,7 @@
   },
   "explicitMuscleOverrides": 34,
   "fallbackMuscleRules": 274,
-  "priorityReview": 71,
+  "priorityReview": 86,
   "auxiliaryEquipmentBodyweight": [
     "Pull-Up",
     "Dip",
@@ -90,6 +90,18 @@
     "Hanging Knee Raise",
     "Dead Hang"
   ],
-  "noSameRoleAlternatives": [],
-  "notYetRuntime": true
+  "noSameRoleAlternatives": [
+    "Dead Hang"
+  ],
+  "notYetRuntime": true,
+  "insufficientSimilarCandidates": [
+    "Hip Adduction Machine",
+    "Cable Hip Adduction",
+    "Tibialis Raise Machine",
+    "Wall Tibialis Raise",
+    "Dead Hang"
+  ],
+  "substitutesWithCaveats": 305,
+  "substitutesSameFamilyCandidate": 599,
+  "substitutionAuditPolicy": "Substitutes are candidate movement roles only; manual approval and exercise-specific progression history separation required. Different metric/load variants are not directly interchangeable."
 }
