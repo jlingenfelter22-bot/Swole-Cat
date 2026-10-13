@@ -349,7 +349,7 @@ function openCloudAccount(){
   }
   if(info.signedIn){
     const label=info.user?.email||info.user?.displayName||'Swole Cat account';
-    openModal('Swole Cat Cloud','<div class="notice"><b>'+esc(label)+'</b><br><br>Account connection is active. Private backup and record-level sync are available, and sync runs only when you explicitly choose Sync Now.<br><br><span class="mini">To switch accounts, Swole Cat first syncs and saves a local recovery snapshot, then signs out and opens an empty workspace. Your next account restores only its own cloud records. Switching requires a connection and no unfinished workout or sync conflicts.</span></div><div class="actions"><button class="btn secondary" onclick="cloudSignOutFromUi()">Sync & sign out</button><button class="btn danger" onclick="cloudBeginDeleteAccountFromUi()">Delete cloud account</button><button class="btn secondary" onclick="closeModal()">Done</button></div>');
+    openModal('Swole Cat Cloud','<div class="notice"><b>'+esc(label)+'</b><br><br>Account connection is active. Private cloud backup and background record sync are available, with a manual Sync Now control in Cloud settings.<br><br><span class="mini">To switch accounts, Swole Cat first syncs and saves a local recovery snapshot, then signs out and opens an empty workspace. Your next account restores only its own cloud records. Switching requires a connection and no unfinished workout or sync conflicts.</span></div><div class="actions"><button class="btn secondary" onclick="cloudSignOutFromUi()">Sync & sign out</button><button class="btn danger" onclick="cloudBeginDeleteAccountFromUi()">Delete cloud account</button><button class="btn secondary" onclick="closeModal()">Done</button></div>');
     return;
   }
   const providerNote=info.providerReady
@@ -397,13 +397,19 @@ async function cloudDeleteAccountFromUi(){
     alert('Could not delete cloud account: '+(error?.message||error));
   }
 }
+let swoleCatSignOutUiInFlight=false;
 async function cloudSignOutFromUi(){
+  if(swoleCatSignOutUiInFlight)return;
+  swoleCatSignOutUiInFlight=true;
   try{
+    showToast('Verifying cloud sync before sign-out…');
     await cloudSignOut();
     closeModal();
     showToast('Synced & signed out · recovery snapshot saved');
   }catch(error){
-    alert('Could not sign out: '+(error?.message||error));
+    alert('Could not safely sign out: '+(error?.message||error));
+  }finally{
+    swoleCatSignOutUiInFlight=false;
   }
 }
 
