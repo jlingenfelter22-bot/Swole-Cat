@@ -106,6 +106,8 @@ function coachGenericExerciseBias(ex,request){
 function coachSmartExerciseCount(request,baseCount){
  const keys=coachRequestedTargetKeys(request);let base=Math.max(1,Number(baseCount)||1);
  if(request?.experienceLevel==='beginner')base=Math.min(base,5);
+ if(request?.brainEquipment&&(Number(request.duration)||0)<=30&&keys.length===1&&['legs','lower body'].includes(keys[0]))
+   base=Math.min(base,3);
  if(keys.length!==1)return keys.length===2?Math.min(base,7):base;
  const key=keys[0];
  if(['front delts','side delts','rear delts','abs','obliques','adductors'].includes(key))return Math.min(base,4);
@@ -278,10 +280,12 @@ function coachCoveragePlan(request,count){
  const addObliques=()=>{add(core,'obliques_direct','Obliques',obliquePattern)};
  const addAdductors=()=>{add(core,'adductors_direct','Adductors',adductorDirect)};
  const addLegs=()=>{
+   const shortBrainSession=!!request.brainEquipment&&(Number(request.duration)||0)<=30;
    add(core,'leg_knee','Knee-dominant quads',squatPattern);
-   add(core,'leg_hinge','Hip hinge / posterior chain',hipHinge);
+   if(!shortBrainSession)add(core,'leg_hinge','Hip hinge / posterior chain',hipHinge);
    add(core,'leg_curl','Knee-flexion hamstrings',hamstringCurl);
    add(core,'leg_calves','Calves',calfPattern);
+   if(shortBrainSession)add(optional,'leg_hinge','Hip hinge / posterior chain',hipHinge);
    add(optional,'leg_glutes','Glute emphasis',glutePattern);
    add(optional,'leg_adductors','Adductors',adductorPattern);
  };
@@ -456,6 +460,13 @@ function coachGenerateWorkout(request){
  const defaults=coachApplyLiftingGrammarToDefaults(coachProgrammingDefaults(req.goal,req.duration),req.liftingGrammar);
  const selected=coachSelectExercises(req,defaults.exerciseCount);
  if(!selected.length)return null;
+ // For a short generic leg session, do not claim a balanced leg workout
+ // from glute accessories and calf work when the available catalog lacks
+ // any knee-dominant quads or knee-flexion hamstrings movement.
+ if(req.brainEquipment&&coachRequestedTargetKeys(req).some(k=>['legs','lower body'].includes(k))){
+   const covered=selected.map(ex=>ex.pattern);
+   if(!covered.some(p=>p==='squat'||p==='lunge')||!covered.includes('knee_flexion'))return null;
+ }
  const baselineSelection=req.brainEquipment?
    coachSelectExercises({...req,brainEquipment:null,excludedMovementPatterns:[]},defaults.exerciseCount):[];
  const brainComparison=req.brainEquipment?{
