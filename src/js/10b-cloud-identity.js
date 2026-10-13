@@ -152,6 +152,9 @@ async function initializeCloudIdentity(){
       authStorage:swoleCatCloudAuthStorage
     });
     const user=cloudIdentityPublicUser(result?.user);
+    // Complete only a previously verified signed-out transition after restart.
+    // An interrupted/unknown switch must not silently erase local training.
+    SwoleCatRuntime.getService('cloudSync')?.reconcilePendingAccountExit?.(user?.id||null);
     const reauthError=result?.reauthError?String(result.reauthError):'';
     const next=setCloudIdentityState({
       status:user?'signed_in':'signed_out',
@@ -270,23 +273,42 @@ async function cloudDeleteAccount(){
   }
 }
 async function cloudSignOut(){
-  if(swoleCatIdentityProvider){
-    try{
+  const current=cloudIdentitySnapshot();
+  const ownerId=current.signedIn?current.user?.id:null;
+  const sync=SwoleCatRuntime.getService('cloudSync');
+  if(ownerId){
+    if(!sync?.prepareAccountExit||!sync?.markAccountSignedOut||!sync?.completeAccountExit){
+      throw new Error('Account-switch protection is unavailable. Sign-out was stopped to protect your workouts.');
+    }
+    // This performs and verifies the final owner-specific cloud sync BEFORE
+    // the authentication provider is asked to sign out.
+    await sync.prepareAccountExit(ownerId);
+  }
+  try{
+    if(swoleCatIdentityProvider){
       await swoleCatIdentityProvider.signOut({
         config:cloudIdentityConfig(),
         authStorage:swoleCatCloudAuthStorage
       });
-    }catch(error){
-      setCloudIdentityState({lastError:error?.message||String(error)});
-      throw error;
     }
+  }catch(error){
+    if(ownerId)try{sync.cancelAccountExit()}catch(ignore){}
+    setCloudIdentityState({lastError:error?.message||String(error)});
+    throw error;
   }
-  return setCloudIdentityState({
+  if(ownerId)sync.markAccountSignedOut(ownerId);
+  const signedOut=setCloudIdentityState({
     status:cloudIdentityConfig().configured?'signed_out':'local_only',
     signedIn:false,
     user:null,
     lastError:''
   });
+  if(ownerId){
+    // A fresh workspace is installed only AFTER provider sign-out succeeds.
+    // Previous owner's full data remains in a verified on-device snapshot.
+    sync.completeAccountExit();
+  }
+  return signedOut;
 }
 function cloudAccountAllowsRemoteFeatures(){
   return !!(cloudIdentityConfig().configured&&swoleCatIdentityState.signedIn&&swoleCatIdentityState.user?.id);
@@ -327,7 +349,7 @@ function openCloudAccount(){
   }
   if(info.signedIn){
     const label=info.user?.email||info.user?.displayName||'Swole Cat account';
-    openModal('Swole Cat Cloud','<div class="notice"><b>'+esc(label)+'</b><br><br>Account connection is active. Private backup and record-level sync are available, and sync runs only when you explicitly choose Sync Now.<br><br><span class="mini">Account recovery and identity verification use your Google account. Swole Cat does not have a separate password.</span></div><div class="actions"><button class="btn secondary" onclick="cloudSignOutFromUi()">Sign out</button><button class="btn danger" onclick="cloudBeginDeleteAccountFromUi()">Delete cloud account</button><button class="btn secondary" onclick="closeModal()">Done</button></div>');
+    openModal('Swole Cat Cloud','<div class="notice"><b>'+esc(label)+'</b><br><br>Account connection is active. Private backup and record-level sync are available, and sync runs only when you explicitly choose Sync Now.<br><br><span class="mini">To switch accounts, Swole Cat first syncs and saves a local recovery snapshot, then signs out and opens an empty workspace. Your next account restores only its own cloud records. Switching requires a connection and no unfinished workout or sync conflicts.</span></div><div class="actions"><button class="btn secondary" onclick="cloudSignOutFromUi()">Sync & sign out</button><button class="btn danger" onclick="cloudBeginDeleteAccountFromUi()">Delete cloud account</button><button class="btn secondary" onclick="closeModal()">Done</button></div>');
     return;
   }
   const providerNote=info.providerReady
@@ -379,7 +401,7 @@ async function cloudSignOutFromUi(){
   try{
     await cloudSignOut();
     closeModal();
-    showToast('Signed out · local data kept');
+    showToast('Synced & signed out · recovery snapshot saved');
   }catch(error){
     alert('Could not sign out: '+(error?.message||error));
   }
