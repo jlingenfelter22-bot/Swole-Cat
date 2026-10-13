@@ -10,7 +10,8 @@ function coachCloneRequest(request){
    priorityRegions:[...(request.priorityRegions||[])],priorityKeys:[...(request.priorityKeys||[])],
    experienceLevel:request.experienceLevel||'auto',lateralityPreference:request.lateralityPreference||'auto',
    excludedTargetKeys:[...(request.excludedTargetKeys||[])],excludedTargetRegions:[...(request.excludedTargetRegions||[])],
-   excludedExerciseIds:[...(request.excludedExerciseIds||[])],requiredExerciseIds:[...(request.requiredExerciseIds||[])]
+   excludedExerciseIds:[...(request.excludedExerciseIds||[])],requiredExerciseIds:[...(request.requiredExerciseIds||[])],
+   excludedMovementPatterns:[...(request.excludedMovementPatterns||[])],brainEquipment:request.brainEquipment||null
  };
 }
 function coachGenerateProgram(request,intent,previous=null){
@@ -31,7 +32,9 @@ function coachGenerateProgram(request,intent,previous=null){
    dayReq.requiredExerciseIds=[...new Set(override.requiredExerciseIds||[])];
    dayReq.programExerciseUsage=usage;
    dayReq.programMuscleUsage={...muscleUsage};
-   const selected=coachSelectExercises(dayReq,defaults.exerciseCount);
+   const initial=coachSelectExercises(dayReq,defaults.exerciseCount);
+   const durationPlan=coachBrainTrimToTime(initial,dayReq,defaults);
+   const selected=durationPlan.exercises;
    selected.forEach(ex=>{
      usage[ex.id]=(usage[ex.id]||0)+1;
      const prescription=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,dayReq,defaults):defaults;
@@ -41,7 +44,7 @@ function coachGenerateProgram(request,intent,previous=null){
    });
    return {
      key,label:coachProgramDayDisplayLabel(key,index,slots),request:dayReq,
-     defaults:{...defaults},selectedIds:selected.map(ex=>ex.id)
+     defaults:{...defaults},selectedIds:selected.map(ex=>ex.id),brainTime:durationPlan.time,brainTimeRemoved:durationPlan.removed
    };
  });
  if(days.some(day=>!day.selectedIds.length))return null;
@@ -52,6 +55,7 @@ function coachGenerateProgram(request,intent,previous=null){
      excludedExerciseIds:[...(dayOverrides[i]?.excludedExerciseIds||[])],
      requiredExerciseIds:[...(dayOverrides[i]?.requiredExerciseIds||[])]
    })),
+   interactiveBrainFlow:!!previous?.interactiveBrainFlow,
    createdAt:previous?.createdAt||new Date().toISOString(),
    lastRefinement:previous?.lastRefinement||''
  };
@@ -100,7 +104,7 @@ function coachProgramRoutineFromDay(day,draft=coachProgramBuildDraft,id=uid()){
 function renderCoachProgramPreview(){
  const draft=coachProgramBuildDraft;if(!draft)return;
  const req=draft.request,intent=draft.intent,coverage=coachProgramCoverageText(draft);
- const equipment=req.allowedEquipment.length?req.allowedEquipment.join(', '):'Any available equipment';
+ const equipment=coachBrainResolveEquipment(req)?.label||(req.allowedEquipment.length?req.allowedEquipment.join(', '):'Equipment not specified');
  openModal('Coach Swolecat',`
   <div class="coach-builder">
    <div class="coach-console">
@@ -111,12 +115,14 @@ function renderCoachProgramPreview(){
    </div>
    <div class="coach-exercise-list">
     ${draft.days.map((day,di)=>`<div class="card" style="margin:0">
-      <div class="row"><div><div class="eyebrow">DAY ${di+1}</div><div class="exercise-name" style="margin-top:4px">${esc(day.label)}</div><div class="mini">${day.selectedIds.length} exercises · ${day.defaults.sets} sets each · ${day.defaults.minReps}–${day.defaults.maxReps} reps · ${day.defaults.restSeconds}s rest</div></div>${intent.preferredDays?.[di]!=null?`<span class="tag">${PROGRAM_DAYS[intent.preferredDays[di]]}</span>`:''}</div>
+      <div class="row"><div><div class="eyebrow">DAY ${di+1}</div><div class="exercise-name" style="margin-top:4px">${esc(day.label)}</div><div class="mini">${day.selectedIds.length} exercises · ${day.brainTime?`about ${day.brainTime.estimateMinutes} min (range ${day.brainTime.lowerMinutes}–${day.brainTime.upperMinutes})`:`${day.defaults.sets} sets each`} · ${day.defaults.minReps}–${day.defaults.maxReps} reps</div></div>${intent.preferredDays?.[di]!=null?`<span class="tag">${PROGRAM_DAYS[intent.preferredDays[di]]}</span>`:''}</div>
       <div style="margin-top:9px">${day.selectedIds.map((id,ei)=>{const ex=exById(id);return `<div class="list-item"><div class="grow"><div class="exercise-name">${esc(ex?.name||'Exercise')} ${preferenceBadgeHtml(id)}</div><div class="mini">${esc(coachExerciseReason(ex,day.request))}</div></div><div class="actions" style="margin:0"><button class="btn small secondary" onclick="coachProgramSwapExercise(${di},${ei})">Swap</button><button class="btn small secondary" onclick="coachProgramRemoveExercise(${di},${ei})">Remove</button></div></div>`}).join('')}</div>
     </div>`).join('')}
    </div>
    ${coverage?`<div class="coach-rationale"><b>Planned weekly set-equivalents:</b> ${esc(coverage)}.<br><span class="mini">Primary involvement counts as 1.0 set and secondary involvement as 0.5. This is a planning aid, not a claim about muscle damage or recovery.</span></div>`:''}
-   <div class="coach-console"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Try “make it 4 days,” “upper/lower,” “35 minutes,” “dumbbells only,” “more shoulders,” or “Monday Tuesday Thursday Saturday.”</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachProgramRefinePrompt" placeholder="4 days, upper/lower, 40 min, more shoulders..." onkeydown="if(event.key==='Enter')coachApplyProgramRefinement()">${coachVoiceButtonHtml('coachProgramRefinePrompt')}</div><button class="btn" onclick="coachApplyProgramRefinement()">Update</button></div></div>
+   <div class="coach-console"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Try “4 days, upper/lower and 35 minutes,” “dumbbells only,” “no squats, more glutes,” or “Monday Tuesday Thursday Saturday.”</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachProgramRefinePrompt" placeholder="4 days, upper/lower, 40 min, more shoulders..." onkeydown="if(event.key==='Enter')coachApplyProgramRefinement()">${coachVoiceButtonHtml('coachProgramRefinePrompt')}</div><button class="btn" onclick="coachApplyProgramRefinement()">Update</button></div></div>
+   ${coachBrainEquipmentPreviewNotice(req)?`<div class="notice">${esc(coachBrainEquipmentPreviewNotice(req))}</div>`:''}
+   ${draft.days.some(day=>day.brainTime?.overTarget)?`<div class="notice">One or more days may exceed your requested time. Estimated duration includes warm-up, rest, work and transitions; review before saving.</div>`:''}
    <div class="notice">Coach distributes work across the week using your requested frequency, split, equipment, goal, exercise preferences, completed training history, planned muscle set-equivalents from earlier program days, and progression continuity. Weekly workload is used as programming context only; the plan does not diagnose recovery or medical readiness.</div>
    <div class="actions"><button class="btn green" onclick="coachStartProgramFirstWorkout()">Save + Start Day 1</button><button class="btn" onclick="coachSaveGeneratedProgram()">Save Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
   </div>`);
@@ -146,6 +152,16 @@ function coachProgramSwapExercise(dayIndex,exerciseIndex){
 function coachRefineProgramText(text){
  const draft=coachProgramBuildDraft,raw=String(text||'').trim();if(!draft||!raw)return {ok:false,message:'Tell Coach what you want changed.'};
  const req=coachCloneRequest(draft.request),intent={...draft.intent,preferredDays:[...(draft.intent.preferredDays||[])]};
+ const clauses=coachBrainSplitEditClauses(raw);
+ if(clauses.length>1){
+   const previous=coachProgramBuildDraft;
+   for(const clause of clauses){
+     const result=coachRefineProgramText(clause);
+     if(!result.ok){coachProgramBuildDraft=previous;return {ok:false,message:'No changes applied. '+result.message,failedClause:clause}}
+   }
+   coachProgramBuildDraft.lastRefinement=raw;
+   return {ok:true,message:'Updated all '+clauses.length+' instructions.'};
+ }
  const parsed=coachParsePrompt(raw,req.goal),program=coachParseProgramIntent(raw),goal=coachExplicitGoal(raw),equipment=coachParseEquipment(raw);
  let changed=false,structureChanged=false;
  if(parsed.duration){req.duration=parsed.duration;changed=true}
@@ -157,16 +173,26 @@ function coachRefineProgramText(text){
    if(!program.frequency)intent.frequency=program.preferredDays.length;
    changed=true;structureChanged=true;
  }
- if(equipment.allowed.length){req.allowedEquipment=[...equipment.allowed];req.excludedEquipment=req.excludedEquipment.filter(x=>!equipment.allowed.includes(x));changed=true}
+ if(equipment.allowed.length){
+   req.allowedEquipment=[...equipment.allowed];
+   req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:raw,allowedEquipment:equipment.allowed});
+   req.excludedEquipment=req.excludedEquipment.filter(x=>!equipment.allowed.includes(x));changed=true;
+ }
+ if(/\\b(?:full|commercial|standard|well[- ]equipped)\\s+gym\\b/i.test(raw)){
+   req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:raw,allowedEquipment:[]});
+   req.allowedEquipment=[...(req.brainEquipment?.allowed||[])];changed=true;
+ }
+ const natural=coachBrainApplyNaturalExerciseChange(req,raw);
+ if(natural.changed){req.excludedMovementPatterns=natural.request.excludedMovementPatterns;changed=true;}
  if(equipment.excluded.length){req.excludedEquipment=[...new Set([...req.excludedEquipment,...equipment.excluded])];req.allowedEquipment=req.allowedEquipment.filter(x=>!equipment.excluded.includes(x));changed=true}
  if(/\bbalanced\b|\bno (?:special )?focus\b|\bevenly\b/.test(raw.toLowerCase())){
    intent.focusRegions=[];intent.focusLabels=[];changed=true;
  }else if(program.focusRegions.length){
    intent.focusRegions=[...new Set(program.focusRegions)];intent.focusLabels=[...new Set(program.focusLabels)];changed=true;
  }
- if(!changed)return {ok:false,message:'I did not find a program change there. Try “4 days,” “upper/lower,” “35 minutes,” “dumbbells only,” or “more shoulders.”'};
+ if(!changed)return {ok:false,message:'I did not find a program change. Try “4 days,” “35 minutes,” “dumbbells only,” “no squats,” or “more shoulders.”'};
  if(intent.preferredDays.length&&intent.preferredDays.length!==intent.frequency)intent.preferredDays=[];
- const previous=structureChanged?null:{...draft,dayOverrides:draft.dayOverrides};
+ const previous=structureChanged?{...draft,dayOverrides:[]}: {...draft,dayOverrides:draft.dayOverrides};
  if(!coachGenerateProgram(req,intent,previous))return {ok:false,message:'Those constraints leave at least one workout without enough matching exercises. Broaden the equipment or split.'};
  coachProgramBuildDraft.lastRefinement=raw;
  return {ok:true,message:'Program updated.'};
@@ -211,7 +237,22 @@ function coachContinueProgramRequest(){
    openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">ONE QUICK QUESTION</div><div class="coach-question">How many days per week can you train?</div><div class="coach-choice-grid">${[2,3,4,5,6].map(n=>`<button class="btn secondary" onclick="coachAnswerProgramFrequency(${n})">${n} days</button>`).join('')}</div></div>`);
    return;
  }
- if(!coachGenerateProgram(draft.request,draft.intent,draft)){showToast('Coach could not build every workout with those constraints');return}
+ if(draft.interactiveBrainFlow){
+   const question=coachBrainProgramNeedsQuestion(draft.request);
+   if(question==='duration'){
+     openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">PROGRAM SETUP</div><div class="coach-question">How much time per workout?</div><div class="coach-choice-grid">${[30,45,60,75].map(m=>`<button class="btn secondary" onclick="coachAnswerProgramDuration(${m})">${m} minutes</button>`).join('')}</div></div>`);
+     return;
+   }
+   if(question==='equipment'){
+     openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">PROGRAM SETUP</div><div class="coach-question">What equipment do you have for these workouts?</div><div class="mini">You can change this later; Coach won't assume specialized machines or attachments.</div><div class="coach-choice-grid">${COACH_BRAIN_EQUIPMENT_CHOICES.map(c=>`<button class="btn secondary" onclick="coachAnswerProgramBrainEquipment('${c.key}')">${esc(c.label)}</button>`).join('')}</div></div>`);
+     return;
+   }
+   if(!draft.request.brainEquipment)draft.request.brainEquipment=coachBrainExplicitEquipment(draft.request);
+ }
+ if(!coachGenerateProgram(draft.request,draft.intent,draft)){
+   openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">ADJUST THE PROGRAM</div><div class="coach-question">Those equipment limits don't support every day yet.</div><div class="mini">Try different available equipment or a less demanding split. Coach won't invent exercises or machines.</div><div class="actions"><button class="btn" onclick="coachRetryProgramBrainEquipment()">Change equipment</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New request</button></div></div>`);
+   return;
+ }
  renderCoachProgramPreview();
 }
 function coachAnswerProgramFrequency(days){
@@ -219,4 +260,32 @@ function coachAnswerProgramFrequency(days){
  coachProgramBuildDraft.intent.frequency=Math.max(2,Math.min(6,Number(days)||3));
  if(!coachProgramBuildDraft.intent.split)coachProgramBuildDraft.intent.split=coachDefaultProgramSplit(coachProgramBuildDraft.intent.frequency);
  coachContinueProgramRequest();
+}
+function coachAnswerProgramDuration(minutes){
+ if(!coachProgramBuildDraft)return;
+ coachProgramBuildDraft.request.duration=Math.max(15,Math.min(120,Number(minutes)||45));
+ coachContinueProgramRequest();
+}
+function coachRetryProgramBrainEquipment(){
+ if(!coachProgramBuildDraft)return;
+ coachProgramBuildDraft.request.brainEquipment=null;
+ coachProgramBuildDraft.request.allowedEquipment=[];
+ coachContinueProgramRequest();
+}
+function coachAnswerProgramBrainEquipment(key){
+ if(!coachProgramBuildDraft)return;
+ if(key==='custom'){
+   openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">PROGRAM EQUIPMENT</div><div class="coach-question">What equipment is available?</div><input id="coachProgramBrainCustomEquipment" class="search" aria-label="Program equipment" placeholder="Dumbbells and cables..." onkeydown="if(event.key==='Enter')coachSubmitProgramBrainCustomEquipment()"><div class="actions"><button class="btn" onclick="coachSubmitProgramBrainCustomEquipment()">Continue</button><button class="btn secondary" onclick="coachRetryProgramBrainEquipment()">Back</button></div></div>`);
+   return;
+ }
+ const result=coachBrainApplyEquipmentChoice(coachProgramBuildDraft.request,key);
+ if(!result.ok){showToast(result.message);return}
+ coachProgramBuildDraft.request=result.request;coachContinueProgramRequest();
+}
+function coachSubmitProgramBrainCustomEquipment(){
+ if(!coachProgramBuildDraft)return;
+ const text=document.getElementById('coachProgramBrainCustomEquipment')?.value||'';
+ const result=coachBrainApplyEquipmentChoice(coachProgramBuildDraft.request,'custom',text);
+ if(!result.ok){showToast(result.message);return}
+ coachProgramBuildDraft.request=result.request;coachContinueProgramRequest();
 }
