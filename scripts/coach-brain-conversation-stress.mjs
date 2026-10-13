@@ -51,6 +51,12 @@ for(const id of d().selectedIds){
 }
 const gymChoices=[...d().selectedIds];
 const firstGym=display();
+const previousGym=d().brainComparison.originalIds.map(id=>w.exById(id).name);
+assert(firstGym.length<=3,'short leg session should not overload movement count');
+assert(d().selectedIds.some(id=>w.exById(id).pattern==='knee_flexion'),
+ 'typical gym with common leg curl station should include knee-flexion hamstrings');
+assert(d().selectedIds.filter(id=>w.exById(id).pattern==='hinge').length<=1,
+ '30-minute gym legs should not stack multiple heavy hinge movements');
 assert(firstGym.some(x=>/squat|leg press|lunge|extension/i.test(x)),JSON.stringify(firstGym));
 assert(!firstGym.some(x=>/landmine|sled|ab wheel|power snatch/i.test(x)),'gym must not imply specialty stations');
 const renderBefore=modal;
@@ -141,5 +147,5 @@ assert.equal(w.coachBrainExerciseService().evaluateAvailability('lib_0',ctxA).st
 assert.equal(w.coachBrainExerciseService().evaluateAvailability('lib_0',ctxB).status,'unavailable');
 assert.equal(w.coachBrainExerciseService().evaluateAvailability('lib_0',ctxA).status,'available');
 
-console.log('Brain conversation and equipment-aware preview PASS',JSON.stringify({gym:firstGym,afterNoSquats:noSquatIds.map(id=>w.exById(id)?.name),newIds:idsNow.length,legacyBaseline:gymChoices.length}));
+console.log('Brain conversation and equipment-aware preview PASS',JSON.stringify({gym:firstGym,legacyGym:previousGym,afterNoSquats:noSquatIds.map(id=>w.exById(id)?.name),newIds:idsNow.length,legacyBaseline:gymChoices.length}));
 dom.window.close();
