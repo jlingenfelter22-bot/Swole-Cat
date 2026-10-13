@@ -68,14 +68,14 @@ assert.match(promptModal,/What equipment are you working with today/);
 assert.match(promptModal,/coachAnswerBrainEquipment/);
 w.coachAnswerBrainEquipment('bodyweight');
 assert(!/What equipment are you working with today/.test(promptModal),'equipment question must be asked once per request');
-assert(w.coachBuildDraft.request.allowedEquipment.every(x=>x==='bodyweight'));
-assert(w.coachBuildDraft.selectedIds.length>0,'selected bodyweight plan should generate');
-assert(w.coachBuildDraft.selectedIds.every(id=>w.exById(id).equipment==='bodyweight'),'selection must respect equipment');
+assert(w.eval('coachBuildDraft.request.allowedEquipment.every(x=>x===\"bodyweight\")'));
+assert(w.eval('coachBuildDraft.selectedIds.length>0'),'selected bodyweight plan should generate');
+assert(w.eval('coachBuildDraft.selectedIds.every(id=>exById(id).equipment===\"bodyweight\")'),'selection must respect equipment');
 
 w.eval('coachBuildDraft={request:coachParsePrompt("30-minute legs", "hypertrophy"),selectedIds:[],defaults:null,createdAt:"fixture"}');
 w.coachContinueRequest();
 w.coachAnswerBrainEquipment('skip');
-assert(w.coachBuildDraft.selectedIds.length>0,'skip must produce an editable plan');
+assert(w.eval('coachBuildDraft.selectedIds.length>0'),'skip must produce an editable plan');
 assert.match(promptModal,/Equipment was not specified/,'skip disclaimer must appear in preview');
 
 const explicit=w.coachParseExplicitWorkout('3 sets of bench press for 20 reps','hypertrophy');
