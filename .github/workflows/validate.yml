@@ -79,7 +79,7 @@ jobs:
           JS
 
       - name: Install DOM smoke-test dependency
-        run: npm install --no-save --package-lock=false jsdom@24
+        run: npm install --no-save --package-lock=false --ignore-scripts jsdom@24
 
       - name: Prepare bundled DOM smoke-test fixture
         run: |
