@@ -222,5 +222,13 @@
     "Seated Back Extension Machine",
     "Banded Hip Abduction"
   ],
-  "previousCatalogLabelsIntact": true
+  "previousCatalogLabelsIntact": true,
+  "originalPriorityCount": 86,
+  "deskResolvedPriorities": 86,
+  "additionalFindingsAdjudicated": 5,
+  "totalDeskAdjudicated": 91,
+  "unadjudicatedPriorityCount": 0,
+  "runtimeApprovedCount": 0,
+  "resolutionLedger": "docs/coach-brain/exercise-flag-resolution-91.json",
+  "notes": "Desk-level classification, not exercise-by-exercise scientific confirmation or live app behavior."
 }
