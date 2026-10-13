@@ -4,6 +4,19 @@ Last updated: 2026-10-13
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
 
+## LATEST DEVELOPMENT CHECKPOINT: Coach v0.89 PRE-RELEASE ACCEPTANCE (October 13, 2026)
+
+**Pick up here in the next chat. This supersedes the older v0.89 draft handoff below.**
+
+- **Current development stack:** PR #62 `feature/brain-v089-quality-remediation` (passes original 20-scenario test); PR #63 `feature/brain-v089-explicit-duration-acceptance` (full CI green, exact user-specified 5×5 and `4 sets of 6` preserved); and new draft **PR #64** https://github.com/jlingenfelter22-bot/Swole-Cat/pull/64 from `feature/brain-v089-preview-refresh-acceptance` (stacked atop #63).
+- **New finding:** 13/13 singles and 25/25 generated program days met the *engineering midpoint* time; however, **11/13 singles** and **23/25 program days** had *upper time estimates* over requested target. These are uncertainty ranges, **not** observed real-world overruns. Original post-remediation 20-case fixture: `docs/coach-brain/QUALITY_REMEDIATION_SCENARIOS_V089.json`.
+- **Implemented draft PR #64:** Fix generated session duration preview staying stale when user manually Swaps/Removes an exercise; recompute current exercise IDs/actual adjusted sets. Clean up removed/swapped automatic set overrides, without silently trimming the user's replacement. Preview now explains high-side time risks for singles and multi-day programs even when midpoint fits. Regression added to existing `scripts/coach-brain-quality-remediation-stress.mjs`.
+- **New acceptance document:** `docs/coach-brain/PRE_RELEASE_PHONE_ACCEPTANCE_V089.md` includes precise on-phone validation flow for exact 5×5, time-only edits, 20-minute gym legs, manual Swap/Remove, three-day full-body and measured real sessions. This is **not** Android testing completion or permission to release.
+- **Validation:** PR #64 needs full GitHub Actions validation and actual generated-output review. It was created draft against main only to trigger workflow, then retarget to PR #63 branch after CI, no merge or release.
+- **Release safety:** signed Testing is still v0.88.0/build 133, Beta remains v0.73.1. No account/data/cloud mutation or release. Owner approval needed for Testing promotion **after** CI and review; separate Beta approval. Do not claim real-device timing has been measured.
+
+---
+
 ## ACTIVE DEVELOPMENT CHECKPOINT: Coach Brain v0.89 (October 13, 2026)
 
 **THIS IS THE WORK TO RESUME IN THE NEXT CHAT, not the previous cloud account feature.**
