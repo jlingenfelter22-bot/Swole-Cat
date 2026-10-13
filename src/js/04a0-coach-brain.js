@@ -39,7 +39,7 @@ function coachBrainApplyEquipmentAnswer(request,choiceId,customEquipment=''){
  if(choiceId==='custom'){
   const parsed=typeof coachParseEquipment==='function'?coachParseEquipment(customEquipment):{allowed:[],excluded:[]};
   if(!parsed.allowed.length)return {ok:false,reason:'Name at least one piece of equipment that you have.'};
-  return {ok:true,request:{...request,allowedEquipment:[...parsed.allowed],excludedEquipment:[...(parsed.excluded||[])],brainEquipmentAnswer:'custom',brainEquipmentNote:String(customEquipment).trim()}};
+  return {ok:true,request:{...request,allowedEquipment:[...parsed.allowed],excludedEquipment:[...new Set([...(request.excludedEquipment||[]),...(parsed.excluded||[])])],brainEquipmentAnswer:'custom',brainEquipmentNote:String(customEquipment).trim()}};
  }
  if(choiceId==='skip')return {ok:true,request:{...request,brainEquipmentAnswer:'skipped',brainEquipmentNote:'Equipment unknown. Swap any exercises you cannot perform.'}};
  return {ok:true,request:{...request,allowedEquipment:[...choice.equipment],excludedEquipment:[...(request.excludedEquipment||[])].filter(x=>choice.equipment.includes(x)),brainEquipmentAnswer:choiceId,brainEquipmentNote:choice.label}};
