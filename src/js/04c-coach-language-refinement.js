@@ -451,6 +451,10 @@ function coachExplicitEditNumbers(text,draft,exerciseId,{forAdd=false}={}){
  let m;
  if((m=normalized.match(/\b(?:a|an)\s+sets?\b/i)))out.sets=1;
  if((m=normalized.match(/\b(\d+)\s+sets?\b/i)))out.sets=Number(m[1]);
+ // "4 sets of 6" updates both dimensions rather than inheriting old reps.
+ if((m=normalized.match(/\b\d+\s+sets?\s+of\s+(\d+)(?:\s*(?:-|to)\s*(\d+))?(?:\s*reps?)?\b/i))){
+   out.minReps=Number(m[1]);out.maxReps=Number(m[2]||m[1]);
+ }
  if((m=normalized.match(/\b(\d+)\s*x\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\b/i))){
    out.sets=Number(m[1]);out.minReps=Number(m[2]);out.maxReps=Number(m[3]||m[2]);
  }
