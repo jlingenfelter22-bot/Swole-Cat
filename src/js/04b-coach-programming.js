@@ -56,8 +56,8 @@ function coachMovementFamily(ex){
 }
 function coachFamilyCap(family,request,count){
  const keys=coachRequestedTargetKeys(request),single=keys.length===1?keys[0]:'';
- if(family==='row')return (['back','upper back','pull'].includes(single))&&count>=5?2:1;
- if(family==='vertical_pull')return (['back','lats','pull'].includes(single))&&count>=6?2:1;
+ if(family==='row')return request.brainEquipment&&request.programExerciseUsage?1:(['back','upper back','pull'].includes(single))&&count>=5?2:1;
+ if(family==='vertical_pull')return request.brainEquipment&&request.programExerciseUsage?1:(['back','lats','pull'].includes(single))&&count>=6?2:1;
  if(family==='biceps_curl'){
    if(single==='biceps'&&count>=2)return 2;
    if(single==='arms'&&count>=4)return 2;
@@ -128,7 +128,20 @@ function coachCandidateBaseScore(ex,request){
  let score=(primaryHits.length?115+(primaryHits.length-1)*32:0)+secondaryHits.length*28+preferenceRank(ex.id)+coachGenericExerciseBias(ex,request);
  if(typeof coachHistoryAwareCandidateAdjustment==='function')score+=coachHistoryAwareCandidateAdjustment(ex,request);
  const programUses=Number(request.programExerciseUsage?.[ex.id])||0;
- if(programUses)score-=programUses*(request.goal==='strength'?18:34);
+ if(programUses)score-=programUses*(request.goal==='strength'?18:44);
+ if(request.brainEquipment){
+   const priorHinges=request.programHingeHistory||[];
+   if(ex.pattern==='hinge'&&priorHinges.length){
+     if(/\\b(?:sumo|conventional|trap bar)?\\s*deadlift\\b/i.test(ex.name)&&!/romanian|stiff leg|single leg/i.test(ex.name))score-=100;
+     if(priorHinges.includes(ex.id))score-=100;
+     if(priorHinges.length>=2)score-=25;
+   }
+   if(keys.includes('arms')&&keys.includes('shoulders')){
+     if(['wrist_flexion','wrist_extension','grip'].includes(ex.pattern)&&!keys.includes('forearms'))score-=110;
+     if(ex.pattern==='elbow_extension'&&meta.primary.includes('triceps'))score+=42;
+   }
+   if(ex.equipment==='bodyweight'&&['squat','lunge'].includes(ex.pattern)&&request.experienceLevel!=='advanced')score+=22;
+ }
  meta.primary.filter(m=>priority.has(m)).forEach(()=>score+=82);
  meta.secondary.filter(m=>priority.has(m)).forEach(()=>score+=24);
  if(previousExercise(ex.id))score+=4;
@@ -462,13 +475,20 @@ function coachGenerateWorkout(request){
  const durationPlan=typeof coachBrainTrimToTime==='function'
    ?coachBrainTrimToTime(initialSelection,req,defaults):{exercises:initialSelection,time:null,removed:[]};
  const selected=durationPlan.exercises;
- if(!selected.length)return null;
+ if(!selected.length||!durationPlan.feasible)return null;
  // For a short generic leg session, do not claim a balanced leg workout
  // from glute accessories and calf work when the available catalog lacks
  // any knee-dominant quads or knee-flexion hamstrings movement.
  if(req.brainEquipment&&coachRequestedTargetKeys(req).some(k=>['legs','lower body'].includes(k))){
    const covered=selected.map(ex=>ex.pattern);
-   if(!covered.some(p=>p==='squat'||p==='lunge')||!covered.some(p=>p==='knee_flexion'||p==='hinge'))return null;
+   if(!covered.some(p=>p==='squat'||p==='lunge')||!covered.some(p=>p==='knee_flexion'||p==='hinge'||p==='hip_extension'))return null;
+ }
+ if(req.brainEquipment&&coachRequestedTargetKeys(req).includes('full body')){
+   const patterns=selected.map(ex=>ex.pattern);
+   const hasPull=patterns.some(p=>p==='horizontal_pull'||p==='vertical_pull');
+   const hasPush=patterns.some(p=>p==='horizontal_press'||p==='incline_press'||p==='vertical_press');
+   const hasKnee=patterns.some(p=>p==='squat'||p==='lunge'||p==='knee_extension');
+   if(!hasPull||!hasPush||!hasKnee)return null;
  }
  const baselineSelection=req.brainEquipment?
    coachSelectExercises({...req,brainEquipment:null,excludedMovementPatterns:[]},defaults.exerciseCount):[];
@@ -480,6 +500,6 @@ function coachGenerateWorkout(request){
  }:null;
  const intelligenceAudit=typeof coachWorkoutIntelligenceAudit==='function'?coachWorkoutIntelligenceAudit(req,selected,defaults):null;
  if(intelligenceAudit&&!intelligenceAudit.pass)return null;
- coachBuildDraft={request:req,defaults,selectedIds:selected.map(x=>x.id),intelligenceAudit,brainComparison,brainTime:durationPlan.time,brainTimeRemoved:durationPlan.removed,createdAt:new Date().toISOString(),lastRefinement:request.lastRefinement||''};
+ coachBuildDraft={request:req,defaults,selectedIds:selected.map(x=>x.id),intelligenceAudit,brainComparison,brainTime:durationPlan.time,brainTimeRemoved:durationPlan.removed,brainSetCounts:durationPlan.setCounts,createdAt:new Date().toISOString(),lastRefinement:request.lastRefinement||''};
  return coachBuildDraft;
 }
