@@ -1,5 +1,8 @@
 # Swole Cat Brain: 308-Exercise Knowledge Audit
 
+**Adjudication update (2026-10-13):** All 86 original priority flags now have documented desk-level classification decisions, with five additional specialized profiles reviewed. See [FLAG_ADJUDICATION.md](FLAG_ADJUDICATION.md), [91-entry resolution ledger](exercise-flag-resolution-91.json), and [review CSV](exercise-flag-resolution-91.csv). The full 308-record audit now contains a `proposed` classification overlay with corrected station requirements, movement roles, variable loading and side execution. **Original v0.88 catalog fields and muscle mappings remain untouched.** External coaching validation and all runtime implementation approvals are still required. The initial 86 remains a historical count, not the number of still-unclassified rows.
+
+
 **Date:** 2026-10-13. **Source:** `src/data/exercises.js` and `src/js/02-muscle-history-analytics.js` on the v0.88 main baseline. **Status:** first-pass complete inventory, research-informed desk classification, **NOT** a final biomechanical peer review or installed Brain knowledge. This audit intentionally causes **no application behavior, version, Coach ranking, history or cloud changes**. Beta remains untouched.
 
 ## Files and how to use them
