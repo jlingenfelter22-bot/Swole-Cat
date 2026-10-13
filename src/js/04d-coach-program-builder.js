@@ -248,40 +248,145 @@ function coachStartProgramFirstWorkout(){
  save();renderRoutines();renderPrograms();renderHome();closeModal();
  state.activeProgramId=p.id;save();startProgramWorkout(p.id,0);showToast('Coach program saved · Day 1 ready');
 }
+// Program intake is ephemeral until Save Program. Specific prompts skip answered steps.
+const COACH_PROGRAM_DAY_FOCUSES=['push','pull','legs','chest','back','shoulders','arms','upper body','lower body','full body'];
+function coachProgramIntake(d=coachProgramBuildDraft){if(d&&!d.intake)d.intake={};return d?.intake||null}
+function coachProgramHasExplicitGoal(req){
+ return /\b(?:hypertrophy|muscle growth|build muscle|gain muscle|strength|stronger|get strong|powerlifting|general fitness|general training|stay active)\b/i.test(String(req?.prompt||''));
+}
+function coachProgramQuestion(title,body,note=''){
+ openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">PROGRAM SETUP // YOUR PLAN</div><div class="coach-question">${esc(title)}</div>${note?`<div class="mini" style="margin:8px 0">${esc(note)}</div>`:''}${body}</div>`);
+}
 function coachContinueProgramRequest(){
- const draft=coachProgramBuildDraft;if(!draft)return;
- if(!draft.intent.frequency){
-   openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">ONE QUICK QUESTION</div><div class="coach-question">How many days per week can you train?</div><div class="coach-choice-grid">${[2,3,4,5,6].map(n=>`<button class="btn secondary" onclick="coachAnswerProgramFrequency(${n})">${n} days</button>`).join('')}</div></div>`);
-   return;
+ const d=coachProgramBuildDraft;if(!d)return;
+ const intent=d.intent,req=d.request,a=coachProgramIntake(d);
+ if(!intent.frequency){
+  coachProgramQuestion('How many days per week do you want to train?',
+   `<div class="coach-choice-grid">${[2,3,4,5,6].map(n=>`<button class="btn secondary" onclick="coachAnswerProgramFrequency(${n})">${n} days</button>`).join('')}</div>`);
+  return;
  }
- if(draft.interactiveBrainFlow){
-   const question=coachBrainProgramNeedsQuestion(draft.request);
-   if(question==='duration'){
-     openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">PROGRAM SETUP</div><div class="coach-question">How much time per workout?</div><div class="coach-choice-grid">${[30,45,60,75].map(m=>`<button class="btn secondary" onclick="coachAnswerProgramDuration(${m})">${m} minutes</button>`).join('')}</div></div>`);
-     return;
-   }
-   if(question==='equipment'){
-     openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">PROGRAM SETUP</div><div class="coach-question">What equipment do you have for these workouts?</div><div class="mini">You can change this later; Coach won't assume specialized machines or attachments.</div><div class="coach-choice-grid">${COACH_BRAIN_EQUIPMENT_CHOICES.map(c=>`<button class="btn secondary" onclick="coachAnswerProgramBrainEquipment('${c.key}')">${esc(c.label)}</button>`).join('')}</div></div>`);
-     return;
-   }
-   if(!draft.request.brainEquipment)draft.request.brainEquipment=coachBrainExplicitEquipment(draft.request);
+ if(!intent.split){
+  coachProgramQuestion('What kind of split did you have in mind?',
+   `<div class="coach-choice-grid">
+    <button class="btn secondary" onclick="coachAnswerProgramSplit('ppl')">Push / Pull / Legs</button>
+    <button class="btn secondary" onclick="coachAnswerProgramSplit('upper_lower')">Upper / Lower rotation</button>
+    <button class="btn secondary" onclick="coachAnswerProgramSplit('custom')">Choose each day's muscle focus</button>
+    <button class="btn secondary" onclick="coachAnswerProgramSplit('full_body')">Full body each day</button></div>`,
+   'A three-day split does not automatically mean three full-body workouts.');
+  return;
  }
- if(!coachGenerateProgram(draft.request,draft.intent,draft)){
-   openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">ADJUST THE PROGRAM</div><div class="coach-question">Those equipment limits don't support every day yet.</div><div class="mini">Try different available equipment or a less demanding split. Coach won't invent exercises or machines. A floor-only full-body plan also needs a genuine pulling option, such as an available pull-up bar; otherwise choose a narrower workout goal.</div><div class="actions"><button class="btn" onclick="coachRetryProgramBrainEquipment()">Change equipment</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New request</button></div></div>`);
-   return;
+ if(intent.split==='custom'&&(!Array.isArray(intent.customSlots)||intent.customSlots.length!==intent.frequency)){
+  const chosen=intent.customSlots||[],n=chosen.length;
+  if(n>intent.frequency){intent.customSlots=[];return coachContinueProgramRequest()}
+  coachProgramQuestion(`What should Day ${n+1} focus on?`,
+   `<div class="mini" style="margin:7px 0">${chosen.length?'Chosen: '+esc(chosen.map(x=>COACH_TARGET_GROUPS[x]?.label||x).join(' / ')):'Choose your own body-part division.'}</div>
+   <div class="coach-choice-grid">${COACH_PROGRAM_DAY_FOCUSES.map(key=>`<button class="btn secondary" onclick="coachAnswerProgramCustomDay('${key}')">${esc(COACH_TARGET_GROUPS[key].label)}</button>`).join('')}</div>
+   ${n?'<div class="actions"><button class="btn secondary" onclick="coachUndoProgramCustomDay()">Change previous day</button></div>':''}`,
+   'Each choice will become a separate routine; Coach will not switch it to full body.');
+  return;
+ }
+ if(!(req.duration>0)){
+  coachProgramQuestion('How much time do you have per workout?',
+   `<div class="coach-choice-grid">${[30,45,60,75,90].map(m=>`<button class="btn secondary" onclick="coachAnswerProgramDuration(${m})">${m} minutes</button>`).join('')}</div>`,
+   'We estimate working sets, rest, warm-up and equipment transitions for each day.');
+  return;
+ }
+ if(d.interactiveBrainFlow&&coachBrainProgramNeedsQuestion(req)==='equipment'){
+  coachProgramQuestion('Where will you train, and what equipment do you have?',
+   `<div class="coach-choice-grid">${COACH_BRAIN_EQUIPMENT_CHOICES.map(c=>`<button class="btn secondary" onclick="coachAnswerProgramBrainEquipment('${c.key}')">${esc(c.label)}</button>`).join('')}</div>`);
+  return;
+ }
+ if(d.interactiveBrainFlow&&!req.brainEquipment)req.brainEquipment=coachBrainExplicitEquipment(req);
+ if(!a.scheduleAnswered&&(!intent.preferredDays||intent.preferredDays.length!==intent.frequency)){
+  const chosen=intent.preferredDays||[];
+  coachProgramQuestion('Which days work best for you?',
+   `<div class="mini" style="margin:8px 0">Choose ${intent.frequency} days, or leave the schedule flexible. ${chosen.length} selected.</div>
+   <div class="coach-choice-grid">${PROGRAM_DAYS.map((day,n)=>`<button class="btn ${chosen.includes(n)?'':'secondary'}" aria-pressed="${chosen.includes(n)}" onclick="coachToggleProgramScheduleDay(${n})">${esc(day)}</button>`).join('')}</div>
+   <div class="actions"><button class="btn" onclick="coachConfirmProgramSchedule()" ${chosen.length===intent.frequency?'':'disabled'}>Use these days</button><button class="btn secondary" onclick="coachUseFlexibleProgramSchedule()">No fixed days</button></div>`,
+   'These are preferred training days, not calendar reminders.');
+  return;
+ }
+ if(!a.goalAnswered&&!coachProgramHasExplicitGoal(req)){
+  coachProgramQuestion('What is your primary goal?',
+   `<div class="coach-choice-grid"><button class="btn secondary" onclick="coachAnswerProgramGoal('hypertrophy')">Build muscle</button><button class="btn secondary" onclick="coachAnswerProgramGoal('strength')">Build strength</button><button class="btn secondary" onclick="coachAnswerProgramGoal('general')">General fitness</button></div>`,
+   'This informs exercise selection and suggested sets and reps.');
+  return;
+ }
+ if(!intent.trainingMode){
+  coachProgramQuestion('How would you like to track progression?',
+   `<div class="coach-choice-grid"><button class="btn secondary" onclick="coachAnswerProgramTrainingMode('guided')">Guided Progressive Overload</button><button class="btn secondary" onclick="coachAnswerProgramTrainingMode('strength')">Strength Focus</button><button class="btn secondary" onclick="coachAnswerProgramTrainingMode('track')">Track Only / Standard</button></div>`,
+   'Program training mode controls how sessions progress. You can change it later.');
+  return;
+ }
+ if(intent.trainingMode==='guided'&&!a.deloadAnswered&&!intent.deload){
+  coachProgramQuestion('Would you like optional deload weeks?',
+   `<div class="coach-choice-grid"><button class="btn secondary" onclick="coachAnswerProgramDeload(0)">No scheduled deload</button>${[3,4,5,6,7,8].map(n=>`<button class="btn secondary" onclick="coachAnswerProgramDeload(${n})">Every ${n}th week${n===4?' (suggested)':''}</button>`).join('')}</div>`,
+   'Deloads are lighter planned weeks, not a diagnosis. Review and confirm each one before it begins.');
+  return;
+ }
+ if(!coachGenerateProgram(req,intent,d)){
+  coachProgramQuestion('That combination needs a few adjustments.',
+   '<div class="mini">Some days need more time, a different focus, or different available equipment. Coach will not invent equipment.</div><div class="actions"><button class="btn" onclick="coachRetryProgramBrainEquipment()">Change equipment</button><button class="btn secondary" onclick="coachRestartProgramSplit()">Change split</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New request</button></div>');
+  return;
  }
  renderCoachProgramPreview();
 }
 function coachAnswerProgramFrequency(days){
- if(!coachProgramBuildDraft)return;
- coachProgramBuildDraft.intent.frequency=Math.max(2,Math.min(6,Number(days)||3));
- if(!coachProgramBuildDraft.intent.split)coachProgramBuildDraft.intent.split=coachDefaultProgramSplit(coachProgramBuildDraft.intent.frequency);
+ const d=coachProgramBuildDraft;if(!d)return;
+ d.intent.frequency=Math.max(2,Math.min(6,Number(days)||3));d.intent.customSlots=[];
+ if(d.intent.preferredDays?.length!==d.intent.frequency)d.intent.preferredDays=[];
  coachContinueProgramRequest();
 }
+function coachAnswerProgramSplit(split){
+ const d=coachProgramBuildDraft;if(!d||!['ppl','upper_lower','full_body','custom'].includes(split))return;
+ d.intent.split=split;d.intent.customSlots=[];coachContinueProgramRequest();
+}
+function coachRestartProgramSplit(){
+ const d=coachProgramBuildDraft;if(!d)return;
+ d.intent.split='';d.intent.customSlots=[];d.days=[];coachContinueProgramRequest();
+}
+function coachAnswerProgramCustomDay(key){
+ const d=coachProgramBuildDraft;if(!d||d.intent.split!=='custom'||!COACH_PROGRAM_DAY_FOCUSES.includes(key))return;
+ d.intent.customSlots=[...(d.intent.customSlots||[]).slice(0,d.intent.frequency-1),key];coachContinueProgramRequest();
+}
+function coachUndoProgramCustomDay(){
+ const d=coachProgramBuildDraft;if(!d||d.intent.split!=='custom')return;
+ d.intent.customSlots=(d.intent.customSlots||[]).slice(0,-1);coachContinueProgramRequest();
+}
 function coachAnswerProgramDuration(minutes){
- if(!coachProgramBuildDraft)return;
- coachProgramBuildDraft.request.duration=Math.max(15,Math.min(120,Number(minutes)||45));
+ const d=coachProgramBuildDraft;if(!d)return;
+ d.request.duration=Math.max(15,Math.min(120,Number(minutes)||45));coachContinueProgramRequest();
+}
+function coachToggleProgramScheduleDay(day){
+ const d=coachProgramBuildDraft;if(!d||!Number.isInteger(day)||day<0||day>6)return;
+ const chosen=[...(d.intent.preferredDays||[])],i=chosen.indexOf(day);
+ if(i<0&&chosen.length>=d.intent.frequency){showToast('Choose only '+d.intent.frequency+' days');return}
+ if(i>=0)chosen.splice(i,1);else chosen.push(day);
+ d.intent.preferredDays=chosen.sort((a,b)=>a-b);coachContinueProgramRequest();
+}
+function coachConfirmProgramSchedule(){
+ const d=coachProgramBuildDraft;if(!d)return;
+ if(d.intent.preferredDays?.length!==d.intent.frequency){showToast('Choose '+d.intent.frequency+' days or flexible');return}
+ coachProgramIntake(d).scheduleAnswered=true;coachContinueProgramRequest();
+}
+function coachUseFlexibleProgramSchedule(){
+ const d=coachProgramBuildDraft;if(!d)return;
+ d.intent.preferredDays=[];coachProgramIntake(d).scheduleAnswered=true;coachContinueProgramRequest();
+}
+function coachAnswerProgramGoal(goal){
+ const d=coachProgramBuildDraft;if(!d||!['hypertrophy','strength','general'].includes(goal))return;
+ d.request.goal=goal;coachProgramIntake(d).goalAnswered=true;coachContinueProgramRequest();
+}
+function coachAnswerProgramTrainingMode(mode){
+ const d=coachProgramBuildDraft;if(!d||!['guided','strength','track'].includes(mode))return;
+ d.intent.trainingMode=mode;if(mode!=='guided')d.intent.deload=programDeloadConfig({enabled:false});
  coachContinueProgramRequest();
+}
+function coachAnswerProgramDeload(weeks){
+ const d=coachProgramBuildDraft;if(!d||d.intent.trainingMode!=='guided')return;
+ const n=Number(weeks);if(!Number.isInteger(n)||(n!==0&&(n<3||n>8)))return;
+ d.intent.deload=programDeloadConfig({enabled:n!==0,intervalWeeks:n||4});
+ coachProgramIntake(d).deloadAnswered=true;coachContinueProgramRequest();
 }
 function coachRetryProgramBrainEquipment(){
  if(!coachProgramBuildDraft)return;
