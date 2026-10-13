@@ -132,7 +132,7 @@ function coachCandidateBaseScore(ex,request){
  if(request.brainEquipment){
    const priorHinges=request.programHingeHistory||[];
    if(ex.pattern==='hinge'&&priorHinges.length){
-     if(/\\b(?:sumo|conventional|trap bar)?\\s*deadlift\\b/i.test(ex.name)&&!/romanian|stiff leg|single leg/i.test(ex.name))score-=100;
+     if(/\b(?:sumo|conventional|trap bar)?\s*deadlift\b/i.test(ex.name)&&!/romanian|stiff leg|single leg/i.test(ex.name))score-=100;
      if(priorHinges.includes(ex.id))score-=100;
      if(priorHinges.length>=2)score-=25;
    }
