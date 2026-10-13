@@ -3,6 +3,10 @@
  // automatic sync runs after local saves and on low-frequency refresh triggers, while
  // manual Sync Now remains available as a recovery/control surface.
 const SWOLE_CAT_SYNC_LOCAL_KEY='swolecat-sync-local-v1';
+// Per-owner snapshots are recovery-only. Never upload them to a different owner.
+const SWOLE_CAT_SWITCH_SNAPSHOT_PREFIX='swolecat-account-exit-snapshot-v1:';
+const SWOLE_CAT_SWITCH_PENDING_KEY='swolecat-account-exit-pending-v1';
+let swoleCatSyncAccountExitInProgress=false;
 const SWOLE_CAT_SYNC_LOCAL_VERSION=1;
 const SWOLE_CAT_SYNC_SCHEMA_VERSION=1;
 const SWOLE_CAT_SYNC_PULL_LIMIT=500;
@@ -47,7 +51,7 @@ function syncAutoEnabled(){
   return typeof cloudAutomationPrefs==='function'?cloudAutomationPrefs().autoSync!==false:true;
 }
 function syncAutoCanRun(){
-  if(swoleCatSyncApplyingRemote||storageWriteBlocked||!syncAutoEnabled()||!syncCanUse()||syncLoadLocal().pausedAfterErase)return false;
+  if(swoleCatSyncApplyingRemote||swoleCatSyncAccountExitInProgress||storageWriteBlocked||!syncAutoEnabled()||!syncCanUse()||syncLoadLocal().pausedAfterErase)return false;
   if(typeof navigator!=='undefined'&&navigator.onLine===false)return false;
   if(typeof document!=='undefined'&&document.visibilityState==='hidden')return false;
   return true;
@@ -420,7 +424,7 @@ async function syncCaptureLocalChanges(){
   return syncEmitChange();
 }
 function syncScheduleCapture(){
-  if(swoleCatSyncApplyingRemote)return;
+  if(swoleCatSyncApplyingRemote||swoleCatSyncAccountExitInProgress)return;
   if(swoleCatSyncCaptureTimer)clearTimeout(swoleCatSyncCaptureTimer);
   swoleCatSyncCaptureTimer=setTimeout(()=>{
     swoleCatSyncCaptureTimer=null;
@@ -620,6 +624,134 @@ async function cloudSyncNow(){
     swoleCatSyncInFlight=null;
   }
 }
+// Account exit is a transaction: sync first, verify no pending conflicts, write
+// a durable owner-specific safety copy, sign out, then clean the on-device view.
+// If any pre-logout step fails, leave the account signed in and data unchanged.
+function syncSwitchSnapshotKey(ownerId){
+  return SWOLE_CAT_SWITCH_SNAPSHOT_PREFIX+String(ownerId||'');
+}
+function syncReadAccountExitPending(){
+  try{return JSON.parse(swoleCatStorage.getItem(SWOLE_CAT_SWITCH_PENDING_KEY)||'null')}
+  catch(error){return null}
+}
+function syncCancelAccountExit(){
+  const pending=syncReadAccountExitPending();
+  if(pending?.phase==='prepared'){
+    swoleCatStorage.removeItem(SWOLE_CAT_SWITCH_PENDING_KEY);
+  }
+  swoleCatSyncAccountExitInProgress=false;
+}
+async function syncPrepareAccountExit(ownerId){
+  if(swoleCatSyncAccountExitInProgress)throw new Error('An account switch is already in progress.');
+  if(!ownerId||syncIdentityUser()?.id!==ownerId)throw new Error('Account changed before sign-out could begin.');
+  if(state.activeWorkout)throw new Error('Finish your active workout before switching accounts. An unfinished workout is local-only and cannot be cloud synced.');
+  if(storageWriteBlocked)throw new Error('Local data storage is not writable, so account switching was stopped.');
+  if(syncForeignAccountBlocked(ownerId))throw new Error('Local data does not belong to this cloud account. Export it before attempting an account switch.');
+  const pending=syncReadAccountExitPending();
+  if(pending)throw new Error('An earlier account switch needs recovery before you can sign out again.');
+  swoleCatSyncAccountExitInProgress=true;
+  if(swoleCatSyncAutoTimer){clearTimeout(swoleCatSyncAutoTimer);swoleCatSyncAutoTimer=null;}
+  if(swoleCatSyncCaptureTimer){clearTimeout(swoleCatSyncCaptureTimer);swoleCatSyncCaptureTimer=null;}
+  try{
+    if(typeof flushPendingStateSave==='function'&&!flushPendingStateSave())throw new Error('A pending local workout save could not complete.');
+    let lastRaw='';
+    for(let attempt=0;attempt<3;attempt++){
+      const before=stateRevision;
+      const synced=await cloudSyncNow();
+      syncAssertAccount(ownerId);
+      const local=syncLoadLocal();
+      if(local.ownerId!==ownerId)throw new Error('Sync ownership changed unexpectedly.');
+      if(local.pausedAfterErase)throw new Error('Sync is paused after an erase. Choose Sync Now and verify your account before switching.');
+      if(Object.keys(local.conflicts).length||synced.conflicts)throw new Error('Resolve your existing cloud sync conflicts before switching accounts.');
+      if(local.queue.length)throw new Error('Cloud still has queued local changes. Switching accounts is blocked.');
+      // A state change during a network roundtrip may have missed the capture.
+      const raw=swoleCatStorage.getItem(LSKEY);
+      if(stateRevision!==before&&attempt<2)continue;
+      await syncCaptureLocalChanges();
+      if(syncLoadLocal().queue.length){if(attempt<2)continue;throw new Error('Unsynced changes appeared during sign-out. Try again once edits have stopped.');}
+      lastRaw=raw;
+      break;
+    }
+    if(!lastRaw)throw new Error('Could not verify a stable fully synchronized local state.');
+    if(state.activeWorkout)throw new Error('An active workout started during the account switch.');
+    const local=syncLoadLocal();
+    const savedAt=new Date().toISOString();
+    const safety={version:1,ownerId,savedAt,raw:lastRaw,syncLocal:local};
+    const key=syncSwitchSnapshotKey(ownerId);
+    swoleCatStorage.setItem(key,JSON.stringify(safety));
+    const checked=JSON.parse(swoleCatStorage.getItem(key)||'null');
+    if(checked?.ownerId!==ownerId||checked.raw!==lastRaw)throw new Error('Device could not verify the pre-sign-out workout safety snapshot.');
+    swoleCatStorage.setItem(SWOLE_CAT_SWITCH_PENDING_KEY,JSON.stringify({version:1,ownerId,phase:'prepared',savedAt}));
+    if(swoleCatStorage.getItem(LSKEY)!==lastRaw||syncIdentityUser()?.id!==ownerId){
+      throw new Error('Local state changed while preparing to switch. Sign-out was canceled.');
+    }
+    return {ownerId,savedAt,sessionCount:state.sessions.length};
+  }catch(error){
+    try{syncCancelAccountExit()}catch(ignore){}
+    throw error;
+  }
+}
+function syncMarkAccountSignedOut(ownerId){
+  const pending=syncReadAccountExitPending();
+  if(pending?.phase!=='prepared'||pending.ownerId!==ownerId)throw new Error('No verified account exit is ready.');
+  const next={...pending,phase:'signed_out'};
+  swoleCatStorage.setItem(SWOLE_CAT_SWITCH_PENDING_KEY,JSON.stringify(next));
+  return next;
+}
+function syncCompleteAccountExit(){
+  const pending=syncReadAccountExitPending();
+  if(pending?.phase!=='signed_out')throw new Error('Account sign-out has not been confirmed.');
+  const key=syncSwitchSnapshotKey(pending.ownerId);
+  const safety=JSON.parse(swoleCatStorage.getItem(key)||'null');
+  if(safety?.ownerId!==pending.ownerId||!safety.raw)throw new Error('Account safety snapshot is unavailable. No local data will be cleared.');
+  if(swoleCatStorage.getItem(LSKEY)!==safety.raw){
+    // A post-sign-out edit to the old data must not be dropped automatically.
+    throw new Error('Local workout data changed after signing out. Your data is preserved for recovery.');
+  }
+  const originalState=state,originalSync=syncLoadLocal();
+  try{
+    state=freshState();
+    if(!save({syncRelevant:false}))throw new Error(lastStorageError||'Could not save the empty signed-out workspace.');
+    const next=syncSaveLocal({...syncDefaultLocal(),pausedAfterErase:false});
+    if(next.ownerId!==null||swoleCatStorage.getItem(LSKEY)==null)throw new Error('Signed-out workspace verification failed.');
+    // The generic recovery and pre-import keys contain the previous owner's
+    // data. Keep the verified owner-specific safety copy, but do not let
+    // load() resurrect an older account's history into a new owner's workspace.
+    swoleCatStorage.removeItem(RECOVERYKEY);
+    swoleCatStorage.removeItem(IMPORTSNAPSHOTKEY);
+    recoverySnapshotWritten=false;
+    recoveredFromSnapshot=false;
+    if(swoleCatStorage.getItem(RECOVERYKEY)!==null||swoleCatStorage.getItem(IMPORTSNAPSHOTKEY)!==null)
+      throw new Error('Could not isolate legacy device recovery records.');
+    swoleCatStorage.removeItem(SWOLE_CAT_SWITCH_PENDING_KEY);
+    swoleCatSyncAccountExitInProgress=false;
+    renderHome();populateMuscles();updateActiveWorkoutChrome();
+    return {ok:true,snapshotAt:safety.savedAt};
+  }catch(error){
+    state=originalState;
+    try{
+      swoleCatStorage.setItem(LSKEY,safety.raw);
+      syncSaveLocal(originalSync);
+    }catch(ignore){}
+    throw error;
+  }
+}
+function syncReconcilePendingAccountExit(signedInOwnerId){
+  const pending=syncReadAccountExitPending();
+  if(!pending)return false;
+  if(pending.phase==='signed_out'&&String(signedInOwnerId||'')!==String(pending.ownerId)){
+    syncCompleteAccountExit();
+    return true;
+  }
+  if(pending.phase==='prepared'&&signedInOwnerId===pending.ownerId){
+    // Auth never completed sign-out; keep this account and its original data.
+    syncCancelAccountExit();
+    return false;
+  }
+  // Unknown auth outcome or account mismatch: never auto-clear unsafe state.
+  swoleCatSyncAccountExitInProgress=false;
+  return false;
+}
 function cloudSyncResetLocalMetadata(){
   const local=syncLoadLocal();
   const next=syncSaveLocal({
@@ -751,7 +883,12 @@ const swoleCatCloudSyncService=SwoleCatRuntime.registerService('cloudSync',{
   syncNow:cloudSyncNow,
   scheduleAuto:syncScheduleAuto,
   resolveConflict:cloudSyncResolveConflict,
-  resetLocalMetadata:cloudSyncResetLocalMetadata
+  resetLocalMetadata:cloudSyncResetLocalMetadata,
+  prepareAccountExit:syncPrepareAccountExit,
+  markAccountSignedOut:syncMarkAccountSignedOut,
+  completeAccountExit:syncCompleteAccountExit,
+  cancelAccountExit:syncCancelAccountExit,
+  reconcilePendingAccountExit:syncReconcilePendingAccountExit
 });
 
 SwoleCatRuntime.events.addEventListener('state:saved',event=>{

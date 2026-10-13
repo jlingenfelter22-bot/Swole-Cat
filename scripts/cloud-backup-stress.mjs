@@ -202,10 +202,18 @@ await cloud.registerProvider({
 await assert.rejects(()=>cloud.list(),/cloud offline/);
 assert.equal(w.localStorage.getItem('overload_v3'),localBeforeFailure,'cloud failure must not mutate or block local workout data');
 
-await identity.signOut();
-assert.equal(identity.snapshot().signedIn,false);
-await assert.rejects(()=>cloud.backUpNow(),/Sign in/i);
-assert.equal(w.localStorage.getItem('overload_v3'),localBeforeFailure,'signed-out cloud backup attempts must leave local data untouched');
+// Fake an offline sync adapter to prove sign-out fails closed, without
+// inadvertently loading Supabase's network SDK inside a DOM smoke test.
+w.SwoleCatRuntime.getService('cloudSync').registerProvider({
+  async registerDevice(){throw new Error('Cloud sync offline');},
+  async pullChanges(){throw new Error('Cloud sync offline');},
+  async getRecord(){return null;},
+  async insertRecord(){throw new Error('Cloud sync offline');},
+  async updateRecord(){throw new Error('Cloud sync offline');}
+});
+await assert.rejects(()=>identity.signOut(),/Cloud sync offline/);
+assert.equal(identity.snapshot().signedIn,true);
+assert.equal(w.localStorage.getItem('overload_v3'),localBeforeFailure,'blocked sign-out preserves local workouts');
 
 dom.window.close();
 console.log('Swole Cat v0.69.4 cloud backup and restore PASS');

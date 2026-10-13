@@ -113,7 +113,7 @@ async function makeApp(initial){
     async signInWithGoogle(){return {user:{id:'sync-user-1',email:'sync@example.com',provider:'google'}};},
     async reauthenticateWithGoogle(){return {redirecting:true};},
     async deleteAccount(){return {ok:true};},
-    async signOut(){return {ok:true};}
+    async signOut(){if(w.__fakeSignOutFails)throw new Error('Sign-out provider unavailable');return {ok:true};}
   });
   assert.equal(identity.snapshot().signedIn,true);
   const probe={z:2,a:'hash compatibility'};
@@ -370,47 +370,106 @@ await accountApp.sync.registerProvider(backendProvider());
 await accountApp.sync.syncNow();
 assert(backend.records.has(recordKey('sync-user-1','session','private-session-a')),
   'initial cloud owner receives its own completed workout');
+
+const rawA=accountApp.w.localStorage.getItem('overload_v3');
+
+// Refuse to switch when cloud is unavailable, or when the current workout is
+// unfinished. Both refusals preserve the signed-in identity and local state.
+backend.fail=true;
+await assert.rejects(()=>accountApp.identity.signOut(),/offline/);
+assert.equal(accountApp.identity.snapshot().user.id,'sync-user-1');
+assert.equal(accountApp.w.localStorage.getItem('overload_v3'),rawA);
+backend.fail=false;
+
+accountApp.w.eval("state.activeWorkout={id:'incomplete',status:'active',exercises:[]};save()");
+await assert.rejects(()=>accountApp.identity.signOut(),/Finish your active workout/);
+assert.equal(accountApp.identity.snapshot().user.id,'sync-user-1');
+accountApp.w.eval('state.activeWorkout=null;save()');
+
+// A provider sign-out failure must leave the old account live and its local
+// training intact. The pending transaction is rolled back safely.
+accountApp.w.__fakeSignOutFails=true;
+await assert.rejects(()=>accountApp.identity.signOut(),/Sign-out provider unavailable/);
+assert.equal(accountApp.identity.snapshot().user.id,'sync-user-1');
+assert.equal(JSON.parse(accountApp.w.localStorage.getItem('overload_v3')).sessions[0].id,'private-session-a');
+assert.equal(accountApp.w.localStorage.getItem('swolecat-account-exit-pending-v1'),null);
+accountApp.w.__fakeSignOutFails=false;
+
+// The second cloud owner already has unrelated real training.
+const bSession={
+  owner_id:'sync-user-2',record_type:'session',record_id:'private-session-b',
+  payload_json:{id:'private-session-b',date:'2026-10-12T10:00:00.000Z',routineName:'Private B',exercises:[]},
+  record_version:1,server_change_seq:++backend.seq,source_device_id:'other-device',
+  client_updated_at:new Date().toISOString(),server_updated_at:new Date().toISOString(),
+  deleted_at:null,schema_version:1,last_mutation_id:'other-mutation'
+};
+backend.records.set(recordKey('sync-user-2','session','private-session-b'),bSession);
+
+// Generic recovery/undo snapshots must be replaced by the owner-specific
+// safety copy rather than leaking into a different Google workspace.
+accountApp.w.localStorage.setItem('overload_v3_recovery_v1',JSON.stringify({raw:'old A recovery'}));
+accountApp.w.localStorage.setItem('overload_v3_pre_import_v1',JSON.stringify({raw:'old A import undo'}));
+const beforeExit=accountApp.w.localStorage.getItem('overload_v3');
+const syncBeforeExit=[...backend.records.values()].filter(row=>row.owner_id==='sync-user-1').length;
 await accountApp.identity.signOut();
+assert.equal(accountApp.identity.snapshot().signedIn,false,'sign-out should complete only after owner A sync');
+assert.equal(JSON.parse(accountApp.w.localStorage.getItem('overload_v3')).sessions.length,0,'signed-out workspace has no A workouts');
+const snapshotA=JSON.parse(accountApp.w.localStorage.getItem('swolecat-account-exit-snapshot-v1:sync-user-1'));
+assert.equal(snapshotA.ownerId,'sync-user-1');
+assert.equal(JSON.parse(snapshotA.raw).sessions[0].id,'private-session-a','A history is kept in a durable account-specific snapshot');
+assert.equal(snapshotA.raw,beforeExit,'exit snapshot includes exactly the last synced device state');
+assert.equal(accountApp.w.localStorage.getItem('swolecat-account-exit-pending-v1'),null);
+assert.equal(accountApp.w.localStorage.getItem('overload_v3_recovery_v1'),null,'old generic recovery must not leak to B');
+assert.equal(accountApp.w.localStorage.getItem('overload_v3_pre_import_v1'),null,'old import undo must not leak to B');
+assert.equal(JSON.parse(accountApp.w.localStorage.getItem('swolecat-sync-local-v1')).ownerId,null,
+ 'new workspace cannot carry A sync bookkeeping into B');
+assert([...backend.records.values()].filter(row=>row.owner_id==='sync-user-1').length>=syncBeforeExit,
+ 'A records remain in its own cloud without deletions');
 const secondIdentityProvider={
- async restoreSession(){return {user:{id:'sync-user-2',email:'other@example.com',provider:'google'}};},
- async signInWithGoogle(){return {user:{id:'sync-user-2',email:'other@example.com',provider:'google'}};},
- async reauthenticateWithGoogle(){return {redirecting:true};},
- async deleteAccount(){return {ok:true};},
- async signOut(){return {ok:true};}
+  async restoreSession(){return {user:{id:'sync-user-2',email:'other@example.com',provider:'google'}};},
+  async signInWithGoogle(){return {user:{id:'sync-user-2',email:'other@example.com',provider:'google'}};},
+  async reauthenticateWithGoogle(){return {redirecting:true};},
+  async deleteAccount(){return {ok:true};},
+  async signOut(){return {ok:true};}
 };
 await accountApp.identity.registerProvider(secondIdentityProvider);
 assert.equal(accountApp.identity.snapshot().user.id,'sync-user-2');
-assert.equal(accountApp.sync.canUse(),false,'foreign owner must be blocked until local data is safely separated');
-assert.match(accountApp.w.cloudSyncSettingsHtml(),/Sync stopped to keep cloud accounts separate/,
- 'settings must clearly explain blocked account switching');
-const accountLocalBefore=accountApp.w.localStorage.getItem('overload_v3');
-await assert.rejects(()=>accountApp.sync.syncNow(),/different cloud account/i,
- 'a different cloud account must not accept another account local data');
-await accountApp.sync.captureLocalChanges();
-assert.equal(accountApp.w.localStorage.getItem('overload_v3'),accountLocalBefore,
- 'blocked sync must not rewrite local history');
-assert(![...backend.records.values()].some(row=>row.owner_id==='sync-user-2'),
- 'foreign account cannot receive workouts, routines, or settings from previous account');
+await accountApp.sync.syncNow();
+const stateB=JSON.parse(accountApp.w.localStorage.getItem('overload_v3'));
+assert.deepEqual(stateB.sessions.map(s=>s.id),['private-session-b'],
+  'B first imports only its own cloud sessions, never A local history');
+assert(!backend.records.has(recordKey('sync-user-2','session','private-session-a')),
+ 'switching to B cannot upload A workout');
+assert(accountApp.sync.canUse(),'fresh B workspace must sync without legacy account-mismatch errors');
 
-// Erase data AFTER signing in to B. The erased device remains fresh and pauses
-// automatic repopulation, while explicit Sync Now can safely adopt B.
+// Switching back to A should first sync B, then create its own safety snapshot,
+// and restore A only from A's cloud, with no B history crossing back.
+await accountApp.identity.signOut();
+const snapshotB=JSON.parse(accountApp.w.localStorage.getItem('swolecat-account-exit-snapshot-v1:sync-user-2'));
+assert.equal(JSON.parse(snapshotB.raw).sessions[0].id,'private-session-b');
+const firstProvider={
+  ...secondIdentityProvider,
+  async restoreSession(){return {user:{id:'sync-user-1',email:'sync@example.com',provider:'google'}};}
+};
+await accountApp.identity.registerProvider(firstProvider);
+await accountApp.sync.syncNow();
+const roundTrip=JSON.parse(accountApp.w.localStorage.getItem('overload_v3'));
+assert.deepEqual(roundTrip.sessions.map(s=>s.id),['private-session-a'],'A cloud restores only A');
+assert(!backend.records.has(recordKey('sync-user-1','session','private-session-b')),'B workout cannot leak into A');
+
+// Existing v0.87.9 erase protection still pauses automatic rehydration until
+// a user deliberately selects Sync Now.
 accountApp.sync.resetLocalMetadata();
 accountApp.w.eval('state=freshState();save()');
 let isolated=JSON.parse(accountApp.w.localStorage.getItem('swolecat-sync-local-v1'));
-assert.equal(isolated.ownerId,'sync-user-2','erase adopts the currently signed-in identity, never the old owner');
-assert.equal(isolated.pausedAfterErase,true,'erase must pause automatic cloud download and upload');
+assert.equal(isolated.ownerId,'sync-user-1');
+assert.equal(isolated.pausedAfterErase,true);
 accountApp.sync.scheduleAuto('erase-test',5,true);
 await wait(70);
-assert.equal(isolated.pausedAfterErase,true,'automatic timer cannot silently restore an erased account');
-assert(![...backend.records.values()].some(row=>row.owner_id==='sync-user-2'),
- 'automatic sync after erase must do no cloud writes');
-assert.equal(JSON.parse(accountApp.w.localStorage.getItem('overload_v3')).sessions.length,0,
- 'erased local history stays empty until explicit restore or sync');
+assert.equal(JSON.parse(accountApp.w.localStorage.getItem('overload_v3')).sessions.length,0);
 await accountApp.sync.syncNow();
 isolated=JSON.parse(accountApp.w.localStorage.getItem('swolecat-sync-local-v1'));
-assert.equal(isolated.pausedAfterErase,false,'only intentional manual sync unpauses');
-assert(!backend.records.has(recordKey('sync-user-2','session','private-session-a')),
- 'manual sync after reset still cannot upload old account workout');
+assert.equal(isolated.pausedAfterErase,false);
 
 // Assisted/bodyweight movements legitimately have no external-load Coach
 // signal. They still need to render the complete Progress dashboard.
@@ -433,4 +492,4 @@ assert.equal(accountApp.w.localStorage.getItem('overload_v3')!==null,true,
  'analytics fallback must never erase local workout data');
 accountApp.dom.window.close();
 
-console.log('Swole Cat v0.87.8 cross-account isolation, erase pause, Progress fallback PASS');
+console.log('Swole Cat v0.88.0 safe cloud account handoff, owner-specific snapshots, and Progress fallback PASS');
