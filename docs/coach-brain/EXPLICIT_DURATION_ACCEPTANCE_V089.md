@@ -17,6 +17,7 @@ This is a preview-honesty gap, not authorization to alter the user's planned wor
 - No explicit time in the original prompt is **not** interpreted as a request for the generator's internal 45-minute planning default. The UI labels it **Custom exercise list**, with an untargeted planning estimate.
 - An edit such as "make it 15 minutes" updates the displayed target for the existing explicit workout instead of being incorrectly routed to an unresolvable exercise-edit command. This **does not** change user sets/reps; duration is recalculated.
 - Time estimates are recalculated after explicit workout edits and manual swap/removal before previews; the saved routine continues to use exact prescribed values.
+- Initial CI exposed a separate genuine exact-edit parsing defect: a phrase such as `make deadlift 4 sets of 6` updated sets while leaving the previous rep target unchanged. The edit parser now recognizes the `N sets of M` grammar as both explicit dimensions; the regression requires the preview estimate and saved routine to show 4 sets of 6.
 - Added regression checks to `scripts/coach-brain-quality-remediation-stress.mjs`, already called by `.github/workflows/validate.yml`. Tests cover 5 x 5 parsing, original save, time-only edit, explicit set edit, preview consistency, and an untimed explicit list, with synthetic data and an unchanged sessions/routines/programs assertion.
 
 ## Constraints and validation
@@ -25,7 +26,7 @@ Time remains an **engineering midpoint with a range**, not a measured workout or
 
 Research boundary: general strength-training specificity and autoregulation are supported by the 2026 ACSM position stand (PMID 41843416), but minute-level duration heuristics are **product assumptions**, not established outcomes from controlled training trials. The user's individual gym pace, warm-up, station availability and rest needs can exceed the shown range.
 
-**CI result:** pending. Do not mark passed until GitHub Actions confirms. No release, cloud change, Android signing, local account change or Beta merge has been performed.
+**CI result:** initial workflow run 38460441747 failed at the new regression for `4 sets of 6` (actual previous reps retained); the defect was corrected on the same development branch. Follow-up validation is pending and must be checked before release. Do not mark passed until GitHub Actions confirms. No release, cloud change, Android signing, local account change or Beta merge has been performed.
 
 ## Next acceptance checkpoints
 
