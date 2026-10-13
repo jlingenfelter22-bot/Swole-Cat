@@ -85,6 +85,65 @@ for(const day of ppl.rec.days.filter(d=>/Pull/.test(d.name))){
 }
 const floorProgram=weekly('3 day full body program 30 minutes','bodyweight');
 assert(!floorProgram.rec.ok,'full-body equipment gap must not yield misleading program');
+
+// Acceptance: the exact 5x5 prescription must never be trimmed to satisfy a
+// requested clock target. Preview and saved routine must match its real sets.
+let previewHtml='';
+w.openModal=(_title,html)=>{previewHtml=html};
+const explicitPrompt='5 x 5 deadlift in 20 minutes';
+const exactReq=w.coachParsePrompt(explicitPrompt,'strength');
+const exactPrescription=w.coachParseExplicitWorkout(explicitPrompt,exactReq.goal);
+assert.equal(exactPrescription.items.length,1,'named 5x5 exercise must parse explicitly');
+assert.equal(exactPrescription.items[0].sets,5);
+assert.equal(exactPrescription.items[0].minReps,5);
+assert.equal(exactPrescription.items[0].maxReps,5);
+const exact=w.coachGenerateExplicitWorkout(exactReq,exactPrescription);
+assert(exact?.explicitPrescription,'exact user-authored list must bypass auto selection');
+assert.equal(exact.explicitDurationRequested,true);
+assert.equal(exact.brainTime.targetMinutes,20);
+assert.equal(exact.brainTime.rows[0].sets,5);
+assert.equal(exact.brainTime.rows[0].minReps,5);
+assert.equal(exact.brainTime.rows[0].maxReps,5);
+w.renderCoachPreview();
+assert.match(previewHtml,/Estimated time:/);
+assert.match(previewHtml,/chosen exercises, sets and reps have not been reduced/i);
+assert.equal(w.coachDraftRoutine(exact,'exact-before-edit').exercises[0].sets,5);
+assert.equal(w.coachDraftRoutine(exact,'exact-before-edit').exercises[0].maxReps,5);
+
+const timeEdit=w.coachRefineDraftText('make it 15 minutes');
+assert(timeEdit.ok,JSON.stringify(timeEdit));
+assert.equal(exact.request.duration,15);
+assert.equal(exact.brainTime.targetMinutes,15);
+assert.equal(w.coachDraftRoutine(exact,'exact-after-time-edit').exercises[0].sets,5,
+  'reducing the target time must not shorten user-authored sets');
+const setEdit=w.coachRefineDraftText('make deadlift 4 sets of 6');
+assert(setEdit.ok,JSON.stringify(setEdit));
+assert.equal(exact.brainTime.rows[0].sets,4,'time breakdown must re-evaluate after edit');
+assert.equal(exact.brainTime.rows[0].minReps,6);
+assert.equal(exact.brainTime.rows[0].maxReps,6);
+const changed=w.coachDraftRoutine(exact,'exact-after-set-edit').exercises[0];
+assert.equal(changed.sets,4);
+assert.equal(changed.minReps,6);
+assert.equal(changed.maxReps,6);
+w.renderCoachPreview();
+assert.match(previewHtml,/15 min target/);
+assert.match(previewHtml,/4 sets/);
+
+const untimedPrompt='3 x 8 deadlift';
+const untimedReq=w.coachParsePrompt(untimedPrompt,'strength');
+assert.equal(untimedReq.duration,0);
+const untimed=w.coachGenerateExplicitWorkout(untimedReq,w.coachParseExplicitWorkout(untimedPrompt,untimedReq.goal));
+assert(untimed);
+assert.equal(untimed.explicitDurationRequested,false);
+assert.equal(untimed.brainTime.targetMinutes,0,'a 45-minute programming default is not a user deadline');
+w.renderCoachPreview();
+assert.match(previewHtml,/Custom exercise list/);
+assert.doesNotMatch(previewHtml,/45 min target|requested 45\\b/);
+assert.equal(w.coachDraftRoutine(untimed,'exact-untimed').exercises[0].sets,3);
+console.log('BRAIN_EXPLICIT_DURATION_ACCEPTANCE '+JSON.stringify({
+  saved5x5Preserved:true,retargetNoTrimming:true,editedSetsReestimated:true,untimedNotMisrepresented:true
+}));
+
 assert.equal(w.eval('JSON.stringify({sessions:state.sessions,routines:state.routines,programs:state.programs})'),before);
 console.log('BRAIN_QUALITY_SUMMARY '+JSON.stringify({cases:traces.length,passed:true,originalCatalogIntact:true,historyUntouched:true}));
 dom.window.close();
