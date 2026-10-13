@@ -118,6 +118,6 @@ assert(key('Dead Hang').proposed.equipmentCapabilities.includes('secure_overhead
 assert.equal(key('Dead Hang').similarExerciseIds.length,0);
 for(const n of ['Walking Lunge','Reverse Lunge','Barbell Reverse Lunge','Cable Kickback','Cable Hip Adduction','Side-Lying Hip Abduction','Dumbbell Side Bend','Cable Woodchop'])
  assert.notEqual(key(n).proposed.sideExecution,'usual_bilateral_or_unspecified','missed unilateral '+n);
-assert.equal(fs.readFileSync('docs/coach-brain/exercise-flag-resolution-91.csv','utf8').trimEnd().split('\\n').length,92);
+assert.equal(fs.readFileSync('docs/coach-brain/exercise-flag-resolution-91.csv','utf8').trimEnd().split('\n').length,92);
 assert(fs.readFileSync('docs/coach-brain/exercise-knowledge-audit-308.csv','utf8').includes('proposed_role'),'CSV omitted corrected profile columns');
 console.log('Coach Brain 308-exercise audit integrity PASS',JSON.stringify({count:records.length,flagged:stats.priorityReview,explicit:stats.explicitMuscleOverrides,heuristic:stats.fallbackMuscleRules}));
