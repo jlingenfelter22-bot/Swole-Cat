@@ -51,13 +51,16 @@ function coachPreviewExercisePrescription(exerciseId,draft){
 }
 function renderCoachPreview(){
  const draft=coachBuildDraft;if(!draft)return;
+ // Manual swap/remove actions also need to refresh the custom-list estimate.
+ if(draft.explicitPrescription&&typeof coachRefreshExplicitDraftTime==='function')coachRefreshExplicitDraftTime(draft);
  const req=draft.request,d=draft.defaults,routine=coachDraftRoutine(draft,'preview');
+ const hasTimeTarget=!draft.explicitPrescription||!!draft.explicitDurationRequested;
  const equipment=coachBrainResolveEquipment(req)?.label||(req.allowedEquipment.length?req.allowedEquipment.join(', '):'Equipment not specified');
  openModal('Coach Swolecat',`
    <div class="coach-builder">
     <div class="coach-console">
       <div class="eyebrow">QUICK BUILD // LOCAL ENGINE</div>
-      <div class="coach-preview-head"><div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(routine.name)}</div><div class="mini" style="margin-top:5px">Built from audited Swolecat exercise metadata · local and offline.</div></div><span class="tag">${req.duration} min target</span></div>
+      <div class="coach-preview-head"><div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(routine.name)}</div><div class="mini" style="margin-top:5px">Built from audited Swolecat exercise metadata · local and offline.</div></div><span class="tag">${hasTimeTarget?req.duration+' min target':'Custom exercise list'}</span></div>
       ${draft.lastRefinement?`<div class="mini" style="margin-top:8px"><b>Last change:</b> ${esc(draft.lastRefinement)}</div>`:''}
       <div class="coach-preview-meta"><span class="tag">${esc(coachGoalLabel(req.goal))}</span><span class="tag">${esc(equipment)}</span>${draft.explicitPrescription?'<span class="tag">Custom sets / reps</span>':'<span class="tag">Per-exercise prescription</span>'}${req.liftingGrammar?.warmupMode==='first_compound'?'<span class="tag">Warm-up first</span>':''}${Number.isFinite(Number(d.targetRIR))?`<span class="tag">Target ${d.targetRIR} RIR</span>`:''}${req.liftingGrammar?.lastSetAmrap?'<span class="tag">Last set AMRAP</span>':''}</div>
     </div>
@@ -68,7 +71,7 @@ function renderCoachPreview(){
         <div class="coach-exercise-actions"><button class="btn small secondary" onclick="coachSwapExercise(${i})">Swap</button><button class="btn small secondary" onclick="coachRemoveExercise(${i})">Remove</button></div>
       </div>`}).join('')}
     </div>
-    ${draft.brainTime?`<div class="notice"><b>Estimated time: ${draft.brainTime.estimateMinutes} minutes</b> (rough range ${draft.brainTime.lowerMinutes}–${draft.brainTime.upperMinutes}, requested ${draft.brainTime.targetMinutes}). Includes ${draft.brainTime.warmupMinutes} min warm-up, working sets, rest, station setup and side-to-side work. ${draft.brainTime.overTarget?'This may run long; consider fewer sets or more time.':''} ${draft.brainTimeRemoved?.length?'Coach removed optional movements to stay closer to your time limit.':''}</div>`:''}
+    ${draft.brainTime?`<div class="notice"><b>Estimated time: ${draft.brainTime.estimateMinutes} minutes</b> (rough range ${draft.brainTime.lowerMinutes}–${draft.brainTime.upperMinutes}${hasTimeTarget?', requested '+draft.brainTime.targetMinutes:''}). Includes ${draft.brainTime.warmupMinutes} min warm-up, working sets, rest, station setup and side-to-side work. ${draft.explicitPrescription?'Your chosen exercises, sets and reps have not been reduced to fit the estimate. ':''} ${draft.brainTime.overTarget?'This may run long; consider fewer sets or more time.':''} ${draft.brainTimeRemoved?.length?'Coach removed optional movements to stay closer to your time limit.':''}</div>`:''}
    ${draft.brainSetCounts&&Object.keys(draft.brainSetCounts).length?`<div class="notice">Some automatically proposed set counts were reduced to better fit your time limit. You can change them in the routine after saving; that will change the duration.</div>`:''}
    <div class="coach-rationale"><b>Why this structure:</b> ${draft.explicitPrescription?'This is your exercise list. Coach preserves the exercises you named and only changes the list when you explicitly ask it to add, remove, swap, or modify something.':'Coach ranked the session from requested muscles, anatomical roles, weekly primary/secondary set-equivalents, recent movement overlap, exercise progression continuity, movement demand, equipment, target priority, and your exercise preferences.'} Swolecat does not invent a starting weight; your own history and progression engine handle load once the workout starts.${draft.intelligenceAudit&&typeof coachIntelligenceSummaryText==='function'?'<br><span class="mini">'+esc(coachIntelligenceSummaryText(draft))+'</span>':''}</div>
     ${coachBrainEquipmentPreviewNotice(req)?`<div class="notice">${esc(coachBrainEquipmentPreviewNotice(req))}</div>`:''}
