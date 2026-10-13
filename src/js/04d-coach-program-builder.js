@@ -274,7 +274,8 @@ function coachSubmitProgramAnswer(){
  if(!text){showToast('Tell Coach your preference or tap a choice');return}
  const intent=d.intent,req=d.request,a=coachProgramIntake(d),parsed=coachParseProgramIntent(text),p=coachParsePrompt(text,req.goal);
  let changed=false;
- if(parsed.frequency&&(parsed.frequency!==intent.frequency||!intent.frequency)){
+ const explicitlySaidFrequency=/\b[2-6]\s*[- ]?days?(?:\s+(?:a|per)\s+week)?\b|\b[2-6]\s*(?:x|times)\s*(?:a|per)?\s*week\b/i.test(coachNumbersToDigits(text));
+ if(parsed.frequency&&(!intent.frequency||explicitlySaidFrequency)&&parsed.frequency!==intent.frequency){
   intent.frequency=parsed.frequency;changed=true;
   if(intent.split==='custom')intent.customSlots=[];
   if((intent.preferredDays||[]).length!==intent.frequency){intent.preferredDays=[];a.scheduleAnswered=false}
