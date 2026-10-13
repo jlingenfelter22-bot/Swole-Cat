@@ -153,6 +153,17 @@ const savedTrack=w.coachPersistGeneratedProgram();
 assert.equal(savedTrack.trainingMode,'track');
 assert.equal(savedTrack.deload.enabled,false);
 
+// Detailed requests must honor explicit progression/deload settings without more questions.
+startProgram('3-day push pull legs Monday Wednesday Friday 60 minutes at a full gym for muscle growth, guided progressive overload, deload every 6 weeks');
+assert.equal(program().days.length,3,'fully specified program should open preview directly');
+assert.equal(program().intent.trainingMode,'guided');
+assert.equal(program().intent.deload.intervalWeeks,6);
+assert.match(modal,/PROGRAM BUILD/);
+const modeRefinement=w.coachRefineProgramText('switch to track only');
+assert(modeRefinement.ok,JSON.stringify(modeRefinement));
+assert.equal(program().intent.trainingMode,'track');
+assert.equal(program().intent.deload.enabled,false,'Track Only may not inherit scheduled Guided deloads');
+
 // Full body is allowed when explicitly requested, but does not bypass mode setup.
 startProgram('3-day full body program, 45 minutes, dumbbells only');
 assert.match(modal,/Which days work/);
