@@ -9,10 +9,10 @@ vm.runInContext(fs.readFileSync('src/data/coach-brain-exercise-profiles.js','utf
 vm.runInContext(fs.readFileSync('src/js/04a0-coach-brain-knowledge.js','utf8'),sandbox,{filename:'04a0-coach-brain-knowledge.js'});
 const brain=registry.get('brainKnowledge');
 assert(brain,'brainKnowledge registration must exist');
-assert.equal(brain.count,308);
+assert.equal(brain.count,310);
 
 const source=JSON.parse(fs.readFileSync('docs/coach-brain/exercise-knowledge-audit-308.json','utf8')).records;
-assert.equal(source.length,308);
+assert.equal(source.length,308); // original audit remains intact
 for(const item of source){
  const got=brain.getProfile(item.id);
  assert(got,'missing '+item.name);
@@ -28,6 +28,15 @@ for(const item of source){
  assert.equal(got.power,item.proposed.powerOrSkillPriority);
  assert.equal(got.review,item.review.confidence);
  assert.equal(Object.isFrozen(got),true,'profile must be immutable');
+}
+const additions=JSON.parse(fs.readFileSync('docs/coach-brain/FLOOR_COVERAGE_ADDITIONS_V089.json','utf8'));
+assert.equal(additions.profiles.length,2);
+for(const e of additions.profiles){
+  const got=brain.getProfile(e.id);
+  assert(got&&got.name===e.name);
+  assert.equal(got.load,'bodyweight');
+  assert.deepEqual(Array.from(got.needs),['bodyweight','exercise_space']);
+  assert.equal(brain.evaluateAvailability(e.id,{equipment:{preset:'floor_only',complete:true}}).status,'available');
 }
 assert.equal(brain.getProfile('lib_9999'),null);
 assert.equal(brain.evaluateAvailability('lib_9999').status,'unknown_exercise');
@@ -116,4 +125,4 @@ assert.equal(JSON.stringify(accountA),beforeA);
 assert.equal(JSON.stringify(accountB),beforeB);
 assert(!('save' in brain)&&!('sync' in brain)&&!('ownerId' in brain),'Brain knowledge is stateless');
 
-console.log('Brain knowledge + equipment + substitution stress PASS: 308 profiles and scenario/owner/measurement guards');
+console.log('Brain knowledge + equipment + substitution stress PASS: 310 profiles and scenario/owner/measurement guards');
