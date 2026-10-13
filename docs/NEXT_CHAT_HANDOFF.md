@@ -1,5 +1,19 @@
 # Swole Cat - Next Chat Handoff
 
+## ACTIVE DEVELOPMENT CHECKPOINT: Guided Coach Program Intake v0.90 (October 13, 2026)
+
+- User found a real v0.89.0 **program conversation defect**: "3-day split" gets treated as full-body by default and setup asks only frequency/time/equipment, not what each day should train, schedule, progression mode, or deloads. Owner explicitly requested a deeper conversational program intake with these decisions.
+- Draft PR **#66** https://github.com/jlingenfelter22-bot/Swole-Cat/pull/66, head `feature/coach-program-guided-intake-v090` from signed v0.89.0 `main`. **Development-only.** Signed Testing v0.89.0, build 134 remains published; no new APK. Beta v0.73.1 unchanged, no cloud or workout-history mutation.
+- Implemented: vague frequency -> **choose split** (PPL, Upper/Lower rotation, Custom Body-Part, explicit Full Body), optional custom target per day (e.g. Arms / Back / Legs), duration, equipment, weekdays or flexible, training goal, training mode (Guided / Strength / Track), optional Guided deload every 3–8 training weeks. If prompt already contains a detail, skip redundant question. Never infer "3-day split" means full body.
+- Persistence uses existing per-program `trainingMode` + `deload` schema, preserving confirmation for actual deload weeks; no new database schema. Generated day exercise selection honors chosen `customSlots`. Existing direct generator without interactive intake remains backward-compatible. Chat program refinement recognizes an explicit progression-mode and deload change.
+- Synthetic test `scripts/coach-brain-duration-program-stress.mjs` exercises an entire three-day custom intake and verifies saved weekdays, routines, mode/deload plus unchanged history; checks fully specified PPL skip and full-body intentional choice.
+- Research/scoping `docs/coach-brain/PROGRAM_INTAKE_DESIGN_V090.md` explains scientific uncertainty and acceptance.
+- CI: PR #66 requires its **latest commit** green full regression, plus independent generated session review, before considering a new Testing release. Earlier intermediate run 38475258578 passed; newer runs for explicit parser/tests must be checked. **Do not claim a phone release or Beta approval.**
+- Next steps: inspect CI, fix actual regressions, review generated custom Arms/Back/Legs and other split quality, verify user-friendly phone layout and confirm time/planning semantics. Only then request user approval to promote the next signed Testing build (likely v0.90.0). Real Android owner acceptance remains open.
+
+---
+
+
 ## CURRENT RESUME CHECKPOINT: v0.89.0 SIGNED TESTING RELEASE (October 13, 2026)
 
 **Latest Testing: v0.89.0 / Android build 134, signed APK and in-app update live. Owner-approved Testing promotion complete.**
