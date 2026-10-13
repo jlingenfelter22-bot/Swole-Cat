@@ -405,6 +405,10 @@ const bSession={
 };
 backend.records.set(recordKey('sync-user-2','session','private-session-b'),bSession);
 
+// Generic recovery/undo snapshots must be replaced by the owner-specific
+// safety copy rather than leaking into a different Google workspace.
+accountApp.w.localStorage.setItem('overload_v3_recovery_v1',JSON.stringify({raw:'old A recovery'}));
+accountApp.w.localStorage.setItem('overload_v3_pre_import_v1',JSON.stringify({raw:'old A import undo'}));
 const beforeExit=accountApp.w.localStorage.getItem('overload_v3');
 const syncBeforeExit=[...backend.records.values()].filter(row=>row.owner_id==='sync-user-1').length;
 await accountApp.identity.signOut();
@@ -415,6 +419,8 @@ assert.equal(snapshotA.ownerId,'sync-user-1');
 assert.equal(JSON.parse(snapshotA.raw).sessions[0].id,'private-session-a','A history is kept in a durable account-specific snapshot');
 assert.equal(snapshotA.raw,beforeExit,'exit snapshot includes exactly the last synced device state');
 assert.equal(accountApp.w.localStorage.getItem('swolecat-account-exit-pending-v1'),null);
+assert.equal(accountApp.w.localStorage.getItem('overload_v3_recovery_v1'),null,'old generic recovery must not leak to B');
+assert.equal(accountApp.w.localStorage.getItem('overload_v3_pre_import_v1'),null,'old import undo must not leak to B');
 assert.equal(JSON.parse(accountApp.w.localStorage.getItem('swolecat-sync-local-v1')).ownerId,null,
  'new workspace cannot carry A sync bookkeeping into B');
 assert([...backend.records.values()].filter(row=>row.owner_id==='sync-user-1').length>=syncBeforeExit,
