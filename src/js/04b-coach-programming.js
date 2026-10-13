@@ -185,6 +185,10 @@ function coachDynamicCandidateScore(ex,request,coverage,patternCounts,familyCoun
 
  score-=(familyCounts[family]||0)*118;
  const keys=coachRequestedTargetKeys(request);
+ if(request.brainEquipment&&request.programHingeHistory?.length&&keys.includes('full body')){
+   if(ex.pattern==='hip_extension')score+=85;
+   if(ex.pattern==='hinge')score-=65;
+ }
  if(keys.includes('arms')&&ex.pattern==='elbow_flexion'&&meta.primary.includes('biceps'))score+=36;
  if(keys.includes('arms')&&ex.pattern==='elbow_extension'&&meta.primary.includes('triceps'))score+=36;
  return score;
@@ -339,7 +343,7 @@ function coachCoveragePlan(request,count){
 
  if(keys.includes('full body')){
    add(core,'full_squat','Lower-body compound',squatPattern);
-   add(core,'full_hinge','Hip hinge',hipHinge);
+   add(core,'full_hinge','Posterior chain / hip extension',fullBodyPosterior);
    add(core,'full_press','Upper-body press',chestPress);
    add(core,'full_pull','Upper-body pull',ex=>backRow(ex)||backVertical(ex));
    add(optional,'full_shoulders','Shoulders',shoulderPress);
