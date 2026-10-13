@@ -19,6 +19,7 @@ const JS_SOURCES = [
   'src/js/04a-coach-input-intent.js',
   'src/js/04a0-coach-brain-knowledge.js',
   'src/js/04a1-coach-brain-conversation.js',
+  'src/js/04a2-coach-brain-duration.js',
   'src/js/04b-coach-programming.js',
   'src/js/04b2-coach-intelligence.js',
   'src/js/04b3-coach-adaptive-progression.js',
