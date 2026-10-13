@@ -16,7 +16,8 @@ function coachCloneRequest(request){
 }
 function coachGenerateProgram(request,intent,previous=null){
  const frequency=Math.max(2,Math.min(6,Number(intent.frequency)||0));if(!frequency)return null;
- const split=intent.split||coachDefaultProgramSplit(frequency),slots=coachProgramSlots(frequency,split);
+ const split=intent.split||coachDefaultProgramSplit(frequency),slots=coachProgramSlots(frequency,split,intent.customSlots);
+ if(slots.length!==frequency)return null;
  const req=coachCloneRequest({...request,duration:request.duration||45});
  req.programFocusRegions=[...new Set(intent.focusRegions||request.programFocusRegions||[])];
  req.programFocusLabels=[...new Set(intent.focusLabels||request.programFocusLabels||[])];
@@ -61,7 +62,8 @@ function coachGenerateProgram(request,intent,previous=null){
  }
  coachProgramBuildDraft={
    request:req,
-   intent:{...intent,frequency,split,preferredDays:[...(intent.preferredDays||[])]},
+   intent:{...intent,frequency,split,preferredDays:[...(intent.preferredDays||[])],customSlots:[...(intent.customSlots||[])]},
+  intake:{...(previous?.intake||{})},
    slots,days,dayOverrides:slots.map((_,i)=>({
      excludedExerciseIds:[...(dayOverrides[i]?.excludedExerciseIds||[])],
      requiredExerciseIds:[...(dayOverrides[i]?.requiredExerciseIds||[])]
@@ -122,7 +124,8 @@ function renderCoachProgramPreview(){
     <div class="eyebrow">PROGRAM BUILD // LOCAL ENGINE</div>
     <div class="coach-preview-head"><div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(coachProgramName(req,intent))}</div><div class="mini" style="margin-top:5px">${intent.frequency} workouts · ${esc(coachProgramScheduleText(draft))} · each workout targets about ${req.duration} minutes</div></div><span class="tag">${esc(coachProgramSplitLabel(intent.split))}</span></div>
     ${draft.lastRefinement?`<div class="mini" style="margin-top:8px"><b>Last change:</b> ${esc(draft.lastRefinement)}</div>`:''}
-    <div class="coach-preview-meta"><span class="tag">${esc(coachGoalLabel(req.goal))}</span><span class="tag">${esc(equipment)}</span><span class="tag">${intent.frequency}×/week</span></div>
+    <div class="coach-preview-meta"><span class="tag">${esc(coachGoalLabel(req.goal))}</span><span class="tag">${esc(equipment)}</span><span class="tag">${intent.frequency}×/week</span><span class="tag">${esc(programTrainingModeLabel(intent.trainingMode||'inherit'))}</span></div>
+     ${intent.trainingMode==='guided'?`<div class="mini" style="margin-top:9px">Deloads: ${intent.deload?.enabled?`every ${intent.deload.intervalWeeks}th training week, subject to your confirmation`:'not scheduled (you can add these later)'}</div>`:''}
    </div>
    <div class="coach-exercise-list">
     ${draft.days.map((day,di)=>`<div class="card" style="margin:0">
@@ -162,7 +165,7 @@ function coachProgramSwapExercise(dayIndex,exerciseIndex){
 }
 function coachRefineProgramText(text){
  const draft=coachProgramBuildDraft,raw=String(text||'').trim();if(!draft||!raw)return {ok:false,message:'Tell Coach what you want changed.'};
- const req=coachCloneRequest(draft.request),intent={...draft.intent,preferredDays:[...(draft.intent.preferredDays||[])]};
+ const req=coachCloneRequest(draft.request),intent={...draft.intent,preferredDays:[...(draft.intent.preferredDays||[])],customSlots:[...(draft.intent.customSlots||[])]};
  const clauses=coachBrainSplitEditClauses(raw);
  if(clauses.length>1){
    const previous=coachProgramBuildDraft;
@@ -178,7 +181,7 @@ function coachRefineProgramText(text){
  if(parsed.duration){req.duration=parsed.duration;changed=true}
  if(goal&&goal!==req.goal){req.goal=goal;changed=true}
  if(program.frequency&&program.frequency!==intent.frequency){intent.frequency=program.frequency;changed=true;structureChanged=true}
- if(program.split&&program.split!==intent.split){intent.split=program.split;changed=true;structureChanged=true}
+ if(program.split&&program.split!==intent.split){intent.split=program.split;if(program.split!=='custom')intent.customSlots=[];changed=true;structureChanged=true}
  if(program.preferredDays.length){
    intent.preferredDays=[...program.preferredDays];
    if(!program.frequency)intent.frequency=program.preferredDays.length;
@@ -203,6 +206,8 @@ function coachRefineProgramText(text){
  }
  if(!changed)return {ok:false,message:'I did not find a program change. Try “4 days,” “35 minutes,” “dumbbells only,” “no squats,” or “more shoulders.”'};
  if(intent.preferredDays.length&&intent.preferredDays.length!==intent.frequency)intent.preferredDays=[];
+ if(intent.split==='custom'&&intent.customSlots?.length!==intent.frequency)
+   return {ok:false,message:'A custom split needs one muscle focus per training day. Rebuild it using Coach program setup.'};
  const previous=structureChanged?{...draft,dayOverrides:[]}: {...draft,dayOverrides:draft.dayOverrides};
  if(!coachGenerateProgram(req,intent,previous))return {ok:false,message:'Those constraints leave at least one workout without enough matching exercises. Broaden the equipment or split.'};
  coachProgramBuildDraft.lastRefinement=raw;
@@ -226,7 +231,8 @@ function coachPersistGeneratedProgram(draft=coachProgramBuildDraft){
  const p={
    id:uid(),name:coachProgramName(draft.request,draft.intent),routineIds:routines.map(r=>r.id),
    frequency:draft.intent.frequency,preferredDays:[...(draft.intent.preferredDays||[])],
-   trainingMode:'inherit',nextIndex:0
+   trainingMode:['guided','strength','track','inherit'].includes(draft.intent.trainingMode)?draft.intent.trainingMode:'inherit',
+   deload:programDeloadConfig(draft.intent.trainingMode==='guided'?draft.intent.deload:{enabled:false}),nextIndex:0
  };
  state.programs.push(p);if(!state.activeProgramId)state.activeProgramId=p.id;
  draft.savedProgramId=p.id;draft.savedRoutineIds=[...p.routineIds];
