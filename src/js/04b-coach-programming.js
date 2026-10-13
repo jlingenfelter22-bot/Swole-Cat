@@ -141,6 +141,10 @@ function coachCandidateBaseScore(ex,request){
      if(ex.pattern==='elbow_extension'&&meta.primary.includes('triceps'))score+=42;
    }
    if(ex.equipment==='bodyweight'&&['squat','lunge'].includes(ex.pattern)&&request.experienceLevel!=='advanced')score+=22;
+   if(['bodyweight','skip'].includes(request.brainEquipment?.choice)&&!(request.requiredExerciseIds||[]).length){
+     if(ex.name==='Bodyweight Squat')score+=85;
+     if(ex.name==='Bodyweight Reverse Lunge'&&request.experienceLevel!=='advanced')score-=15;
+   }
  }
  meta.primary.filter(m=>priority.has(m)).forEach(()=>score+=82);
  meta.secondary.filter(m=>priority.has(m)).forEach(()=>score+=24);
