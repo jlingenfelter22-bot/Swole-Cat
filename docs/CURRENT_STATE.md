@@ -1,5 +1,25 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-13 · Testing v0.89.0 Coach Brain Real-Device Acceptance Release
+
+**Current signed Testing:** v0.89.0 / Android build **134**, permanent Testing signature unchanged and in-app updater advanced.
+- Owner explicitly approved preparing and publishing v0.89.0 into Testing `main` on 2026-10-13. Release PR [#65](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/65) merged as `6fe9c089d579af7b6d174cd6db6ee375316a7c5c`, integrating quality remediation [#62](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/62), explicit duration [#63](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/63) and manual preview safety [#64](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/64) in order. Stacked drafts #63/#64 are closed as superseded, not separately merged.
+- Release candidate full validation **PASS** [38469539367](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469539367) and generated-output human review workflow **PASS** [38469539499](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469539499). Signed Android Testing release workflow **PASS** [38469988579](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469988579). Main-branch validation [38469988653](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469988653) ran after the merge (check its conclusion before declaring main regression green).
+- Published prerelease: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.89.0. Direct APK: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.89.0/swole-cat-testing-v0.89.0-signed.apk.
+- `updates/testing.json` published version `0.89.0`, versionCode `134`, package `com.jlingenfelter.swolecat.testing`, APK SHA-256 `9b09502d0b41ed86a15b66cbef55fb818bd2268c3a57c14a1c17c55374045ace`, permanent Testing signing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta untouched** v0.73.1 and beta SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. No Supabase record/account mutation, recovery or user-history modification was performed. Publication is a code release; normal app usage/sync on the owner's device remains under the user's control.
+
+### v0.89.0 features / outstanding phone validation
+
+- Coach Brain includes reviewed exercise metadata, equipment follow-up questions, multi-part conversational refinements, duration feasibility, more balanced multi-day distribution, floor-only honesty and muscle priorities.
+- Exact workout requests such as `5 x 5 deadlift in 20 minutes` keep user-chosen sets and repetitions while estimating time and showing potential overruns. Editing `make it 15 minutes` does not trim sets. Editing `make deadlift 4 sets of 6` changes both dimensions.
+- Generated preview after manual **Swap**/**Remove** recalculates current exercise rows and actual set counts. Single and multi-day previews disclose upper-range timing risks. Engineering estimates are **not measured workout durations**. Prior 20-fixture analysis: 11/13 generated singles and 23/25 generated program days have high-end estimate above target despite midpoint feasibility.
+- **Next checkpoint, on real signed Testing:** install *in place*, preserve local data and backups, try a 20-minute gym legs session, manual Swap/Remove, exact 5×5, 3-day full-body, vague equipment prompts, multi-clause edits, and optionally measure actual session pace. See `docs/coach-brain/PRE_RELEASE_PHONE_ACCEPTANCE_V089.md`. Real Android Coach acceptance **not yet performed**; do not represent synthetic CI as field validation.
+- The prior v0.88.0 cloud account-switch safety on Android is likewise awaiting owner device acceptance. Avoid clearing app data, signing into another account without backups, or attempting recovery while exploring Coach. **Never** automatically delete/merge/restore cloud accounts or historical records. Separate Beta approval is required.
+
+Older milestone below is historical.
+
+
 ## Latest milestone: 2026-10-13 · Testing v0.88.0 Protected Cloud Account Handoff
 
 **Current signed Testing:** v0.88.0 / Android build **133**, permanent Testing signature unchanged and updater live.
