@@ -656,13 +656,14 @@ function coachRefineDraftText(text){
  const initial=coachSelectExercises(req,defaults.exerciseCount);
  const plan=coachBrainTrimToTime(initial,req,defaults);
  const selected=plan.exercises;
+ if(!plan.feasible)return {ok:false,message:'That combination needs more time with these movement roles and rest periods. Try longer or simplify the request.'};
  if(!selected.length)return {ok:false,message:'Those constraints leave no matching exercises. Broaden the equipment or muscle target.'};
  const brainComparison=req.brainEquipment?{
    originalIds:coachSelectExercises({...req,brainEquipment:null,excludedMovementPatterns:[]},defaults.exerciseCount).map(ex=>ex.id),
    selectedIds:selected.map(ex=>ex.id),
    reason:'Draft rebuilt with corrected equipment and user exercise constraints.'
  }:null;
- coachBuildDraft={...draft,request:req,defaults,selectedIds:selected.map(ex=>ex.id),brainComparison,brainTime:plan.time,brainTimeRemoved:plan.removed,lastRefinement:raw};
+ coachBuildDraft={...draft,request:req,defaults,selectedIds:selected.map(ex=>ex.id),brainComparison,brainTime:plan.time,brainTimeRemoved:plan.removed,brainSetCounts:plan.setCounts,lastRefinement:raw};
  return {ok:true,message:'Workout updated.'};
 }
 function coachApplyRefinement(){
