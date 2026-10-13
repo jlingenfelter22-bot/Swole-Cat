@@ -1,5 +1,21 @@
 # Swole Cat - Next Chat Handoff
 
+## CURRENT RESUME CHECKPOINT: v0.89.0 SIGNED TESTING RELEASE (October 13, 2026)
+
+**Latest Testing: v0.89.0 / Android build 134, signed APK and in-app update live. Owner-approved Testing promotion complete.**
+- User explicitly approved v0.89.0 release into Testing `main`. All Coach v0.89 engineering from PR #62, #63, #64 was integrated through **release PR #65** https://github.com/jlingenfelter22-bot/Swole-Cat/pull/65 (merged as `6fe9c089d579af7b6d174cd6db6ee375316a7c5c`). #62 recognized as merged; #63/#64 stacked drafts closed as integrated, no Beta merge.
+- Signed Testing release workflow **PASS** https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469988579; candidate full regression **PASS** https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469539367; generated-workout review **PASS** https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469539499. Main validate https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469988653, verify result before asserting main CI success.
+- APK release https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.89.0; direct download https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.89.0/swole-cat-testing-v0.89.0-signed.apk; `updates/testing.json` version 0.89.0, code 134, checksum `9b09502d0b41ed86a15b66cbef55fb818bd2268c3a57c14a1c17c55374045ace`; cert SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`; package `com.jlingenfelter.swolecat.testing`.
+- What changed: Coach Brain equipment clarifications, multi-turn multi-clause parsing, realistic duration planning with explicit set/rep preservation, refusal of unsupported full-body floor-only pulling coverage, program-day balancing and muscle priorities, Swap/Remove preview time refresh and uncertainty notices.
+- **Immediate next:** user installs Testing v0.89.0 **over existing Testing**, preferably using in-app updater. Do NOT uninstall, reset app data or switch cloud accounts to test Coach. User can send a narrated screen recording, screenshots, notes. Test exact `5 x 5 deadlift in 20 minutes`, follow-up `make it 15 minutes` (5×5 stays), `make deadlift 4 sets of 6`, generated 20-min gym legs Swap/Remove and preview consistency, 3-day 45-min gym full-body, floor-only limitations, real session times and physical-phone usability. Consult `docs/coach-brain/PRE_RELEASE_PHONE_ACCEPTANCE_V089.md`. Owner approval for broader beta launch remains **not given**. Phone validation not performed yet.
+- **Safety:** No Supabase cloud data or identities changed during this development/release. Prior cross-account leak and unsupervised recovery strictly forbidden; v0.88.0 signout safeguard remains, separate Android acceptance pending. Beta still **v0.73.1** and SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`.
+- After real-world feedback, run a focused bug-fix pass in Testing before requesting any Beta promotion. Never invent field measurements from engineering time estimates.
+
+Older checkpoints below are archives.
+
+---
+
+
 Last updated: 2026-10-13
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
