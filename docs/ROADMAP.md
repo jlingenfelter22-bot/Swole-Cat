@@ -4,6 +4,9 @@ This document is the canonical product roadmap for Swole Cat. Features listed as
 
 ## Product Principles
 
+**Cloud account switching safeguard (Testing v0.88.0, 2026-10-13):** Implemented user-approved final sync before Google sign-out, verified per-owner safety snapshot, fresh active local workspace and cloud-only rehydrate for the next account. Offline/conflicted/unfinished-workout switching is denied, prior account data remains recoverable from an owner-specific device snapshot, and old generic recovery keys no longer leak between accounts. A→B→A isolation, signout failures and legacy recovery tests passed. Existing historically crossed cloud records have not been cleaned, changed or deleted. Real Android switch UX awaits acceptance; Beta remains untouched.
+
+
 **Priority safety incident (Testing v0.87.9, 2026-10-11):** Account-switch record crossover and blank Progress screen found in real use. v0.87.9 fixes the null Coach signal Progress crash, blocks a foreign cloud owner from uploading preexisting local training data, pauses automatic rehydration immediately after an erase, and checks ownership during pull/push. Existing already-mixed cloud history needs a backup-first, user-approved recovery plan; no cloud data has been altered. Separate per-account local workspaces with intentional account switching remain an important follow-up, before more cloud-side feature work. Beta remains untouched.
 
 
