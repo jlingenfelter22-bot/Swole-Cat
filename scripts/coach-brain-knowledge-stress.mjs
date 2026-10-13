@@ -52,7 +52,7 @@ assert.equal(status('lib_31',preset('standard_gym')),'unconfirmed','generic gym 
 assert.equal(status('lib_89',strict(['bodyweight','barbell','plates','anchored_landmine'])),'available','actual landmine inventory permits landmine row');
 assert.equal(status('lib_94',strict(['barbell','plates','anchored_landmine','stable_braced_stance'])),'available');
 assert.equal(status('lib_94',strict(['dumbbells','bodyweight','exercise_space'])),'unavailable');
-assert.equal(status('lib_31',strict(['bodyweight','secure_overhead_bar'])),'available');
+assert.equal(status('lib_31',strict(['bodyweight','exercise_space','secure_overhead_bar'])),'available');
 assert.equal(status('lib_198',strict(['bodyweight','exercise_space','resistance_band'])),'available');
 assert.equal(status('lib_7',{}),'unconfirmed','unknown inventory must not be treated as confirmed');
 assert.equal(status('lib_31',preset('floor_only',false)),'unconfirmed','partial inventory is not certain proof of absence');
