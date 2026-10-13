@@ -4,6 +4,22 @@ Last updated: 2026-10-13
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
 
+## ACTIVE DEVELOPMENT CHECKPOINT: Coach Brain v0.89 (October 13, 2026)
+
+**THIS IS THE WORK TO RESUME IN THE NEXT CHAT, not the previous cloud account feature.**
+
+- **Shipped apps remain unchanged:** signed Testing v0.88.0 (Android 133), Beta v0.73.1. No new signed APK, Testing updater update, cloud mutation or account changes in the Brain work.
+- **Baseline review:** PR #61, `review/brain-v089-session-program-acceptance`, captured 20 real synthetic workout/program scenarios. Initial coach-quality acceptance was denied despite green CI because of session-time overruns, false floor-only coverage and poor week distribution.
+- **Approved remediation:** PR #62, `feature/brain-v089-quality-remediation`, reran the same 20-scenario matrix (GitHub Actions 38457817270, successful). 13/13 generated single sessions met the engineering time midpoint; 25/25 generated program days met midpoint. A floor-only full-body program now *fails honestly* due to missing true pulling equipment, rather than being labeled comprehensive. Two floor-leg exercises were added with stable IDs `lib_308` and `lib_309`, keeping original 308 IDs intact. Quality remediation is still **development only**, not an Android release.
+- **Follow-up explicit-list time gap:** draft PR #63, `feature/brain-v089-explicit-duration-acceptance`, is layered atop #62. Exact user-authored workouts (e.g. `5 x 5 deadlift in 20 minutes`) were not receiving the time estimate, so duration feasibility and saved-set fidelity were not visible in previews. This branch computes the engineering time from exact sets/reps without trimming them; displays the range and warns when the midpoint exceeds the requested time. An untimed exact list is no longer presented as a requested 45-minute target. An explicit "make it 15 minutes" edit changes only the target, not exercise counts. Preview estimates recalculate after edits, removal and swaps.
+- **Tests:** `scripts/coach-brain-quality-remediation-stress.mjs` extended for an exact 5×5 user-authored list, time-only refinement, set edit and untimed preview; already invoked by `.github/workflows/validate.yml`. PR #63 is a **draft, not accepted**. See `docs/coach-brain/EXPLICIT_DURATION_ACCEPTANCE_V089.md`.
+- **Remaining development/acceptance:** full GitHub Actions regression after PR #63 code changes; record pass/fail correctly. Inspect realistic 20-case output, then Android Testing-only owner review of preview readability and actual session timing (warmups, rest, waiting, unilateral work). Neither the 20-scenario generator nor the duration model measures stopwatch workouts.
+- **Nonnegotiables:** Preserve existing accounts, cloud records, workout history, custom set/rep prescriptions, per-exercise load semantics and Testing/Beta signing separation. No Beta promotion. Do not merge/publish without explicit approval and a green full suite. Real-phone review remains a separate gate.
+
+Older shipped-version handoffs follow below.
+
+---
+
 ## CURRENT RESUME CHECKPOINT (v0.88.0 supersedes older instructions)
 
 - **Latest Testing:** v0.88.0 / Android build 133; signed APK + Testing updater published: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.88.0. PR #54 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/54 merged into `main`; PR suite https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413146562 PASS, main suite https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413588809 PASS, Android signing https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413588869 PASS. APK SHA-256 `e28302b7bc268119be1d493db3f56a59c4828a548fc71ceb1e72205d656b5bb9`; permanent cert unchanged.
