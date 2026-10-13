@@ -23,6 +23,12 @@ function coachExerciseAllowedByConstraints(ex,request){
  if(!ex||isHiddenExercise(ex.id))return false;
  if((request.excludedExerciseIds||[]).includes(ex.id))return false;
  if((request.excludedMovementPatterns||[]).includes(ex.pattern))return false;
+ if(request.brainEquipment&&['wrist_flexion','wrist_extension'].includes(ex.pattern)){
+   const targets=coachRequestedTargetKeys(request);
+   if(targets.includes('shoulders')&&targets.includes('arms')
+      &&!targets.includes('forearms')&&!(request.requiredExerciseIds||[]).includes(ex.id))return false;
+ }
+
  if(typeof coachBrainEquipmentAllowed==='function'&&!coachBrainEquipmentAllowed(ex,request))return false;
  if(request.allowedEquipment.length&&!request.allowedEquipment.includes(ex.equipment))return false;
  if(request.excludedEquipment.includes(ex.equipment))return false;
