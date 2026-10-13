@@ -63,7 +63,9 @@ function coachBrainResolveEquipment(request){
  return coachBrainExplicitEquipment(request);
 }
 function coachBrainEquipmentConstraints(request){
- const config=coachBrainResolveEquipment(request);
+ // Explicit opt-in is required here. Legacy program generation and existing
+ // Coach tests must not inherit stricter equipment assumptions implicitly.
+ const config=request?.brainEquipment||null;
  if(!config)return null;
  return {equipment:{...config.context.equipment,
     unavailable:[...(config.context.equipment?.unavailable||[])]},excludedExerciseIds:[...(request.excludedExerciseIds||[])]};
