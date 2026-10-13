@@ -465,7 +465,7 @@ function coachGenerateWorkout(request){
  // any knee-dominant quads or knee-flexion hamstrings movement.
  if(req.brainEquipment&&coachRequestedTargetKeys(req).some(k=>['legs','lower body'].includes(k))){
    const covered=selected.map(ex=>ex.pattern);
-   if(!covered.some(p=>p==='squat'||p==='lunge')||!covered.includes('knee_flexion'))return null;
+   if(!covered.some(p=>p==='squat'||p==='lunge')||!covered.some(p=>p==='knee_flexion'||p==='hinge'))return null;
  }
  const baselineSelection=req.brainEquipment?
    coachSelectExercises({...req,brainEquipment:null,excludedMovementPatterns:[]},defaults.exerciseCount):[];
