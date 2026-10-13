@@ -20,7 +20,7 @@ function coachGenerateProgram(request,intent,previous=null){
  const req=coachCloneRequest({...request,duration:request.duration||45});
  req.programFocusRegions=[...new Set(intent.focusRegions||request.programFocusRegions||[])];
  req.programFocusLabels=[...new Set(intent.focusLabels||request.programFocusLabels||[])];
- const defaults=coachProgrammingDefaults(req.goal,req.duration),usage={},muscleUsage={},dayOverrides=previous?.dayOverrides||[];
+ const defaults=coachProgrammingDefaults(req.goal,req.duration),usage={},muscleUsage={},hingeHistory=[],dayOverrides=previous?.dayOverrides||[];
  const days=slots.map((key,index)=>{
    const group=COACH_TARGET_GROUPS[key],override=dayOverrides[index]||{excludedExerciseIds:[],requiredExerciseIds:[]};
    const excludedRegions=new Set(req.excludedTargetRegions||[]);
@@ -30,24 +30,35 @@ function coachGenerateProgram(request,intent,previous=null){
    dayReq.priorityRegions=req.programFocusRegions.filter(region=>targetSet.has(region));
    dayReq.excludedExerciseIds=[...new Set([...(req.excludedExerciseIds||[]),...(override.excludedExerciseIds||[])])];
    dayReq.requiredExerciseIds=[...new Set(override.requiredExerciseIds||[])];
+   dayReq.programHingeHistory=[...hingeHistory];
    dayReq.programExerciseUsage=usage;
    dayReq.programMuscleUsage={...muscleUsage};
    const initial=coachSelectExercises(dayReq,defaults.exerciseCount);
    const durationPlan=coachBrainTrimToTime(initial,dayReq,defaults);
    const selected=durationPlan.exercises;
+   selected.filter(ex=>ex.pattern==='hinge').forEach(ex=>hingeHistory.push(ex.id));
    selected.forEach(ex=>{
      usage[ex.id]=(usage[ex.id]||0)+1;
      const prescription=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,dayReq,defaults):defaults;
-     const sets=Number(prescription.sets||defaults.sets)||0,meta=exerciseMuscleMetadata(ex);
+     const sets=Number(durationPlan.setCounts?.[ex.id]?.sets||prescription.sets||defaults.sets)||0,meta=exerciseMuscleMetadata(ex);
      meta.primary.forEach(region=>muscleUsage[region]=(muscleUsage[region]||0)+sets);
      meta.secondary.forEach(region=>muscleUsage[region]=(muscleUsage[region]||0)+sets*.5);
    });
    return {
      key,label:coachProgramDayDisplayLabel(key,index,slots),request:dayReq,
-     defaults:{...defaults},selectedIds:selected.map(ex=>ex.id),brainTime:durationPlan.time,brainTimeRemoved:durationPlan.removed
+     defaults:{...defaults},selectedIds:selected.map(ex=>ex.id),brainTime:durationPlan.time,brainTimeRemoved:durationPlan.removed,brainSetCounts:durationPlan.setCounts,brainFeasible:durationPlan.feasible
    };
  });
- if(days.some(day=>!day.selectedIds.length))return null;
+ if(days.some(day=>!day.selectedIds.length||day.brainFeasible===false))return null;
+ if(req.brainEquipment&&slots.some(key=>key==='full body'||key==='full_body')){
+   const complete=days.every(day=>{
+     const patterns=day.selectedIds.map(id=>exById(id)?.pattern);
+     return patterns.some(p=>p==='horizontal_pull'||p==='vertical_pull')
+       && patterns.some(p=>p==='horizontal_press'||p==='incline_press'||p==='vertical_press')
+       && patterns.some(p=>p==='squat'||p==='lunge'||p==='knee_extension');
+   });
+   if(!complete)return null;
+ }
  coachProgramBuildDraft={
    request:req,
    intent:{...intent,frequency,split,preferredDays:[...(intent.preferredDays||[])]},
@@ -65,7 +76,7 @@ function coachProgramWeeklyCoverage(draft=coachProgramBuildDraft){
  const scores={};if(!draft)return scores;
  draft.days.forEach(day=>{
    day.selectedIds.forEach(id=>{
-     const ex=exById(id),meta=exerciseMuscleMetadata(ex),sets=day.defaults.sets;
+     const ex=exById(id),meta=exerciseMuscleMetadata(ex),sets=day.brainSetCounts?.[id]?.sets||coachExercisePrescription(ex,day.request,day.defaults).sets;
      meta.primary.forEach(m=>scores[m]=(scores[m]||0)+sets);
      meta.secondary.forEach(m=>scores[m]=(scores[m]||0)+sets*.5);
    });
@@ -92,7 +103,7 @@ function coachProgramRoutineFromDay(day,draft=coachProgramBuildDraft,id=uid()){
    exercises:day.selectedIds.map(exerciseId=>{
      const ex=exById(exerciseId),p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,day.request,d):d;
      return {
-       exerciseId,sets:p.sets,minReps:p.minReps,maxReps:p.maxReps,increment:state.settings.defaultIncrement,
+       exerciseId,sets:day.brainSetCounts?.[exerciseId]?.sets||p.sets,minReps:p.minReps,maxReps:p.maxReps,increment:state.settings.defaultIncrement,
        mode:'double',progressionStrategy:p.progressionStrategy||'double',adaptiveProgression:!!p.adaptiveProgression,setStructure:p.setStructure?cloneData(p.setStructure):null,
        trainingGoal:d.goal,resetPercent:7.5,restSeconds:p.restSeconds,
        targetRIR:Number.isFinite(Number(p.targetRIR))?Number(p.targetRIR):null,
