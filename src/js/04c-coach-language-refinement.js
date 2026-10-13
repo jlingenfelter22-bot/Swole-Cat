@@ -532,6 +532,19 @@ function coachRefineExplicitDraftText(text){
 function coachRefineDraftText(text){
  const draft=coachBuildDraft,raw=String(text||'').trim();if(!draft||!raw)return {ok:false,message:'Tell Coach what you want changed.'};
  if(draft.explicitPrescription)return coachRefineExplicitDraftText(raw);
+ const clauses=coachBrainSplitEditClauses(raw);
+ if(clauses.length>1){
+   const previous=coachBuildDraft;
+   for(const clause of clauses){
+     const result=coachRefineDraftText(clause);
+     if(!result.ok){
+       coachBuildDraft=previous;
+       return {ok:false,message:'No changes applied. '+result.message,failedClause:clause};
+     }
+   }
+   coachBuildDraft.lastRefinement=raw;
+   return {ok:true,message:'Updated all '+clauses.length+' instructions.'};
+ }
  const lower=raw.toLowerCase(),req={...draft.request};
  req.targetKeys=[...(req.targetKeys||[])];req.targetLabels=[...(req.targetLabels||[])];req.targetRegions=[...(req.targetRegions||[])];
  req.allowedEquipment=[...(req.allowedEquipment||[])];req.excludedEquipment=[...(req.excludedEquipment||[])];
@@ -639,14 +652,17 @@ function coachRefineDraftText(text){
  if(!req.targetRegions.length)return {ok:false,message:'That would remove every target muscle. Tell Coach what you still want to train.'};
  if(!changed)return {ok:false,message:'I did not find a workout change there. Try “something other than squats,” “swap a leg press for a glute bridge,” “30 minutes,” “no barbells,” or “more glutes.”'};
  req.lastRefinement=raw;
- const defaults=coachProgrammingDefaults(req.goal,req.duration||45),selected=coachSelectExercises(req,defaults.exerciseCount);
+ const defaults=coachProgrammingDefaults(req.goal,req.duration||45);
+ const initial=coachSelectExercises(req,defaults.exerciseCount);
+ const plan=coachBrainTrimToTime(initial,req,defaults);
+ const selected=plan.exercises;
  if(!selected.length)return {ok:false,message:'Those constraints leave no matching exercises. Broaden the equipment or muscle target.'};
  const brainComparison=req.brainEquipment?{
    originalIds:coachSelectExercises({...req,brainEquipment:null,excludedMovementPatterns:[]},defaults.exerciseCount).map(ex=>ex.id),
    selectedIds:selected.map(ex=>ex.id),
    reason:'Draft rebuilt with corrected equipment and user exercise constraints.'
  }:null;
- coachBuildDraft={...draft,request:req,defaults,selectedIds:selected.map(ex=>ex.id),brainComparison,lastRefinement:raw};
+ coachBuildDraft={...draft,request:req,defaults,selectedIds:selected.map(ex=>ex.id),brainComparison,brainTime:plan.time,brainTimeRemoved:plan.removed,lastRefinement:raw};
  return {ok:true,message:'Workout updated.'};
 }
 function coachApplyRefinement(){
