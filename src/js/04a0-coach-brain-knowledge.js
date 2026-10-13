@@ -54,10 +54,10 @@
    // Common knee-flexion/extension stations are plausible in an ordinary gym.
    // They are assumptions marked in the availability response, not verified access.
    if(requirement==='matching_machine' &&
-      /\\bleg curl\\b/i.test(profile.name||'') &&
+      /\bleg curl\b/i.test(profile.name||'') &&
       inventory.available.has('common_leg_curl_station'))return true;
    if(requirement==='matching_machine' &&
-      /\\bleg extension\\b/i.test(profile.name||'') &&
+      /\bleg extension\b/i.test(profile.name||'') &&
       inventory.available.has('common_leg_extension_station'))return true;
    const options=OR_GROUPS[requirement]||ALIASES[requirement]||[requirement];
    // Plain Dip requires dip bars. The support for Bench Dip must not be
