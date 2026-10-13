@@ -29,6 +29,9 @@ function coachExerciseAllowedByConstraints(ex,request){
       &&!targets.includes('forearms')&&!(request.requiredExerciseIds||[]).includes(ex.id))return false;
  }
 
+ if(request.brainEquipment&&request.programExerciseUsage
+      &&coachRequestedTargetKeys(request).includes('pull')&&ex.pattern==='hinge'
+      &&!(request.requiredExerciseIds||[]).includes(ex.id))return false;
  if(typeof coachBrainEquipmentAllowed==='function'&&!coachBrainEquipmentAllowed(ex,request))return false;
  if(request.allowedEquipment.length&&!request.allowedEquipment.includes(ex.equipment))return false;
  if(request.excludedEquipment.includes(ex.equipment))return false;
@@ -146,7 +149,9 @@ function coachCandidateBaseScore(ex,request){
      if(['wrist_flexion','wrist_extension','grip'].includes(ex.pattern)&&!keys.includes('forearms'))score-=110;
      if(ex.pattern==='elbow_extension'&&meta.primary.includes('triceps'))score+=42;
    }
-   if(ex.equipment==='bodyweight'&&['squat','lunge'].includes(ex.pattern)&&request.experienceLevel!=='advanced')score+=22;
+   if(['Bodyweight Squat','Bodyweight Reverse Lunge'].includes(ex.name)
+      &&['gym','dumbbells'].includes(request.brainEquipment?.choice)
+      &&!(request.requiredExerciseIds||[]).includes(ex.id))score-=110;
    if(['bodyweight','skip'].includes(request.brainEquipment?.choice)&&!(request.requiredExerciseIds||[]).length){
      if(ex.name==='Bodyweight Squat')score+=85;
      if(ex.name==='Bodyweight Reverse Lunge'&&request.experienceLevel!=='advanced')score-=15;
@@ -224,6 +229,12 @@ function coachCoveragePlan(request,count){
  const shoulderRear=ex=>ex.pattern==='rear_delt'&&meta(ex).primary.includes('rear_delts');
  const squatPattern=ex=>['squat','lunge'].includes(ex.pattern)&&meta(ex).primary.includes('quads');
  const hipHinge=ex=>ex.pattern==='hinge'&&meta(ex).primary.some(region=>['hamstrings','glutes'].includes(region));
+ const fullBodyPosterior=ex=>{
+   if(ex.pattern==='hinge')return hipHinge(ex);
+   return !!request.brainEquipment&&Array.isArray(request.programHingeHistory)
+     &&request.programHingeHistory.length>0&&ex.pattern==='hip_extension'
+     &&meta(ex).primary.includes('glutes');
+ };
  const hamstringCurl=ex=>ex.pattern==='knee_flexion'&&meta(ex).primary.includes('hamstrings');
  const glutePattern=ex=>meta(ex).primary.includes('glutes')&&['hip_extension','hinge'].includes(ex.pattern);
  const adductorPattern=ex=>meta(ex).primary.includes('adductors')||ex.pattern==='hip_adduction';
@@ -294,7 +305,7 @@ function coachCoveragePlan(request,count){
      add(core,'biceps_direct','Direct biceps',bicepsDirect);
      add(core,'triceps_direct','Direct triceps',tricepsDirect);
      add(optional,'arms_biceps_neutral','Neutral-grip elbow flexion',bicepsNeutral);
-     add(optional,'arms_triceps_overhead','Overhead triceps extension',tricepsOverhead);
+     add(optional,'arms_triceps_other_angle','Alternative triceps angle',keys.includes('shoulders')?tricepsNeutral:tricepsOverhead);
      add(optional,'arms_forearms','Direct forearms',forearmDirect);
    }
  };
