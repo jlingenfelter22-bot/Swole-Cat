@@ -34,7 +34,7 @@ function contextFor(prompt,choice,goal='hypertrophy'){
  }
  return req;
 }
-function exerciseRows(ids,request,defaults){
+function exerciseRows(ids,request,defaults,setCounts={}){
  return ids.map(id=>{
    const ex=w.exById(id);
    const meta=w.exerciseMuscleMetadata(ex);
@@ -43,7 +43,7 @@ function exerciseRows(ids,request,defaults){
    return {
      id,name:ex?.name,pattern:ex?.pattern,equipment:ex?.equipment,
      primary:Array.from(meta.primary||[]),secondary:Array.from(meta.secondary||[]),
-     prescription:{sets:p.sets,reps:[p.minReps,p.maxReps],restSec:p.restSeconds,goal:p.goal},
+     prescription:{sets:setCounts?.[id]?.sets||p.sets,reps:[p.minReps,p.maxReps],restSec:p.restSeconds,goal:p.goal},
      availability:availability.status,
      technical:brain.getProfile(id)?.demand?.[0]||null
    }
@@ -61,7 +61,7 @@ function single(label,prompt,choice,goal='hypertrophy'){
  }
  const ok=w.coachGenerateWorkout(req);
  const d=ok?w.eval('coachBuildDraft'):null;
- const ex=ok?exerciseRows(d.selectedIds,d.request,d.defaults):[];
+ const ex=ok?exerciseRows(d.selectedIds,d.request,d.defaults,d.brainSetCounts):[];
  const estimate=ok?(d.brainTime||w.coachBrainSessionTimeEstimate(d.selectedIds,d.request,d.defaults)):null;
  const result={type:'session',label,prompt,choice,goal,targetMinutes:req.duration,ok:!!ok,
    estimate:estimate?{mid:estimate.estimateMinutes,low:estimate.lowerMinutes,high:estimate.upperMinutes,
@@ -91,7 +91,7 @@ function program(label,prompt,choice,goal='hypertrophy'){
  const ok=w.coachGenerateProgram(req,intent,null);
  const d=ok?w.eval('coachProgramBuildDraft'):null;
  const days=ok?d.days.map((day,i)=>{
-   const ex=exerciseRows(day.selectedIds,day.request,day.defaults);
+   const ex=exerciseRows(day.selectedIds,day.request,day.defaults,day.brainSetCounts);
    const time=day.brainTime||w.coachBrainSessionTimeEstimate(day.selectedIds,day.request,day.defaults);
    const involved=ex.flatMap(z=>z.primary);
    return {number:i+1,focus:day.label,requested:day.request.duration,mid:time.estimateMinutes,low:time.lowerMinutes,high:time.upperMinutes,
