@@ -13,12 +13,15 @@ function coachBrainSessionTimeEstimate(ids,request,defaults,{explicitConfigById=
    const sets=Math.max(1,Math.min(12,Math.round(Number(config.sets||p.sets||3))));
    const range=Math.max(1,Math.min(50,Number(config.maxReps||p.maxReps||10)));
    const min=Math.max(1,Math.min(range,Number(config.minReps||p.minReps||range)));
-   const tracking=typeof exerciseMeasurementType==='function'?exerciseMeasurementType(ex):'reps';
    const profile=typeof coachBrainExerciseService==='function'?coachBrainExerciseService()?.getProfile(ex.id):null;
+   const tracking=profile?.measurement||(typeof exerciseMeasurementType==='function'?exerciseMeasurementType(ex):'reps');
    const isUnilateral=profile?.side==='unilateral'||(!profile&&/\b(?:single.arm|single.leg|alternating|bulgarian|split squat|step.up|lunge)\b/i.test(ex.name));
    // For true unilateral work, account for both sides rather than halving the prescription.
    const sideMultiplier=isUnilateral?1.7:1;
    const midReps=(min+range)/2;
+   // Current workout presets express generic rep windows even for timed and
+   // distance movements. Use disclosed setup-aware duration placeholders until
+   // the actual seconds/meters prescription is available in that draft.
    const repSeconds=tracking==='duration'?40:tracking==='distance'?45:3.5;
    const workingSeconds=sets*(tracking==='reps'?midReps*repSeconds:repSeconds)*sideMultiplier;
    const restSeconds=Math.max(0,Math.min(600,Number(p.restSeconds)||0))*(sets-1);
@@ -26,7 +29,7 @@ function coachBrainSessionTimeEstimate(ids,request,defaults,{explicitConfigById=
    const loadSeconds=COACH_COMPOUND_PATTERNS.has(ex.pattern)?30:15;
    const timeSeconds=workingSeconds+restSeconds+setupSeconds+loadSeconds;
    rows.push({id:ex.id,name:ex.name,sets,minReps:min,maxReps:range,restSeconds:Number(p.restSeconds)||0,
-     unilateral:isUnilateral,workSeconds:Math.round(workingSeconds),restTotalSeconds:restSeconds,
+     unilateral:isUnilateral,metric:tracking,estimatedMetricDuration:tracking!=='reps',workSeconds:Math.round(workingSeconds),restTotalSeconds:restSeconds,
      setupSeconds:setupSeconds+loadSeconds,totalSeconds:Math.round(timeSeconds)});
    seconds+=timeSeconds;
  });
