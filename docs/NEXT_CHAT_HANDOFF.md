@@ -1,8 +1,20 @@
 # Swole Cat - Next Chat Handoff
 
-Last updated: 2026-10-11
+Last updated: 2026-10-13
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
+
+## CURRENT RESUME CHECKPOINT (v0.88.0 supersedes older instructions)
+
+- **Latest Testing:** v0.88.0 / Android build 133; signed APK + Testing updater published: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.88.0. PR #54 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/54 merged into `main`; PR suite https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413146562 PASS, main suite https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413588809 PASS, Android signing https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413588869 PASS. APK SHA-256 `e28302b7bc268119be1d493db3f56a59c4828a548fc71ceb1e72205d656b5bb9`; permanent cert unchanged.
+- **User mandate:** safeguard Google cloud switches so **current account fully syncs BEFORE signout**, then active phone workspace is cleared and next account retrieves only its own data. Absolutely no cleanup/deletion/mutation of existing Supabase cloud accounts or historic records. Testing field only; Beta untouched v0.73.1 SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`.
+- **Implemented:** `Sync & sign out` calls `cloudSync.prepareAccountExit` for final sync, verifies no unsynced queue/conflicts, blocks offline/unavailable cloud, storage failures and unfinished active workouts, snapshots old full workout state per owner into a verified persistent `swolecat-account-exit-snapshot-v1:<ownerId>`, then signs out. Once sign-out succeeds, `cloudSync.completeAccountExit` resets in-use `overload_v3`, sync metadata and generic recovery/pre-import snapshots (previous owner data backed up under its own safety key). Next sign-in pulls own cloud only. Provider logout failure leaves old owner signed in and local state intact. Prepared/signed-out markers conservatively support recovery after interruption; irregular OAuth changes fail closed.
+- **Regression:** extended `scripts/cloud-sync-stress.mjs` A→B→A fixtures, offline/provider failures, unfinished workout, snapshot preservation and legacy recovery isolation. Adapted shell/backup signout tests to mock offline sync so no real Supabase SDK/network. Full validation green.
+- **Known caveat:** Existing cloud data that crossed accounts in the original incident is intentionally left as-is; v0.88.0 prevents new crossover but does not retroactively unmerge or delete any record. Switching normally requires internet, storage and no unfinished active workout. Device-local owner safety snapshots are recovery-only, not an auto-restore source.
+- **Immediate next:** ask user to install Testing update in place, export backup, validate Android sync-before-sign-out and clean account B rehydrate. Review screenshot/video. Later consider recoverable per-owner snapshot management UX and supervised cleanup of pre-existing crossover, only with separate explicit owner approval. Do not promote Beta.
+- Earlier checkpoints below are archival.
+
+---
 
 ## CURRENT RESUME CHECKPOINT (v0.87.9 supersedes older instructions)
 
