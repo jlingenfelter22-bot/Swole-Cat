@@ -1,6 +1,6 @@
 # Swole Cat Brain v0.89: Human Session and Program Acceptance Review
 
-**Date:** 2026-10-13. **Status:** Review underway on a draft branch. **No behavioral changes authorized or made here.**
+**Date:** 2026-10-13. **Status:** First human inspection completed. **Release decision: NOT ACCEPTED YET. No behavioral changes authorized or made here.**
 **Baseline:** draft PR #60 and its unmerged v0.89 prerequisites. Testing installed version remains v0.88.0; Beta remains frozen at v0.73.1.
 
 ## Method and decision rules
@@ -34,4 +34,8 @@ The first training-duration model is an **engineering estimate**, not clinical p
 
 ## Findings
 
-Pending actual scenario output. This checkpoint must not be marked accepted until exercise lists, per-day minutes, and weekly distributions are individually inspected. Flagging or documenting a training recommendation **is not permission to change Coach's live algorithm**; any subsequent runtime fix must be separately scoped and authorized, followed by Testing-only regression validation.
+See **[human assessment, severity-ranked blockers, and specific recommendations](HUMAN_REVIEW_FINDINGS_V089.md)**, grounded in **[the captured 20 actual scenario outputs](HUMAN_REVIEW_SCENARIOS_V089.json)** and CI run [38454373855](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38454373855) (passed).
+
+Key measured outcomes: 12/13 singles generated; one floor-only leg request rejected. 3/12 generated singles and 7/28 program days exceeded their requested time at the model midpoint. Floor-only full-body programs claimed whole-body intent while omitting pulling and knee-dominant work; several multi-day plans repeated demanding hinges or nearly identical row/pulldown slots. The draft generator **does not pass human coaching-quality acceptance** despite CI success.
+
+Flagging or documenting training recommendations is **not permission to change Coach's live algorithm**; any subsequent fixes must be separately scoped and owner-approved, followed by Testing-only regression and real-device validation.
