@@ -264,8 +264,59 @@ function coachProgramHasExplicitGoal(req){
  return /\b(?:hypertrophy|muscle growth|build muscle|gain muscle|strength|stronger|get strong|powerlifting|general fitness|general training|stay active)\b/i.test(String(req?.prompt||''));
 }
 function coachProgramQuestion(title,body,note=''){
- openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">PROGRAM SETUP // YOUR PLAN</div><div class="coach-question">${esc(title)}</div>${note?`<div class="mini" style="margin:8px 0">${esc(note)}</div>`:''}${body}</div>`);
+ openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">PROGRAM SETUP // YOUR PLAN</div><div class="coach-question">${esc(title)}</div>${note?`<div class="mini" style="margin:8px 0">${esc(note)}</div>`:''}${body}
+ <div class="mini" style="margin:12px 0 6px">Or tell Coach in your own words. You can answer more than one question at once.</div>
+ <div class="home-coach-row"><div class="coach-voice-field"><input id="coachProgramAnswer" aria-label="Your answer to Coach" placeholder="45 minutes, full gym, Mon Wed Fri..." onkeydown="if(event.key==='Enter')coachSubmitProgramAnswer()">${coachVoiceButtonHtml('coachProgramAnswer')}</div><button class="btn" onclick="coachSubmitProgramAnswer()">Send</button></div></div>`);
 }
+function coachSubmitProgramAnswer(){
+ const d=coachProgramBuildDraft;if(!d)return;
+ const text=document.getElementById('coachProgramAnswer')?.value.trim()||'';
+ if(!text){showToast('Tell Coach your preference or tap a choice');return}
+ const intent=d.intent,req=d.request,a=coachProgramIntake(d),parsed=coachParseProgramIntent(text),p=coachParsePrompt(text,req.goal);
+ let changed=false;
+ if(parsed.frequency&&(parsed.frequency!==intent.frequency||!intent.frequency)){
+  intent.frequency=parsed.frequency;changed=true;
+  if(intent.split==='custom')intent.customSlots=[];
+  if((intent.preferredDays||[]).length!==intent.frequency){intent.preferredDays=[];a.scheduleAnswered=false}
+ }
+ if(parsed.split&&parsed.split!==intent.split){intent.split=parsed.split;intent.customSlots=[];changed=true}
+ if(!parsed.split&&/\b(?:custom|choose each day|body part split)\b/i.test(text)&&!intent.split){intent.split='custom';intent.customSlots=[];changed=true}
+ if(intent.split==='custom'&&(intent.customSlots||[]).length<intent.frequency){
+  const normalized=coachNormalizeGymText(text).replace(/^day\s*[1-6]\s*(?:is|for|:)?\s*/,'').trim();
+  const focus=COACH_PROGRAM_DAY_FOCUSES.find(key=>normalized===key||normalized===key+' day'||normalized===key+' workout');
+  if(focus){intent.customSlots=[...(intent.customSlots||[]),focus];changed=true}
+ }
+ if(p.duration>0){req.duration=p.duration;changed=true}
+ const equipment=coachParseEquipment(text);
+ if(equipment.allowed.length){
+  req.allowedEquipment=[...equipment.allowed];
+  req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:text,allowedEquipment:equipment.allowed});
+  req.excludedEquipment=req.excludedEquipment.filter(x=>!equipment.allowed.includes(x));changed=true;
+ }else if(/\b(?:full|commercial|standard|well[- ]equipped)\s+gym\b/i.test(text)){
+  req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:text,allowedEquipment:[]});
+  req.allowedEquipment=[...(req.brainEquipment?.allowed||[])];changed=true;
+ }
+ if(parsed.preferredDays.length){
+  intent.preferredDays=[...parsed.preferredDays];
+  a.scheduleAnswered=parsed.preferredDays.length===intent.frequency;changed=true;
+ }
+ if(/\b(?:flexible|any|no fixed)\s+(?:days?|schedule)\b/i.test(text)){
+  intent.preferredDays=[];a.scheduleAnswered=true;changed=true;
+ }
+ const explicitGoal=coachExplicitGoal(text);
+ if(explicitGoal){req.goal=explicitGoal;a.goalAnswered=true;changed=true}
+ let mode=parsed.trainingMode;
+ if(!mode&&/^\s*guided\s*$/i.test(text))mode='guided';
+ if(!mode&&/^\s*(?:track|tracking)\s*(?:only)?\s*$/i.test(text))mode='track';
+ if(mode){intent.trainingMode=mode;if(mode!=='guided')intent.deload=programDeloadConfig({enabled:false});changed=true}
+ if(parsed.deload){
+  if(intent.trainingMode==='guided'){intent.deload=programDeloadConfig(parsed.deload);a.deloadAnswered=true;changed=true}
+  else if(parsed.deload.enabled){showToast('Deload scheduling is available with Guided Progressive Overload');}
+ }
+ if(!changed){showToast('Try an answer like “PPL”, “45 minutes”, “Monday Wednesday Friday”, or “Guided”.');return}
+ coachContinueProgramRequest();
+}
+
 function coachContinueProgramRequest(){
  const d=coachProgramBuildDraft;if(!d)return;
  const intent=d.intent,req=d.request,a=coachProgramIntake(d);
