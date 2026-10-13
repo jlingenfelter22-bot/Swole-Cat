@@ -109,3 +109,18 @@ function coachBrainApplyNaturalExerciseChange(request,text){
  if(excludePatterns.length)result.feedback='Avoiding '+excludePatterns.map(x=>x==='squat'?'squat-family exercises':'lunge-family exercises').join(' and ')+'.';
  return result;
 }
+
+function coachBrainSplitEditClauses(text){
+ const raw=String(text||'').trim();
+ if(!raw)return [];
+ // Only split at a clear *new instruction*, not commas inside equipment names.
+ // All clauses must succeed in order or the caller rolls back the entire change.
+ const verbs='make|set|change|switch|swap|replace|remove|drop|skip|avoid|no|without|different|other than|more|less|focus|emphasize|include|add|bring|keep|only|just|actually|with|use';
+ return raw.split(new RegExp('(?:[,;]\\s*|\\s+(?:and|then|but)\\s+)(?=(?:'+verbs+')\\b)','ig'))
+   .map(x=>x.trim()).filter(Boolean);
+}
+function coachBrainProgramNeedsQuestion(request){
+ if(!request?.duration)return 'duration';
+ if(!request?.brainEquipment&&!coachBrainExplicitEquipment(request))return 'equipment';
+ return null;
+}
