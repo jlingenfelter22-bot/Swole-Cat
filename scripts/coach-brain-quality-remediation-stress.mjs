@@ -144,6 +144,46 @@ console.log('BRAIN_EXPLICIT_DURATION_ACCEPTANCE '+JSON.stringify({
   saved5x5Preserved:true,retargetNoTrimming:true,editedSetsReestimated:true,untimedNotMisrepresented:true
 }));
 
+// Manual preview edits must invalidate stale time breakdowns. They are user
+// selections, so re-estimate rather than silently re-trimming or replacing.
+const manual=w.coachGenerateWorkout(request('45 minute back workout','gym'));
+assert(manual&&manual.selectedIds.length>=4);
+w.renderCoachPreview();
+const firstEstimate=manual.brainTime.estimateMinutes;
+const removedId=manual.selectedIds.at(-1);
+w.coachRemoveExercise(manual.selectedIds.length-1);
+assert(!manual.selectedIds.includes(removedId));
+assert.equal(manual.brainTime.rows.length,manual.selectedIds.length);
+assert.deepEqual(Array.from(manual.brainTime.rows.map(x=>x.id)),Array.from(manual.selectedIds),
+  'removed exercise must not remain in duration breakdown');
+assert(manual.brainTime.estimateMinutes<firstEstimate,'removing a movement must reduce estimated time');
+assert(!Object.hasOwn(manual.brainSetCounts||{},removedId),'removed exercise must not retain hidden set override');
+const afterRemoval=w.coachDraftRoutine(manual,'manual-removed');
+assert.equal(afterRemoval.exercises.length,manual.selectedIds.length);
+afterRemoval.exercises.forEach((e,i)=>assert.equal(e.sets,manual.brainTime.rows[i].sets));
+
+const beforeSwap=manual.selectedIds[0],beforeSwapTime=manual.brainTime.estimateMinutes;
+w.coachSwapExercise(0);
+assert.notEqual(manual.selectedIds[0],beforeSwap,'swap should choose a different real catalog movement');
+assert.deepEqual(Array.from(manual.brainTime.rows.map(x=>x.id)),Array.from(manual.selectedIds),
+  'replaced movement must appear in duration breakdown, never the stale original');
+const afterSwap=w.coachDraftRoutine(manual,'manual-swapped');
+afterSwap.exercises.forEach((e,i)=>assert.equal(e.sets,manual.brainTime.rows[i].sets));
+assert.equal(manual.brainTime.targetMinutes,45);
+assert.match(previewHtml,/Estimated time:/);
+assert.match(previewHtml,/Swapped/);
+console.log('BRAIN_MANUAL_PREVIEW_ACCEPTANCE '+JSON.stringify({
+  removed:removedId,swappedFrom:beforeSwap,swappedTo:manual.selectedIds[0],
+  before:firstEstimate,afterRemove:beforeSwapTime,afterSwap:manual.brainTime.estimateMinutes,
+  actualSavedSetsMatch:true
+}));
+
+const upperRisk=w.coachGenerateWorkout(request('20 minute leg workout','gym'));
+assert(upperRisk?.brainTime?.upperMinutes>20);
+w.renderCoachPreview();
+assert.match(previewHtml,/Extra setup or slower sets could push this past your target/i,
+  'show upper-range time risk even where midpoint meets limit');
+
 assert.equal(w.eval('JSON.stringify({sessions:state.sessions,routines:state.routines,programs:state.programs})'),before);
 console.log('BRAIN_QUALITY_SUMMARY '+JSON.stringify({cases:traces.length,passed:true,originalCatalogIntact:true,historyUntouched:true}));
 dom.window.close();
