@@ -96,33 +96,83 @@ assert.match(modal,/How much time do we have/);
 w.coachAnswerDuration(30);
 assert.match(modal,/equipment do you have access/i);
 
-// Interactive program: frequency, then time, then equipment, exactly what was missing.
-startProgram('build me a workout program');
-assert.match(modal,/How many days per week/);
-w.coachAnswerProgramFrequency(3);
-assert.match(modal,/How much time per workout/);
-w.coachAnswerProgramDuration(45);
-assert.match(modal,/What equipment do you have for these workouts/);
-w.coachAnswerProgramBrainEquipment('gym');
-assert.equal(program().intent.frequency,3);
-assert.equal(program().request.duration,45);
-assert.equal(program().request.brainEquipment.choice,'gym');
-assert.equal(program().days.length,3);
-assert(program().days.every(d=>d.selectedIds.length>0&&d.brainTime?.estimateMinutes>0));
-assert.match(modal,/PROGRAM BUILD/);
-assert.match(modal,/about \d+ min/);
+// v0.90: a vague three-day "split" is a planning conversation, not full body by default.
+const originalSessions=w.eval('JSON.stringify(state.sessions)');
+startProgram('3-day split');
+assert.match(modal,/What kind of split did you have in mind/);
+assert.equal(program().intent.split,'','do not select full body without consent');
+assert.equal(program().days.length,0,'program should not be generated yet');
+assert(!w.coachGenerateProgram(program().request,{...program().intent,split:'custom',customSlots:[]},program()),
+ 'incomplete custom body-part split cannot silently generate full-body days');
 
-// Program with known details must not re-ask what was provided in the prompt.
-startProgram('3-day full body program, 45 minutes, dumbbells only');
-assert(!/What equipment do you have for these workouts/.test(modal));
-assert(!/How much time per workout/.test(modal));
-assert(program()?.days?.length===3);
-
-// Multi-clause program followup should preserve original equipment answers.
-startProgram('3-day upper lower plan');
-assert.match(modal,/How much time per workout/);
+w.coachAnswerProgramSplit('custom');
+assert.match(modal,/What should Day 1 focus on/);
+w.coachAnswerProgramCustomDay('arms');
+assert.match(modal,/Day 2 focus/);
+w.coachAnswerProgramCustomDay('back');
+assert.match(modal,/Day 3 focus/);
+w.coachAnswerProgramCustomDay('legs');
+assert.match(modal,/How much time do you have per workout/);
 w.coachAnswerProgramDuration(60);
+assert.match(modal,/what equipment do you have/i);
 w.coachAnswerProgramBrainEquipment('gym');
+assert.match(modal,/Which days work best/);
+w.coachToggleProgramScheduleDay(1);
+w.coachToggleProgramScheduleDay(3);
+w.coachToggleProgramScheduleDay(5);
+assert.match(modal,/What is your primary goal/);
+w.coachAnswerProgramGoal('hypertrophy');
+assert.match(modal,/How would you like to track progression/);
+w.coachAnswerProgramTrainingMode('guided');
+assert.match(modal,/optional deload weeks/);
+w.coachAnswerProgramDeload(4);
+assert.deepEqual(Array.from(program().slots),['arms','back','legs']);
+assert.deepEqual(Array.from(program().intent.preferredDays),[1,3,5]);
+assert.equal(program().intent.trainingMode,'guided');
+assert.equal(program().intent.deload.enabled,true);
+assert.equal(program().intent.deload.intervalWeeks,4);
+assert.equal(program().days.length,3);
+assert.match(modal,/PROGRAM BUILD/);
+assert.match(modal,/Custom Body-Part Split/);
+const savedCustom=w.coachPersistGeneratedProgram();
+assert.equal(savedCustom.trainingMode,'guided','generated program must save explicit training mode');
+assert.equal(savedCustom.deload.enabled,true,'generated program must save selected deload cadence');
+assert.equal(savedCustom.deload.intervalWeeks,4);
+assert.deepEqual(Array.from(savedCustom.preferredDays),[1,3,5]);
+assert.equal(w.eval('JSON.stringify(state.sessions)'),originalSessions,'intake never modifies history');
+
+// Already specified aspects should NOT be asked again.
+startProgram('3-day push pull legs Monday Wednesday Friday 60 minutes at a full gym for muscle growth');
+assert.match(modal,/How would you like to track progression/);
+assert.doesNotMatch(modal,/What kind of split/);
+assert.doesNotMatch(modal,/Which days work/);
+w.coachAnswerProgramTrainingMode('track');
+assert.equal(program().days.length,3);
+assert.deepEqual(Array.from(program().slots),['push','pull','legs']);
+const savedTrack=w.coachPersistGeneratedProgram();
+assert.equal(savedTrack.trainingMode,'track');
+assert.equal(savedTrack.deload.enabled,false);
+
+// Full body is allowed when explicitly requested, but does not bypass mode setup.
+startProgram('3-day full body program, 45 minutes, dumbbells only');
+assert.match(modal,/Which days work/);
+w.coachUseFlexibleProgramSchedule();
+w.coachAnswerProgramGoal('general');
+w.coachAnswerProgramTrainingMode('track');
+assert.equal(program().days.length,3);
+assert(program().slots.every(key=>key==='full body'));
+
+// Explicit upper/lower program can be refined after required intake.
+startProgram('3-day upper lower plan');
+assert.match(modal,/How much time do you have per workout/);
+w.coachAnswerProgramDuration(60);
+assert.match(modal,/what equipment do you have/i);
+w.coachAnswerProgramBrainEquipment('gym');
+w.coachUseFlexibleProgramSchedule();
+w.coachAnswerProgramGoal('hypertrophy');
+w.coachAnswerProgramTrainingMode('guided');
+w.coachAnswerProgramDeload(0);
+assert.equal(program().intent.deload.enabled,false);
 const multiple=w.coachRefineProgramText('4 days, 35 minutes and no squats');
 assert(multiple.ok,JSON.stringify(multiple));
 assert.equal(program().intent.frequency,4);
@@ -137,9 +187,12 @@ assert(!fail.ok,'unsupported second clause must reject transaction');
 assert.equal(program().request.duration,beforeBad);
 assert.deepEqual(program().days.map(d=>d.selectedIds.join(',')),daysBefore);
 
-// Program dialog must ask equipment anew for a new vague program.
+// New vague program asks split, even if earlier program selected another split.
 startProgram('4-day workout plan 45 minutes');
-assert.match(modal,/What equipment do you have for these workouts/);
+assert.match(modal,/What kind of split did you have in mind/);
+w.coachAnswerProgramSplit('upper_lower');
+assert.match(modal,/what equipment do you have/i);
+assert.equal(w.eval('JSON.stringify(state.sessions)'),originalSessions,'tests must never change workout history');
 
 console.log('Brain duration + multi-turn + interactive program intake PASS',
  JSON.stringify({sampleMinutes:t1.estimateMinutes,programDays:3,historyUntouched:true,sourceExerciseCount:trio.length}));
