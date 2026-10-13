@@ -458,7 +458,10 @@ function coachGenerateWorkout(request){
    brainEquipment:request.brainEquipment||null
  };
  const defaults=coachApplyLiftingGrammarToDefaults(coachProgrammingDefaults(req.goal,req.duration),req.liftingGrammar);
- const selected=coachSelectExercises(req,defaults.exerciseCount);
+ const initialSelection=coachSelectExercises(req,defaults.exerciseCount);
+ const durationPlan=typeof coachBrainTrimToTime==='function'
+   ?coachBrainTrimToTime(initialSelection,req,defaults):{exercises:initialSelection,time:null,removed:[]};
+ const selected=durationPlan.exercises;
  if(!selected.length)return null;
  // For a short generic leg session, do not claim a balanced leg workout
  // from glute accessories and calf work when the available catalog lacks
@@ -477,6 +480,6 @@ function coachGenerateWorkout(request){
  }:null;
  const intelligenceAudit=typeof coachWorkoutIntelligenceAudit==='function'?coachWorkoutIntelligenceAudit(req,selected,defaults):null;
  if(intelligenceAudit&&!intelligenceAudit.pass)return null;
- coachBuildDraft={request:req,defaults,selectedIds:selected.map(x=>x.id),intelligenceAudit,brainComparison,createdAt:new Date().toISOString(),lastRefinement:request.lastRefinement||''};
+ coachBuildDraft={request:req,defaults,selectedIds:selected.map(x=>x.id),intelligenceAudit,brainComparison,brainTime:durationPlan.time,brainTimeRemoved:durationPlan.removed,createdAt:new Date().toISOString(),lastRefinement:request.lastRefinement||''};
  return coachBuildDraft;
 }
