@@ -16,6 +16,7 @@ const JS_SOURCES = [
   'src/js/02-muscle-history-analytics.js',
   'src/js/03-programs.js',
   'src/js/04a-coach-input-intent.js',
+  'src/js/04a0-coach-brain.js',
   'src/js/04b-coach-programming.js',
   'src/js/04b2-coach-intelligence.js',
   'src/js/04b3-coach-adaptive-progression.js',
