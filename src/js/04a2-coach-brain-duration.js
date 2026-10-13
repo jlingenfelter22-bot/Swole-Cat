@@ -6,6 +6,7 @@ function coachBrainSessionTimeEstimate(ids,request,defaults,{explicitConfigById=
  const hasCompound=selected.some(ex=>COACH_COMPOUND_PATTERNS.has(ex.pattern));
  // User-performed warmup and setup vary. The default is disclosed in previews.
  const warmupSeconds=selected.length?(hasCompound?300:180):0;
+ let heavierBarbellWarmups=0;
  let seconds=warmupSeconds;
  selected.forEach((ex,i)=>{
    const p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,request,defaults):defaults;
@@ -26,11 +27,15 @@ function coachBrainSessionTimeEstimate(ids,request,defaults,{explicitConfigById=
    const workingSeconds=sets*(tracking==='reps'?midReps*repSeconds:repSeconds)*sideMultiplier;
    const restSeconds=Math.max(0,Math.min(600,Number(p.restSeconds)||0))*(sets-1);
    const setupSeconds=i===0?45:75; // implement adjustment + walk between stations
+   // One additional preparatory-set allowance for each heavy barbell lift.
+   // The initial general warmup is not a substitute for task-specific practice.
+   const barbellPrep=ex.equipment==='barbell'&&['squat','hinge','horizontal_press','horizontal_pull','vertical_press'].includes(ex.pattern)
+     ?(heavierBarbellWarmups++===0?75:45):0;
    const loadSeconds=COACH_COMPOUND_PATTERNS.has(ex.pattern)?30:15;
-   const timeSeconds=workingSeconds+restSeconds+setupSeconds+loadSeconds;
+   const timeSeconds=workingSeconds+restSeconds+setupSeconds+loadSeconds+barbellPrep;
    rows.push({id:ex.id,name:ex.name,sets,minReps:min,maxReps:range,restSeconds:Number(p.restSeconds)||0,
      unilateral:isUnilateral,metric:tracking,estimatedMetricDuration:tracking!=='reps',workSeconds:Math.round(workingSeconds),restTotalSeconds:restSeconds,
-     setupSeconds:setupSeconds+loadSeconds,totalSeconds:Math.round(timeSeconds)});
+     setupSeconds:setupSeconds+loadSeconds,preparatorySeconds:barbellPrep,totalSeconds:Math.round(timeSeconds)});
    seconds+=timeSeconds;
  });
  const estimateMinutes=Math.round(seconds/60);
@@ -46,26 +51,40 @@ function coachBrainSessionTimeEstimate(ids,request,defaults,{explicitConfigById=
  };
 }
 function coachBrainTrimToTime(exercises,request,defaults,{retainMinimum=2}={}){
- if(!request?.brainEquipment||!(Number(request.duration)>0))return {exercises:[...exercises],time:null,removed:[]};
- const original=[...exercises],selected=[...original],removed=[];
- const mandatory=(request.requiredExerciseIds||[]);
+ if(!request?.brainEquipment||!(Number(request.duration)>0))
+   return {exercises:[...exercises],time:null,removed:[],setCounts:{},feasible:true};
+ const original=[...exercises],selected=[...original],removed=[],setCounts={};
+ const mandatory=new Set(request.requiredExerciseIds||[]);
  const coveredCore=arr=>{
    const slots=coachCoveragePlan(request,arr.length).core;
    return slots.every(slot=>!original.some(slot.match)||arr.some(slot.match));
  };
- let time=coachBrainSessionTimeEstimate(selected,request,defaults);
+ let time=coachBrainSessionTimeEstimate(selected,request,defaults,{explicitConfigById:setCounts});
  while(time.estimateMinutes>request.duration&&selected.length>retainMinimum){
-   // Remove only optional exercises; protect explicit requested movements, core
-   // targets and existing order. No reduction to user-authored sets/rest.
    let removable=-1;
    for(let i=selected.length-1;i>=0;i--){
-     if(mandatory.includes(selected[i].id))continue;
-     const possible=selected.filter((_,j)=>i!==j);
-     if(coveredCore(possible)){removable=i;break}
+     if(mandatory.has(selected[i].id))continue;
+     if(coveredCore(selected.filter((_,j)=>i!==j))){removable=i;break}
    }
    if(removable<0)break;
    removed.push(selected.splice(removable,1)[0].id);
-   time=coachBrainSessionTimeEstimate(selected,request,defaults);
+   time=coachBrainSessionTimeEstimate(selected,request,defaults,{explicitConfigById:setCounts});
  }
- return {exercises:selected,removed,time};
+ // Only automatically generated set counts may be reduced. Never silently
+ // override an explicit requested exercise, user-authored set count, or top/backoff structure.
+ const hasExplicitSets=/\b\d{1,2}\s*(?:working\s*)?sets?\b/i.test(String(request.prompt||''));
+ if(time.estimateMinutes>request.duration&&!hasExplicitSets){
+   for(const ex of [...selected].reverse()){
+     if(time.estimateMinutes<=request.duration)break;
+     if(mandatory.has(ex.id))continue;
+     const p=coachExercisePrescription(ex,request,defaults);
+     if(p?.setStructure?.type==='top_backoff')continue;
+     const current=setCounts[ex.id]?.sets||p.sets||3;
+     if(current>2){
+       setCounts[ex.id]={sets:2};
+       time=coachBrainSessionTimeEstimate(selected,request,defaults,{explicitConfigById:setCounts});
+     }
+   }
+ }
+ return {exercises:selected,removed,time,setCounts,feasible:time.estimateMinutes<=request.duration};
 }
