@@ -112,7 +112,7 @@ assert.equal(key('Side Plank').proposed.movementRole,'isometric_anti_lateral_fle
 assert.equal(key('Side Plank').proposed.sideExecution,'one_side_at_a_time');
 assert.equal(key('Pallof Press').proposed.movementRole,'anti_rotation');
 assert.equal(key('Sled Drag').proposed.movementRole,'sled_drag_direction_unspecified');
-assert(key('Weighted Push-Up').proposed.equipmentCapabilities.includes('secure_added_load'));
+assert(key('Weighted Push-Up').proposed.equipmentCapabilities.includes('secure_added_weight'));
 assert(key('Ab Wheel').proposed.equipmentCapabilities.includes('ab_wheel'));
 assert(key('Dead Hang').proposed.equipmentCapabilities.includes('secure_overhead_bar'));
 assert.equal(key('Dead Hang').similarExerciseIds.length,0);
