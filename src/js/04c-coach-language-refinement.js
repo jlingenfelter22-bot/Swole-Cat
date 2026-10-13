@@ -355,6 +355,14 @@ function coachTryTeachAlias(text){
  const choices=understood.alternatives?.slice(0,2).map(x=>x.exercise.name).join(' or ');
  return {handled:true,ok:false,message:choices?`I’m not sure what “${meaning}” means. Did you mean ${choices}?`:'I could not match that exercise yet.'};
 }
+function coachRefreshExplicitDraftTime(draft=coachBuildDraft){
+ if(!draft?.explicitPrescription||typeof coachBrainSessionTimeEstimate!=='function')return null;
+ // Defaults do not imply the user requested a 45-minute deadline.
+ const timeRequest=draft.explicitDurationRequested?draft.request:{...draft.request,duration:0};
+ draft.brainTime=coachBrainSessionTimeEstimate(draft.selectedIds,timeRequest,draft.defaults,
+   {explicitConfigById:draft.explicitConfigById||{}});
+ return draft.brainTime;
+}
 function coachGenerateExplicitWorkout(request,prescription){
  if(!prescription?.items?.length)return null;
  const defaults=coachApplyLiftingGrammarToDefaults(coachProgrammingDefaults(request.goal,request.duration||45),request.liftingGrammar),regions=[],labels=[];
@@ -366,9 +374,11 @@ function coachGenerateExplicitWorkout(request,prescription){
  req.targetLabels=labels.length?labels:['Custom'];req.targetRegions=[...new Set(regions)];
  coachBuildDraft={
    request:req,defaults,selectedIds:prescription.items.map(x=>x.exerciseId),
-   explicitPrescription:true,explicitConfigById:Object.fromEntries(prescription.items.map(x=>[x.exerciseId,{...x}])),
+   explicitPrescription:true,explicitDurationRequested:Number(request.duration)>0,
+   explicitConfigById:Object.fromEntries(prescription.items.map(x=>[x.exerciseId,{...x}])),
    createdAt:new Date().toISOString(),lastRefinement:'',sourcePrompt:request.prompt||''
  };
+ coachRefreshExplicitDraftTime(coachBuildDraft);
  return coachBuildDraft;
 }
 function coachResolveExercisePhrase(phrase,ids=null){
@@ -499,7 +509,17 @@ function coachRefineExplicitDraftText(text){
 
  if(isModify){
    const ex=coachResolveExplicitEditExercise(normalized,draft,{selectedOnly:true});
-   if(!ex)return {ok:false,message:'I could not tell which current exercise you want changed.'};
+   if(!ex){
+     // A time change never downgrades explicitly requested working sets.
+     const timing=coachParsePrompt(normalized,draft.request.goal);
+     if(timing.duration&&!/\b(?:sets?|reps?)\b/i.test(lower)){
+       draft.request.duration=timing.duration;
+       draft.explicitDurationRequested=true;
+       draft.lastRefinement=raw;
+       return {ok:true,message:'Workout time target updated; your sets and reps are unchanged.'};
+     }
+     return {ok:false,message:'I could not tell which current exercise you want changed.'};
+   }
    const cfg=coachExplicitEditNumbers(normalized,draft,ex.id);
    draft.explicitConfigById[ex.id]=coachExplicitConfigForExercise(draft,ex.id,cfg);
    draft.lastRefinement=`Updated ${ex.name}`;
@@ -520,7 +540,11 @@ function coachRefineExplicitDraftText(text){
 
  const parsedPrompt=coachParsePrompt(normalized,draft.request.goal),goal=coachExplicitGoal(normalized);
  let metadataChanged=false;
- if(parsedPrompt.duration){draft.request.duration=parsedPrompt.duration;metadataChanged=true}
+ if(parsedPrompt.duration){
+   draft.request.duration=parsedPrompt.duration;
+   draft.explicitDurationRequested=true;
+   metadataChanged=true;
+ }
  if(goal&&goal!==draft.request.goal){
    draft.request.goal=goal;
    draft.defaults=coachProgrammingDefaults(goal,draft.request.duration||45);
@@ -531,7 +555,11 @@ function coachRefineExplicitDraftText(text){
 }
 function coachRefineDraftText(text){
  const draft=coachBuildDraft,raw=String(text||'').trim();if(!draft||!raw)return {ok:false,message:'Tell Coach what you want changed.'};
- if(draft.explicitPrescription)return coachRefineExplicitDraftText(raw);
+ if(draft.explicitPrescription){
+   const result=coachRefineExplicitDraftText(raw);
+   if(result.ok)coachRefreshExplicitDraftTime(draft);
+   return result;
+ }
  const clauses=coachBrainSplitEditClauses(raw);
  if(clauses.length>1){
    const previous=coachBuildDraft;
