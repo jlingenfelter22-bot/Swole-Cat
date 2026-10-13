@@ -22,6 +22,8 @@ function coachRecentExercisePenalty(exerciseId){
 function coachExerciseAllowedByConstraints(ex,request){
  if(!ex||isHiddenExercise(ex.id))return false;
  if((request.excludedExerciseIds||[]).includes(ex.id))return false;
+ if((request.excludedMovementPatterns||[]).includes(ex.pattern))return false;
+ if(typeof coachBrainEquipmentAllowed==='function'&&!coachBrainEquipmentAllowed(ex,request))return false;
  if(request.allowedEquipment.length&&!request.allowedEquipment.includes(ex.equipment))return false;
  if(request.excludedEquipment.includes(ex.equipment))return false;
  const excludedRegions=new Set(request.excludedTargetRegions||[]);
@@ -447,13 +449,23 @@ function coachGenerateWorkout(request){
    allowedEquipment:[...(request.allowedEquipment||[])],excludedEquipment:[...(request.excludedEquipment||[])],
    priorityRegions:[...(request.priorityRegions||[])],priorityKeys:[...(request.priorityKeys||[])],
    experienceLevel:request.experienceLevel||'auto',lateralityPreference:request.lateralityPreference||'auto',
-   excludedExerciseIds:[...(request.excludedExerciseIds||[])],requiredExerciseIds:[...(request.requiredExerciseIds||[])]
+   excludedExerciseIds:[...(request.excludedExerciseIds||[])],requiredExerciseIds:[...(request.requiredExerciseIds||[])],
+   excludedMovementPatterns:[...(request.excludedMovementPatterns||[])],
+   brainEquipment:request.brainEquipment||null
  };
  const defaults=coachApplyLiftingGrammarToDefaults(coachProgrammingDefaults(req.goal,req.duration),req.liftingGrammar);
  const selected=coachSelectExercises(req,defaults.exerciseCount);
  if(!selected.length)return null;
+ const baselineSelection=req.brainEquipment?
+   coachSelectExercises({...req,brainEquipment:null,excludedMovementPatterns:[]},defaults.exerciseCount):[];
+ const brainComparison=req.brainEquipment?{
+   originalIds:baselineSelection.map(ex=>ex.id),
+   selectedIds:selected.map(ex=>ex.id),
+   excludedOriginalIds:baselineSelection.filter(ex=>!selected.some(candidate=>candidate.id===ex.id)).map(ex=>ex.id),
+   reason:'Brain equipment requirements constrain otherwise broadly eligible catalog choices. This is a candidate comparison, not an effectiveness score.'
+ }:null;
  const intelligenceAudit=typeof coachWorkoutIntelligenceAudit==='function'?coachWorkoutIntelligenceAudit(req,selected,defaults):null;
  if(intelligenceAudit&&!intelligenceAudit.pass)return null;
- coachBuildDraft={request:req,defaults,selectedIds:selected.map(x=>x.id),intelligenceAudit,createdAt:new Date().toISOString(),lastRefinement:request.lastRefinement||''};
+ coachBuildDraft={request:req,defaults,selectedIds:selected.map(x=>x.id),intelligenceAudit,brainComparison,createdAt:new Date().toISOString(),lastRefinement:request.lastRefinement||''};
  return coachBuildDraft;
 }
