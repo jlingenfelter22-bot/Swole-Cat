@@ -714,6 +714,15 @@ function syncCompleteAccountExit(){
     if(!save({syncRelevant:false}))throw new Error(lastStorageError||'Could not save the empty signed-out workspace.');
     const next=syncSaveLocal({...syncDefaultLocal(),pausedAfterErase:false});
     if(next.ownerId!==null||swoleCatStorage.getItem(LSKEY)==null)throw new Error('Signed-out workspace verification failed.');
+    // The generic recovery and pre-import keys contain the previous owner's
+    // data. Keep the verified owner-specific safety copy, but do not let
+    // load() resurrect an older account's history into a new owner's workspace.
+    swoleCatStorage.removeItem(RECOVERYKEY);
+    swoleCatStorage.removeItem(IMPORTSNAPSHOTKEY);
+    recoverySnapshotWritten=false;
+    recoveredFromSnapshot=false;
+    if(swoleCatStorage.getItem(RECOVERYKEY)!==null||swoleCatStorage.getItem(IMPORTSNAPSHOTKEY)!==null)
+      throw new Error('Could not isolate legacy device recovery records.');
     swoleCatStorage.removeItem(SWOLE_CAT_SWITCH_PENDING_KEY);
     swoleCatSyncAccountExitInProgress=false;
     renderHome();populateMuscles();updateActiveWorkoutChrome();
