@@ -28,7 +28,7 @@ function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
      const ex=exById(exerciseId),explicit=draft.explicitConfigById?.[exerciseId];
      const p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,r,d):d;
      return {
-       exerciseId,sets:explicit?.sets||p.sets,minReps:explicit?.minReps||p.minReps,maxReps:explicit?.maxReps||p.maxReps,increment:state.settings.defaultIncrement,
+       exerciseId,sets:explicit?.sets||draft.brainSetCounts?.[exerciseId]?.sets||p.sets,minReps:explicit?.minReps||p.minReps,maxReps:explicit?.maxReps||p.maxReps,increment:state.settings.defaultIncrement,
        mode:'double',progressionStrategy:p.progressionStrategy||'double',adaptiveProgression:!!p.adaptiveProgression,setStructure:p.setStructure?cloneData(p.setStructure):null,
        trainingGoal:d.goal,resetPercent:7.5,restSeconds:p.restSeconds,
        autoWarmup:exerciseId===firstWarmupId,
@@ -43,7 +43,7 @@ function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
 function coachPreviewExercisePrescription(exerciseId,draft){
  const ex=exById(exerciseId),d=draft?.defaults||{},r=draft?.request||{},explicit=draft?.explicitConfigById?.[exerciseId];
  const p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,r,d):d;
- const sets=explicit?.sets||p.sets,min=explicit?.minReps||p.minReps,max=explicit?.maxReps||p.maxReps;
+ const sets=explicit?.sets||draft.brainSetCounts?.[exerciseId]?.sets||p.sets,min=explicit?.minReps||p.minReps,max=explicit?.maxReps||p.maxReps;
  const structure=p.setStructure?.type==='top_backoff'
    ?` · top ${p.setStructure.topMinReps}–${p.setStructure.topMaxReps} + ${p.setStructure.backoffSets} backoff @ ${p.setStructure.backoffPercent}%`
    :'';
@@ -69,6 +69,7 @@ function renderCoachPreview(){
       </div>`}).join('')}
     </div>
     ${draft.brainTime?`<div class="notice"><b>Estimated time: ${draft.brainTime.estimateMinutes} minutes</b> (rough range ${draft.brainTime.lowerMinutes}–${draft.brainTime.upperMinutes}, requested ${draft.brainTime.targetMinutes}). Includes ${draft.brainTime.warmupMinutes} min warm-up, working sets, rest, station setup and side-to-side work. ${draft.brainTime.overTarget?'This may run long; consider fewer sets or more time.':''} ${draft.brainTimeRemoved?.length?'Coach removed optional movements to stay closer to your time limit.':''}</div>`:''}
+   ${draft.brainSetCounts&&Object.keys(draft.brainSetCounts).length?`<div class="notice">Some automatically proposed set counts were reduced to better fit your time limit. You can change them in the routine after saving; that will change the duration.</div>`:''}
    <div class="coach-rationale"><b>Why this structure:</b> ${draft.explicitPrescription?'This is your exercise list. Coach preserves the exercises you named and only changes the list when you explicitly ask it to add, remove, swap, or modify something.':'Coach ranked the session from requested muscles, anatomical roles, weekly primary/secondary set-equivalents, recent movement overlap, exercise progression continuity, movement demand, equipment, target priority, and your exercise preferences.'} Swolecat does not invent a starting weight; your own history and progression engine handle load once the workout starts.${draft.intelligenceAudit&&typeof coachIntelligenceSummaryText==='function'?'<br><span class="mini">'+esc(coachIntelligenceSummaryText(draft))+'</span>':''}</div>
     ${coachBrainEquipmentPreviewNotice(req)?`<div class="notice">${esc(coachBrainEquipmentPreviewNotice(req))}</div>`:''}
     ${coachRecentContextText(req)?`<div class="notice">${esc(coachRecentContextText(req))}</div>`:''}
