@@ -69,6 +69,7 @@ function renderCoachPreview(){
       </div>`}).join('')}
     </div>
     <div class="coach-rationale"><b>Why this structure:</b> ${draft.explicitPrescription?'This is your exercise list. Coach preserves the exercises you named and only changes the list when you explicitly ask it to add, remove, swap, or modify something.':'Coach ranked the session from requested muscles, anatomical roles, weekly primary/secondary set-equivalents, recent movement overlap, exercise progression continuity, movement demand, equipment, target priority, and your exercise preferences.'} Swolecat does not invent a starting weight; your own history and progression engine handle load once the workout starts.${draft.intelligenceAudit&&typeof coachIntelligenceSummaryText==='function'?'<br><span class="mini">'+esc(coachIntelligenceSummaryText(draft))+'</span>':''}</div>
+    ${typeof coachBrainEquipmentAssumptionText==='function'&&coachBrainEquipmentAssumptionText(req)?`<div class="notice">${esc(coachBrainEquipmentAssumptionText(req))}</div>`:''}
     ${coachRecentContextText(req)?`<div class="notice">${esc(coachRecentContextText(req))}</div>`:''}
     <div class="coach-console" style="margin-top:10px"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">${draft.explicitPrescription?'Edit your exact list. Try “add 1 set of assisted pull-ups,” “make bench 4 sets of 6,” or “remove Bulgarian split squats.”':'Change the draft naturally. Try “make it 30 minutes,” “no barbells,” “more chest,” “strength focused,” “remove bench press,” or “add lateral raise.”'}</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachRefinePrompt" placeholder="${draft.explicitPrescription?'Add 1 set of assisted pull-ups...':'Make it 30 min, no barbells, more chest...'}" onkeydown="if(event.key==='Enter')coachApplyRefinement()">${coachVoiceButtonHtml('coachRefinePrompt')}</div><button class="btn" onclick="coachApplyRefinement()">Update</button></div></div>
     <div class="notice">Programming presets are evidence-backed practical defaults, not claims that one rep range or exercise is universally best. Completed logs inform weekly overlap, progression continuity, and movement demand, but Coach never treats them as a diagnosis of soreness, recovery, injury, or medical readiness.</div>
@@ -192,6 +193,11 @@ function coachContinueRequest(){
    openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">ONE QUICK QUESTION</div><div class="coach-question">How much time do we have?</div><div class="coach-choice-grid">${[30,45,60,75].map(m=>`<button class="btn secondary" onclick="coachAnswerDuration(${m})">${m} minutes</button>`).join('')}</div></div>`);
    return;
  }
+ const brainQuestion=typeof coachBrainNextQuestion==='function'?coachBrainNextQuestion(req):null;
+ if(brainQuestion?.id==='equipment'){
+   openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">ONE QUICK QUESTION</div><div class="coach-question">${esc(brainQuestion.text)}</div><div class="mini" style="margin-bottom:12px">${esc(brainQuestion.explanation)}</div><div class="coach-choice-grid">${brainQuestion.options.map(o=>`<button class="btn secondary" onclick="coachAnswerBrainEquipment('${o.id}')">${esc(o.label)}</button>`).join('')}</div></div>`);
+   return;
+ }
  if(!coachGenerateWorkout(req)){alert('Coach Swolecat could not build a workout from that request with the available exercise/equipment filters. Try broadening the equipment or target muscles.');return}
  renderCoachPreview();
 }
@@ -201,6 +207,25 @@ function coachAnswerTarget(key){
 }
 function coachAnswerDuration(minutes){
  if(!coachBuildDraft)return;coachBuildDraft.request.duration=Math.max(15,Math.min(120,Number(minutes)||45));coachContinueRequest();
+}
+function coachAnswerBrainEquipment(choiceId){
+ if(!coachBuildDraft)return;
+ if(choiceId==='custom'){
+   openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">YOUR EQUIPMENT</div><div class="coach-question">What do you have available?</div><div class="mini">For example: dumbbells and cables, barbell and kettlebells, or resistance machines.</div><input id="coachBrainEquipmentInput" class="search" placeholder="Dumbbells and cables..." aria-label="Available equipment" onkeydown="if(event.key==='Enter')coachSubmitBrainCustomEquipment()"><div class="actions"><button class="btn" onclick="coachSubmitBrainCustomEquipment()">Continue</button><button class="btn secondary" onclick="coachAnswerBrainEquipment('skip')">Skip</button></div></div>`);
+   return;
+ }
+ const result=coachBrainApplyEquipmentAnswer(coachBuildDraft.request,choiceId);
+ if(!result.ok){showToast(result.reason);return}
+ coachBuildDraft.request=result.request;
+ coachContinueRequest();
+}
+function coachSubmitBrainCustomEquipment(){
+ const value=document.getElementById('coachBrainEquipmentInput')?.value||'';
+ if(!coachBuildDraft)return;
+ const result=coachBrainApplyEquipmentAnswer(coachBuildDraft.request,'custom',value);
+ if(!result.ok){showToast(result.reason);return}
+ coachBuildDraft.request=result.request;
+ coachContinueRequest();
 }
 function coachSubmitPrompt(){
  const input=document.getElementById('coachPrompt'),prompt=input?.value.trim()||'';
