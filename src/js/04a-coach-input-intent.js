@@ -464,9 +464,22 @@ function coachParseProgramIntent(text){
  else if(/\bupper\s*[\/-]?\s*lower\b/.test(lower))split='upper_lower';
  else if(/\bfull[ -]?body\b/.test(lower))split='full_body';
  else if(/\bcustom (?:body[- ]?part )?split\b|\bbody[- ]?part split\b|\bdifferent muscle (?:group|focus) (?:for )?each day\b/.test(lower))split='custom';
+ let trainingMode='';
+ if(/\b(?:track only|standard workout|just track(?:ing)?(?: workouts)?)\b/.test(lower))trainingMode='track';
+ else if(/\b(?:guided progressive overload|progressive overload)\b/.test(lower))trainingMode='guided';
+ else if(/\bstrength focus\b/.test(lower))trainingMode='strength';
+ let deload=null;
+ if(/\b(?:no|without|skip)\s+(?:scheduled\s+)?deloads?\b/.test(lower))deload={enabled:false,intervalWeeks:4};
+ else{
+  const cadence=lower.match(/\bdeloads?\s+(?:every|each|after)\s+(\d{1,2})(?:st|nd|rd|th)?\s*(?:training\s*)?weeks?\b/);
+  if(cadence){
+   const n=Number(cadence[1]);
+   if(n>=3&&n<=8)deload={enabled:true,intervalWeeks:n};
+  }
+ }
  const focus=coachParseProgramFocus(lower);
  const isProgram=/\b(program|plan|split|weekly|week)\b/.test(lower)||!!dayMatch||!!weekMatch||preferredDays.length>=2||!!split;
- return {isProgram,frequency,preferredDays,split,focusLabels:focus.labels,focusRegions:focus.regions};
+ return {isProgram,frequency,preferredDays,split,trainingMode,deload,customSlots:[],focusLabels:focus.labels,focusRegions:focus.regions};
 }
 function coachDefaultProgramSplit(frequency){
  if(frequency<=3)return 'full_body';
