@@ -161,6 +161,13 @@ function coachDynamicCandidateScore(ex,request,coverage,patternCounts,familyCoun
  });
  meta.secondary.filter(m=>targets.has(m)).forEach(m=>score+=16/(1+(coverage[m]||0)));
  score-=(patternCounts[ex.pattern]||0)*34;
+ // Avoid selecting a second demanding hip/knee barbell compound alongside a
+ // squat when programming a short general/hypertrophy session.
+ if(request.brainEquipment&&request.goal!=='strength'&&(Number(request.duration)||0)<=60
+    &&ex.pattern==='hinge'&&patternCounts.squat
+    &&/deadlift/i.test(ex.name)&&!/romanian|stiff.?leg|single.?leg/i.test(ex.name)
+    &&!(request.requiredExerciseIds||[]).includes(ex.id))score-=130;
+
  score-=(familyCounts[family]||0)*118;
  const keys=coachRequestedTargetKeys(request);
  if(keys.includes('arms')&&ex.pattern==='elbow_flexion'&&meta.primary.includes('biceps'))score+=36;
