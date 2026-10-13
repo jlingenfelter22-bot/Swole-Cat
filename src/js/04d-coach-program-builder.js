@@ -182,6 +182,15 @@ function coachRefineProgramText(text){
  if(goal&&goal!==req.goal){req.goal=goal;changed=true}
  if(program.frequency&&program.frequency!==intent.frequency){intent.frequency=program.frequency;changed=true;structureChanged=true}
  if(program.split&&program.split!==intent.split){intent.split=program.split;if(program.split!=='custom')intent.customSlots=[];changed=true;structureChanged=true}
+ if(program.trainingMode&&program.trainingMode!==intent.trainingMode){
+  intent.trainingMode=program.trainingMode;
+  if(intent.trainingMode!=='guided')intent.deload=programDeloadConfig({enabled:false});
+  changed=true;
+ }
+ if(program.deload&&intent.trainingMode==='guided'){
+  intent.deload=programDeloadConfig(program.deload);
+  changed=true;
+ }
  if(program.preferredDays.length){
    intent.preferredDays=[...program.preferredDays];
    if(!program.frequency)intent.frequency=program.preferredDays.length;
