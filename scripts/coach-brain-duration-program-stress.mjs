@@ -80,7 +80,7 @@ assert(draft().request.priorityRegions.includes('glutes'));
 assert(draft().selectedIds.every(id=>w.exById(id).pattern!=='squat'));
 assert(draft().brainTime);
 const after=JSON.stringify(draft().selectedIds);
-const rejected=w.coachRefineDraftText('make it 50 minutes, teleport me to mars');
+const rejected=w.coachRefineDraftText('make it 50 minutes, remove quantum teleportation');
 assert.equal(rejected.ok,false);
 assert.equal(JSON.stringify(draft().selectedIds),after,'partial edits must roll back');
 assert.equal(draft().request.duration,45,'duration rollback must be complete');
@@ -127,7 +127,7 @@ assert(program().days.every(day=>day.selectedIds.every(id=>w.exById(id).pattern!
 assert(program().days.every(day=>day.brainTime));
 assert(program().interactiveBrainFlow);
 const beforeBad=program().request.duration,daysBefore=program().days.map(d=>d.selectedIds.join(','));
-const fail=w.coachRefineProgramText('50 minutes, do backflips');
+const fail=w.coachRefineProgramText('50 minutes, remove quantum teleportation');
 assert(!fail.ok,'unsupported second clause must reject transaction');
 assert.equal(program().request.duration,beforeBad);
 assert.deepEqual(program().days.map(d=>d.selectedIds.join(',')),daysBefore);
