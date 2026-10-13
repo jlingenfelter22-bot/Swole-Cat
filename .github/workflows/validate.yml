@@ -52,7 +52,8 @@ jobs:
           assert(!/<style>[\s\S]*<\/style>/.test(source),'index.html should not contain the application stylesheet');
           assert(!/<script>[\s\S]*<\/script>/.test(source),'index.html should not contain the application runtime');
           const moduleTags=[...source.matchAll(/<script src="\.\/src\/js\/([^"]+)"><\/script>/g)].map(m=>m[1]);
-          assert.equal(moduleTags.length,28,'source shell should load all JavaScript domain modules');
+          assert.equal(moduleTags.length,29,'source shell should load all JavaScript domain modules');
+          assert(moduleTags.includes('04a0-coach-brain-knowledge.js'),'v0.89 standalone Brain knowledge service must load');
           assert(moduleTags.includes('04f-coach-routine-control.js'),'v0.61 Coach saved-routine control module must stay registered');
           assert(moduleTags.includes('04g-coach-history-insights.js'),'v0.62 Coach history intelligence module must stay registered');
           assert(moduleTags.includes('04h-coach-program-auditor.js'),'v0.63 Coach Program auditor module must stay registered');
@@ -67,7 +68,7 @@ jobs:
           assert(moduleTags.includes('10h-supabase-sharing-provider.js'),'v0.71 Supabase short-share provider must stay registered');
           assert(!moduleTags.includes('04-coach.js'),'legacy monolithic Coach module must stay removed');
           const dataTags=[...source.matchAll(/<script src="\.\/src\/data\/([^"]+)"><\/script>/g)].map(m=>m[1]);
-          assert.deepEqual(dataTags,['exercises.js','anatomy.js','coach-knowledge.js'],'source shell should load static data modules in order');
+          assert.deepEqual(dataTags,['exercises.js','anatomy.js','coach-knowledge.js','coach-brain-exercise-profiles.js'],'source shell should load static data modules in order');
           const styleTags=[...source.matchAll(/<link rel="stylesheet" href="\.\/src\/styles\/([^"]+)">/g)].map(m=>m[1]);
           assert.equal(styleTags.length,4,'source shell should load all stylesheet layers');
           const built=fs.readFileSync('www/index.html','utf8');
@@ -95,6 +96,9 @@ jobs:
 
       - name: Verify 308-exercise Brain knowledge audit (documentation only)
         run: node scripts/verify-coach-brain-308-audit.mjs
+
+      - name: Stress test v0.89 standalone Brain exercise knowledge and substitutions
+        run: node scripts/coach-brain-knowledge-stress.mjs
 
       - name: Stress test v0.84.0 exercise intelligence and timed/distance measurement
         run: node scripts/exercise-intelligence-stress.mjs
