@@ -2,7 +2,7 @@
 // Interactive quick-build deliberately asks again for unknown equipment on each NEW request.
 // All decisions are confined to the current draft; no mutations to exercise history/cloud.
 const COACH_BRAIN_EQUIPMENT_CHOICES=Object.freeze([
- Object.freeze({key:'gym',label:'Gym (common equipment)',preset:'standard_gym',allowed:['barbell','dumbbell','cable','bodyweight']}),
+ Object.freeze({key:'gym',label:'Gym (common equipment)',preset:'standard_gym',allowed:['barbell','dumbbell','cable','machine','bodyweight']}),
  Object.freeze({key:'dumbbells',label:'Dumbbells + bodyweight',preset:'home_dumbbells',allowed:['dumbbell','bodyweight']}),
  Object.freeze({key:'bodyweight',label:'Bodyweight only',preset:'floor_only',allowed:['bodyweight']}),
  Object.freeze({key:'custom',label:'Other equipment',preset:null,allowed:null}),
@@ -18,7 +18,7 @@ function coachBrainExerciseService(){return SwoleCatRuntime.getService('brainKno
 function coachBrainExplicitEquipment(request){
  const raw=String(request?.prompt||'');
  if(/\b(?:full|commercial|standard|well[- ]equipped)\s+gym\b/i.test(raw))
-   return {choice:'gym',context:{equipment:{preset:'standard_gym',complete:false}},allowed:['barbell','dumbbell','cable','bodyweight'],label:'Gym (common equipment)',assumption:true};
+   return {choice:'gym',context:{equipment:{preset:'standard_gym',complete:false}},allowed:['barbell','dumbbell','cable','machine','bodyweight'],label:'Gym (common equipment)',assumption:true};
  const allowed=Array.isArray(request?.allowedEquipment)?request.allowedEquipment:[];
  if(!allowed.length)return null;
  const cap=new Set();allowed.forEach(key=>(COACH_BRAIN_EQUIPMENT_CAPABILITIES[key]||[]).forEach(x=>cap.add(x)));
