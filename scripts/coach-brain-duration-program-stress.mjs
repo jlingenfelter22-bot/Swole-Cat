@@ -52,6 +52,11 @@ if(uni){
  const u=w.coachBrainSessionTimeEstimate([uni],baseReq,defaults);
  assert(u.rows[0].totalSeconds>0);
 }
+const timed=w.coachBrainSessionTimeEstimate(['lib_307'],baseReq,defaults);
+const distance=w.coachBrainSessionTimeEstimate(['lib_174'],baseReq,defaults);
+assert.equal(timed.rows[0].metric,'duration','dead hang uses audited timed metric');
+assert.equal(distance.rows[0].metric,'distance','sled uses audited distance metric');
+assert(timed.rows[0].estimatedMetricDuration,'timed duration is a disclosed approximation');
 const empty=w.coachBrainSessionTimeEstimate([],baseReq,defaults);
 assert.equal(empty.estimateMinutes,0);
 
