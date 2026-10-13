@@ -15,7 +15,7 @@
  const PRESETS=freezeDeep({
    floor_only:['bodyweight','exercise_space'],
    home_dumbbells:['bodyweight','exercise_space','dumbbells'],
-   standard_gym:['bodyweight','exercise_space','barbell','plates','bench','dumbbells','cable_station']
+   standard_gym:['bodyweight','exercise_space','barbell','plates','bench','dumbbells','cable_station','common_leg_curl_station','common_leg_extension_station']
  });
  const QUESTION_CAPS=new Set(['assistance_mechanism_unknown','pelvic_restraint_status_unknown','drag_direction_to_confirm']);
  const OPTIONAL_CAPS=new Set(['plates_if_required']);
@@ -51,6 +51,14 @@
  }
  function hasRequirement(requirement,inventory,profile){
    if(OPTIONAL_CAPS.has(requirement))return true;
+   // Common knee-flexion/extension stations are plausible in an ordinary gym.
+   // They are assumptions marked in the availability response, not verified access.
+   if(requirement==='matching_machine' &&
+      /\\bleg curl\\b/i.test(profile.name||'') &&
+      inventory.available.has('common_leg_curl_station'))return true;
+   if(requirement==='matching_machine' &&
+      /\\bleg extension\\b/i.test(profile.name||'') &&
+      inventory.available.has('common_leg_extension_station'))return true;
    const options=OR_GROUPS[requirement]||ALIASES[requirement]||[requirement];
    // Plain Dip requires dip bars. The support for Bench Dip must not be
    // silently considered valid for a parallel-bar Dip.
