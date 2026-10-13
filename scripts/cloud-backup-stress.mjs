@@ -202,10 +202,11 @@ await cloud.registerProvider({
 await assert.rejects(()=>cloud.list(),/cloud offline/);
 assert.equal(w.localStorage.getItem('overload_v3'),localBeforeFailure,'cloud failure must not mutate or block local workout data');
 
-await identity.signOut();
-assert.equal(identity.snapshot().signedIn,false);
-await assert.rejects(()=>cloud.backUpNow(),/Sign in/i);
-assert.equal(w.localStorage.getItem('overload_v3'),localBeforeFailure,'signed-out cloud backup attempts must leave local data untouched');
+// The backup-only test has no cloud sync provider. Sign-out must be stopped
+// before it can clear a local workout workspace.
+await assert.rejects(()=>identity.signOut(),/Cloud sync is not available/);
+assert.equal(identity.snapshot().signedIn,true);
+assert.equal(w.localStorage.getItem('overload_v3'),localBeforeFailure,'blocked sign-out preserves local workouts');
 
 dom.window.close();
 console.log('Swole Cat v0.69.4 cloud backup and restore PASS');
