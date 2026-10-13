@@ -93,6 +93,9 @@ jobs:
           fs.writeFileSync('/tmp/swole-cat-test.html',html);
           JS
 
+      - name: Verify 308-exercise Brain knowledge audit (documentation only)
+        run: node scripts/verify-coach-brain-308-audit.mjs
+
       - name: Stress test v0.84.0 exercise intelligence and timed/distance measurement
         run: node scripts/exercise-intelligence-stress.mjs
 
