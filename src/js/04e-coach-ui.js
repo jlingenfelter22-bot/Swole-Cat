@@ -68,7 +68,8 @@ function renderCoachPreview(){
         <div class="coach-exercise-actions"><button class="btn small secondary" onclick="coachSwapExercise(${i})">Swap</button><button class="btn small secondary" onclick="coachRemoveExercise(${i})">Remove</button></div>
       </div>`}).join('')}
     </div>
-    <div class="coach-rationale"><b>Why this structure:</b> ${draft.explicitPrescription?'This is your exercise list. Coach preserves the exercises you named and only changes the list when you explicitly ask it to add, remove, swap, or modify something.':'Coach ranked the session from requested muscles, anatomical roles, weekly primary/secondary set-equivalents, recent movement overlap, exercise progression continuity, movement demand, equipment, target priority, and your exercise preferences.'} Swolecat does not invent a starting weight; your own history and progression engine handle load once the workout starts.${draft.intelligenceAudit&&typeof coachIntelligenceSummaryText==='function'?'<br><span class="mini">'+esc(coachIntelligenceSummaryText(draft))+'</span>':''}</div>
+    ${draft.brainTime?`<div class="notice"><b>Estimated time: ${draft.brainTime.estimateMinutes} minutes</b> (rough range ${draft.brainTime.lowerMinutes}–${draft.brainTime.upperMinutes}, requested ${draft.brainTime.targetMinutes}). Includes ${draft.brainTime.warmupMinutes} min warm-up, working sets, rest, station setup and side-to-side work. ${draft.brainTime.overTarget?'This may run long; consider fewer sets or more time.':''} ${draft.brainTimeRemoved?.length?'Coach removed optional movements to stay closer to your time limit.':''}</div>`:''}
+   <div class="coach-rationale"><b>Why this structure:</b> ${draft.explicitPrescription?'This is your exercise list. Coach preserves the exercises you named and only changes the list when you explicitly ask it to add, remove, swap, or modify something.':'Coach ranked the session from requested muscles, anatomical roles, weekly primary/secondary set-equivalents, recent movement overlap, exercise progression continuity, movement demand, equipment, target priority, and your exercise preferences.'} Swolecat does not invent a starting weight; your own history and progression engine handle load once the workout starts.${draft.intelligenceAudit&&typeof coachIntelligenceSummaryText==='function'?'<br><span class="mini">'+esc(coachIntelligenceSummaryText(draft))+'</span>':''}</div>
     ${coachBrainEquipmentPreviewNotice(req)?`<div class="notice">${esc(coachBrainEquipmentPreviewNotice(req))}</div>`:''}
     ${coachRecentContextText(req)?`<div class="notice">${esc(coachRecentContextText(req))}</div>`:''}
     <div class="coach-console" style="margin-top:10px"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">${draft.explicitPrescription?'Edit your exact list. Try “add 1 set of assisted pull-ups,” “make bench 4 sets of 6,” or “remove Bulgarian split squats.”':'Keep chatting. Try “something other than squats,” “no lunges,” “just dumbbells,” “more glutes,” “make it 30 minutes,” or “add a leg curl.”'}</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachRefinePrompt" placeholder="${draft.explicitPrescription?'Add 1 set of assisted pull-ups...':'Make it 30 min, no barbells, more chest...'}" onkeydown="if(event.key==='Enter')coachApplyRefinement()">${coachVoiceButtonHtml('coachRefinePrompt')}</div><button class="btn" onclick="coachApplyRefinement()">Update</button></div></div>
@@ -266,7 +267,7 @@ function coachSubmitPrompt(){
  if(programIntent.isProgram){
    request.programFocusRegions=[...programIntent.focusRegions];request.programFocusLabels=[...programIntent.focusLabels];
    coachBuildDraft=null;
-   coachProgramBuildDraft={request,intent:programIntent,days:[],dayOverrides:[],createdAt:new Date().toISOString()};
+   coachProgramBuildDraft={request,intent:programIntent,days:[],dayOverrides:[],interactiveBrainFlow:true,createdAt:new Date().toISOString()};
    coachContinueProgramRequest();return;
  }
  coachProgramBuildDraft=null;
@@ -313,7 +314,7 @@ function homeCoachBuildPrompt(){
  if(programIntent.isProgram){
    request.programFocusRegions=[...programIntent.focusRegions];request.programFocusLabels=[...programIntent.focusLabels];
    coachBuildDraft=null;
-   coachProgramBuildDraft={request,intent:programIntent,days:[],dayOverrides:[],createdAt:new Date().toISOString()};
+   coachProgramBuildDraft={request,intent:programIntent,days:[],dayOverrides:[],interactiveBrainFlow:true,createdAt:new Date().toISOString()};
    coachContinueProgramRequest();return;
  }
  coachProgramBuildDraft=null;
