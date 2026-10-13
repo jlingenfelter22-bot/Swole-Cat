@@ -1,6 +1,6 @@
 # Coach Brain v0.89: Pre-release Session & Program Acceptance Gate
 
-**Prepared:** October 13, 2026. **Status:** Development-only, owner/device acceptance pending.  
+**Prepared:** October 13, 2026. **Status:** Development-only, full synthetic CI passed, owner/device acceptance pending.  
 **Baseline:** PR #62 quality remediation, PR #63 exact-list duration preview and PR #64 preview-accuracy follow-up. Nothing in this stack is installed in signed Testing v0.88.0 or Beta v0.73.1.
 
 ## Why this gate exists
@@ -44,9 +44,9 @@ In the stored [20-scenario post-remediation matrix](QUALITY_REMEDIATION_SCENARIO
 
 | Gate | Status |
 | --- | --- |
-| Developer regression + real-output capture | Pending final CI for this follow-up; see PR #64 |
-| Session and program estimate recalculates after user edits | Implemented in draft; pending CI |
-| Upper-range uncertainty is visible | Implemented in draft; pending CI |
+| Developer regression + real-output capture | **PASS**, [full 94-step CI](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38463629529) and [real-output capture](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38463629638) |
+| Session and program estimate recalculates after user edits | **PASS in synthetic regression**, real phone pending |
+| Upper-range uncertainty is visible | **PASS in synthetic regression**, real phone readability pending |
 | Device Android workflow review | **Not performed** |
 | Stopwatch comparison for real sessions | **Not performed** |
 | Owner accepts v0.89 to signed Testing | **Not approved** |
