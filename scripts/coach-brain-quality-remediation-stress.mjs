@@ -184,6 +184,15 @@ w.renderCoachPreview();
 assert.match(previewHtml,/Extra setup or slower sets could push this past your target/i,
   'show upper-range time risk even where midpoint meets limit');
 
+const cautiousPrompt='3 day full body program 45 minutes';
+const cautiousReq=request(cautiousPrompt,'gym');
+assert(w.coachGenerateProgram(cautiousReq,w.coachParseProgramIntent(cautiousPrompt),null));
+const cautiousDraft=w.eval('coachProgramBuildDraft');
+assert(cautiousDraft.days.some(day=>day.brainTime.upperMinutes>day.brainTime.targetMinutes));
+w.renderCoachProgramPreview();
+assert.match(previewHtml,/Some days could run past your target/i,
+  'program preview must disclose realistic upper-bound overruns even with fitted midpoints');
+
 assert.equal(w.eval('JSON.stringify({sessions:state.sessions,routines:state.routines,programs:state.programs})'),before);
 console.log('BRAIN_QUALITY_SUMMARY '+JSON.stringify({cases:traces.length,passed:true,originalCatalogIntact:true,historyUntouched:true}));
 dom.window.close();
