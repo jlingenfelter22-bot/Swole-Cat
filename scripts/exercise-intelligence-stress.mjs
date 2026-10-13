@@ -16,7 +16,7 @@ w.installRegressionFixturePlan();
 await wait(35);
 const read=()=>JSON.parse(w.localStorage.getItem('overload_v3'));
 const total=w.exerciseCatalog().list.filter(e=>!e.custom);
-assert.equal(total.length,308,'308 built-in exercises including Dead Hang');
+assert.equal(total.length,310,'original 308 including Dead Hang plus two floor-only movements');
 for(const ex of total){
  const m=w.exerciseMovementProfile(ex.id);
  assert(['duration','distance','reps'].includes(m.measurement),'catalog exercise has safe measurement');
@@ -116,5 +116,5 @@ assert.equal(track.targetValues[0],35);
 assert.match(w.loadAwarePR([{weight:0,reps:0,durationSeconds:35}],{weight:0,reps:0,durationSeconds:40},'lib_307'),/Hold time PR/);
 assert.match(w.loadAwarePR([{weight:40,reps:0,distanceMeters:10}],{weight:40,reps:0,distanceMeters:12},'lib_258'),/Distance PR/);
 
-console.log('PASS: 308 profiles, real seconds/distance, UI, progression, history, legacy reps, sharing, Track Only, substitutions and metric records.');
+console.log('PASS: 310 exercise entries, real seconds/distance, UI, progression, history, legacy reps, sharing, Track Only, substitutions and metric records.');
 dom.window.close();
