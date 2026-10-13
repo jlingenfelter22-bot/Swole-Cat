@@ -79,7 +79,8 @@ const gluteHam=brain.describeExercise('lib_187');
 assert.equal(gluteHam.resistancePolicy,'bodyweight_default_optional_added_load');
 const assisted=brain.describeExercise('lib_32');
 assert.equal(assisted.resistancePolicy,'assistance');
-assert.equal(brain.describeExercise('lib_116').resistancePolicy,'added_external_load_only');
+assert.equal(brain.describeExercise('lib_116').resistancePolicy,'external');
+assert.equal(brain.describeExercise('lib_116').measurement,'reps'); // Weighted pull-up logs added load, not body mass
 assert.equal(brain.describeExercise('lib_50').movementRole,'dip_press');
 
 // Alternative discovery searches the FULL catalog, not just the three audit suggestions.
