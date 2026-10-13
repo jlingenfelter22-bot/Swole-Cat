@@ -164,6 +164,30 @@ assert(modeRefinement.ok,JSON.stringify(modeRefinement));
 assert.equal(program().intent.trainingMode,'track');
 assert.equal(program().intent.deload.enabled,false,'Track Only may not inherit scheduled Guided deloads');
 
+// Freeform setup may answer split, clock, equipment, weekdays, goal, mode and deload at once.
+startProgram('3-day split');
+const nativeGetter=w.document.getElementById.bind(w.document);
+w.document.getElementById=id=>id==='coachProgramAnswer'
+ ?{value:'PPL, 45 minutes, full gym, Monday Wednesday Friday, build muscle, guided progressive overload, deload every 4 weeks'}
+ :nativeGetter(id);
+w.coachSubmitProgramAnswer();
+w.document.getElementById=nativeGetter;
+assert.equal(program().days.length,3,'multi-detail answer should open the program preview');
+assert.deepEqual(Array.from(program().slots),['push','pull','legs']);
+assert.equal(program().request.duration,45);
+assert.deepEqual(Array.from(program().intent.preferredDays),[1,3,5]);
+assert.equal(program().intent.trainingMode,'guided');
+assert.equal(program().intent.deload.intervalWeeks,4);
+assert.match(modal,/PROGRAM BUILD/);
+
+// A weekday-only response may NOT override an explicitly chosen four-day frequency.
+startProgram('4-day upper lower split 45 minutes at a full gym for muscle growth guided progressive overload no deload');
+w.document.getElementById=id=>id==='coachProgramAnswer'?{value:'Monday Wednesday Friday'}:nativeGetter(id);
+w.coachSubmitProgramAnswer();
+w.document.getElementById=nativeGetter;
+assert.equal(program().intent.frequency,4,'three named days are not explicit permission to change four-day frequency');
+assert.match(modal,/Which days work best/,'request the missing fourth day');
+
 // Full body is allowed when explicitly requested, but does not bypass mode setup.
 startProgram('3-day full body program, 45 minutes, dumbbells only');
 assert.match(modal,/Which days work/);
