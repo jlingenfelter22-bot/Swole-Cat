@@ -132,7 +132,7 @@ const COACH_EQUIPMENT_TERMS=[
 ];
 const COACH_COMPOUND_PATTERNS=new Set(['horizontal_press','incline_press','vertical_press','horizontal_pull','vertical_pull','squat','lunge','hinge','dip_press']);
 const COACH_PROGRAM_SPLIT_LABELS={
- balanced:'Balanced',full_body:'Full Body',upper_lower:'Upper / Lower',ppl:'Push / Pull / Legs'
+ balanced:'Balanced',full_body:'Full Body',upper_lower:'Upper / Lower',ppl:'Push / Pull / Legs',custom:'Custom Body-Part Split'
 };
 const COACH_WEEKDAY_TERMS=[
  ['sunday',0],['sun',0],['monday',1],['mon',1],['tuesday',2],['tue',2],['tues',2],
@@ -463,6 +463,7 @@ function coachParseProgramIntent(text){
  if(/\bpush\s*[\/-]?\s*pull\s*[\/-]?\s*legs\b|\bppl\b/.test(lower))split='ppl';
  else if(/\bupper\s*[\/-]?\s*lower\b/.test(lower))split='upper_lower';
  else if(/\bfull[ -]?body\b/.test(lower))split='full_body';
+ else if(/\bcustom (?:body[- ]?part )?split\b|\bbody[- ]?part split\b|\bdifferent muscle (?:group|focus) (?:for )?each day\b/.test(lower))split='custom';
  const focus=coachParseProgramFocus(lower);
  const isProgram=/\b(program|plan|split|weekly|week)\b/.test(lower)||!!dayMatch||!!weekMatch||preferredDays.length>=2||!!split;
  return {isProgram,frequency,preferredDays,split,focusLabels:focus.labels,focusRegions:focus.regions};
@@ -473,8 +474,9 @@ function coachDefaultProgramSplit(frequency){
  if(frequency===5)return 'balanced';
  return 'ppl';
 }
-function coachProgramSlots(frequency,split){
+function coachProgramSlots(frequency,split,customSlots=[]){
  const f=Math.max(2,Math.min(6,Number(frequency)||3)),mode=split||coachDefaultProgramSplit(f);
+ if(mode==='custom')return Array.isArray(customSlots)&&customSlots.length===f&&customSlots.every(key=>Object.hasOwn(COACH_TARGET_GROUPS,key))?[...customSlots]:[];
  if(mode==='full_body')return Array.from({length:f},()=> 'full body');
  if(mode==='upper_lower')return Array.from({length:f},(_,i)=>i%2===0?'upper body':'lower body');
  if(mode==='ppl'){
