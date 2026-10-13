@@ -549,8 +549,14 @@ function coachRefineDraftText(text){
  if(parsed.experienceLevel&&parsed.experienceLevel!=='auto'&&parsed.experienceLevel!==req.experienceLevel){req.experienceLevel=parsed.experienceLevel;changed=true}
  if(parsed.lateralityPreference&&parsed.lateralityPreference!=='auto'&&parsed.lateralityPreference!==req.lateralityPreference){req.lateralityPreference=parsed.lateralityPreference;changed=true}
  if(equipment.allowed.length){
+   req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:raw,allowedEquipment:equipment.allowed});
    req.allowedEquipment=[...equipment.allowed];
    req.excludedEquipment=req.excludedEquipment.filter(x=>!equipment.allowed.includes(x));
+   changed=true;
+ }
+ if(/\b(?:full|commercial|standard|well[- ]equipped)\s+gym\b/i.test(raw)){
+   req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:raw,allowedEquipment:[]});
+   req.allowedEquipment=[...(req.brainEquipment?.allowed||[])];
    changed=true;
  }
  if(equipment.excluded.length){
@@ -592,6 +598,21 @@ function coachRefineDraftText(text){
    }
    changed=true;
  }
+ const brainNatural=coachBrainApplyNaturalExerciseChange(req,raw);
+ if(brainNatural.changed){
+   req.excludedMovementPatterns=brainNatural.request.excludedMovementPatterns;
+   changed=true;
+ }
+ const swapInstruction=raw.match(/\b(?:replace|swap|change)\s+(.+?)\s+(?:with|for|to)\s+(.+?)(?:[.!?]|$)/i);
+ if(swapInstruction){
+   const oldExercise=coachResolveExercisePhrase(swapInstruction[1],draft.selectedIds);
+   const newExercise=coachResolveExercisePhrase(swapInstruction[2]);
+   if(oldExercise&&newExercise){
+     req.excludedExerciseIds=[...new Set([...(req.excludedExerciseIds||[]),oldExercise.id])];
+     req.requiredExerciseIds=[...new Set([...(req.requiredExerciseIds||[]).filter(x=>x!==oldExercise.id),newExercise.id])];
+     changed=true;
+   }
+ }
  const segments=raw.split(/[,;]|\bthen\b/i).map(x=>x.trim()).filter(Boolean);
  segments.forEach(segment=>{
    let m=segment.match(/^(?:remove|drop|skip)\s+(.+)$/i);
@@ -616,11 +637,16 @@ function coachRefineDraftText(text){
    }
  });
  if(!req.targetRegions.length)return {ok:false,message:'That would remove every target muscle. Tell Coach what you still want to train.'};
- if(!changed)return {ok:false,message:'I did not find a workout change there. Try “30 minutes,” “no barbells,” “more chest,” “strength focused,” or “remove bench press.”'};
+ if(!changed)return {ok:false,message:'I did not find a workout change there. Try “something other than squats,” “swap a leg press for a glute bridge,” “30 minutes,” “no barbells,” or “more glutes.”'};
  req.lastRefinement=raw;
  const defaults=coachProgrammingDefaults(req.goal,req.duration||45),selected=coachSelectExercises(req,defaults.exerciseCount);
  if(!selected.length)return {ok:false,message:'Those constraints leave no matching exercises. Broaden the equipment or muscle target.'};
- coachBuildDraft={...draft,request:req,defaults,selectedIds:selected.map(ex=>ex.id),lastRefinement:raw};
+ const brainComparison=req.brainEquipment?{
+   originalIds:coachSelectExercises({...req,brainEquipment:null,excludedMovementPatterns:[]},defaults.exerciseCount).map(ex=>ex.id),
+   selectedIds:selected.map(ex=>ex.id),
+   reason:'Draft rebuilt with corrected equipment and user exercise constraints.'
+ }:null;
+ coachBuildDraft={...draft,request:req,defaults,selectedIds:selected.map(ex=>ex.id),brainComparison,lastRefinement:raw};
  return {ok:true,message:'Workout updated.'};
 }
 function coachApplyRefinement(){
