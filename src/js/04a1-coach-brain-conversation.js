@@ -96,7 +96,7 @@ function coachBrainApplyNaturalExerciseChange(request,text){
    && !/\b(?:reverse|walking|stationary|barbell|smith|landmine)\s+lunge\b/i.test(lower);
  if(broadSquats)excludePatterns.push('squat');
  if(broadLunges)excludePatterns.push('lunge');
- if(/\b(?:bring (?:back|in)|allow|okay with|include|add)\s+(?:the\s+)?squats?\b/i.test(lower)){
+ if(/\b(?:bring (?:back|in)|allow|okay with|include|add)\s+(?:the\s+)?squats?\b|\bbring\s+(?:the\s+)?squats?\s+back\b/i.test(lower)){
    result.request.excludedMovementPatterns=result.request.excludedMovementPatterns.filter(x=>x!=='squat');
    result.changed=true;result.feedback='Squat-family exercises are allowed again.';
  }
