@@ -18,6 +18,8 @@ An interactive program starts by collecting **only the missing information** and
 9. **Deload preference** for Guided mode only: choose no scheduled deload or every 3–8 training weeks, with 4 as a suggested UI option but *not* a universally optimal recommendation. The existing engine requires a per-week user confirmation to begin a deload; do not infer readiness or injury.
 10. **Preview, revise, save**: show each separate day, weekday preferences, chosen program mode/deload and available equipment. Saving writes normal routines plus the standard program object using its actual `trainingMode` and `deload` fields. The planning dialogue itself does not save user data.
 
+All setup questions also offer a text/voice field. One natural-language reply can supply multiple details (for example: PPL, 45 minutes, full gym, Mon/Wed/Fri, build muscle, Guided overload, deload every 4 weeks). Coach parses those into its current ephemeral draft and skips questions already answered. A reply containing only three weekday names **cannot** silently change an already selected four-day frequency; it requests another day instead.
+
 A fully specified request skips already answered questions. A three-day Full Body request still creates three full-body days *because the user chose that*. If only "three-day split" is provided, the first question is the split.
 
 ## Scientific and product boundaries
@@ -28,6 +30,6 @@ Retain the v0.89 exact workout path, equipment limits, user-set overrides, sessi
 
 ## Acceptance and remaining quality concerns
 
-The v0.90 targeted synthetic regression walks the whole interactive custom sequence, selects Arms / Back / Legs, Mon/Wed/Fri, Guided mode and a four-week *optional* deload, and verifies saved program fields, per-day labels, and unchanged historical sessions. It separately checks a complete PPL prompt skips redundancies, explicit Full Body remains Full Body, Track Only has no deload, and program refinements preserve answered settings.
+The v0.90 targeted synthetic regression checks combined free-text reply, schedule-frequency safeguards, and walks the whole interactive custom sequence, selects Arms / Back / Legs, Mon/Wed/Fri, Guided mode and a four-week *optional* deload, and verifies saved program fields, per-day labels, and unchanged historical sessions. It separately checks a complete PPL prompt skips redundancies, explicit Full Body remains Full Body, Track Only has no deload, and program refinements preserve answered settings.
 
 Still required before any release: full CI, realistic generated program review (including floor-only refusal), narrow Android screen flow, voice prompt recognition and owner signoff. Frequency choice is not an automatic weekly training recommendation. The user may decide to choose an uneven split; review weekly coverage honestly rather than silently replacing their selected muscle days.
