@@ -52,7 +52,8 @@ jobs:
           assert(!/<style>[\s\S]*<\/style>/.test(source),'index.html should not contain the application stylesheet');
           assert(!/<script>[\s\S]*<\/script>/.test(source),'index.html should not contain the application runtime');
           const moduleTags=[...source.matchAll(/<script src="\.\/src\/js\/([^"]+)"><\/script>/g)].map(m=>m[1]);
-          assert.equal(moduleTags.length,29,'source shell should load all JavaScript domain modules');
+          assert.equal(moduleTags.length,30,'source shell should load all JavaScript domain modules');
+          assert(moduleTags.includes('04a1-coach-brain-conversation.js'),'v0.89 conversation decision adapter must load');
           assert(moduleTags.includes('04a0-coach-brain-knowledge.js'),'v0.89 standalone Brain knowledge service must load');
           assert(moduleTags.includes('04f-coach-routine-control.js'),'v0.61 Coach saved-routine control module must stay registered');
           assert(moduleTags.includes('04g-coach-history-insights.js'),'v0.62 Coach history intelligence module must stay registered');
@@ -99,6 +100,9 @@ jobs:
 
       - name: Stress test v0.89 standalone Brain exercise knowledge and substitutions
         run: node scripts/coach-brain-knowledge-stress.mjs
+
+      - name: Stress test v0.89 contextual Coach conversation and equipment preview
+        run: node scripts/coach-brain-conversation-stress.mjs
 
       - name: Stress test v0.84.0 exercise intelligence and timed/distance measurement
         run: node scripts/exercise-intelligence-stress.mjs
