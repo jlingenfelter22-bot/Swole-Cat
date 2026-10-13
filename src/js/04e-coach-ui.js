@@ -49,10 +49,21 @@ function coachPreviewExercisePrescription(exerciseId,draft){
    :'';
  return sets+' sets · '+min+(max!==min?'–'+max:'')+' reps · '+p.restSeconds+'s rest'+(Number.isFinite(Number(p.targetRIR))?' · '+p.targetRIR+' RIR':'')+structure;
 }
+function coachRefreshDraftPreviewTime(draft=coachBuildDraft){
+ if(!draft)return null;
+ if(draft.explicitPrescription){
+   return typeof coachRefreshExplicitDraftTime==='function'?coachRefreshExplicitDraftTime(draft):null;
+ }
+ // Keep legacy, unconstrained generation unchanged. For time-planned drafts,
+ // re-estimate the *actual current* selection, including adjusted set counts.
+ if(!draft.brainTime||typeof coachBrainSessionTimeEstimate!=='function')return draft.brainTime||null;
+ draft.brainTime=coachBrainSessionTimeEstimate(draft.selectedIds,draft.request,draft.defaults,
+   {explicitConfigById:draft.brainSetCounts||{}});
+ return draft.brainTime;
+}
 function renderCoachPreview(){
  const draft=coachBuildDraft;if(!draft)return;
- // Manual swap/remove actions also need to refresh the custom-list estimate.
- if(draft.explicitPrescription&&typeof coachRefreshExplicitDraftTime==='function')coachRefreshExplicitDraftTime(draft);
+ coachRefreshDraftPreviewTime(draft);
  const req=draft.request,d=draft.defaults,routine=coachDraftRoutine(draft,'preview');
  const hasTimeTarget=!draft.explicitPrescription||!!draft.explicitDurationRequested;
  const equipment=coachBrainResolveEquipment(req)?.label||(req.allowedEquipment.length?req.allowedEquipment.join(', '):'Equipment not specified');
@@ -71,7 +82,7 @@ function renderCoachPreview(){
         <div class="coach-exercise-actions"><button class="btn small secondary" onclick="coachSwapExercise(${i})">Swap</button><button class="btn small secondary" onclick="coachRemoveExercise(${i})">Remove</button></div>
       </div>`}).join('')}
     </div>
-    ${draft.brainTime?`<div class="notice"><b>Estimated time: ${draft.brainTime.estimateMinutes} minutes</b> (rough range ${draft.brainTime.lowerMinutes}–${draft.brainTime.upperMinutes}${hasTimeTarget?', requested '+draft.brainTime.targetMinutes:''}). Includes ${draft.brainTime.warmupMinutes} min warm-up, working sets, rest, station setup and side-to-side work. ${draft.explicitPrescription?'Your chosen exercises, sets and reps have not been reduced to fit the estimate. ':''} ${draft.brainTime.overTarget?'This may run long; consider fewer sets or more time.':''} ${draft.brainTimeRemoved?.length?'Coach removed optional movements to stay closer to your time limit.':''}</div>`:''}
+    ${draft.brainTime?`<div class="notice"><b>Estimated time: ${draft.brainTime.estimateMinutes} minutes</b> (rough range ${draft.brainTime.lowerMinutes}–${draft.brainTime.upperMinutes}${hasTimeTarget?', requested '+draft.brainTime.targetMinutes:''}). Includes ${draft.brainTime.warmupMinutes} min warm-up, working sets, rest, station setup and side-to-side work. ${draft.explicitPrescription?'Your chosen exercises, sets and reps have not been reduced to fit the estimate. ':''} ${draft.brainTime.overTarget?'This may run long; consider fewer sets or more time.':hasTimeTarget&&draft.brainTime.upperMinutes>draft.brainTime.targetMinutes?'Extra setup or slower sets could push this past your target.':''} ${draft.brainTimeRemoved?.length?'Coach removed optional movements to stay closer to your time limit.':''}</div>`:''}
    ${draft.brainSetCounts&&Object.keys(draft.brainSetCounts).length?`<div class="notice">Some automatically proposed set counts were reduced to better fit your time limit. You can change them in the routine after saving; that will change the duration.</div>`:''}
    <div class="coach-rationale"><b>Why this structure:</b> ${draft.explicitPrescription?'This is your exercise list. Coach preserves the exercises you named and only changes the list when you explicitly ask it to add, remove, swap, or modify something.':'Coach ranked the session from requested muscles, anatomical roles, weekly primary/secondary set-equivalents, recent movement overlap, exercise progression continuity, movement demand, equipment, target priority, and your exercise preferences.'} Swolecat does not invent a starting weight; your own history and progression engine handle load once the workout starts.${draft.intelligenceAudit&&typeof coachIntelligenceSummaryText==='function'?'<br><span class="mini">'+esc(coachIntelligenceSummaryText(draft))+'</span>':''}</div>
     ${coachBrainEquipmentPreviewNotice(req)?`<div class="notice">${esc(coachBrainEquipmentPreviewNotice(req))}</div>`:''}
@@ -87,6 +98,7 @@ function coachRemoveExercise(index){
  coachBuildDraft.request.excludedExerciseIds=[...new Set([...(coachBuildDraft.request.excludedExerciseIds||[]),id])];
  coachBuildDraft.request.requiredExerciseIds=(coachBuildDraft.request.requiredExerciseIds||[]).filter(x=>x!==id);
  if(coachBuildDraft.explicitConfigById)delete coachBuildDraft.explicitConfigById[id];
+ if(coachBuildDraft.brainSetCounts)delete coachBuildDraft.brainSetCounts[id];
  coachBuildDraft.selectedIds.splice(index,1);
  coachBuildDraft.lastRefinement=`Removed ${exById(id)?.name||'exercise'}`;
  renderCoachPreview();
@@ -132,6 +144,9 @@ function coachSwapExercise(index){
      draft.explicitConfigById[replacement.id]={...config,exerciseId:replacement.id};
  }
  draft.selectedIds[index]=replacement.id;
+ // Automated set-count adjustments apply to the original exercise only.
+ // A replacement retains its own normal suggested sets until the user edits.
+ if(draft.brainSetCounts)delete draft.brainSetCounts[currentId];
  draft.lastRefinement=`Swapped ${current?.name||'exercise'} for ${replacement.name}`;
  renderCoachPreview();
 }
