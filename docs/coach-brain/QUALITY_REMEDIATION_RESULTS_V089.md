@@ -56,6 +56,10 @@ A 60-minute advanced shoulders-and-arms request now includes both direct biceps 
 - 310-catalog regression explicitly verifies the original 308 plus two separately classified new IDs, including no migration of existing IDs.
 - Existing original exercise-audit study references remain the [2026 ACSM resistance training position stand](https://pubmed.ncbi.nlm.nih.gov/41843416/) and project research foundation; these new ranking/time rules are **product engineering heuristics** to be field-tested, not scientifically precise laws.
 
+## Next engineering follow-up: custom-workout duration honesty
+
+Draft [PR #63](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/63) extends this remediation to **explicit user-authored** workout lists, whose original v0.89 preview omitted time estimates entirely. It estimates the actual custom sets/reps without trimming any, distinguishes a genuine user-requested minute limit from the default 45-minute prescription preset, and allows time-only refinement without changing the explicit list. Regression coverage is included in the existing quality-remediation test script. Scope, scientific limitations and sign-off gates are saved in [EXPLICIT_DURATION_ACCEPTANCE_V089.md](EXPLICIT_DURATION_ACCEPTANCE_V089.md). **No Android or Beta release was made; CI confirmation is a separate gate.**
+
 ## Remaining real-world acceptance
 
 1. Review 20-minute and 30-minute actual phone workouts with measured durations including warm-up sets, equipment wait times and unilateral transitions.
