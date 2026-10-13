@@ -26,7 +26,7 @@ Time remains an **engineering midpoint with a range**, not a measured workout or
 
 Research boundary: general strength-training specificity and autoregulation are supported by the 2026 ACSM position stand (PMID 41843416), but minute-level duration heuristics are **product assumptions**, not established outcomes from controlled training trials. The user's individual gym pace, warm-up, station availability and rest needs can exceed the shown range.
 
-**CI result:** initial workflow run 38460441747 failed at the new regression for `4 sets of 6` (actual previous reps retained); the defect was corrected on the same development branch. Follow-up validation is pending and must be checked before release. Do not mark passed until GitHub Actions confirms. No release, cloud change, Android signing, local account change or Beta merge has been performed.
+**CI result:** initial workflow run [38460441747](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38460441747) failed at the new regression for `4 sets of 6`, identifying a real parser defect. After fixing it, the full workflow [38460708958](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38460708958) **PASSED**. The separate real generated-workout review [38460708849](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38460708849) **PASSED**. These verify development CI, not real Android timings or owner acceptance. Do not mark passed until GitHub Actions confirms. No release, cloud change, Android signing, local account change or Beta merge has been performed.
 
 ## Next acceptance checkpoints
 
