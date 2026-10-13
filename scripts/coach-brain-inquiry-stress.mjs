@@ -81,3 +81,4 @@ assert.match(promptModal,/Equipment was not specified/,'skip disclaimer must app
 const explicit=w.coachParseExplicitWorkout('3 sets of bench press for 20 reps','hypertrophy');
 assert(explicit.items.length>0,'existing exact workout route remains functional');
 console.log('Brain equipment inquiry and integration PASS');
+dom.window.close();
