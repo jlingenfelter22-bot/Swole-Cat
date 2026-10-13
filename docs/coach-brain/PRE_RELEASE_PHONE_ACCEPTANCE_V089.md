@@ -1,7 +1,7 @@
 # Coach Brain v0.89: Pre-release Session & Program Acceptance Gate
 
-**Prepared:** October 13, 2026. **Status:** Development-only, full synthetic CI passed, owner/device acceptance pending.  
-**Baseline:** PR #62 quality remediation, PR #63 exact-list duration preview and PR #64 preview-accuracy follow-up. Nothing in this stack is installed in signed Testing v0.88.0 or Beta v0.73.1.
+**Prepared:** October 13, 2026. **Status:** Published to signed Android Testing v0.89.0 (build 134) on October 13, 2026. Automated CI passed; owner/device acceptance pending.  
+**Baseline:** PR #62 quality remediation, PR #63 exact-list duration preview and PR #64 preview-accuracy follow-up. This full stack is now in signed Testing v0.89.0 through release PR #65; Beta remains v0.73.1 and untouched.
 
 ## Why this gate exists
 
@@ -31,7 +31,7 @@ In the stored [20-scenario post-remediation matrix](QUALITY_REMEDIATION_SCENARIO
 - **Multi-day** program previews now explicitly say some days may take longer even when their midpoints fit, because existing per-day upper ranges frequently exceed the requested limit.
 - Synthetic regression tests assert exact preview row IDs and saved exercise set-count agreement after manual Remove/Swap, upper-range single-session warnings, and upper-range program notices. No account or historical data is touched by these changes.
 
-## Proposed real-Android review, only after owner approves a Testing release
+## Owner-approved real-Android review, signed Testing v0.89.0
 
 1. **Install in place through Testing's normal updater.** Do not uninstall, switch Google accounts, reset cloud/local data, delete sessions, modify Supabase or touch Beta. Verify the Testing package and permanent signature unchanged.
 2. **Custom exact workout:** Request `5 x 5 deadlift in 20 minutes`. Inspect exact rep/set rows, reasonable warm-up/rest explanation, time estimate and warning. Say `make it 15 minutes`, verify all five sets of five remain. Say `make deadlift 4 sets of 6`, verify both the preview and saved routine show exactly four sets of six.
@@ -44,12 +44,12 @@ In the stored [20-scenario post-remediation matrix](QUALITY_REMEDIATION_SCENARIO
 
 | Gate | Status |
 | --- | --- |
-| Developer regression + real-output capture | **PASS**, [full 94-step CI](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38463629529) and [real-output capture](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38463629638) |
+| Developer regression + real-output capture | **PASS**, [release PR regression](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469539367), [generated-output review](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469539499) and [main validation](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469988653) |
 | Session and program estimate recalculates after user edits | **PASS in synthetic regression**, real phone pending |
 | Upper-range uncertainty is visible | **PASS in synthetic regression**, real phone readability pending |
 | Device Android workflow review | **Not performed** |
 | Stopwatch comparison for real sessions | **Not performed** |
-| Owner accepts v0.89 to signed Testing | **Not approved** |
+| Owner accepts v0.89 to signed Testing | **Approved and published**, [release](https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.89.0) and [signing workflow PASS](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469988579) |
 | Owner separately approves Beta | **Not approved** |
 
 ## Research and safeguards
