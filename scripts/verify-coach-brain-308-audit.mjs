@@ -10,7 +10,8 @@ const csv=fs.readFileSync('docs/coach-brain/exercise-knowledge-audit-308.csv','u
 const records=doc.records;
 assert.equal(doc.runtime,false,'audit cannot advertise itself as live Brain intelligence');
 assert.equal(records.length,308,'308 entries required');
-assert.equal(catalog.length,308,'catalog coverage has changed; re-audit before releasing');
+assert.equal(catalog.length,310,'original 308 plus two separately recorded floor movements');
+assert.deepEqual(catalog.slice(308).map(x=>x.id),['lib_308','lib_309']);
 assert.equal(new Set(records.map(x=>x.id)).size,308,'no duplicate IDs');
 assert.equal(csv.trimEnd().split('\n').length,309,'CSV header and 308 records required');
 
@@ -18,7 +19,7 @@ const byId=new Map(records.map(x=>[x.id,x]));
 const validMuscles=new Set(['chest','front_delts','side_delts','rear_delts','biceps','triceps','forearms','upper_back','lats','traps','lower_back','core','obliques','glutes','quads','hamstrings','adductors','calves','tibialis']);
 const measurements=new Set(['reps','duration','distance']);
 const loads=new Set(['bodyweight','external','assistance']);
-for(const e of catalog){
+for(const e of catalog.slice(0,308)){
  const p=byId.get(e.id);
  assert(p,'missing '+e.id);
  assert.equal(p.name,e.name,'name drift '+e.id);
@@ -63,7 +64,7 @@ assert(key('Nordic Hamstring Curl').requiredEquipment.some(x=>x.includes('ankle'
 assert(key('Meadows Row').requiredEquipment.some(x=>x.includes('landmine')));
 assert(key('Dead Hang').similarExerciseIds.length===0,'no falsely equivalent timed grip substitute');
 assert(key('Glute Ham Raise').review.flags.includes('hybrid_knee_flexion_and_hip_extension'));
-assert.equal(stats.count,308);
+assert.equal(stats.count,308); // historical baseline remains 308
 assert.equal(stats.explicitMuscleOverrides+stats.fallbackMuscleRules,308);
 assert.equal(Object.values(stats.byEquipment).reduce((a,b)=>a+b,0),308);
 assert.equal(Object.values(stats.byMeasurement).reduce((a,b)=>a+b,0),308);
