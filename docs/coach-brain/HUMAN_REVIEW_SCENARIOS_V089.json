@@ -1,0 +1,6245 @@
+{
+  "source": "GitHub Actions run 38454373855; scripts/coach-brain-human-review-matrix.mjs",
+  "head_sha": "c21f2d497ff7053c3d9462a06994771b479a466a",
+  "date": "2026-10-13",
+  "synthetic_test_data": true,
+  "no_user_history": true,
+  "runtime_changed": false,
+  "review_status": "human_review_pending_signoff",
+  "scenarios": [
+    {
+      "type": "session",
+      "label": "30min gym legs",
+      "prompt": "30 minute leg workout",
+      "choice": "gym",
+      "goal": "hypertrophy",
+      "targetMinutes": 30,
+      "ok": true,
+      "estimate": {
+        "mid": 25,
+        "low": 21,
+        "high": 30,
+        "warmup": 5,
+        "overTarget": false,
+        "perExercise": [
+          {
+            "name": "Back Squat",
+            "work": 84,
+            "rest": 240,
+            "setup": 75,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Lying Leg Curl",
+            "work": 105,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          },
+          {
+            "name": "Dumbbell Standing Calf Raise",
+            "work": 131,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          }
+        ]
+      },
+      "exercises": [
+        {
+          "id": "lib_8",
+          "name": "Back Squat",
+          "pattern": "squat",
+          "equipment": "barbell",
+          "primary": [
+            "quads",
+            "glutes"
+          ],
+          "secondary": [
+            "adductors"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 3
+        },
+        {
+          "id": "lib_20",
+          "name": "Lying Leg Curl",
+          "pattern": "knee_flexion",
+          "equipment": "machine",
+          "primary": [
+            "hamstrings"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              8,
+              12
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        },
+        {
+          "id": "lib_241",
+          "name": "Dumbbell Standing Calf Raise",
+          "pattern": "calf_raise",
+          "equipment": "dumbbell",
+          "primary": [
+            "calves"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              10,
+              15
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        }
+      ],
+      "baseline": {
+        "names": [
+          "Back Squat",
+          "Sumo Deadlift",
+          "Lying Leg Curl",
+          "Seated Calf Raise"
+        ],
+        "duration": 32
+      },
+      "removedByTime": [],
+      "notes": []
+    },
+    {
+      "type": "session",
+      "label": "45min gym legs",
+      "prompt": "45 minute leg workout",
+      "choice": "gym",
+      "goal": "hypertrophy",
+      "targetMinutes": 45,
+      "ok": true,
+      "estimate": {
+        "mid": 44,
+        "low": 38,
+        "high": 54,
+        "warmup": 5,
+        "overTarget": false,
+        "perExercise": [
+          {
+            "name": "Back Squat",
+            "work": 84,
+            "rest": 240,
+            "setup": 75,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Sumo Deadlift",
+            "work": 84,
+            "rest": 240,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Lying Leg Curl",
+            "work": 105,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          },
+          {
+            "name": "Hip Thrust",
+            "work": 105,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          },
+          {
+            "name": "Cable Hip Adduction",
+            "work": 105,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          },
+          {
+            "name": "Dumbbell Standing Calf Raise",
+            "work": 131,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          }
+        ]
+      },
+      "exercises": [
+        {
+          "id": "lib_8",
+          "name": "Back Squat",
+          "pattern": "squat",
+          "equipment": "barbell",
+          "primary": [
+            "quads",
+            "glutes"
+          ],
+          "secondary": [
+            "adductors"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 3
+        },
+        {
+          "id": "lib_283",
+          "name": "Sumo Deadlift",
+          "pattern": "hinge",
+          "equipment": "barbell",
+          "primary": [
+            "quads",
+            "glutes",
+            "adductors"
+          ],
+          "secondary": [
+            "hamstrings",
+            "lower_back",
+            "forearms",
+            "core"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 3
+        },
+        {
+          "id": "lib_20",
+          "name": "Lying Leg Curl",
+          "pattern": "knee_flexion",
+          "equipment": "machine",
+          "primary": [
+            "hamstrings"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              8,
+              12
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        },
+        {
+          "id": "lib_22",
+          "name": "Hip Thrust",
+          "pattern": "hip_extension",
+          "equipment": "barbell",
+          "primary": [
+            "glutes"
+          ],
+          "secondary": [
+            "hamstrings"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              8,
+              12
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 2
+        },
+        {
+          "id": "lib_200",
+          "name": "Cable Hip Adduction",
+          "pattern": "hip_adduction",
+          "equipment": "cable",
+          "primary": [
+            "adductors"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              8,
+              12
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        },
+        {
+          "id": "lib_241",
+          "name": "Dumbbell Standing Calf Raise",
+          "pattern": "calf_raise",
+          "equipment": "dumbbell",
+          "primary": [
+            "calves"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              10,
+              15
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        }
+      ],
+      "baseline": {
+        "names": [
+          "Back Squat",
+          "Sumo Deadlift",
+          "Lying Leg Curl",
+          "Reverse Hyperextension",
+          "Cable Hip Adduction",
+          "Seated Calf Raise"
+        ],
+        "duration": 44
+      },
+      "removedByTime": [],
+      "notes": [
+        "time_upper_exceeds"
+      ]
+    },
+    {
+      "type": "session",
+      "label": "30min dumbbell legs",
+      "prompt": "30 minute leg workout",
+      "choice": "dumbbells",
+      "goal": "hypertrophy",
+      "targetMinutes": 30,
+      "ok": true,
+      "estimate": {
+        "mid": 25,
+        "low": 22,
+        "high": 32,
+        "warmup": 5,
+        "overTarget": false,
+        "perExercise": [
+          {
+            "name": "Bulgarian Split Squat",
+            "work": 84,
+            "rest": 240,
+            "setup": 75,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Dumbbell Romanian Deadlift",
+            "work": 84,
+            "rest": 240,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Dumbbell Standing Calf Raise",
+            "work": 131,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          }
+        ]
+      },
+      "exercises": [
+        {
+          "id": "lib_13",
+          "name": "Bulgarian Split Squat",
+          "pattern": "lunge",
+          "equipment": "dumbbell",
+          "primary": [
+            "quads",
+            "glutes"
+          ],
+          "secondary": [
+            "adductors"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 3.7
+        },
+        {
+          "id": "lib_18",
+          "name": "Dumbbell Romanian Deadlift",
+          "pattern": "hinge",
+          "equipment": "dumbbell",
+          "primary": [
+            "hamstrings",
+            "glutes"
+          ],
+          "secondary": [
+            "lower_back"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 3
+        },
+        {
+          "id": "lib_241",
+          "name": "Dumbbell Standing Calf Raise",
+          "pattern": "calf_raise",
+          "equipment": "dumbbell",
+          "primary": [
+            "calves"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              10,
+              15
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        }
+      ],
+      "baseline": {
+        "names": [
+          "Bulgarian Split Squat",
+          "Dumbbell Romanian Deadlift",
+          "Nordic Hamstring Curl",
+          "Dumbbell Standing Calf Raise"
+        ],
+        "duration": 32
+      },
+      "removedByTime": [],
+      "notes": [
+        "time_upper_exceeds",
+        "high_technical_complexity"
+      ]
+    },
+    {
+      "type": "session",
+      "label": "30min floor legs",
+      "prompt": "30 minute leg workout",
+      "choice": "bodyweight",
+      "goal": "hypertrophy",
+      "targetMinutes": 30,
+      "ok": false,
+      "estimate": null,
+      "exercises": [],
+      "baseline": {
+        "names": [
+          "Nordic Hamstring Curl",
+          "Glute Bridge",
+          "Banded Hip Abduction",
+          "Single Leg Calf Raise"
+        ],
+        "duration": 28
+      },
+      "removedByTime": [],
+      "notes": []
+    },
+    {
+      "type": "session",
+      "label": "20min gym legs",
+      "prompt": "20 minute leg workout",
+      "choice": "gym",
+      "goal": "hypertrophy",
+      "targetMinutes": 20,
+      "ok": true,
+      "estimate": {
+        "mid": 25,
+        "low": 21,
+        "high": 30,
+        "warmup": 5,
+        "overTarget": true,
+        "perExercise": [
+          {
+            "name": "Back Squat",
+            "work": 84,
+            "rest": 240,
+            "setup": 75,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Lying Leg Curl",
+            "work": 105,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          },
+          {
+            "name": "Dumbbell Standing Calf Raise",
+            "work": 131,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          }
+        ]
+      },
+      "exercises": [
+        {
+          "id": "lib_8",
+          "name": "Back Squat",
+          "pattern": "squat",
+          "equipment": "barbell",
+          "primary": [
+            "quads",
+            "glutes"
+          ],
+          "secondary": [
+            "adductors"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 3
+        },
+        {
+          "id": "lib_20",
+          "name": "Lying Leg Curl",
+          "pattern": "knee_flexion",
+          "equipment": "machine",
+          "primary": [
+            "hamstrings"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              8,
+              12
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        },
+        {
+          "id": "lib_241",
+          "name": "Dumbbell Standing Calf Raise",
+          "pattern": "calf_raise",
+          "equipment": "dumbbell",
+          "primary": [
+            "calves"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              10,
+              15
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        }
+      ],
+      "baseline": {
+        "names": [
+          "Back Squat",
+          "Sumo Deadlift",
+          "Lying Leg Curl",
+          "Seated Calf Raise"
+        ],
+        "duration": 32
+      },
+      "removedByTime": [],
+      "notes": [
+        "time_mid_exceeds",
+        "time_upper_exceeds"
+      ]
+    },
+    {
+      "type": "session",
+      "label": "30min strength gym legs",
+      "prompt": "30 minute leg strength workout",
+      "choice": "gym",
+      "goal": "strength",
+      "targetMinutes": 30,
+      "ok": true,
+      "estimate": {
+        "mid": 29,
+        "low": 25,
+        "high": 36,
+        "warmup": 5,
+        "overTarget": false,
+        "perExercise": [
+          {
+            "name": "Back Squat",
+            "work": 47,
+            "rest": 360,
+            "setup": 75,
+            "sets": 3,
+            "restPerSet": 180
+          },
+          {
+            "name": "Lying Leg Curl",
+            "work": 95,
+            "rest": 300,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 150
+          },
+          {
+            "name": "Dumbbell Standing Calf Raise",
+            "work": 95,
+            "rest": 300,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 150
+          }
+        ]
+      },
+      "exercises": [
+        {
+          "id": "lib_8",
+          "name": "Back Squat",
+          "pattern": "squat",
+          "equipment": "barbell",
+          "primary": [
+            "quads",
+            "glutes"
+          ],
+          "secondary": [
+            "adductors"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              3,
+              6
+            ],
+            "restSec": 180,
+            "goal": "strength"
+          },
+          "availability": "available",
+          "technical": 3
+        },
+        {
+          "id": "lib_20",
+          "name": "Lying Leg Curl",
+          "pattern": "knee_flexion",
+          "equipment": "machine",
+          "primary": [
+            "hamstrings"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              12
+            ],
+            "restSec": 150,
+            "goal": "strength"
+          },
+          "availability": "available",
+          "technical": 1
+        },
+        {
+          "id": "lib_241",
+          "name": "Dumbbell Standing Calf Raise",
+          "pattern": "calf_raise",
+          "equipment": "dumbbell",
+          "primary": [
+            "calves"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              12
+            ],
+            "restSec": 150,
+            "goal": "strength"
+          },
+          "availability": "available",
+          "technical": 1
+        }
+      ],
+      "baseline": {
+        "names": [
+          "Back Squat",
+          "Sumo Deadlift",
+          "Lying Leg Curl",
+          "Seated Calf Raise"
+        ],
+        "duration": 38
+      },
+      "removedByTime": [],
+      "notes": [
+        "time_upper_exceeds"
+      ]
+    },
+    {
+      "type": "session",
+      "label": "45min gym back",
+      "prompt": "45 minute back workout",
+      "choice": "gym",
+      "goal": "hypertrophy",
+      "targetMinutes": 45,
+      "ok": true,
+      "estimate": {
+        "mid": 45,
+        "low": 39,
+        "high": 56,
+        "warmup": 5,
+        "overTarget": false,
+        "perExercise": [
+          {
+            "name": "Barbell Row",
+            "work": 84,
+            "rest": 240,
+            "setup": 75,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Lat Pulldown",
+            "work": 84,
+            "rest": 240,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Deadlift",
+            "work": 84,
+            "rest": 240,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Cable Pullover",
+            "work": 105,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          },
+          {
+            "name": "Barbell Shrug",
+            "work": 105,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          },
+          {
+            "name": "Face Pull",
+            "work": 131,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          }
+        ]
+      },
+      "exercises": [
+        {
+          "id": "lib_26",
+          "name": "Barbell Row",
+          "pattern": "horizontal_pull",
+          "equipment": "barbell",
+          "primary": [
+            "upper_back",
+            "lats"
+          ],
+          "secondary": [
+            "rear_delts",
+            "biceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 2
+        },
+        {
+          "id": "lib_30",
+          "name": "Lat Pulldown",
+          "pattern": "vertical_pull",
+          "equipment": "cable",
+          "primary": [
+            "lats"
+          ],
+          "secondary": [
+            "upper_back",
+            "biceps",
+            "rear_delts"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 2
+        },
+        {
+          "id": "lib_16",
+          "name": "Deadlift",
+          "pattern": "hinge",
+          "equipment": "barbell",
+          "primary": [
+            "quads",
+            "glutes",
+            "lower_back"
+          ],
+          "secondary": [
+            "hamstrings",
+            "upper_back",
+            "forearms",
+            "core"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 3
+        },
+        {
+          "id": "lib_120",
+          "name": "Cable Pullover",
+          "pattern": "shoulder_extension",
+          "equipment": "cable",
+          "primary": [
+            "lats"
+          ],
+          "secondary": [
+            "upper_back",
+            "triceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              8,
+              12
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        },
+        {
+          "id": "lib_58",
+          "name": "Barbell Shrug",
+          "pattern": "shrug",
+          "equipment": "barbell",
+          "primary": [
+            "traps"
+          ],
+          "secondary": [
+            "forearms"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              8,
+              12
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        },
+        {
+          "id": "lib_40",
+          "name": "Face Pull",
+          "pattern": "rear_delt",
+          "equipment": "cable",
+          "primary": [
+            "rear_delts"
+          ],
+          "secondary": [
+            "upper_back"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              10,
+              15
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        }
+      ],
+      "baseline": {
+        "names": [
+          "Barbell Row",
+          "Assisted Pull-Up",
+          "Roman Chair Back Extension",
+          "Cable Pullover",
+          "Barbell Shrug",
+          "Face Pull"
+        ],
+        "duration": 44
+      },
+      "removedByTime": [],
+      "notes": [
+        "time_upper_exceeds"
+      ]
+    },
+    {
+      "type": "session",
+      "label": "60min advanced shoulder/arms",
+      "prompt": "60 minute advanced shoulders and arms hypertrophy workout",
+      "choice": "gym",
+      "goal": "hypertrophy",
+      "targetMinutes": 60,
+      "ok": true,
+      "estimate": {
+        "mid": 52,
+        "low": 45,
+        "high": 64,
+        "warmup": 5,
+        "overTarget": false,
+        "perExercise": [
+          {
+            "name": "Dumbbell Shoulder Press",
+            "work": 84,
+            "rest": 240,
+            "setup": 75,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Cable Lateral Raise",
+            "work": 131,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          },
+          {
+            "name": "Face Pull",
+            "work": 131,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          },
+          {
+            "name": "Barbell Reverse Wrist Curl",
+            "work": 131,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          },
+          {
+            "name": "Zottman Curl",
+            "work": 131,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          },
+          {
+            "name": "Overhead Triceps Extension",
+            "work": 131,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          },
+          {
+            "name": "Hammer Curl",
+            "work": 131,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          }
+        ]
+      },
+      "exercises": [
+        {
+          "id": "lib_35",
+          "name": "Dumbbell Shoulder Press",
+          "pattern": "vertical_press",
+          "equipment": "dumbbell",
+          "primary": [
+            "front_delts",
+            "side_delts"
+          ],
+          "secondary": [
+            "triceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 2
+        },
+        {
+          "id": "lib_38",
+          "name": "Cable Lateral Raise",
+          "pattern": "lateral_raise",
+          "equipment": "cable",
+          "primary": [
+            "side_delts"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              10,
+              15
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        },
+        {
+          "id": "lib_40",
+          "name": "Face Pull",
+          "pattern": "rear_delt",
+          "equipment": "cable",
+          "primary": [
+            "rear_delts"
+          ],
+          "secondary": [
+            "upper_back"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              10,
+              15
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        },
+        {
+          "id": "lib_254",
+          "name": "Barbell Reverse Wrist Curl",
+          "pattern": "wrist_extension",
+          "equipment": "barbell",
+          "primary": [
+            "forearms"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              10,
+              15
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        },
+        {
+          "id": "lib_210",
+          "name": "Zottman Curl",
+          "pattern": "elbow_flexion",
+          "equipment": "dumbbell",
+          "primary": [
+            "biceps",
+            "forearms"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              10,
+              15
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        },
+        {
+          "id": "lib_47",
+          "name": "Overhead Triceps Extension",
+          "pattern": "elbow_extension",
+          "equipment": "cable",
+          "primary": [
+            "triceps"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              10,
+              15
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        },
+        {
+          "id": "lib_43",
+          "name": "Hammer Curl",
+          "pattern": "elbow_flexion",
+          "equipment": "dumbbell",
+          "primary": [
+            "biceps"
+          ],
+          "secondary": [
+            "forearms"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              10,
+              15
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        }
+      ],
+      "baseline": {
+        "names": [
+          "Dumbbell Shoulder Press",
+          "Cable Lateral Raise",
+          "Face Pull",
+          "Barbell Reverse Wrist Curl",
+          "Zottman Curl",
+          "Overhead Triceps Extension",
+          "Hammer Curl"
+        ],
+        "duration": 52
+      },
+      "removedByTime": [],
+      "notes": [
+        "time_upper_exceeds"
+      ]
+    },
+    {
+      "type": "session",
+      "label": "45min dumbbell upper",
+      "prompt": "45 minute upper body workout",
+      "choice": "dumbbells",
+      "goal": "hypertrophy",
+      "targetMinutes": 45,
+      "ok": true,
+      "estimate": {
+        "mid": 39,
+        "low": 34,
+        "high": 48,
+        "warmup": 5,
+        "overTarget": false,
+        "perExercise": [
+          {
+            "name": "Dumbbell Floor Press",
+            "work": 84,
+            "rest": 240,
+            "setup": 75,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Dumbbell Row",
+            "work": 84,
+            "rest": 240,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Dumbbell Shoulder Press",
+            "work": 84,
+            "rest": 240,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Dumbbell Lateral Raise",
+            "work": 131,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          },
+          {
+            "name": "Bent Over Dumbbell Reverse Fly",
+            "work": 131,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          }
+        ]
+      },
+      "exercises": [
+        {
+          "id": "lib_69",
+          "name": "Dumbbell Floor Press",
+          "pattern": "horizontal_press",
+          "equipment": "dumbbell",
+          "primary": [
+            "chest"
+          ],
+          "secondary": [
+            "front_delts",
+            "triceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 2
+        },
+        {
+          "id": "lib_27",
+          "name": "Dumbbell Row",
+          "pattern": "horizontal_pull",
+          "equipment": "dumbbell",
+          "primary": [
+            "upper_back",
+            "lats"
+          ],
+          "secondary": [
+            "rear_delts",
+            "biceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 2
+        },
+        {
+          "id": "lib_35",
+          "name": "Dumbbell Shoulder Press",
+          "pattern": "vertical_press",
+          "equipment": "dumbbell",
+          "primary": [
+            "front_delts",
+            "side_delts"
+          ],
+          "secondary": [
+            "triceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 2
+        },
+        {
+          "id": "lib_37",
+          "name": "Dumbbell Lateral Raise",
+          "pattern": "lateral_raise",
+          "equipment": "dumbbell",
+          "primary": [
+            "side_delts"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              10,
+              15
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        },
+        {
+          "id": "lib_140",
+          "name": "Bent Over Dumbbell Reverse Fly",
+          "pattern": "rear_delt",
+          "equipment": "dumbbell",
+          "primary": [
+            "rear_delts"
+          ],
+          "secondary": [
+            "upper_back"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              10,
+              15
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        }
+      ],
+      "baseline": {
+        "names": [
+          "Dumbbell Bench Press",
+          "Chest Supported Dumbbell Row",
+          "Dumbbell Shoulder Press",
+          "Incline Dumbbell Press",
+          "Dumbbell Lateral Raise",
+          "Bent Over Dumbbell Reverse Fly"
+        ],
+        "duration": 46
+      },
+      "removedByTime": [
+        "lib_73"
+      ],
+      "notes": [
+        "time_upper_exceeds"
+      ]
+    },
+    {
+      "type": "session",
+      "label": "30min gym chest",
+      "prompt": "30 minute chest workout",
+      "choice": "gym",
+      "goal": "hypertrophy",
+      "targetMinutes": 30,
+      "ok": true,
+      "estimate": {
+        "mid": 25,
+        "low": 22,
+        "high": 31,
+        "warmup": 5,
+        "overTarget": false,
+        "perExercise": [
+          {
+            "name": "Barbell Bench Press",
+            "work": 84,
+            "rest": 240,
+            "setup": 75,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Incline Barbell Bench Press",
+            "work": 84,
+            "rest": 240,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Cable Fly",
+            "work": 105,
+            "rest": 180,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 90
+          }
+        ]
+      },
+      "exercises": [
+        {
+          "id": "lib_0",
+          "name": "Barbell Bench Press",
+          "pattern": "horizontal_press",
+          "equipment": "barbell",
+          "primary": [
+            "chest"
+          ],
+          "secondary": [
+            "front_delts",
+            "triceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 2
+        },
+        {
+          "id": "lib_1",
+          "name": "Incline Barbell Bench Press",
+          "pattern": "incline_press",
+          "equipment": "barbell",
+          "primary": [
+            "chest"
+          ],
+          "secondary": [
+            "front_delts",
+            "triceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 2
+        },
+        {
+          "id": "lib_5",
+          "name": "Cable Fly",
+          "pattern": "chest_fly",
+          "equipment": "cable",
+          "primary": [
+            "chest"
+          ],
+          "secondary": [
+            "front_delts"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              8,
+              12
+            ],
+            "restSec": 90,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 1
+        }
+      ],
+      "baseline": {
+        "names": [
+          "Barbell Bench Press",
+          "Incline Barbell Bench Press",
+          "Cable Fly",
+          "Dip"
+        ],
+        "duration": 32
+      },
+      "removedByTime": [
+        "lib_236"
+      ],
+      "notes": [
+        "time_upper_exceeds"
+      ]
+    },
+    {
+      "type": "session",
+      "label": "30min gym fullbody",
+      "prompt": "30 minute full body workout",
+      "choice": "gym",
+      "goal": "hypertrophy",
+      "targetMinutes": 30,
+      "ok": true,
+      "estimate": {
+        "mid": 33,
+        "low": 29,
+        "high": 41,
+        "warmup": 5,
+        "overTarget": true,
+        "perExercise": [
+          {
+            "name": "Back Squat",
+            "work": 84,
+            "rest": 240,
+            "setup": 75,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Deadlift",
+            "work": 84,
+            "rest": 240,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Barbell Bench Press",
+            "work": 84,
+            "rest": 240,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Barbell Row",
+            "work": 84,
+            "rest": 240,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 120
+          }
+        ]
+      },
+      "exercises": [
+        {
+          "id": "lib_8",
+          "name": "Back Squat",
+          "pattern": "squat",
+          "equipment": "barbell",
+          "primary": [
+            "quads",
+            "glutes"
+          ],
+          "secondary": [
+            "adductors"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 3
+        },
+        {
+          "id": "lib_16",
+          "name": "Deadlift",
+          "pattern": "hinge",
+          "equipment": "barbell",
+          "primary": [
+            "quads",
+            "glutes",
+            "lower_back"
+          ],
+          "secondary": [
+            "hamstrings",
+            "upper_back",
+            "forearms",
+            "core"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 3
+        },
+        {
+          "id": "lib_0",
+          "name": "Barbell Bench Press",
+          "pattern": "horizontal_press",
+          "equipment": "barbell",
+          "primary": [
+            "chest"
+          ],
+          "secondary": [
+            "front_delts",
+            "triceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 2
+        },
+        {
+          "id": "lib_26",
+          "name": "Barbell Row",
+          "pattern": "horizontal_pull",
+          "equipment": "barbell",
+          "primary": [
+            "upper_back",
+            "lats"
+          ],
+          "secondary": [
+            "rear_delts",
+            "biceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 2
+        }
+      ],
+      "baseline": {
+        "names": [
+          "Back Squat",
+          "Block Pull",
+          "Barbell Bench Press",
+          "Barbell Row"
+        ],
+        "duration": 33
+      },
+      "removedByTime": [],
+      "notes": [
+        "time_mid_exceeds",
+        "time_upper_exceeds"
+      ]
+    },
+    {
+      "type": "session",
+      "label": "30min dumbbell fullbody",
+      "prompt": "30 minute full body workout",
+      "choice": "dumbbells",
+      "goal": "hypertrophy",
+      "targetMinutes": 30,
+      "ok": true,
+      "estimate": {
+        "mid": 33,
+        "low": 29,
+        "high": 41,
+        "warmup": 5,
+        "overTarget": true,
+        "perExercise": [
+          {
+            "name": "Bulgarian Split Squat",
+            "work": 84,
+            "rest": 240,
+            "setup": 75,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Dumbbell Romanian Deadlift",
+            "work": 84,
+            "rest": 240,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Dumbbell Floor Press",
+            "work": 84,
+            "rest": 240,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 120
+          },
+          {
+            "name": "Dumbbell Row",
+            "work": 84,
+            "rest": 240,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 120
+          }
+        ]
+      },
+      "exercises": [
+        {
+          "id": "lib_13",
+          "name": "Bulgarian Split Squat",
+          "pattern": "lunge",
+          "equipment": "dumbbell",
+          "primary": [
+            "quads",
+            "glutes"
+          ],
+          "secondary": [
+            "adductors"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 3.7
+        },
+        {
+          "id": "lib_18",
+          "name": "Dumbbell Romanian Deadlift",
+          "pattern": "hinge",
+          "equipment": "dumbbell",
+          "primary": [
+            "hamstrings",
+            "glutes"
+          ],
+          "secondary": [
+            "lower_back"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 3
+        },
+        {
+          "id": "lib_69",
+          "name": "Dumbbell Floor Press",
+          "pattern": "horizontal_press",
+          "equipment": "dumbbell",
+          "primary": [
+            "chest"
+          ],
+          "secondary": [
+            "front_delts",
+            "triceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 2
+        },
+        {
+          "id": "lib_27",
+          "name": "Dumbbell Row",
+          "pattern": "horizontal_pull",
+          "equipment": "dumbbell",
+          "primary": [
+            "upper_back",
+            "lats"
+          ],
+          "secondary": [
+            "rear_delts",
+            "biceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              10
+            ],
+            "restSec": 120,
+            "goal": "hypertrophy"
+          },
+          "availability": "available",
+          "technical": 2
+        }
+      ],
+      "baseline": {
+        "names": [
+          "Bulgarian Split Squat",
+          "Dumbbell Romanian Deadlift",
+          "Dumbbell Bench Press",
+          "Chest Supported Dumbbell Row"
+        ],
+        "duration": 33
+      },
+      "removedByTime": [],
+      "notes": [
+        "time_mid_exceeds",
+        "time_upper_exceeds",
+        "high_technical_complexity"
+      ]
+    },
+    {
+      "type": "session",
+      "label": "60min strength upper",
+      "prompt": "60 minute strength upper body workout",
+      "choice": "gym",
+      "goal": "strength",
+      "targetMinutes": 60,
+      "ok": true,
+      "estimate": {
+        "mid": 46,
+        "low": 40,
+        "high": 57,
+        "warmup": 5,
+        "overTarget": false,
+        "perExercise": [
+          {
+            "name": "Barbell Bench Press",
+            "work": 47,
+            "rest": 360,
+            "setup": 75,
+            "sets": 3,
+            "restPerSet": 180
+          },
+          {
+            "name": "Barbell Row",
+            "work": 47,
+            "rest": 360,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 180
+          },
+          {
+            "name": "Dumbbell Shoulder Press",
+            "work": 47,
+            "rest": 360,
+            "setup": 105,
+            "sets": 3,
+            "restPerSet": 180
+          },
+          {
+            "name": "Cable Lateral Raise",
+            "work": 95,
+            "rest": 300,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 150
+          },
+          {
+            "name": "Face Pull",
+            "work": 95,
+            "rest": 300,
+            "setup": 90,
+            "sets": 3,
+            "restPerSet": 150
+          }
+        ]
+      },
+      "exercises": [
+        {
+          "id": "lib_0",
+          "name": "Barbell Bench Press",
+          "pattern": "horizontal_press",
+          "equipment": "barbell",
+          "primary": [
+            "chest"
+          ],
+          "secondary": [
+            "front_delts",
+            "triceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              3,
+              6
+            ],
+            "restSec": 180,
+            "goal": "strength"
+          },
+          "availability": "available",
+          "technical": 2
+        },
+        {
+          "id": "lib_26",
+          "name": "Barbell Row",
+          "pattern": "horizontal_pull",
+          "equipment": "barbell",
+          "primary": [
+            "upper_back",
+            "lats"
+          ],
+          "secondary": [
+            "rear_delts",
+            "biceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              3,
+              6
+            ],
+            "restSec": 180,
+            "goal": "strength"
+          },
+          "availability": "available",
+          "technical": 2
+        },
+        {
+          "id": "lib_35",
+          "name": "Dumbbell Shoulder Press",
+          "pattern": "vertical_press",
+          "equipment": "dumbbell",
+          "primary": [
+            "front_delts",
+            "side_delts"
+          ],
+          "secondary": [
+            "triceps"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              3,
+              6
+            ],
+            "restSec": 180,
+            "goal": "strength"
+          },
+          "availability": "available",
+          "technical": 2
+        },
+        {
+          "id": "lib_38",
+          "name": "Cable Lateral Raise",
+          "pattern": "lateral_raise",
+          "equipment": "cable",
+          "primary": [
+            "side_delts"
+          ],
+          "secondary": [],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              12
+            ],
+            "restSec": 150,
+            "goal": "strength"
+          },
+          "availability": "available",
+          "technical": 1
+        },
+        {
+          "id": "lib_40",
+          "name": "Face Pull",
+          "pattern": "rear_delt",
+          "equipment": "cable",
+          "primary": [
+            "rear_delts"
+          ],
+          "secondary": [
+            "upper_back"
+          ],
+          "prescription": {
+            "sets": 3,
+            "reps": [
+              6,
+              12
+            ],
+            "restSec": 150,
+            "goal": "strength"
+          },
+          "availability": "available",
+          "technical": 1
+        }
+      ],
+      "baseline": {
+        "names": [
+          "Barbell Bench Press",
+          "Barbell Row",
+          "Dumbbell Shoulder Press",
+          "Cable Lateral Raise",
+          "Face Pull"
+        ],
+        "duration": 46
+      },
+      "removedByTime": [],
+      "notes": []
+    },
+    {
+      "type": "program",
+      "label": "3day fullbody 45 gym",
+      "prompt": "3 day full body program 45 minutes",
+      "choice": "gym",
+      "goal": "hypertrophy",
+      "ok": true,
+      "frequency": 3,
+      "split": "full_body",
+      "requested": 45,
+      "days": [
+        {
+          "number": 1,
+          "focus": "Full Body A",
+          "requested": 45,
+          "mid": 40,
+          "low": 35,
+          "high": 50,
+          "overTarget": false,
+          "removed": [
+            "lib_54"
+          ],
+          "exercises": [
+            {
+              "id": "lib_8",
+              "name": "Back Squat",
+              "pattern": "squat",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_16",
+              "name": "Deadlift",
+              "pattern": "hinge",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes",
+                "lower_back"
+              ],
+              "secondary": [
+                "hamstrings",
+                "upper_back",
+                "forearms",
+                "core"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_0",
+              "name": "Barbell Bench Press",
+              "pattern": "horizontal_press",
+              "equipment": "barbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_26",
+              "name": "Barbell Row",
+              "pattern": "horizontal_pull",
+              "equipment": "barbell",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_35",
+              "name": "Dumbbell Shoulder Press",
+              "pattern": "vertical_press",
+              "equipment": "dumbbell",
+              "primary": [
+                "front_delts",
+                "side_delts"
+              ],
+              "secondary": [
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            }
+          ],
+          "primaryRegions": [
+            "quads",
+            "glutes",
+            "lower_back",
+            "chest",
+            "upper_back",
+            "lats",
+            "front_delts",
+            "side_delts"
+          ]
+        },
+        {
+          "number": 2,
+          "focus": "Full Body B",
+          "requested": 45,
+          "mid": 40,
+          "low": 35,
+          "high": 50,
+          "overTarget": false,
+          "removed": [
+            "lib_54"
+          ],
+          "exercises": [
+            {
+              "id": "lib_13",
+              "name": "Bulgarian Split Squat",
+              "pattern": "lunge",
+              "equipment": "dumbbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3.7
+            },
+            {
+              "id": "lib_16",
+              "name": "Deadlift",
+              "pattern": "hinge",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes",
+                "lower_back"
+              ],
+              "secondary": [
+                "hamstrings",
+                "upper_back",
+                "forearms",
+                "core"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_60",
+              "name": "Decline Barbell Bench Press",
+              "pattern": "horizontal_press",
+              "equipment": "barbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_28",
+              "name": "Seated Cable Row",
+              "pattern": "horizontal_pull",
+              "equipment": "cable",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1.7
+            },
+            {
+              "id": "lib_34",
+              "name": "Overhead Press",
+              "pattern": "vertical_press",
+              "equipment": "barbell",
+              "primary": [
+                "front_delts",
+                "side_delts"
+              ],
+              "secondary": [
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            }
+          ],
+          "primaryRegions": [
+            "quads",
+            "glutes",
+            "lower_back",
+            "chest",
+            "upper_back",
+            "lats",
+            "front_delts",
+            "side_delts"
+          ]
+        },
+        {
+          "number": 3,
+          "focus": "Full Body C",
+          "requested": 45,
+          "mid": 40,
+          "low": 35,
+          "high": 50,
+          "overTarget": false,
+          "removed": [
+            "lib_54"
+          ],
+          "exercises": [
+            {
+              "id": "lib_9",
+              "name": "Front Squat",
+              "pattern": "squat",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_17",
+              "name": "Romanian Deadlift",
+              "pattern": "hinge",
+              "equipment": "barbell",
+              "primary": [
+                "hamstrings",
+                "glutes"
+              ],
+              "secondary": [
+                "lower_back"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_2",
+              "name": "Dumbbell Bench Press",
+              "pattern": "horizontal_press",
+              "equipment": "dumbbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_91",
+              "name": "Chest Supported Dumbbell Row",
+              "pattern": "horizontal_pull",
+              "equipment": "dumbbell",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1.7
+            },
+            {
+              "id": "lib_128",
+              "name": "Arnold Press",
+              "pattern": "vertical_press",
+              "equipment": "dumbbell",
+              "primary": [
+                "front_delts",
+                "side_delts"
+              ],
+              "secondary": [
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            }
+          ],
+          "primaryRegions": [
+            "quads",
+            "glutes",
+            "hamstrings",
+            "chest",
+            "upper_back",
+            "lats",
+            "front_delts",
+            "side_delts"
+          ]
+        }
+      ],
+      "weekly": {
+        "quads": 15,
+        "glutes": 18,
+        "adductors": 4.5,
+        "lower_back": 7.5,
+        "hamstrings": 6,
+        "upper_back": 12,
+        "forearms": 3,
+        "core": 3,
+        "chest": 9,
+        "front_delts": 13.5,
+        "triceps": 9,
+        "lats": 9,
+        "rear_delts": 4.5,
+        "biceps": 4.5,
+        "side_delts": 9
+      },
+      "issues": [
+        "day_1_upper_over_target",
+        "day_2_upper_over_target",
+        "day_3_upper_over_target"
+      ]
+    },
+    {
+      "type": "program",
+      "label": "4day upperlower 35 gym",
+      "prompt": "4 day upper lower program 35 minutes",
+      "choice": "gym",
+      "goal": "hypertrophy",
+      "ok": true,
+      "frequency": 4,
+      "split": "upper_lower",
+      "requested": 35,
+      "days": [
+        {
+          "number": 1,
+          "focus": "Upper Body A",
+          "requested": 35,
+          "mid": 39,
+          "low": 34,
+          "high": 48,
+          "overTarget": true,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_0",
+              "name": "Barbell Bench Press",
+              "pattern": "horizontal_press",
+              "equipment": "barbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_26",
+              "name": "Barbell Row",
+              "pattern": "horizontal_pull",
+              "equipment": "barbell",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_35",
+              "name": "Dumbbell Shoulder Press",
+              "pattern": "vertical_press",
+              "equipment": "dumbbell",
+              "primary": [
+                "front_delts",
+                "side_delts"
+              ],
+              "secondary": [
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_38",
+              "name": "Cable Lateral Raise",
+              "pattern": "lateral_raise",
+              "equipment": "cable",
+              "primary": [
+                "side_delts"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_40",
+              "name": "Face Pull",
+              "pattern": "rear_delt",
+              "equipment": "cable",
+              "primary": [
+                "rear_delts"
+              ],
+              "secondary": [
+                "upper_back"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "chest",
+            "upper_back",
+            "lats",
+            "front_delts",
+            "side_delts",
+            "rear_delts"
+          ]
+        },
+        {
+          "number": 2,
+          "focus": "Lower Body A",
+          "requested": 35,
+          "mid": 32,
+          "low": 27,
+          "high": 39,
+          "overTarget": false,
+          "removed": [
+            "lib_22"
+          ],
+          "exercises": [
+            {
+              "id": "lib_8",
+              "name": "Back Squat",
+              "pattern": "squat",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_283",
+              "name": "Sumo Deadlift",
+              "pattern": "hinge",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes",
+                "adductors"
+              ],
+              "secondary": [
+                "hamstrings",
+                "lower_back",
+                "forearms",
+                "core"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_20",
+              "name": "Lying Leg Curl",
+              "pattern": "knee_flexion",
+              "equipment": "machine",
+              "primary": [
+                "hamstrings"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_241",
+              "name": "Dumbbell Standing Calf Raise",
+              "pattern": "calf_raise",
+              "equipment": "dumbbell",
+              "primary": [
+                "calves"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "quads",
+            "glutes",
+            "adductors",
+            "hamstrings",
+            "calves"
+          ]
+        },
+        {
+          "number": 3,
+          "focus": "Upper Body B",
+          "requested": 35,
+          "mid": 39,
+          "low": 34,
+          "high": 48,
+          "overTarget": true,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_60",
+              "name": "Decline Barbell Bench Press",
+              "pattern": "horizontal_press",
+              "equipment": "barbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_28",
+              "name": "Seated Cable Row",
+              "pattern": "horizontal_pull",
+              "equipment": "cable",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1.7
+            },
+            {
+              "id": "lib_34",
+              "name": "Overhead Press",
+              "pattern": "vertical_press",
+              "equipment": "barbell",
+              "primary": [
+                "front_delts",
+                "side_delts"
+              ],
+              "secondary": [
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_37",
+              "name": "Dumbbell Lateral Raise",
+              "pattern": "lateral_raise",
+              "equipment": "dumbbell",
+              "primary": [
+                "side_delts"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_140",
+              "name": "Bent Over Dumbbell Reverse Fly",
+              "pattern": "rear_delt",
+              "equipment": "dumbbell",
+              "primary": [
+                "rear_delts"
+              ],
+              "secondary": [
+                "upper_back"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "chest",
+            "upper_back",
+            "lats",
+            "front_delts",
+            "side_delts",
+            "rear_delts"
+          ]
+        },
+        {
+          "number": 4,
+          "focus": "Lower Body B",
+          "requested": 35,
+          "mid": 32,
+          "low": 27,
+          "high": 39,
+          "overTarget": false,
+          "removed": [
+            "lib_22"
+          ],
+          "exercises": [
+            {
+              "id": "lib_13",
+              "name": "Bulgarian Split Squat",
+              "pattern": "lunge",
+              "equipment": "dumbbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3.7
+            },
+            {
+              "id": "lib_283",
+              "name": "Sumo Deadlift",
+              "pattern": "hinge",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes",
+                "adductors"
+              ],
+              "secondary": [
+                "hamstrings",
+                "lower_back",
+                "forearms",
+                "core"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_19",
+              "name": "Seated Leg Curl",
+              "pattern": "knee_flexion",
+              "equipment": "machine",
+              "primary": [
+                "hamstrings"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_243",
+              "name": "Single Leg Calf Raise",
+              "pattern": "calf_raise",
+              "equipment": "bodyweight",
+              "primary": [
+                "calves"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1.7
+            }
+          ],
+          "primaryRegions": [
+            "quads",
+            "glutes",
+            "adductors",
+            "hamstrings",
+            "calves"
+          ]
+        }
+      ],
+      "weekly": {
+        "chest": 6,
+        "front_delts": 9,
+        "triceps": 6,
+        "upper_back": 9,
+        "lats": 6,
+        "rear_delts": 9,
+        "biceps": 3,
+        "side_delts": 12,
+        "quads": 12,
+        "glutes": 12,
+        "adductors": 9,
+        "hamstrings": 9,
+        "lower_back": 3,
+        "forearms": 3,
+        "core": 3,
+        "calves": 6
+      },
+      "issues": [
+        "day_1_over_target",
+        "day_1_upper_over_target",
+        "day_2_upper_over_target",
+        "day_3_over_target",
+        "day_3_upper_over_target",
+        "day_4_upper_over_target"
+      ]
+    },
+    {
+      "type": "program",
+      "label": "4day upperlower 35 dumbbells",
+      "prompt": "4 day upper lower program 35 minutes",
+      "choice": "dumbbells",
+      "goal": "hypertrophy",
+      "ok": true,
+      "frequency": 4,
+      "split": "upper_lower",
+      "requested": 35,
+      "days": [
+        {
+          "number": 1,
+          "focus": "Upper Body A",
+          "requested": 35,
+          "mid": 39,
+          "low": 34,
+          "high": 48,
+          "overTarget": true,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_69",
+              "name": "Dumbbell Floor Press",
+              "pattern": "horizontal_press",
+              "equipment": "dumbbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_27",
+              "name": "Dumbbell Row",
+              "pattern": "horizontal_pull",
+              "equipment": "dumbbell",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_35",
+              "name": "Dumbbell Shoulder Press",
+              "pattern": "vertical_press",
+              "equipment": "dumbbell",
+              "primary": [
+                "front_delts",
+                "side_delts"
+              ],
+              "secondary": [
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_37",
+              "name": "Dumbbell Lateral Raise",
+              "pattern": "lateral_raise",
+              "equipment": "dumbbell",
+              "primary": [
+                "side_delts"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_140",
+              "name": "Bent Over Dumbbell Reverse Fly",
+              "pattern": "rear_delt",
+              "equipment": "dumbbell",
+              "primary": [
+                "rear_delts"
+              ],
+              "secondary": [
+                "upper_back"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "chest",
+            "upper_back",
+            "lats",
+            "front_delts",
+            "side_delts",
+            "rear_delts"
+          ]
+        },
+        {
+          "number": 2,
+          "focus": "Lower Body A",
+          "requested": 35,
+          "mid": 33,
+          "low": 28,
+          "high": 40,
+          "overTarget": false,
+          "removed": [
+            "lib_23"
+          ],
+          "exercises": [
+            {
+              "id": "lib_13",
+              "name": "Bulgarian Split Squat",
+              "pattern": "lunge",
+              "equipment": "dumbbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3.7
+            },
+            {
+              "id": "lib_18",
+              "name": "Dumbbell Romanian Deadlift",
+              "pattern": "hinge",
+              "equipment": "dumbbell",
+              "primary": [
+                "hamstrings",
+                "glutes"
+              ],
+              "secondary": [
+                "lower_back"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_10",
+              "name": "Goblet Squat",
+              "pattern": "squat",
+              "equipment": "dumbbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_241",
+              "name": "Dumbbell Standing Calf Raise",
+              "pattern": "calf_raise",
+              "equipment": "dumbbell",
+              "primary": [
+                "calves"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "quads",
+            "glutes",
+            "hamstrings",
+            "calves"
+          ]
+        },
+        {
+          "number": 3,
+          "focus": "Upper Body B",
+          "requested": 35,
+          "mid": 39,
+          "low": 34,
+          "high": 48,
+          "overTarget": true,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_7",
+              "name": "Push-Up",
+              "pattern": "horizontal_press",
+              "equipment": "bodyweight",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_92",
+              "name": "Incline Bench Dumbbell Row",
+              "pattern": "horizontal_pull",
+              "equipment": "dumbbell",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_128",
+              "name": "Arnold Press",
+              "pattern": "vertical_press",
+              "equipment": "dumbbell",
+              "primary": [
+                "front_delts",
+                "side_delts"
+              ],
+              "secondary": [
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_134",
+              "name": "Lean-Away Dumbbell Lateral Raise",
+              "pattern": "lateral_raise",
+              "equipment": "dumbbell",
+              "primary": [
+                "side_delts"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_141",
+              "name": "Incline Rear Delt Raise",
+              "pattern": "rear_delt",
+              "equipment": "dumbbell",
+              "primary": [
+                "rear_delts"
+              ],
+              "secondary": [
+                "upper_back"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "chest",
+            "upper_back",
+            "lats",
+            "front_delts",
+            "side_delts",
+            "rear_delts"
+          ]
+        },
+        {
+          "number": 4,
+          "focus": "Lower Body B",
+          "requested": 35,
+          "mid": 33,
+          "low": 28,
+          "high": 40,
+          "overTarget": false,
+          "removed": [
+            "lib_23"
+          ],
+          "exercises": [
+            {
+              "id": "lib_164",
+              "name": "Reverse Lunge",
+              "pattern": "lunge",
+              "equipment": "dumbbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_18",
+              "name": "Dumbbell Romanian Deadlift",
+              "pattern": "hinge",
+              "equipment": "dumbbell",
+              "primary": [
+                "hamstrings",
+                "glutes"
+              ],
+              "secondary": [
+                "lower_back"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_10",
+              "name": "Goblet Squat",
+              "pattern": "squat",
+              "equipment": "dumbbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_243",
+              "name": "Single Leg Calf Raise",
+              "pattern": "calf_raise",
+              "equipment": "bodyweight",
+              "primary": [
+                "calves"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1.7
+            }
+          ],
+          "primaryRegions": [
+            "quads",
+            "glutes",
+            "hamstrings",
+            "calves"
+          ]
+        }
+      ],
+      "weekly": {
+        "chest": 6,
+        "front_delts": 9,
+        "triceps": 6,
+        "upper_back": 9,
+        "lats": 6,
+        "rear_delts": 9,
+        "biceps": 3,
+        "side_delts": 12,
+        "quads": 12,
+        "glutes": 18,
+        "adductors": 6,
+        "hamstrings": 6,
+        "lower_back": 3,
+        "calves": 6
+      },
+      "issues": [
+        "day_1_over_target",
+        "day_1_upper_over_target",
+        "day_2_upper_over_target",
+        "day_3_over_target",
+        "day_3_upper_over_target",
+        "day_4_upper_over_target"
+      ]
+    },
+    {
+      "type": "program",
+      "label": "5day balanced 45 gym",
+      "prompt": "5 day balanced program 45 minutes",
+      "choice": "gym",
+      "goal": "hypertrophy",
+      "ok": true,
+      "frequency": 5,
+      "split": "",
+      "requested": 45,
+      "days": [
+        {
+          "number": 1,
+          "focus": "Upper Body",
+          "requested": 45,
+          "mid": 39,
+          "low": 34,
+          "high": 48,
+          "overTarget": false,
+          "removed": [
+            "lib_1"
+          ],
+          "exercises": [
+            {
+              "id": "lib_0",
+              "name": "Barbell Bench Press",
+              "pattern": "horizontal_press",
+              "equipment": "barbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_26",
+              "name": "Barbell Row",
+              "pattern": "horizontal_pull",
+              "equipment": "barbell",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_35",
+              "name": "Dumbbell Shoulder Press",
+              "pattern": "vertical_press",
+              "equipment": "dumbbell",
+              "primary": [
+                "front_delts",
+                "side_delts"
+              ],
+              "secondary": [
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_38",
+              "name": "Cable Lateral Raise",
+              "pattern": "lateral_raise",
+              "equipment": "cable",
+              "primary": [
+                "side_delts"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_40",
+              "name": "Face Pull",
+              "pattern": "rear_delt",
+              "equipment": "cable",
+              "primary": [
+                "rear_delts"
+              ],
+              "secondary": [
+                "upper_back"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "chest",
+            "upper_back",
+            "lats",
+            "front_delts",
+            "side_delts",
+            "rear_delts"
+          ]
+        },
+        {
+          "number": 2,
+          "focus": "Lower Body",
+          "requested": 45,
+          "mid": 44,
+          "low": 38,
+          "high": 54,
+          "overTarget": false,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_8",
+              "name": "Back Squat",
+              "pattern": "squat",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_283",
+              "name": "Sumo Deadlift",
+              "pattern": "hinge",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes",
+                "adductors"
+              ],
+              "secondary": [
+                "hamstrings",
+                "lower_back",
+                "forearms",
+                "core"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_20",
+              "name": "Lying Leg Curl",
+              "pattern": "knee_flexion",
+              "equipment": "machine",
+              "primary": [
+                "hamstrings"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_22",
+              "name": "Hip Thrust",
+              "pattern": "hip_extension",
+              "equipment": "barbell",
+              "primary": [
+                "glutes"
+              ],
+              "secondary": [
+                "hamstrings"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_200",
+              "name": "Cable Hip Adduction",
+              "pattern": "hip_adduction",
+              "equipment": "cable",
+              "primary": [
+                "adductors"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_241",
+              "name": "Dumbbell Standing Calf Raise",
+              "pattern": "calf_raise",
+              "equipment": "dumbbell",
+              "primary": [
+                "calves"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "quads",
+            "glutes",
+            "adductors",
+            "hamstrings",
+            "calves"
+          ]
+        },
+        {
+          "number": 3,
+          "focus": "Push",
+          "requested": 45,
+          "mid": 39,
+          "low": 34,
+          "high": 48,
+          "overTarget": false,
+          "removed": [
+            "lib_37"
+          ],
+          "exercises": [
+            {
+              "id": "lib_60",
+              "name": "Decline Barbell Bench Press",
+              "pattern": "horizontal_press",
+              "equipment": "barbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_34",
+              "name": "Overhead Press",
+              "pattern": "vertical_press",
+              "equipment": "barbell",
+              "primary": [
+                "front_delts",
+                "side_delts"
+              ],
+              "secondary": [
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_1",
+              "name": "Incline Barbell Bench Press",
+              "pattern": "incline_press",
+              "equipment": "barbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_5",
+              "name": "Cable Fly",
+              "pattern": "chest_fly",
+              "equipment": "cable",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_47",
+              "name": "Overhead Triceps Extension",
+              "pattern": "elbow_extension",
+              "equipment": "cable",
+              "primary": [
+                "triceps"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "chest",
+            "front_delts",
+            "side_delts",
+            "triceps"
+          ]
+        },
+        {
+          "number": 4,
+          "focus": "Pull",
+          "requested": 45,
+          "mid": 39,
+          "low": 34,
+          "high": 48,
+          "overTarget": false,
+          "removed": [
+            "lib_140"
+          ],
+          "exercises": [
+            {
+              "id": "lib_28",
+              "name": "Seated Cable Row",
+              "pattern": "horizontal_pull",
+              "equipment": "cable",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1.7
+            },
+            {
+              "id": "lib_30",
+              "name": "Lat Pulldown",
+              "pattern": "vertical_pull",
+              "equipment": "cable",
+              "primary": [
+                "lats"
+              ],
+              "secondary": [
+                "upper_back",
+                "biceps",
+                "rear_delts"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_91",
+              "name": "Chest Supported Dumbbell Row",
+              "pattern": "horizontal_pull",
+              "equipment": "dumbbell",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1.7
+            },
+            {
+              "id": "lib_120",
+              "name": "Cable Pullover",
+              "pattern": "shoulder_extension",
+              "equipment": "cable",
+              "primary": [
+                "lats"
+              ],
+              "secondary": [
+                "upper_back",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_41",
+              "name": "Barbell Curl",
+              "pattern": "elbow_flexion",
+              "equipment": "barbell",
+              "primary": [
+                "biceps"
+              ],
+              "secondary": [
+                "forearms"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "upper_back",
+            "lats",
+            "biceps"
+          ]
+        },
+        {
+          "number": 5,
+          "focus": "Legs",
+          "requested": 45,
+          "mid": 44,
+          "low": 38,
+          "high": 54,
+          "overTarget": false,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_13",
+              "name": "Bulgarian Split Squat",
+              "pattern": "lunge",
+              "equipment": "dumbbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3.7
+            },
+            {
+              "id": "lib_283",
+              "name": "Sumo Deadlift",
+              "pattern": "hinge",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes",
+                "adductors"
+              ],
+              "secondary": [
+                "hamstrings",
+                "lower_back",
+                "forearms",
+                "core"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_19",
+              "name": "Seated Leg Curl",
+              "pattern": "knee_flexion",
+              "equipment": "machine",
+              "primary": [
+                "hamstrings"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_188",
+              "name": "Barbell Glute Bridge",
+              "pattern": "hip_extension",
+              "equipment": "barbell",
+              "primary": [
+                "glutes"
+              ],
+              "secondary": [
+                "hamstrings"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_200",
+              "name": "Cable Hip Adduction",
+              "pattern": "hip_adduction",
+              "equipment": "cable",
+              "primary": [
+                "adductors"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_243",
+              "name": "Single Leg Calf Raise",
+              "pattern": "calf_raise",
+              "equipment": "bodyweight",
+              "primary": [
+                "calves"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1.7
+            }
+          ],
+          "primaryRegions": [
+            "quads",
+            "glutes",
+            "adductors",
+            "hamstrings",
+            "calves"
+          ]
+        }
+      ],
+      "weekly": {
+        "chest": 12,
+        "front_delts": 12,
+        "triceps": 12,
+        "upper_back": 13.5,
+        "lats": 15,
+        "rear_delts": 9,
+        "biceps": 9,
+        "side_delts": 9,
+        "quads": 12,
+        "glutes": 18,
+        "adductors": 15,
+        "hamstrings": 12,
+        "lower_back": 3,
+        "forearms": 4.5,
+        "core": 3,
+        "calves": 6
+      },
+      "issues": [
+        "day_1_upper_over_target",
+        "day_2_upper_over_target",
+        "day_3_upper_over_target",
+        "day_4_upper_over_target",
+        "day_5_upper_over_target"
+      ]
+    },
+    {
+      "type": "program",
+      "label": "6day pushpulllegs 60 gym",
+      "prompt": "6 day push pull legs program 60 minutes",
+      "choice": "gym",
+      "goal": "hypertrophy",
+      "ok": true,
+      "frequency": 6,
+      "split": "ppl",
+      "requested": 60,
+      "days": [
+        {
+          "number": 1,
+          "focus": "Push A",
+          "requested": 60,
+          "mid": 52,
+          "low": 45,
+          "high": 64,
+          "overTarget": false,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_0",
+              "name": "Barbell Bench Press",
+              "pattern": "horizontal_press",
+              "equipment": "barbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_35",
+              "name": "Dumbbell Shoulder Press",
+              "pattern": "vertical_press",
+              "equipment": "dumbbell",
+              "primary": [
+                "front_delts",
+                "side_delts"
+              ],
+              "secondary": [
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_1",
+              "name": "Incline Barbell Bench Press",
+              "pattern": "incline_press",
+              "equipment": "barbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_5",
+              "name": "Cable Fly",
+              "pattern": "chest_fly",
+              "equipment": "cable",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_38",
+              "name": "Cable Lateral Raise",
+              "pattern": "lateral_raise",
+              "equipment": "cable",
+              "primary": [
+                "side_delts"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_149",
+              "name": "Barbell Upright Row",
+              "pattern": "upright_row",
+              "equipment": "barbell",
+              "primary": [
+                "side_delts",
+                "traps"
+              ],
+              "secondary": [
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_47",
+              "name": "Overhead Triceps Extension",
+              "pattern": "elbow_extension",
+              "equipment": "cable",
+              "primary": [
+                "triceps"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "chest",
+            "front_delts",
+            "side_delts",
+            "traps",
+            "triceps"
+          ]
+        },
+        {
+          "number": 2,
+          "focus": "Pull A",
+          "requested": 60,
+          "mid": 53,
+          "low": 46,
+          "high": 65,
+          "overTarget": false,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_26",
+              "name": "Barbell Row",
+              "pattern": "horizontal_pull",
+              "equipment": "barbell",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_30",
+              "name": "Lat Pulldown",
+              "pattern": "vertical_pull",
+              "equipment": "cable",
+              "primary": [
+                "lats"
+              ],
+              "secondary": [
+                "upper_back",
+                "biceps",
+                "rear_delts"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_28",
+              "name": "Seated Cable Row",
+              "pattern": "horizontal_pull",
+              "equipment": "cable",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1.7
+            },
+            {
+              "id": "lib_106",
+              "name": "Close Grip Lat Pulldown",
+              "pattern": "vertical_pull",
+              "equipment": "cable",
+              "primary": [
+                "lats"
+              ],
+              "secondary": [
+                "upper_back",
+                "biceps",
+                "rear_delts"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_120",
+              "name": "Cable Pullover",
+              "pattern": "shoulder_extension",
+              "equipment": "cable",
+              "primary": [
+                "lats"
+              ],
+              "secondary": [
+                "upper_back",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_40",
+              "name": "Face Pull",
+              "pattern": "rear_delt",
+              "equipment": "cable",
+              "primary": [
+                "rear_delts"
+              ],
+              "secondary": [
+                "upper_back"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_41",
+              "name": "Barbell Curl",
+              "pattern": "elbow_flexion",
+              "equipment": "barbell",
+              "primary": [
+                "biceps"
+              ],
+              "secondary": [
+                "forearms"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "upper_back",
+            "lats",
+            "rear_delts",
+            "biceps"
+          ]
+        },
+        {
+          "number": 3,
+          "focus": "Legs A",
+          "requested": 60,
+          "mid": 51,
+          "low": 45,
+          "high": 63,
+          "overTarget": false,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_8",
+              "name": "Back Squat",
+              "pattern": "squat",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_283",
+              "name": "Sumo Deadlift",
+              "pattern": "hinge",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes",
+                "adductors"
+              ],
+              "secondary": [
+                "hamstrings",
+                "lower_back",
+                "forearms",
+                "core"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_13",
+              "name": "Bulgarian Split Squat",
+              "pattern": "lunge",
+              "equipment": "dumbbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3.7
+            },
+            {
+              "id": "lib_20",
+              "name": "Lying Leg Curl",
+              "pattern": "knee_flexion",
+              "equipment": "machine",
+              "primary": [
+                "hamstrings"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_22",
+              "name": "Hip Thrust",
+              "pattern": "hip_extension",
+              "equipment": "barbell",
+              "primary": [
+                "glutes"
+              ],
+              "secondary": [
+                "hamstrings"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_200",
+              "name": "Cable Hip Adduction",
+              "pattern": "hip_adduction",
+              "equipment": "cable",
+              "primary": [
+                "adductors"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_241",
+              "name": "Dumbbell Standing Calf Raise",
+              "pattern": "calf_raise",
+              "equipment": "dumbbell",
+              "primary": [
+                "calves"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "quads",
+            "glutes",
+            "adductors",
+            "hamstrings",
+            "calves"
+          ]
+        },
+        {
+          "number": 4,
+          "focus": "Push B",
+          "requested": 60,
+          "mid": 52,
+          "low": 45,
+          "high": 64,
+          "overTarget": false,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_60",
+              "name": "Decline Barbell Bench Press",
+              "pattern": "horizontal_press",
+              "equipment": "barbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_34",
+              "name": "Overhead Press",
+              "pattern": "vertical_press",
+              "equipment": "barbell",
+              "primary": [
+                "front_delts",
+                "side_delts"
+              ],
+              "secondary": [
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_3",
+              "name": "Incline Dumbbell Press",
+              "pattern": "incline_press",
+              "equipment": "dumbbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_73",
+              "name": "Dumbbell Fly",
+              "pattern": "chest_fly",
+              "equipment": "dumbbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_37",
+              "name": "Dumbbell Lateral Raise",
+              "pattern": "lateral_raise",
+              "equipment": "dumbbell",
+              "primary": [
+                "side_delts"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_150",
+              "name": "Cable Upright Row",
+              "pattern": "upright_row",
+              "equipment": "cable",
+              "primary": [
+                "side_delts",
+                "traps"
+              ],
+              "secondary": [
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1.7
+            },
+            {
+              "id": "lib_219",
+              "name": "Rope Triceps Pushdown",
+              "pattern": "elbow_extension",
+              "equipment": "cable",
+              "primary": [
+                "triceps"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "chest",
+            "front_delts",
+            "side_delts",
+            "traps",
+            "triceps"
+          ]
+        },
+        {
+          "number": 5,
+          "focus": "Pull B",
+          "requested": 60,
+          "mid": 53,
+          "low": 46,
+          "high": 65,
+          "overTarget": false,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_91",
+              "name": "Chest Supported Dumbbell Row",
+              "pattern": "horizontal_pull",
+              "equipment": "dumbbell",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1.7
+            },
+            {
+              "id": "lib_107",
+              "name": "Neutral Grip Lat Pulldown",
+              "pattern": "vertical_pull",
+              "equipment": "cable",
+              "primary": [
+                "lats"
+              ],
+              "secondary": [
+                "upper_back",
+                "biceps",
+                "rear_delts"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_96",
+              "name": "Close Grip Seated Cable Row",
+              "pattern": "horizontal_pull",
+              "equipment": "cable",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1.7
+            },
+            {
+              "id": "lib_108",
+              "name": "Underhand Lat Pulldown",
+              "pattern": "vertical_pull",
+              "equipment": "cable",
+              "primary": [
+                "lats"
+              ],
+              "secondary": [
+                "upper_back",
+                "biceps",
+                "rear_delts"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_140",
+              "name": "Bent Over Dumbbell Reverse Fly",
+              "pattern": "rear_delt",
+              "equipment": "dumbbell",
+              "primary": [
+                "rear_delts"
+              ],
+              "secondary": [
+                "upper_back"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_121",
+              "name": "Dumbbell Pullover",
+              "pattern": "pullover",
+              "equipment": "dumbbell",
+              "primary": [
+                "lats"
+              ],
+              "secondary": [
+                "upper_back",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_42",
+              "name": "Dumbbell Curl",
+              "pattern": "elbow_flexion",
+              "equipment": "dumbbell",
+              "primary": [
+                "biceps"
+              ],
+              "secondary": [
+                "forearms"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "upper_back",
+            "lats",
+            "rear_delts",
+            "biceps"
+          ]
+        },
+        {
+          "number": 6,
+          "focus": "Legs B",
+          "requested": 60,
+          "mid": 51,
+          "low": 45,
+          "high": 63,
+          "overTarget": false,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_9",
+              "name": "Front Squat",
+              "pattern": "squat",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_283",
+              "name": "Sumo Deadlift",
+              "pattern": "hinge",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes",
+                "adductors"
+              ],
+              "secondary": [
+                "hamstrings",
+                "lower_back",
+                "forearms",
+                "core"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_169",
+              "name": "Barbell Reverse Lunge",
+              "pattern": "lunge",
+              "equipment": "barbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_19",
+              "name": "Seated Leg Curl",
+              "pattern": "knee_flexion",
+              "equipment": "machine",
+              "primary": [
+                "hamstrings"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_188",
+              "name": "Barbell Glute Bridge",
+              "pattern": "hip_extension",
+              "equipment": "barbell",
+              "primary": [
+                "glutes"
+              ],
+              "secondary": [
+                "hamstrings"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_200",
+              "name": "Cable Hip Adduction",
+              "pattern": "hip_adduction",
+              "equipment": "cable",
+              "primary": [
+                "adductors"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_243",
+              "name": "Single Leg Calf Raise",
+              "pattern": "calf_raise",
+              "equipment": "bodyweight",
+              "primary": [
+                "calves"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  10,
+                  15
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1.7
+            }
+          ],
+          "primaryRegions": [
+            "quads",
+            "glutes",
+            "adductors",
+            "hamstrings",
+            "calves"
+          ]
+        }
+      ],
+      "weekly": {
+        "chest": 18,
+        "front_delts": 15,
+        "triceps": 18,
+        "side_delts": 18,
+        "traps": 6,
+        "biceps": 21,
+        "upper_back": 24,
+        "lats": 30,
+        "rear_delts": 18,
+        "forearms": 6,
+        "quads": 18,
+        "glutes": 24,
+        "adductors": 18,
+        "hamstrings": 12,
+        "lower_back": 3,
+        "core": 3,
+        "calves": 6
+      },
+      "issues": [
+        "day_1_upper_over_target",
+        "day_2_upper_over_target",
+        "day_3_upper_over_target",
+        "day_4_upper_over_target",
+        "day_5_upper_over_target",
+        "day_6_upper_over_target"
+      ]
+    },
+    {
+      "type": "program",
+      "label": "3day fullbody 30 dumbbells",
+      "prompt": "3 day full body program 30 minutes",
+      "choice": "dumbbells",
+      "goal": "hypertrophy",
+      "ok": true,
+      "frequency": 3,
+      "split": "full_body",
+      "requested": 30,
+      "days": [
+        {
+          "number": 1,
+          "focus": "Full Body A",
+          "requested": 30,
+          "mid": 33,
+          "low": 29,
+          "high": 41,
+          "overTarget": true,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_13",
+              "name": "Bulgarian Split Squat",
+              "pattern": "lunge",
+              "equipment": "dumbbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3.7
+            },
+            {
+              "id": "lib_18",
+              "name": "Dumbbell Romanian Deadlift",
+              "pattern": "hinge",
+              "equipment": "dumbbell",
+              "primary": [
+                "hamstrings",
+                "glutes"
+              ],
+              "secondary": [
+                "lower_back"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_69",
+              "name": "Dumbbell Floor Press",
+              "pattern": "horizontal_press",
+              "equipment": "dumbbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_27",
+              "name": "Dumbbell Row",
+              "pattern": "horizontal_pull",
+              "equipment": "dumbbell",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            }
+          ],
+          "primaryRegions": [
+            "quads",
+            "glutes",
+            "hamstrings",
+            "chest",
+            "upper_back",
+            "lats"
+          ]
+        },
+        {
+          "number": 2,
+          "focus": "Full Body B",
+          "requested": 30,
+          "mid": 33,
+          "low": 29,
+          "high": 41,
+          "overTarget": true,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_10",
+              "name": "Goblet Squat",
+              "pattern": "squat",
+              "equipment": "dumbbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_18",
+              "name": "Dumbbell Romanian Deadlift",
+              "pattern": "hinge",
+              "equipment": "dumbbell",
+              "primary": [
+                "hamstrings",
+                "glutes"
+              ],
+              "secondary": [
+                "lower_back"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_7",
+              "name": "Push-Up",
+              "pattern": "horizontal_press",
+              "equipment": "bodyweight",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_92",
+              "name": "Incline Bench Dumbbell Row",
+              "pattern": "horizontal_pull",
+              "equipment": "dumbbell",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            }
+          ],
+          "primaryRegions": [
+            "quads",
+            "glutes",
+            "hamstrings",
+            "chest",
+            "upper_back",
+            "lats"
+          ]
+        },
+        {
+          "number": 3,
+          "focus": "Full Body C",
+          "requested": 30,
+          "mid": 33,
+          "low": 29,
+          "high": 41,
+          "overTarget": true,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_164",
+              "name": "Reverse Lunge",
+              "pattern": "lunge",
+              "equipment": "dumbbell",
+              "primary": [
+                "quads",
+                "glutes"
+              ],
+              "secondary": [
+                "adductors"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_18",
+              "name": "Dumbbell Romanian Deadlift",
+              "pattern": "hinge",
+              "equipment": "dumbbell",
+              "primary": [
+                "hamstrings",
+                "glutes"
+              ],
+              "secondary": [
+                "lower_back"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 3
+            },
+            {
+              "id": "lib_69",
+              "name": "Dumbbell Floor Press",
+              "pattern": "horizontal_press",
+              "equipment": "dumbbell",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_93",
+              "name": "Renegade Row",
+              "pattern": "horizontal_pull",
+              "equipment": "dumbbell",
+              "primary": [
+                "upper_back",
+                "lats"
+              ],
+              "secondary": [
+                "rear_delts",
+                "biceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2.7
+            }
+          ],
+          "primaryRegions": [
+            "quads",
+            "glutes",
+            "hamstrings",
+            "chest",
+            "upper_back",
+            "lats"
+          ]
+        }
+      ],
+      "weekly": {
+        "quads": 9,
+        "glutes": 18,
+        "adductors": 4.5,
+        "hamstrings": 9,
+        "lower_back": 4.5,
+        "chest": 9,
+        "front_delts": 4.5,
+        "triceps": 4.5,
+        "upper_back": 9,
+        "lats": 9,
+        "rear_delts": 4.5,
+        "biceps": 4.5
+      },
+      "issues": [
+        "day_1_over_target",
+        "day_1_upper_over_target",
+        "day_2_over_target",
+        "day_2_upper_over_target",
+        "day_3_over_target",
+        "day_3_upper_over_target"
+      ]
+    },
+    {
+      "type": "program",
+      "label": "3day fullbody 30 floor",
+      "prompt": "3 day full body program 30 minutes",
+      "choice": "bodyweight",
+      "goal": "hypertrophy",
+      "ok": true,
+      "frequency": 3,
+      "split": "full_body",
+      "requested": 30,
+      "days": [
+        {
+          "number": 1,
+          "focus": "Full Body A",
+          "requested": 30,
+          "mid": 30,
+          "low": 26,
+          "high": 38,
+          "overTarget": false,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_7",
+              "name": "Push-Up",
+              "pattern": "horizontal_press",
+              "equipment": "bodyweight",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_23",
+              "name": "Glute Bridge",
+              "pattern": "hip_extension",
+              "equipment": "bodyweight",
+              "primary": [
+                "glutes"
+              ],
+              "secondary": [
+                "hamstrings"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_274",
+              "name": "Body Saw Plank",
+              "pattern": "anti_extension",
+              "equipment": "bodyweight",
+              "primary": [
+                "core"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_264",
+              "name": "Crunch",
+              "pattern": "spinal_flexion",
+              "equipment": "bodyweight",
+              "primary": [
+                "core"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            }
+          ],
+          "primaryRegions": [
+            "chest",
+            "glutes",
+            "core"
+          ]
+        },
+        {
+          "number": 2,
+          "focus": "Full Body B",
+          "requested": 30,
+          "mid": 30,
+          "low": 26,
+          "high": 38,
+          "overTarget": false,
+          "removed": [],
+          "exercises": [
+            {
+              "id": "lib_7",
+              "name": "Push-Up",
+              "pattern": "horizontal_press",
+              "equipment": "bodyweight",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_23",
+              "name": "Glute Bridge",
+              "pattern": "hip_extension",
+              "equipment": "bodyweight",
+              "primary": [
+                "glutes"
+              ],
+              "secondary": [
+                "hamstrings"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_197",
+              "name": "Side-Lying Hip Abduction",
+              "pattern": "hip_abduction",
+              "equipment": "bodyweight",
+              "primary": [
+                "glutes"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 1
+            },
+            {
+              "id": "lib_276",
+              "name": "Dead Bug",
+              "pattern": "anti_extension",
+              "equipment": "bodyweight",
+              "primary": [
+                "core"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            }
+          ],
+          "primaryRegions": [
+            "chest",
+            "glutes",
+            "core"
+          ]
+        },
+        {
+          "number": 3,
+          "focus": "Full Body C",
+          "requested": 30,
+          "mid": 24,
+          "low": 21,
+          "high": 30,
+          "overTarget": false,
+          "removed": [
+            "lib_57"
+          ],
+          "exercises": [
+            {
+              "id": "lib_7",
+              "name": "Push-Up",
+              "pattern": "horizontal_press",
+              "equipment": "bodyweight",
+              "primary": [
+                "chest"
+              ],
+              "secondary": [
+                "front_delts",
+                "triceps"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  6,
+                  10
+                ],
+                "restSec": 120,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_23",
+              "name": "Glute Bridge",
+              "pattern": "hip_extension",
+              "equipment": "bodyweight",
+              "primary": [
+                "glutes"
+              ],
+              "secondary": [
+                "hamstrings"
+              ],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            },
+            {
+              "id": "lib_268",
+              "name": "Lying Leg Raise",
+              "pattern": "hip_flexion_core",
+              "equipment": "bodyweight",
+              "primary": [
+                "core"
+              ],
+              "secondary": [],
+              "prescription": {
+                "sets": 3,
+                "reps": [
+                  8,
+                  12
+                ],
+                "restSec": 90,
+                "goal": "hypertrophy"
+              },
+              "availability": "available",
+              "technical": 2
+            }
+          ],
+          "primaryRegions": [
+            "chest",
+            "glutes",
+            "core"
+          ]
+        }
+      ],
+      "weekly": {
+        "chest": 9,
+        "front_delts": 4.5,
+        "triceps": 4.5,
+        "glutes": 12,
+        "hamstrings": 4.5,
+        "core": 12
+      },
+      "issues": [
+        "day_1_upper_over_target",
+        "day_2_upper_over_target"
+      ]
+    }
+  ]
+}
