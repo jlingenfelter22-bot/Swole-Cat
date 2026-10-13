@@ -4,6 +4,36 @@ Last updated: 2026-10-13
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
 
+## LATEST DEVELOPMENT CHECKPOINT: Coach v0.89 PRE-RELEASE ACCEPTANCE (October 13, 2026)
+
+**Pick up here in the next chat. This supersedes the older v0.89 draft handoff below.**
+
+- **Current development stack:** PR #62 `feature/brain-v089-quality-remediation` (passes original 20-scenario test); PR #63 `feature/brain-v089-explicit-duration-acceptance` (full CI green, exact user-specified 5×5 and `4 sets of 6` preserved); and new draft **PR #64** https://github.com/jlingenfelter22-bot/Swole-Cat/pull/64 from `feature/brain-v089-preview-refresh-acceptance` (stacked atop #63).
+- **New finding:** 13/13 singles and 25/25 generated program days met the *engineering midpoint* time; however, **11/13 singles** and **23/25 program days** had *upper time estimates* over requested target. These are uncertainty ranges, **not** observed real-world overruns. Original post-remediation 20-case fixture: `docs/coach-brain/QUALITY_REMEDIATION_SCENARIOS_V089.json`.
+- **Implemented draft PR #64:** Fix generated session duration preview staying stale when user manually Swaps/Removes an exercise; recompute current exercise IDs/actual adjusted sets. Clean up removed/swapped automatic set overrides, without silently trimming the user's replacement. Preview now explains high-side time risks for singles and multi-day programs even when midpoint fits. Regression added to existing `scripts/coach-brain-quality-remediation-stress.mjs`.
+- **New acceptance document:** `docs/coach-brain/PRE_RELEASE_PHONE_ACCEPTANCE_V089.md` includes precise on-phone validation flow for exact 5×5, time-only edits, 20-minute gym legs, manual Swap/Remove, three-day full-body and measured real sessions. This is **not** Android testing completion or permission to release.
+- **Validation:** PR #64 full **94-step CI PASS**: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38463629529; separate **real generated-workout capture PASS**: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38463629638. New assertions for Remove/Swap time rows, saved sets, single upper-range warning and program upper-range warning all passed. Documentation-only commits after those runs require a final head check before release review. PR #64 is draft, no merge or release. Real Android owner acceptance and measured workouts remain undone.
+- **Release safety:** signed Testing is still v0.88.0/build 133, Beta remains v0.73.1. No account/data/cloud mutation or release. Owner approval needed for Testing promotion **after** CI and review; separate Beta approval. Do not claim real-device timing has been measured.
+
+---
+
+## ACTIVE DEVELOPMENT CHECKPOINT: Coach Brain v0.89 (October 13, 2026)
+
+**THIS IS THE WORK TO RESUME IN THE NEXT CHAT, not the previous cloud account feature.**
+
+- **Shipped apps remain unchanged:** signed Testing v0.88.0 (Android 133), Beta v0.73.1. No new signed APK, Testing updater update, cloud mutation or account changes in the Brain work.
+- **Baseline review:** PR #61, `review/brain-v089-session-program-acceptance`, captured 20 real synthetic workout/program scenarios. Initial coach-quality acceptance was denied despite green CI because of session-time overruns, false floor-only coverage and poor week distribution.
+- **Approved remediation:** PR #62, `feature/brain-v089-quality-remediation`, reran the same 20-scenario matrix (GitHub Actions 38457817270, successful). 13/13 generated single sessions met the engineering time midpoint; 25/25 generated program days met midpoint. A floor-only full-body program now *fails honestly* due to missing true pulling equipment, rather than being labeled comprehensive. Two floor-leg exercises were added with stable IDs `lib_308` and `lib_309`, keeping original 308 IDs intact. Quality remediation is still **development only**, not an Android release.
+- **Follow-up explicit-list time gap:** draft PR #63, `feature/brain-v089-explicit-duration-acceptance`, is layered atop #62. Exact user-authored workouts (e.g. `5 x 5 deadlift in 20 minutes`) were not receiving the time estimate, so duration feasibility and saved-set fidelity were not visible in previews. This branch computes the engineering time from exact sets/reps without trimming them; displays the range and warns when the midpoint exceeds the requested time. An untimed exact list is no longer presented as a requested 45-minute target. An explicit "make it 15 minutes" edit changes only the target, not exercise counts. Preview estimates recalculate after edits, removal and swaps.
+- **Tests:** `scripts/coach-brain-quality-remediation-stress.mjs` extended for an exact 5×5 user-authored list, time-only refinement, set edit and untimed preview; already invoked by `.github/workflows/validate.yml`. PR #63 is a **draft, not accepted**. See `docs/coach-brain/EXPLICIT_DURATION_ACCEPTANCE_V089.md`.
+- **Validation completed:** Initial PR #63 CI [38460441747](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38460441747) failed the new 4-sets-of-6 assertion and exposed a real explicit-edit rep parsing bug (sets changed, reps did not). Parser corrected in the branch. **Full revalidation PASS** [38460708958](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38460708958); independent generated-workout review PASS [38460708849](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38460708849). No real Android validation, Testing promotion or owner acceptance yet.
+- **Remaining development/acceptance:** Inspect realistic 20-case outputs, then Android Testing-only owner review of preview readability and actual session timing (warmups, rest, waiting, unilateral work). Neither the 20-scenario generator nor the duration model measures stopwatch workouts.
+- **Nonnegotiables:** Preserve existing accounts, cloud records, workout history, custom set/rep prescriptions, per-exercise load semantics and Testing/Beta signing separation. No Beta promotion. Do not merge/publish without explicit approval and a green full suite. Real-phone review remains a separate gate.
+
+Older shipped-version handoffs follow below.
+
+---
+
 ## CURRENT RESUME CHECKPOINT (v0.88.0 supersedes older instructions)
 
 - **Latest Testing:** v0.88.0 / Android build 133; signed APK + Testing updater published: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.88.0. PR #54 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/54 merged into `main`; PR suite https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413146562 PASS, main suite https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413588809 PASS, Android signing https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413588869 PASS. APK SHA-256 `e28302b7bc268119be1d493db3f56a59c4828a548fc71ceb1e72205d656b5bb9`; permanent cert unchanged.

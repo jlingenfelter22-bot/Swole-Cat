@@ -28,7 +28,7 @@ function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
      const ex=exById(exerciseId),explicit=draft.explicitConfigById?.[exerciseId];
      const p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,r,d):d;
      return {
-       exerciseId,sets:explicit?.sets||p.sets,minReps:explicit?.minReps||p.minReps,maxReps:explicit?.maxReps||p.maxReps,increment:state.settings.defaultIncrement,
+       exerciseId,sets:explicit?.sets||draft.brainSetCounts?.[exerciseId]?.sets||p.sets,minReps:explicit?.minReps||p.minReps,maxReps:explicit?.maxReps||p.maxReps,increment:state.settings.defaultIncrement,
        mode:'double',progressionStrategy:p.progressionStrategy||'double',adaptiveProgression:!!p.adaptiveProgression,setStructure:p.setStructure?cloneData(p.setStructure):null,
        trainingGoal:d.goal,resetPercent:7.5,restSeconds:p.restSeconds,
        autoWarmup:exerciseId===firstWarmupId,
@@ -43,21 +43,35 @@ function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
 function coachPreviewExercisePrescription(exerciseId,draft){
  const ex=exById(exerciseId),d=draft?.defaults||{},r=draft?.request||{},explicit=draft?.explicitConfigById?.[exerciseId];
  const p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,r,d):d;
- const sets=explicit?.sets||p.sets,min=explicit?.minReps||p.minReps,max=explicit?.maxReps||p.maxReps;
+ const sets=explicit?.sets||draft.brainSetCounts?.[exerciseId]?.sets||p.sets,min=explicit?.minReps||p.minReps,max=explicit?.maxReps||p.maxReps;
  const structure=p.setStructure?.type==='top_backoff'
    ?` · top ${p.setStructure.topMinReps}–${p.setStructure.topMaxReps} + ${p.setStructure.backoffSets} backoff @ ${p.setStructure.backoffPercent}%`
    :'';
  return sets+' sets · '+min+(max!==min?'–'+max:'')+' reps · '+p.restSeconds+'s rest'+(Number.isFinite(Number(p.targetRIR))?' · '+p.targetRIR+' RIR':'')+structure;
 }
+function coachRefreshDraftPreviewTime(draft=coachBuildDraft){
+ if(!draft)return null;
+ if(draft.explicitPrescription){
+   return typeof coachRefreshExplicitDraftTime==='function'?coachRefreshExplicitDraftTime(draft):null;
+ }
+ // Keep legacy, unconstrained generation unchanged. For time-planned drafts,
+ // re-estimate the *actual current* selection, including adjusted set counts.
+ if(!draft.brainTime||typeof coachBrainSessionTimeEstimate!=='function')return draft.brainTime||null;
+ draft.brainTime=coachBrainSessionTimeEstimate(draft.selectedIds,draft.request,draft.defaults,
+   {explicitConfigById:draft.brainSetCounts||{}});
+ return draft.brainTime;
+}
 function renderCoachPreview(){
  const draft=coachBuildDraft;if(!draft)return;
+ coachRefreshDraftPreviewTime(draft);
  const req=draft.request,d=draft.defaults,routine=coachDraftRoutine(draft,'preview');
- const equipment=req.allowedEquipment.length?req.allowedEquipment.join(', '):'Any available equipment';
+ const hasTimeTarget=!draft.explicitPrescription||!!draft.explicitDurationRequested;
+ const equipment=coachBrainResolveEquipment(req)?.label||(req.allowedEquipment.length?req.allowedEquipment.join(', '):'Equipment not specified');
  openModal('Coach Swolecat',`
    <div class="coach-builder">
     <div class="coach-console">
       <div class="eyebrow">QUICK BUILD // LOCAL ENGINE</div>
-      <div class="coach-preview-head"><div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(routine.name)}</div><div class="mini" style="margin-top:5px">Built from audited Swolecat exercise metadata · local and offline.</div></div><span class="tag">${req.duration} min target</span></div>
+      <div class="coach-preview-head"><div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(routine.name)}</div><div class="mini" style="margin-top:5px">Built from audited Swolecat exercise metadata · local and offline.</div></div><span class="tag">${hasTimeTarget?req.duration+' min target':'Custom exercise list'}</span></div>
       ${draft.lastRefinement?`<div class="mini" style="margin-top:8px"><b>Last change:</b> ${esc(draft.lastRefinement)}</div>`:''}
       <div class="coach-preview-meta"><span class="tag">${esc(coachGoalLabel(req.goal))}</span><span class="tag">${esc(equipment)}</span>${draft.explicitPrescription?'<span class="tag">Custom sets / reps</span>':'<span class="tag">Per-exercise prescription</span>'}${req.liftingGrammar?.warmupMode==='first_compound'?'<span class="tag">Warm-up first</span>':''}${Number.isFinite(Number(d.targetRIR))?`<span class="tag">Target ${d.targetRIR} RIR</span>`:''}${req.liftingGrammar?.lastSetAmrap?'<span class="tag">Last set AMRAP</span>':''}</div>
     </div>
@@ -68,9 +82,12 @@ function renderCoachPreview(){
         <div class="coach-exercise-actions"><button class="btn small secondary" onclick="coachSwapExercise(${i})">Swap</button><button class="btn small secondary" onclick="coachRemoveExercise(${i})">Remove</button></div>
       </div>`}).join('')}
     </div>
-    <div class="coach-rationale"><b>Why this structure:</b> ${draft.explicitPrescription?'This is your exercise list. Coach preserves the exercises you named and only changes the list when you explicitly ask it to add, remove, swap, or modify something.':'Coach ranked the session from requested muscles, anatomical roles, weekly primary/secondary set-equivalents, recent movement overlap, exercise progression continuity, movement demand, equipment, target priority, and your exercise preferences.'} Swolecat does not invent a starting weight; your own history and progression engine handle load once the workout starts.${draft.intelligenceAudit&&typeof coachIntelligenceSummaryText==='function'?'<br><span class="mini">'+esc(coachIntelligenceSummaryText(draft))+'</span>':''}</div>
+    ${draft.brainTime?`<div class="notice"><b>Estimated time: ${draft.brainTime.estimateMinutes} minutes</b> (rough range ${draft.brainTime.lowerMinutes}–${draft.brainTime.upperMinutes}${hasTimeTarget?', requested '+draft.brainTime.targetMinutes:''}). Includes ${draft.brainTime.warmupMinutes} min warm-up, working sets, rest, station setup and side-to-side work. ${draft.explicitPrescription?'Your chosen exercises, sets and reps have not been reduced to fit the estimate. ':''} ${draft.brainTime.overTarget?'This may run long; consider fewer sets or more time.':hasTimeTarget&&draft.brainTime.upperMinutes>draft.brainTime.targetMinutes?'Extra setup or slower sets could push this past your target.':''} ${draft.brainTimeRemoved?.length?'Coach removed optional movements to stay closer to your time limit.':''}</div>`:''}
+   ${draft.brainSetCounts&&Object.keys(draft.brainSetCounts).length?`<div class="notice">Some automatically proposed set counts were reduced to better fit your time limit. You can change them in the routine after saving; that will change the duration.</div>`:''}
+   <div class="coach-rationale"><b>Why this structure:</b> ${draft.explicitPrescription?'This is your exercise list. Coach preserves the exercises you named and only changes the list when you explicitly ask it to add, remove, swap, or modify something.':'Coach ranked the session from requested muscles, anatomical roles, weekly primary/secondary set-equivalents, recent movement overlap, exercise progression continuity, movement demand, equipment, target priority, and your exercise preferences.'} Swolecat does not invent a starting weight; your own history and progression engine handle load once the workout starts.${draft.intelligenceAudit&&typeof coachIntelligenceSummaryText==='function'?'<br><span class="mini">'+esc(coachIntelligenceSummaryText(draft))+'</span>':''}</div>
+    ${coachBrainEquipmentPreviewNotice(req)?`<div class="notice">${esc(coachBrainEquipmentPreviewNotice(req))}</div>`:''}
     ${coachRecentContextText(req)?`<div class="notice">${esc(coachRecentContextText(req))}</div>`:''}
-    <div class="coach-console" style="margin-top:10px"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">${draft.explicitPrescription?'Edit your exact list. Try “add 1 set of assisted pull-ups,” “make bench 4 sets of 6,” or “remove Bulgarian split squats.”':'Change the draft naturally. Try “make it 30 minutes,” “no barbells,” “more chest,” “strength focused,” “remove bench press,” or “add lateral raise.”'}</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachRefinePrompt" placeholder="${draft.explicitPrescription?'Add 1 set of assisted pull-ups...':'Make it 30 min, no barbells, more chest...'}" onkeydown="if(event.key==='Enter')coachApplyRefinement()">${coachVoiceButtonHtml('coachRefinePrompt')}</div><button class="btn" onclick="coachApplyRefinement()">Update</button></div></div>
+    <div class="coach-console" style="margin-top:10px"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">${draft.explicitPrescription?'Edit your exact list. Try “add 1 set of assisted pull-ups,” “make bench 4 sets of 6,” or “remove Bulgarian split squats.”':'Keep chatting. Try “something other than squats,” “no lunges,” “just dumbbells,” “more glutes,” “make it 30 minutes,” or “add a leg curl.”'}</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachRefinePrompt" placeholder="${draft.explicitPrescription?'Add 1 set of assisted pull-ups...':'Make it 30 min, no barbells, more chest...'}" onkeydown="if(event.key==='Enter')coachApplyRefinement()">${coachVoiceButtonHtml('coachRefinePrompt')}</div><button class="btn" onclick="coachApplyRefinement()">Update</button></div></div>
     <div class="notice">Programming presets are evidence-backed practical defaults, not claims that one rep range or exercise is universally best. Completed logs inform weekly overlap, progression continuity, and movement demand, but Coach never treats them as a diagnosis of soreness, recovery, injury, or medical readiness.</div>
     <div class="actions"><button class="btn green" onclick="coachStartWorkoutNow()">Start Workout Now</button><button class="btn" onclick="coachSaveRoutine()">Save as Routine</button><button class="btn secondary" onclick="coachOpenAddToProgram()">Add to Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
    </div>`);
@@ -81,6 +98,7 @@ function coachRemoveExercise(index){
  coachBuildDraft.request.excludedExerciseIds=[...new Set([...(coachBuildDraft.request.excludedExerciseIds||[]),id])];
  coachBuildDraft.request.requiredExerciseIds=(coachBuildDraft.request.requiredExerciseIds||[]).filter(x=>x!==id);
  if(coachBuildDraft.explicitConfigById)delete coachBuildDraft.explicitConfigById[id];
+ if(coachBuildDraft.brainSetCounts)delete coachBuildDraft.brainSetCounts[id];
  coachBuildDraft.selectedIds.splice(index,1);
  coachBuildDraft.lastRefinement=`Removed ${exById(id)?.name||'exercise'}`;
  renderCoachPreview();
@@ -102,7 +120,13 @@ function coachSwapExercise(index){
    .map(ex=>({ex,score:coachDynamicCandidateScore(ex,draft.request,coverage,patterns,families,primaryCoverage,draft.selectedIds.length)}))
    .filter(x=>Number.isFinite(x.score))
    .sort((a,b)=>b.score-a.score||a.ex.name.localeCompare(b.ex.name))[0]?.ex;
- let replacement=rank(all.filter(ex=>coachMovementFamily(ex)===currentFamily));
+ const brainSwap=coachBrainResolveEquipment(draft.request)?[
+   ...coachBrainAlternativeChoices(currentId,draft.request),
+   ...coachBrainAlternativeChoices(currentId,draft.request,{includeRelated:true})
+ ].find(item=>item.exerciseId!==currentId&&!selectedOther.includes(item.exerciseId)
+      &&coachExerciseAllowedByConstraints(exById(item.exerciseId),draft.request))?.exerciseId:null;
+ let replacement=brainSwap?exById(brainSwap):null;
+ if(!replacement)replacement=rank(all.filter(ex=>coachMovementFamily(ex)===currentFamily));
  if(!replacement){
    const curMeta=exerciseMuscleMetadata(current),curPrimary=new Set(curMeta.primary.filter(m=>targets.has(m)));
    replacement=rank(all.filter(ex=>exerciseMuscleMetadata(ex).primary.some(m=>curPrimary.has(m))));
@@ -113,9 +137,16 @@ function coachSwapExercise(index){
  draft.request.requiredExerciseIds=(draft.request.requiredExerciseIds||[]).filter(id=>id!==currentId);
  if(draft.explicitConfigById){
    const config=draft.explicitConfigById[currentId];delete draft.explicitConfigById[currentId];
-   if(config)draft.explicitConfigById[replacement.id]={...config,exerciseId:replacement.id};
+   const brain=coachBrainExerciseService();
+   const previousMeta=brain?.getProfile(currentId),nextMeta=brain?.getProfile(replacement.id);
+   // Do not carry explicit set targets across a different measurement or loading meaning.
+   if(config&&previousMeta&&nextMeta&&previousMeta.measurement===nextMeta.measurement&&previousMeta.load===nextMeta.load)
+     draft.explicitConfigById[replacement.id]={...config,exerciseId:replacement.id};
  }
  draft.selectedIds[index]=replacement.id;
+ // Automated set-count adjustments apply to the original exercise only.
+ // A replacement retains its own normal suggested sets until the user edits.
+ if(draft.brainSetCounts)delete draft.brainSetCounts[currentId];
  draft.lastRefinement=`Swapped ${current?.name||'exercise'} for ${replacement.name}`;
  renderCoachPreview();
 }
@@ -192,8 +223,45 @@ function coachContinueRequest(){
    openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">ONE QUICK QUESTION</div><div class="coach-question">How much time do we have?</div><div class="coach-choice-grid">${[30,45,60,75].map(m=>`<button class="btn secondary" onclick="coachAnswerDuration(${m})">${m} minutes</button>`).join('')}</div></div>`);
    return;
  }
- if(!coachGenerateWorkout(req)){alert('Coach Swolecat could not build a workout from that request with the available exercise/equipment filters. Try broadening the equipment or target muscles.');return}
+ const brainQuestion=coachBrainNextQuickBuildQuestion(req);
+ if(brainQuestion){
+   openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">LET'S MAKE IT FIT</div><div class="coach-question">${esc(brainQuestion.title)}</div><div class="mini" style="margin:6px 0 12px">${esc(brainQuestion.note)}</div><div class="coach-choice-grid">${brainQuestion.choices.map(choice=>`<button class="btn secondary" onclick="coachAnswerBrainEquipment('${choice.key}')">${esc(choice.label)}</button>`).join('')}</div></div>`);
+   return;
+ }
+ if(!req.brainEquipment){
+   const explicit=coachBrainExplicitEquipment(req);
+   if(explicit)req.brainEquipment=explicit;
+ }
+ if(!coachGenerateWorkout(req)){
+   openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">LET'S ADJUST</div><div class="coach-question">I couldn't build a balanced workout with those equipment limits.</div><div class="mini" style="margin:10px 0">Our current exercise library may be missing a good match for your goal. We won't invent equipment or exercises. Try another equipment choice, or describe exactly what you have.</div><div class="actions"><button class="btn" onclick="coachRetryBrainEquipment()">Change equipment</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New request</button></div></div>`);
+   return;
+ }
  renderCoachPreview();
+}
+function coachRetryBrainEquipment(){
+ if(!coachBuildDraft)return;
+ coachBuildDraft.request.brainEquipment=null;
+ coachBuildDraft.request.allowedEquipment=[];
+ coachContinueRequest();
+}
+function coachAnswerBrainEquipment(choice){
+ if(!coachBuildDraft)return;
+ if(choice==='custom'){
+   openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">YOUR EQUIPMENT</div><div class="coach-question">What do you have available today?</div><div class="mini" style="margin:8px 0">Try "dumbbells and cables", "barbell, bench and dumbbells", or "kettlebells". If a specialist attachment is important, mention that too.</div><input id="coachBrainCustomEquipment" class="search" aria-label="Equipment you have available" placeholder="Dumbbells and cables..." onkeydown="if(event.key==='Enter')coachSubmitBrainCustomEquipment()"><div class="actions"><button class="btn" onclick="coachSubmitBrainCustomEquipment()">Continue</button><button class="btn secondary" onclick="coachRetryBrainEquipment()">Back</button></div></div>`);
+   return;
+ }
+ const result=coachBrainApplyEquipmentChoice(coachBuildDraft.request,choice);
+ if(!result.ok){showToast(result.message);return}
+ coachBuildDraft.request=result.request;
+ coachContinueRequest();
+}
+function coachSubmitBrainCustomEquipment(){
+ const equipment=document.getElementById('coachBrainCustomEquipment')?.value||'';
+ if(!coachBuildDraft)return;
+ const result=coachBrainApplyEquipmentChoice(coachBuildDraft.request,'custom',equipment);
+ if(!result.ok){showToast(result.message);return}
+ coachBuildDraft.request=result.request;
+ coachContinueRequest();
 }
 function coachAnswerTarget(key){
  const g=COACH_TARGET_GROUPS[key];if(!g||!coachBuildDraft)return;
@@ -218,7 +286,7 @@ function coachSubmitPrompt(){
  if(programIntent.isProgram){
    request.programFocusRegions=[...programIntent.focusRegions];request.programFocusLabels=[...programIntent.focusLabels];
    coachBuildDraft=null;
-   coachProgramBuildDraft={request,intent:programIntent,days:[],dayOverrides:[],createdAt:new Date().toISOString()};
+   coachProgramBuildDraft={request,intent:programIntent,days:[],dayOverrides:[],interactiveBrainFlow:true,createdAt:new Date().toISOString()};
    coachContinueProgramRequest();return;
  }
  coachProgramBuildDraft=null;
@@ -265,7 +333,7 @@ function homeCoachBuildPrompt(){
  if(programIntent.isProgram){
    request.programFocusRegions=[...programIntent.focusRegions];request.programFocusLabels=[...programIntent.focusLabels];
    coachBuildDraft=null;
-   coachProgramBuildDraft={request,intent:programIntent,days:[],dayOverrides:[],createdAt:new Date().toISOString()};
+   coachProgramBuildDraft={request,intent:programIntent,days:[],dayOverrides:[],interactiveBrainFlow:true,createdAt:new Date().toISOString()};
    coachContinueProgramRequest();return;
  }
  coachProgramBuildDraft=null;

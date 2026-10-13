@@ -1,0 +1,46 @@
+name: Coach Brain Session Acceptance Matrix
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/coach-brain-human-review-matrix.mjs'
+      - '.github/workflows/coach-brain-human-review.yml'
+      - 'docs/coach-brain/HUMAN_ACCEPTANCE_V089.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    name: Real generated workout review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build modular application
+        run: npm run build:web
+      - name: Install JSDOM fixture
+        run: npm install --no-save --package-lock=false jsdom@24
+      - name: Assemble application test fixture
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          let html=fs.readFileSync('www/index.html','utf8');
+          const css=fs.readFileSync('www/app.css','utf8').replace(/<\/style/gi,'<\\/style');
+          const js=fs.readFileSync('www/app.js','utf8').replace(/<\/script/gi,'<\\/script');
+          const runtime=fs.readFileSync('scripts/test-runtime-fixture.js','utf8').replace(/<\/script/gi,'<\\/script');
+          html=html.replace('<link rel="stylesheet" href="./app.css">',()=>`<style>${css}</style>`);
+          html=html.replace('<script src="./app.js"></script>',()=>`<script>${js}</script><script>${runtime}</script>`);
+          fs.writeFileSync('/tmp/swole-cat-test.html',html);
+          JS
+      - name: Generate sessions and review matrix
+        run: node scripts/coach-brain-human-review-matrix.mjs | tee /tmp/coach-brain-review.log
+      - name: Upload scenario output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-brain-human-review-matrix
+          path: /tmp/coach-brain-review.log
+          if-no-files-found: warn
+          retention-days: 7
