@@ -75,6 +75,10 @@ function coachGenerateProgram(request,intent,previous=null){
      const result=coachBrainApplyEquipmentChoice(dayReq,plan.equipmentKey,plan.equipmentText||'');
      if(!result.ok)return {key,label:coachProgramDayDisplayLabel(key,index,slots),selectedIds:[],brainFeasible:false};
      Object.assign(dayReq,result.request);
+     // Day-specific availability may expand from a preset, but it must never
+     // negate a global explicit "no barbells/machines/etc." restriction.
+     dayReq.excludedEquipment=[...new Set([...(req.excludedEquipment||[]),...(result.request.excludedEquipment||[])])];
+     dayReq.allowedEquipment=dayReq.allowedEquipment.filter(key=>!dayReq.excludedEquipment.includes(key));
    }
    const defaults=coachProgrammingDefaults(dayReq.goal,dayReq.duration);
    // A generic custom "Arms" day should emphasize biceps/triceps before
