@@ -33,6 +33,14 @@ function coachProgramConflictingFocus(intent){
  }
  return null;
 }
+function coachProgramClearDayField(intent,field){
+ intent.dayPlans=(intent.dayPlans||[]).map(plan=>({...plan,[field]:null,...(field==='equipmentKey'?{equipmentText:''}:{})}));
+ intent.weekdayPlans=Object.fromEntries(Object.entries(intent.weekdayPlans||{}).map(([key,plan])=>
+  [key,{...plan,[field]:null,...(field==='equipmentKey'?{equipmentText:''}:{})}]));
+}
+function coachProgramExplicitAllDayRequest(text){
+ return /\b(?:all|every|each)\s+(?:(?:of the|training|three|four|five|six|[2-6])\s+)?(?:workouts?|sessions?|days?)\b|\bper\s+(?:workout|session)\b/i.test(text);
+}
 function coachProgramAllDaysHaveEquipment(intent){
  if(!intent?.frequency)return false;
  return Array.from({length:intent.frequency},(_,i)=>!!coachProgramEffectiveDayPlan(intent,i).equipmentKey).every(Boolean);
@@ -359,9 +367,11 @@ function coachRefineProgramText(text){
  }
  const parsed=coachParsePrompt(raw,req.goal),program=coachParseProgramIntent(raw),goal=coachExplicitGoal(raw),equipment=coachParseEquipment(raw);
  const scoped=Object.values(program.weekdayPlans||{}),hasScopedTime=scoped.some(x=>x.duration),hasScopedEquipment=scoped.some(x=>x.equipmentKey);
- const explicitSharedTime=/\b(?:each|every|per)\s+(?:single\s+)?(?:workout|session)\b/i.test(raw);
+ const explicitSharedTime=coachProgramExplicitAllDayRequest(raw);
+ const explicitAll=explicitSharedTime&&!scoped.length;
  let changed=false,structureChanged=false;
  if(parsed.duration&&(!hasScopedTime||explicitSharedTime)){req.duration=parsed.duration;changed=true}
+ if(parsed.duration&&explicitAll)coachProgramClearDayField(intent,'duration');
  if(goal&&goal!==req.goal){req.goal=goal;changed=true}
  const explicitFrequency=/\b[2-6]\s*[- ]?days?(?:\s+(?:a|per)\s+week)?\b|\b[2-6]\s*(?:x|times)\s*(?:a|per)?\s*week\b/i.test(coachNumbersToDigits(raw));
  if(explicitFrequency&&program.frequency&&program.frequency!==intent.frequency){intent.frequency=program.frequency;changed=true;structureChanged=true}
@@ -389,14 +399,17 @@ function coachRefineProgramText(text){
    changed=true;structureChanged=true;
  }
  if(equipment.allowed.length&&!hasScopedEquipment){
+   req.scopedEquipmentOnly=false;
    req.allowedEquipment=[...equipment.allowed];
    req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:raw,allowedEquipment:equipment.allowed});
    req.excludedEquipment=req.excludedEquipment.filter(x=>!equipment.allowed.includes(x));changed=true;
  }
  if(!hasScopedEquipment&&/\b(?:full|commercial|standard|well[- ]equipped)\s+gym\b/i.test(raw)){
+   req.scopedEquipmentOnly=false;
    req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:raw,allowedEquipment:[]});
    req.allowedEquipment=[...(req.brainEquipment?.allowed||[])];changed=true;
  }
+ if(explicitAll&&!hasScopedEquipment&&req.brainEquipment)coachProgramClearDayField(intent,'equipmentKey');
  const natural=coachBrainApplyNaturalExerciseChange(req,raw);
  if(natural.changed){req.excludedMovementPatterns=natural.request.excludedMovementPatterns;changed=true;}
  if(equipment.excluded.length){req.excludedEquipment=[...new Set([...req.excludedEquipment,...equipment.excluded])];req.allowedEquipment=req.allowedEquipment.filter(x=>!equipment.excluded.includes(x));changed=true}
@@ -478,7 +491,8 @@ function coachSubmitProgramAnswer(){
  const intent=d.intent,req=d.request,a=coachProgramIntake(d),parsed=coachParseProgramIntent(text),p=coachParsePrompt(text,req.goal);
  const scoped=Object.values(parsed.weekdayPlans||{});
  const hasScopedTime=scoped.some(x=>x.duration),hasScopedEquipment=scoped.some(x=>x.equipmentKey);
- const explicitSharedTime=/\b(?:each|every|per)\s+(?:single\s+)?(?:workout|session)\b/i.test(text);
+ const explicitSharedTime=coachProgramExplicitAllDayRequest(text);
+ const explicitAll=explicitSharedTime&&!scoped.length;
  let changed=false;
  const explicitlySaidFrequency=/\b[2-6]\s*[- ]?days?(?:\s+(?:a|per)\s+week)?\b|\b[2-6]\s*(?:x|times)\s*(?:a|per)?\s*week\b/i.test(coachNumbersToDigits(text));
  if(parsed.frequency&&(!intent.frequency||explicitlySaidFrequency)&&parsed.frequency!==intent.frequency){
@@ -494,12 +508,15 @@ function coachSubmitProgramAnswer(){
   if(focus){intent.customSlots=[...(intent.customSlots||[]),focus];changed=true}
  }
  if(p.duration>0&&(!hasScopedTime||explicitSharedTime)){req.duration=p.duration;changed=true}
+ if(p.duration>0&&explicitAll)coachProgramClearDayField(intent,'duration');
  const equipment=coachParseEquipment(text);
  if(equipment.allowed.length&&!hasScopedEquipment){
+  req.scopedEquipmentOnly=false;
   req.allowedEquipment=[...equipment.allowed];
   req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:text,allowedEquipment:equipment.allowed});
   req.excludedEquipment=req.excludedEquipment.filter(x=>!equipment.allowed.includes(x));changed=true;
  }else if(!hasScopedEquipment&&/\b(?:full|commercial|standard|well[- ]equipped)\s+gym\b/i.test(text)){
+  req.scopedEquipmentOnly=false;
   req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:text,allowedEquipment:[]});
   req.allowedEquipment=[...(req.brainEquipment?.allowed||[])];changed=true;
  }
@@ -509,6 +526,7 @@ function coachSubmitProgramAnswer(){
    intent.weekdayPlans[day]={...(intent.weekdayPlans[day]||{}),...setting};
   changed=true;
  }
+ if(explicitAll&&!hasScopedEquipment&&req.brainEquipment)coachProgramClearDayField(intent,'equipmentKey');
  if(parsed.preferredDays.length&&!(scoped.length&&intent.preferredDays?.length===intent.frequency&&parsed.preferredDays.length<intent.frequency)){
   intent.preferredDays=[...parsed.preferredDays];
   a.scheduleAnswered=parsed.preferredDays.length===intent.frequency;changed=true;
