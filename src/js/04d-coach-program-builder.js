@@ -881,6 +881,18 @@ function coachRenderSavedProgramEditor(){
 function coachSavedProgramEditApplyText(d,raw){
  const text=String(raw||'').trim(),normalized=coachNumbersToDigits(text);
  if(!text)return {ok:false,message:'Describe one change to the saved program.'};
+ const clauses=coachBrainSplitEditClauses(text);
+ if(clauses.length>1){
+  const copy={...d,program:cloneData(d.program),routines:d.routines.map(cloneData)};
+  const descriptions=[];
+  for(const clause of clauses){
+   const result=coachSavedProgramEditApplyText(copy,clause);
+   if(!result.ok)return {ok:false,message:'No changes proposed. '+result.message,failedClause:clause};
+   descriptions.push(result.note);
+  }
+  d.program=copy.program;d.routines=copy.routines;
+  return {ok:true,note:descriptions.join(' ')};
+ }
  const mode=coachParseProgramIntent(normalized);
  // A destination weekday is naturally not in the current program, so handle
  // moves before selecting the day to edit.
