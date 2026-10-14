@@ -906,6 +906,9 @@
     overflow:hidden;
     padding-bottom:0;
   }
+  /* The default decorative "COACH // LOCAL" pseudo-label duplicates and
+     overlaps the Program Build heading at narrow Android widths. */
+  .modal-mode-coach-program .coach-builder > .coach-console:first-child::after{display:none}
   .modal-mode-coach-program .sheet-head{
     flex:0 0 auto;
     min-height:50px;
