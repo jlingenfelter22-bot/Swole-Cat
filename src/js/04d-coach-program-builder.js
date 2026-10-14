@@ -340,6 +340,9 @@ function coachSubmitProgramAnswer(){
  const d=coachProgramBuildDraft;if(!d)return;
  const text=document.getElementById('coachProgramAnswer')?.value.trim()||'';
  if(!text){showToast('Tell Coach your preference or tap a choice');return}
+ if(!d.intent.split&&/\b(?:help me choose|recommend|suggest|not sure|you choose)\b/i.test(text)){
+  coachProgramIntake(d).splitAdvice=true;coachContinueProgramRequest();return;
+ }
  const intent=d.intent,req=d.request,a=coachProgramIntake(d),parsed=coachParseProgramIntent(text),p=coachParsePrompt(text,req.goal);
  let changed=false;
  const explicitlySaidFrequency=/\b[2-6]\s*[- ]?days?(?:\s+(?:a|per)\s+week)?\b|\b[2-6]\s*(?:x|times)\s*(?:a|per)?\s*week\b/i.test(coachNumbersToDigits(text));
@@ -394,13 +397,31 @@ function coachContinueProgramRequest(){
    `<div class="coach-choice-grid">${[2,3,4,5,6].map(n=>`<button class="btn secondary" onclick="coachAnswerProgramFrequency(${n})">${n} days</button>`).join('')}</div>`);
   return;
  }
+ if(!intent.split&&a.splitAdvice){
+  if(!a.goalAnswered&&!coachProgramHasExplicitGoal(req)){
+   coachProgramQuestion('What is the main thing you want out of this program?',
+    `<div class="coach-choice-grid"><button class="btn secondary" onclick="coachAnswerProgramGoal('hypertrophy')">Build muscle</button><button class="btn secondary" onclick="coachAnswerProgramGoal('strength')">Build strength</button><button class="btn secondary" onclick="coachAnswerProgramGoal('general')">General fitness</button></div>`,
+    'Coach will use your goal to explain reasonable split options, not choose one without your approval.');
+   return;
+  }
+  coachProgramQuestion('A few ways to organize your week',
+   `<div class="mini" style="margin:6px 0 12px">You have ${intent.frequency} days. None of these splits is universally best. Choose one that fits your priorities and that you can maintain.</div>
+   <div class="coach-choice-grid">
+    <button class="btn secondary" onclick="coachAnswerProgramSplit('ppl')"><b>Push / Pull / Legs</b><span class="mini">Separate movement days; ${intent.frequency===3?'each category appears once per three-session rotation':'Coach rotates movement categories to match your training days'}.</span></button>
+    <button class="btn secondary" onclick="coachAnswerProgramSplit('upper_lower')"><b>Upper / Lower</b><span class="mini">Alternate upper- and lower-body work as days rotate.</span></button>
+    <button class="btn secondary" onclick="coachAnswerProgramSplit('custom')"><b>Custom body-part days</b><span class="mini">Pick each day yourself, useful when certain muscles are your focus.</span></button>
+    <button class="btn secondary" onclick="coachAnswerProgramSplit('full_body')"><b>Full body</b><span class="mini">Practice major movement areas across multiple sessions, if that is what you prefer.</span></button>
+   </div>`,
+   'These are organizational trade-offs, not guarantees of faster progress. Coach will review your whole week before saving.');
+  return;
+ }
  if(!intent.split){
   coachProgramQuestion('What kind of split did you have in mind?',
    `<div class="coach-choice-grid">
     <button class="btn secondary" onclick="coachAnswerProgramSplit('ppl')">Push / Pull / Legs</button>
     <button class="btn secondary" onclick="coachAnswerProgramSplit('upper_lower')">Upper / Lower rotation</button>
     <button class="btn secondary" onclick="coachAnswerProgramSplit('custom')">Choose each day's muscle focus</button>
-    <button class="btn secondary" onclick="coachAnswerProgramSplit('full_body')">Full body each day</button></div>`,
+    <button class="btn secondary" onclick="coachAnswerProgramSplit('full_body')">Full body each day</button><button class="btn secondary" onclick="coachAskForSplitRecommendation()">Help me choose</button></div>`,
    'A three-day split does not automatically mean three full-body workouts.');
   return;
  }
@@ -466,9 +487,14 @@ function coachAnswerProgramFrequency(days){
  if(d.intent.preferredDays?.length!==d.intent.frequency)d.intent.preferredDays=[];
  coachContinueProgramRequest();
 }
+function coachAskForSplitRecommendation(){
+ const d=coachProgramBuildDraft;if(!d)return;
+ coachProgramIntake(d).splitAdvice=true;
+ coachContinueProgramRequest();
+}
 function coachAnswerProgramSplit(split){
  const d=coachProgramBuildDraft;if(!d||!['ppl','upper_lower','full_body','custom'].includes(split))return;
- d.intent.split=split;d.intent.customSlots=[];coachContinueProgramRequest();
+ d.intent.split=split;d.intent.customSlots=[];coachProgramIntake(d).splitAdvice=false;coachContinueProgramRequest();
 }
 function coachRestartProgramSplit(){
  const d=coachProgramBuildDraft;if(!d)return;
