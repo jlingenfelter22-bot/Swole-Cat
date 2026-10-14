@@ -904,6 +904,18 @@
     background:linear-gradient(120deg,#171428,#0d1725);
     box-shadow:0 -8px 28px rgba(1,4,12,.6);
   }
+  /* Generated program: keep the actual refinement input above day cards.
+     A compact top anchor stays reachable during long previews. The saved
+     program editor keeps its distinct bottom composer and review controls. */
+  .modal-mode-coach-program .coach-program-composer{
+    position:sticky;top:0;bottom:auto;z-index:6;
+    margin:8px -14px 12px;padding:10px 14px;
+    border-radius:0 0 14px 14px;
+    box-shadow:0 8px 24px rgba(1,4,12,.55);
+  }
+  @media(max-height:540px){
+    .modal-mode-coach-program .coach-program-composer{position:relative;top:auto}
+  }
   .coach-program-composer:after{display:none}
   .coach-program-composer .eyebrow{color:#d9c7ff}
   .coach-program-composer input{min-height:48px;font-size:16px}
