@@ -881,10 +881,9 @@ function coachRenderSavedProgramEditor(){
 function coachSavedProgramEditApplyText(d,raw){
  const text=String(raw||'').trim(),normalized=coachNumbersToDigits(text);
  if(!text)return {ok:false,message:'Describe one change to the saved program.'};
- const dayResult=coachSavedProgramEditorDayIndex(normalized,d);
- if(dayResult.error)return {ok:false,message:dayResult.error};
- const i=dayResult.index;
  const mode=coachParseProgramIntent(normalized);
+ // A destination weekday is naturally not in the current program, so handle
+ // moves before selecting the day to edit.
  const move=normalized.match(/\bmove\s+(\w+)\s+(?:to|onto)\s+(\w+)\b/i);
  if(move){
   const from=COACH_WEEKDAY_TERMS.find(([s])=>s===move[1].toLowerCase())?.[1];
@@ -896,6 +895,9 @@ function coachSavedProgramEditApplyText(d,raw){
   if(d.program.coachPlannedDays?.[oldIndex])d.program.coachPlannedDays[oldIndex].weekday=to;
   return {ok:true,note:`Moved ${PROGRAM_DAYS[from]} to ${PROGRAM_DAYS[to]}; routine order unchanged.`};
  }
+ const dayResult=coachSavedProgramEditorDayIndex(normalized,d);
+ if(dayResult.error)return {ok:false,message:dayResult.error};
+ const i=dayResult.index;
  const swap=normalized.match(/\b(?:replace|swap)\s+(.+?)\s+(?:with|for)\s+(.+?)(?:\s+(?:on|in|for)\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|day\s+[1-6]))?[.!?]?\s*$/i);
  const remove=normalized.match(/\b(?:remove|drop|delete)\s+(.+?)(?:\s+(?:on|from|in)\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|day\s+[1-6]))?[.!?]?\s*$/i);
  const add=normalized.match(/\b(?:add|include)\s+(.+?)(?:\s+(?:on|to|in)\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|day\s+[1-6]))?[.!?]?\s*$/i);
@@ -906,6 +908,7 @@ function coachSavedProgramEditApplyText(d,raw){
    const old=coachResolveExercisePhrase(swap[1],currentIds),replacement=coachResolveExercisePhrase(swap[2]);
    if(!old||!replacement)return {ok:false,message:'I could not confidently identify both exercises. Name their exact exercise titles.'};
    if(currentIds.includes(replacement.id))return {ok:false,message:'That replacement is already in this workout.'};
+   if(old.pattern!==replacement.pattern)return {ok:false,message:'These exercises use different movement patterns. Review the prescription in Edit Manually instead of transferring it automatically.'};
    const idx=routine.exercises.findIndex(e=>e.exerciseId===old.id);
    if(idx<0)return {ok:false,message:'The exercise to replace is not in that day.'};
    routine.exercises[idx]={...routine.exercises[idx],exerciseId:replacement.id};
