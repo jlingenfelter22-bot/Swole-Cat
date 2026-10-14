@@ -1,4 +1,14 @@
 # Swole Cat - Next Chat Handoff
+## ACTIVE WORK — v0.93 Android field feedback remediation (October 14, 2026)
+
+- User-approved report priorities from an Android narration: input jumps when IME opens, Coach program preview/refinement buried far below exercise list, completed-workout recap opens at stale bottom scroll, and no discoverable "ask Coach to edit saved program" entry.
+- Draft PR [#74](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/74), branch `feature/coach-v094-phone-interaction-hotfix`, changes **development only**: `src/js/01-core-runtime.js` scroll nearest instead of center on keyboard opening; `src/js/09-settings-ui-bootstrap.js` resets reused modal sheet/body scroll when opening; `src/js/04d-coach-program-builder.js` moves **Talk to Coach** above the day cards and collapses optional methodology; `src/js/03-programs.js` adds **Edit with Coach** from saved Program cards and menu, letting user pick a day and reuse existing safe `openCoachRoutineControl` cloned-routine prompt, undo/redo, explicit save; `scripts/coach-mobile-program-acceptance.mjs` regression coverage for discoverability/structure. PR CI must be checked on exact HEAD; actual Android acceptance is still required. **Do not claim full-program conversational editing is done**: schedule/mode changes still use manual Edit Program Settings, and cross-day natural-language patch/confirm remains next intelligence checkpoint.
+- User explicitly authorized addressing priority issues in report; **not** a signed Testing candidate or Beta promotion. Latest signed Testing remains v0.93.0 build 135, Beta v0.73.1 unchanged; no Supabase/account/live data mutations. Preserve PR #71 (optional intake shared profile design) separately.
+- **Next engineering:** build a safe saved-program Coach session supporting program-wide changes: clone exact program+all referenced routine blueprints with stable IDs; apply multi-clause edits atomically in memory; protect user-selected exercises, existing progression config, history and currently active workouts; show precise day-by-day before/after diff and estimated time; explicit confirm Save Changes with storage rollback and collision guards; support cancel and undo. Only then connect to planned first-time training profile. Field test keyboard/modals/recap on actual signed Android before promoting.
+- ***Developer boundary:*** do not automatically merge or publish this PR or change Testing/Beta channel without release decision and green regression. Physical IME/scroll tests pending owner. 
+
+---
+
 
 ## CURRENT RELEASE: Signed Testing v0.93.0 · Owner's real Android Coach acceptance (October 14, 2026)
 
