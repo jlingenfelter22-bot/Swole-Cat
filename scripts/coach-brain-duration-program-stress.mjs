@@ -229,6 +229,30 @@ w.coachAnswerProgramSplit('upper_lower');
 assert.match(modal,/what equipment do you have/i);
 assert.equal(w.eval('JSON.stringify(state.sessions)'),originalSessions,'tests must never change workout history');
 
+// "I don't know" asks for goal/context, then offers explicit choices rather
+// than silently selecting three Full Body days or auto-generating a routine.
+startProgram('help me build a 3-day split');
+assert.match(modal,/What kind of split did you have in mind/);
+w.coachAskForSplitRecommendation();
+assert.match(modal,/main thing you want out of this program/i);
+assert.equal(program().intent.split,'');
+w.coachAnswerProgramGoal('strength');
+assert.match(modal,/A few ways to organize your week/);
+assert.match(modal,/None of these splits is universally best/);
+assert.equal(program().days.length,0,'advice cannot create workouts');
+w.coachAnswerProgramSplit('ppl');
+assert.equal(program().intent.split,'ppl');
+assert.match(modal,/How much time do you have per workout/);
+assert.equal(program().days.length,0);
+// The same "help me choose" intention can be stated through freeform input.
+startProgram('3-day split for strength');
+const recommendationGetter=w.document.getElementById.bind(w.document);
+w.document.getElementById=id=>id==='coachProgramAnswer'?{value:'recommend something'}:recommendationGetter(id);
+w.coachSubmitProgramAnswer();
+w.document.getElementById=recommendationGetter;
+assert.match(modal,/A few ways to organize your week/);
+assert.equal(program().intent.split,'');
+
 // Whole-week planning review is read-only and reflects CURRENT preview exercises,
 // not a stale generated baseline. Intentional narrow splits receive *choices*, not edits.
 const fullLibrary=w.allExercises();
