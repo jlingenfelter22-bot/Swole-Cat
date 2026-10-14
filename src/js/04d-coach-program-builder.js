@@ -248,7 +248,8 @@ function coachRefineProgramText(text){
  let changed=false,structureChanged=false;
  if(parsed.duration){req.duration=parsed.duration;changed=true}
  if(goal&&goal!==req.goal){req.goal=goal;changed=true}
- if(program.frequency&&program.frequency!==intent.frequency){intent.frequency=program.frequency;changed=true;structureChanged=true}
+ const explicitFrequency=/\b[2-6]\s*[- ]?days?(?:\s+(?:a|per)\s+week)?\b|\b[2-6]\s*(?:x|times)\s*(?:a|per)?\s*week\b/i.test(coachNumbersToDigits(raw));
+ if(explicitFrequency&&program.frequency&&program.frequency!==intent.frequency){intent.frequency=program.frequency;changed=true;structureChanged=true}
  if(program.split&&program.split!==intent.split){intent.split=program.split;if(program.split!=='custom')intent.customSlots=[];changed=true;structureChanged=true}
  if(program.trainingMode&&program.trainingMode!==intent.trainingMode){
   intent.trainingMode=program.trainingMode;
