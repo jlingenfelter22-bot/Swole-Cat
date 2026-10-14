@@ -347,6 +347,18 @@ From the calendar/history, tapping a completed workout should reopen a durable r
 
 ---
 
+## Cross-cutting next foundation — New-User Training Intake × Coach Intelligence
+
+**Owner direction recorded October 14, 2026 — design only, not in the shipped application.** Before the next Coach v0.94 intelligence hardening and upcoming first-launch UX redesign, align both around a single **optional, editable training profile**: primary/secondary goal, experience/training familiarity, training time and availability, usual equipment, muscle emphasis, exercise preferences, and carefully consented movement-level exclusions. First-run onboarding currently stores only optional name and lb/kg; **do not claim a coaching intake already exists.**
+
+- The profile provides **suggested context**, never a license to override explicit new-user prompts, force historic equipment, invent health diagnoses, lock routines, or change Track Only/progression settings. Critical contradictions prompt a useful clarification; profile usage must be visible and reversible.
+- **Skip for now** and later update/clear via Settings are essential, even for free/offline use. Existing users with `ui.onboardingDone` or saved workouts must not be re-onboarded or lose history.
+- Do **not** place injury notes or sensitive movement-limitation history directly into current `state.profile`: the entire profile is presently projected into the Supabase `profile` singleton in `src/js/10f-cloud-sync.js`. Data inventory, consent, storage/isolation, backup behavior and privacy UX require explicit separate approval.
+- Incremental order: design/schema and acceptance contract → owner-reviewed onboarding screens → local-first Coach profile-context adapter with deterministic constraint precedence → generated-workout quality tests and real Android review. No app/backend rollout or Beta approval implied.
+- **Canonical proposed contract and field-by-field acceptance matrix:** [docs/coach-brain/USER_INTAKE_AND_PROFILE_FOUNDATION.md](coach-brain/USER_INTAKE_AND_PROFILE_FOUNDATION.md). Cloud Coach Memory remains separately deferred and is **not** silently enabled by this plan.
+
+---
+
 ## Phase 6 — Coach Swole Cat / Quick Build
 
 **Status: In progress through v0.64.0**

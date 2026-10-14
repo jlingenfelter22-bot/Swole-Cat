@@ -1,5 +1,17 @@
 # Swole Cat - Next Chat Handoff
 
+## DESIGN FOUNDATION — Shared New-User Intake × Coach Context (October 14, 2026)
+
+- Owner approved the direction: future **first-download training intake** should serve as a common source of training context for Coach's v0.94 priorities (experience-aware selection, smarter weekly distribution, primary vs secondary goals, precise edits, realistic session constraints). The user plans to revisit first-launch UX very soon. This pass is **design documentation only**, not app implementation.
+- Branch `design/coach-v094-user-intake-foundation` (draft PR pending/see latest repo) adds `docs/coach-brain/USER_INTAKE_AND_PROFILE_FOUNDATION.md` and corresponding roadmap entry; no JS/CSS/runtime, versions, cloud or release changes. Current Testing remains signed **v0.93.0 build 135**, Beta v0.73.1 unchanged.
+- Actual first-run `src/js/01-core-runtime.js::onboarding()` currently asks just optional name/units, not goals/experience/injuries; the `state.ui.onboardingDone` bit must not be reset for existing users. Coach recognizes some context when explicitly given in prompts but does not have a persistent verified onboarding profile.
+- **Critical privacy finding:** `src/js/10f-cloud-sync.js::syncProjectState()` uploads `state.profile` wholesale as a Supabase `profile` singleton. **Never** attach injuries/diagnoses/free-text limitation details there without separate data/privacy/consent/account-isolation approval. Design movement-level restrictions as an optional, non-diagnostic intake question; defer storage/sync decision.
+- Context precedence contract: current explicit request > current draft choices > transparently accepted profile defaults > observed history (not presumed preference) > generic heuristics. Profile must never silently override a specific session or save history. Optional intake, `Skip for now`, later edit/clear from Settings; free core/offline remains usable.
+- **Next owner review:** field/question wording and amount of first-launch friction; verify whether to implement local training profile storage and screen UX in a separate Testing development PR. Before any Coach behavior changes, regression-test both profile and no-profile paths and ensure account isolation. Physical Android acceptance for existing signed v0.93 Coach remains a separate pending gate. Cloud Coach Memory remains deferred.
+
+---
+
+
 ## CURRENT RELEASE: Signed Testing v0.93.0 · Owner's real Android Coach acceptance (October 14, 2026)
 
 - The user authorized publishing a **Testing-only** candidate; no Beta authorization. Combined v0.90–v0.93 Coach release PR [#70](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/70) merged to `main` at `05f65acf2506408abfe493b93b0ec437d76145be`. Older development PR #66–#69 are superseded. Main contains conversational split intake, whole-week quality review, per-day duration/equipment/focus, and narrow-screen day editor.
