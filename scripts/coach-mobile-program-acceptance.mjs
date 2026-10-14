@@ -64,6 +64,10 @@ const actions=body.querySelectorAll('.coach-program-exercise-row .coach-program-
 assert.equal(actions.length,names.length,'each exercise has local actions');
 assert([...actions].every(x=>x.querySelectorAll('button').length===2));
 assert([...actions].every(x=>[...x.querySelectorAll('button')].every(b=>['Swap','Remove'].includes(b.textContent.trim()))));
+const refineBox=body.querySelector('.coach-refine-console');
+assert(refineBox,'Coach refinement is visible before scrolling through a long program');
+assert(refineBox.compareDocumentPosition(body.querySelector('.coach-exercise-list'))&w.Node.DOCUMENT_POSITION_FOLLOWING,'refinement precedes the long program exercise list');
+assert.equal(body.querySelector('.coach-method-details')?.open,false,'methodology is collapsed by default but still available');
 const preview=snapshot('mixed-gym-and-home preview');
 
 // Editor for only Wednesday, without the user being asked to re-enter global gear.
@@ -107,6 +111,14 @@ assert.equal(w.eval('JSON.stringify({sessions:state.sessions,routines:state.rout
 
 // CSS/layout contracts for 320–430 CSS px, Android small-screen viewport.
 // JSDOM does not compute pixel layouts; physical phone remains a separate gate.
+const coreSource=fs.readFileSync('src/js/01-core-runtime.js','utf8');
+const modalSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8');
+const savedProgramSource=fs.readFileSync('src/js/03-programs.js','utf8');
+assert(coreSource.includes("scrollIntoView({block:'nearest'"),'Android keyboard focus must not center long Coach dialogs');
+assert(!coreSource.includes("active.scrollIntoView({block:'center'"),'legacy center-on-keyboard focus removed');
+assert(modalSource.includes("if(sheet)sheet.scrollTop=0"),'new dialogs and completed workout recaps start at top');
+assert(savedProgramSource.includes('function openCoachSavedProgramWorkouts(id)'), 'saved Programs offer a Coach editing entry point');
+assert(savedProgramSource.includes('openCoachRoutineControl('), 'program Coach entry reuses draft-copy routine editing');
 const css=fs.readFileSync('src/styles/03-polish.css','utf8');
 const base=fs.readFileSync('src/styles/00-base.css','utf8');
 assert(css.includes('@media(max-width:430px){')&&css.includes('.coach-choice-grid.coach-split-guidance{grid-template-columns:minmax(0,1fr)}'),'rich split guidance has one-column mobile layout');
