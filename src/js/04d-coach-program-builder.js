@@ -33,6 +33,22 @@ function coachProgramConflictingFocus(intent){
  }
  return null;
 }
+function coachProgramApplyWeekdayInstructions(intent,instructions){
+ intent.weekdayPlans=Object.fromEntries(Object.entries(intent.weekdayPlans||{}).map(([day,plan])=>[day,{...plan}]));
+ intent.dayPlans=(intent.dayPlans||[]).map(plan=>({...plan}));
+ for(const [weekday,fields] of Object.entries(instructions||{})){
+  intent.weekdayPlans[weekday]={...(intent.weekdayPlans[weekday]||{}),...fields};
+  const i=(intent.preferredDays||[]).length===intent.frequency
+   ?intent.preferredDays.indexOf(Number(weekday)):-1;
+  // A newer explicit weekday correction beats an earlier manual slot override,
+  // but changes only the fields the user mentioned.
+  if(i>=0){
+   const slot={...(intent.dayPlans[i]||{})};
+   for(const field of Object.keys(fields))delete slot[field];
+   intent.dayPlans[i]=slot;
+  }
+ }
+}
 function coachProgramClearDayField(intent,field){
  intent.dayPlans=(intent.dayPlans||[]).map(plan=>({...plan,[field]:null,...(field==='equipmentKey'?{equipmentText:''}:{})}));
  intent.weekdayPlans=Object.fromEntries(Object.entries(intent.weekdayPlans||{}).map(([key,plan])=>
@@ -390,9 +406,7 @@ function coachRefineProgramText(text){
   changed=true;
  }
  if(scoped.length){
-   intent.weekdayPlans={...(intent.weekdayPlans||{})};
-   for(const [weekday,settings] of Object.entries(program.weekdayPlans||{}))
-     intent.weekdayPlans[weekday]={...(intent.weekdayPlans[weekday]||{}),...settings};
+   coachProgramApplyWeekdayInstructions(intent,program.weekdayPlans);
    changed=true;
  }
  if(program.preferredDays.length&&!(scoped.length&&intent.preferredDays?.length===intent.frequency&&program.preferredDays.length<intent.frequency)){
@@ -526,9 +540,7 @@ function coachSubmitProgramAnswer(){
   req.allowedEquipment=[...(req.brainEquipment?.allowed||[])];changed=true;
  }
  if(scoped.length){
-  intent.weekdayPlans={...(intent.weekdayPlans||{})};
-  for(const [day,setting] of Object.entries(parsed.weekdayPlans||{}))
-   intent.weekdayPlans[day]={...(intent.weekdayPlans[day]||{}),...setting};
+  coachProgramApplyWeekdayInstructions(intent,parsed.weekdayPlans);
   changed=true;
  }
  if(explicitAll&&!hasScopedEquipment&&req.brainEquipment&&
