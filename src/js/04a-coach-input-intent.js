@@ -439,6 +439,43 @@ function coachParseProgramFocus(text){
  if(/\bback\b/.test(genericBackWork))add('back');
  return {labels:[...new Set(labels)],regions:[...new Set(regions)]};
 }
+// Scoped weekday instructions are different from a shared workout duration.
+// Keys are real weekdays (0–6), not routine positions. They survive changes
+// to the displayed order without silently becoming another day's constraints.
+function coachParseWeekdayPlans(text){
+ const raw=String(text||''),low=coachNormalizeGymText(coachNumbersToDigits(raw));
+ const re=/\b(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|tues|wed|thu|thurs|fri|sat)\b/gi;
+ const hits=[...low.matchAll(re)];
+ const plans={};
+ for(let i=0;i<hits.length;i++){
+  const name=hits[i][0].toLowerCase();
+  const weekday=COACH_WEEKDAY_TERMS.find(([term])=>term===name)?.[1];
+  if(weekday==null)continue;
+  const snippet=low.slice(hits[i].index+(hits[i][0].length),hits[i+1]?.index??low.length)
+    .replace(/^[\s:,\-]+/,'').trim();
+  if(!snippet)continue;
+  const setting={};
+  const time=snippet.match(/\b(\d{1,3})\s*(?:ish\s*)?(?:m|min|mins|minutes)\b/)
+   ||snippet.match(/\b(\d(?:\.\d+)?)\s*(?:h|hr|hrs|hours)\b/);
+  if(time){
+   const value=Number(time[1])*(time[0].match(/\b(?:h|hr|hrs|hours)\b/) ?60:1);
+   if(Number.isFinite(value)&&value>=15&&value<=120)setting.duration=Math.round(value);
+  }
+  if(/\b(?:at|in|use|using|with|only|home|gym|dumbbells|barbell|cable|bodyweight)\b/.test(snippet)){
+   if(/\b(?:full|commercial|standard|well equipped)\s+gym\b|\bat (?:the )?gym\b|\bin (?:the )?gym\b/.test(snippet))setting.equipmentKey='gym';
+   else if(/\b(?:bodyweight only|no equipment|floor only|floor workout)\b/.test(snippet))setting.equipmentKey='bodyweight';
+   else if(/\b(?:dumbbells?(?: only)?|dumbbells? and bodyweight)\b/.test(snippet)&&!/\b(?:barbells?|cables?|machines?)\b/.test(snippet))setting.equipmentKey='dumbbells';
+  }
+  const focus=snippet.match(/\b(?:more|emphasize|prioritize|focus (?:on|more on))\s+(chest|back|shoulders?|arms?|glutes?|quads?|hamstrings?|calves?|core|biceps?|triceps?)\b/);
+  if(focus){
+   const key=focus[1].replace(/s$/,'');
+   const lookup={shoulder:'shoulders',arm:'arms',glute:'glutes',quad:'quads',hamstring:'hamstrings',calf:'calves',bicep:'biceps',tricep:'triceps'};
+   setting.focusKey=lookup[key]||key;
+  }
+  if(Object.keys(setting).length)plans[weekday]={...(plans[weekday]||{}),...setting};
+ }
+ return plans;
+}
 function coachParseProgramIntent(text){
  let lower=coachNormalizeGymText(coachNumbersToDigits(String(text||'')));
  lower=lower
@@ -477,9 +514,9 @@ function coachParseProgramIntent(text){
    if(n>=3&&n<=8)deload={enabled:true,intervalWeeks:n};
   }
  }
- const focus=coachParseProgramFocus(lower);
+ const focus=coachParseProgramFocus(lower),weekdayPlans=coachParseWeekdayPlans(text);
  const isProgram=/\b(program|plan|split|weekly|week)\b/.test(lower)||!!dayMatch||!!weekMatch||preferredDays.length>=2||!!split;
- return {isProgram,frequency,preferredDays,split,trainingMode,deload,customSlots:[],focusLabels:focus.labels,focusRegions:focus.regions};
+ return {isProgram,frequency,preferredDays,split,trainingMode,deload,customSlots:[],weekdayPlans,dayPlans:[],focusLabels:focus.labels,focusRegions:focus.regions};
 }
 function coachDefaultProgramSplit(frequency){
  if(frequency<=3)return 'full_body';
