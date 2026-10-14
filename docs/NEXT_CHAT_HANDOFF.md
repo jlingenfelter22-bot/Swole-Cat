@@ -1,5 +1,67 @@
 # Swole Cat - Next Chat Handoff
 
+## ACTIVE DEVELOPMENT CHECKPOINT: Coach v0.93 Mobile Acceptance (October 14, 2026)
+
+- User explicitly authorized proceeding to the next Coach checkpoint after deferring Cloud Coach Memory in the Phase 12 roadmap. No APK release or Beta promotion approval was given.
+- Draft PR [#69](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/69) branch `feature/coach-v093-mobile-acceptance` adds narrow-screen polish and acceptance tests on top of v0.92 [#68](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/68), v0.91 [#67](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/67), v0.90 [#66](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/66). Temporary PR #69 base `main` is solely to trigger existing full CI; restore base to `feature/coach-v092-per-day-planning` after green checks.
+- Mobile UX: rich split recommendation cards one-column at <=430px, readable program exercise rows with Swap/Remove below title, better touch targets, stacked Save/Save+Start controls, 16px day-edit form inputs. Custom equipment remains hidden/disabled unless selected; correct overview label for equipment scoped by day. No Coach programming logic, cloud schema, auth, sync or saved history changes.
+- Mobile DOM acceptance `scripts/coach-mobile-program-acceptance.mjs` is now a `validate.yml` CI gate; it renders actual modal HTML, checks labels, split advice, day card actions, custom gear disclosure, validation rollback, per-day refinements, save-button separation, CSS contracts and no history writes.
+- **Important limit:** Synthetic JSDOM tests do **not** show Android WebView visuals, actual keyboard behavior, true hit target measurements, device scrolling or speech recognition. A physical Android owner review remains **PENDING** per `docs/coach-brain/ANDROID_ACCEPTANCE_V093.md`; do not conflate a green CI with device signoff.
+- Latest signed Testing remains v0.89.0 code 134; separate Beta v0.73.1 unchanged; owner must separately approve any signed Testing release. Cloud Coach Memory remains deferred in `docs/ROADMAP.md`.
+
+---
+
+
+## OWNER DIRECTION: Cloud Coach Memory deferred; continue Coach quality (October 14, 2026)
+
+- Explicit owner request: document **Cloud Coach Memory** in canonical future roadmap and **continue existing Coach engineering first**. Logged as **deferred** in `docs/ROADMAP.md` → Phase 12. Proposed optional Lifetime Pro value: private account-owned preferences, compact workout-history context and cross-device memory; preserve free/offline local Coach. No schema migrations, Supabase mutations, entitlements, new AI vendor, unlimited inference promise or added subscription.
+- Continued qualitative review of v0.92's real generated 30/45/75-minute mixed-equipment week. Friday gym Legs originally included Back Squat + Sumo Deadlift even though a less demanding posterior-chain alternative exists. A narrowly scoped candidate-score heuristic now discourages this **for auto-generated hypertrophy/general programs up to 90 minutes**, without banning the combination or affecting strength plans/user-pinned exercises. Time budget is a cap, not an instruction to fill every minute. Added explicit scenario and user-override regression to `scripts/coach-brain-duration-program-stress.mjs`.
+- Exact approval gate remains unchanged: all stacked PRs #66/#67/#68 development-only, latest signed Testing v0.89.0, Beta untouched. New reviewer/CI pass required on latest v0.92 HEAD; no physical Android acceptance or release has occurred.
+
+---
+
+## ACTIVE DEVELOPMENT CHECKPOINT: Per-Day Coach Planning v0.92 (October 13, 2026)
+
+- User explicitly authorized proceeding to the next Coach quality pass after v0.91 (follow-up in same Swole Cat conversation). **Development only.** No APK publication authorization; signed Testing remains v0.89.0 (code 134), Beta remains v0.73.1. Do not touch Supabase or recovery history.
+- Draft PR [#68](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/68), branch `feature/coach-v092-per-day-planning`, stacked on v0.91 [#67](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/67) and v0.90 [#66](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/66). PR #68's base is temporarily main solely for full Actions CI; retarget to #67 branch after its HEAD validates.
+- v0.92 recognizes weekday-scoped time/equipment/focus directives (e.g. `Mon 30 min gym, Wed 45 min dumbbells, Fri 75 min gym`), asks for a common time/equipment when some days lack it, and builds independent exercise/time/equipment settings per day without assuming a weekday's gear/time applies globally.
+- Program preview has accessible `Adjust day` editor (15–120 min, inherit/gym/dumbbells/bodyweight/custom gear, emphasis on that day's muscles), atomic validation/regeneration and per-day range review. Saved Program includes `coachPlannedDays` contextual metadata and per-day routine descriptions. No existing workout session changes.
+- Day focus incompatible with slot (e.g. Friday Legs, more shoulders) triggers clarification, offering to keep split and remove emphasis or change split. Does not silently ignore or spread priorities globally.
+- `scripts/coach-brain-duration-program-stress.mjs` tests full prompt routing, partial defaults, mixed gym/dumbbells/gym, weekday refinements, day editor, rollback, saved metadata, conflicts, and history non-mutation. Generated output logged as `COACH_V092_DAILY`.
+- Initial full CI **PASS** https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38514095460. Later head(s) include the additional focus conflict; verify latest run's result and inspect logs before claiming green. Design and limitations: `docs/coach-brain/PER_DAY_PLANNING_V092.md`.
+- Immediate next: confirm newest CI on HEAD, retarget #68 to #67 stacked base, run qualitative review and request real physical Android UX validation from owner before any signed Testing release. Next potential engineering step: human-reviewed time calibration, more sophisticated multi-week/cycle intent, nonuniform recovery day-spacing checks. No Beta release.
+
+---
+
+## ACTIVE DEVELOPMENT CHECKPOINT: Whole-Week Coach Review + Split Guidance v0.91 (October 13, 2026)
+
+- Owner approved starting the next intent-first Coach improvements after v0.90. This is **development-only** and does not authorize publishing an APK. Signed Testing stays v0.89.0 build 134; Beta unchanged v0.73.1. Do not touch accounts, recovery, Supabase data, or workout history.
+- Draft PR [#67](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/67) on `feature/coach-v091-whole-week-review`, stacked conceptually over v0.90 guided program-intake [PR #66](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/66). Its base may temporarily point to `main` to run required GitHub Actions CI. **Retarget to #66's feature branch after a green full run.**
+- Program setup "Help me choose" and text "recommend something" now ask for the goal if missing and give **explicit opt-in split explanations**, without choosing Full Body or any other split automatically.
+- Current generated Program preview displays **read-only whole-week review**, recalculated from selected exercise IDs on render. Checks presence of press, pull, knee and posterior movement families; choice-based notices for custom-split primary chest omission, requested priority-region gaps, or days with no primary involvement in named focus. Never overrides user selections or diagnoses fatigue/injury.
+- New tests in `scripts/coach-brain-duration-program-stress.mjs`: vague split recommendation consent, focused Arms/Back/Legs weekly role flags, manual addition updates the review, no manufactured flags for represented roles, missing priority-region visibility and no session-history writes.
+- Full design and scientific caveats: `docs/coach-brain/WHOLE_WEEK_REVIEW_V091.md`; owner-approved north star `docs/coach-brain/COACH_INTENT_CONTRACT.md`.
+- **Next:** full CI on latest PR #67 SHA, inspect actual program output for false warnings, refine copy/decision thresholds if needed, then physical Android acceptance before any signed Testing release approval. No Beta promotion.
+
+---
+
+## ACTIVE DEVELOPMENT CHECKPOINT: Guided Coach Program Intake v0.90 (October 13, 2026)
+
+- **Owner-confirmed north star** documented in [Coach Intent Contract](coach-brain/COACH_INTENT_CONTRACT.md): understand intent, separate knowns/unknowns, ask consequential questions only, evaluate week-long program quality, negotiate incompatible constraints, explain decisions, respect exact user choices and learn from consented real-world feedback. Priority after v0.90: intent confidence/clarification → full-program audit → per-day constraint negotiation → feedback/personalization. These are design principles and proposed follow-ups, not claims of already-shipped functionality. This agreement does not authorize a new Testing or Beta APK.
+
+
+- User found a real v0.89.0 **program conversation defect**: "3-day split" gets treated as full-body by default and setup asks only frequency/time/equipment, not what each day should train, schedule, progression mode, or deloads. Owner explicitly requested a deeper conversational program intake with these decisions.
+- Draft PR **#66** https://github.com/jlingenfelter22-bot/Swole-Cat/pull/66, head `feature/coach-program-guided-intake-v090` from signed v0.89.0 `main`. **Development-only.** Signed Testing v0.89.0, build 134 remains published; no new APK. Beta v0.73.1 unchanged, no cloud or workout-history mutation.
+- Implemented: vague frequency -> **choose split** (PPL, Upper/Lower rotation, Custom Body-Part, explicit Full Body), optional custom target per day (e.g. Arms / Back / Legs), duration, equipment, weekdays or flexible, training goal, training mode (Guided / Strength / Track), optional Guided deload every 3–8 training weeks. If prompt already contains a detail, skip redundant question. **Each intake step also has a free-text/voice input:** a multi-detail response such as PPL, 45 minutes, gym, Mon/Wed/Fri, Guided and deload every 4 weeks fills several unanswered constraints at once. Never change an already chosen 4-day frequency because a reply lists only 3 weekdays. The home Coach 3-day example now opens this guided flow. Never infer "3-day split" means full body.
+- Persistence uses existing per-program `trainingMode` + `deload` schema, preserving confirmation for actual deload weeks; no new database schema. Generated day exercise selection honors chosen `customSlots`. Existing direct generator without interactive intake remains backward-compatible. Chat program refinement recognizes an explicit progression-mode and deload change.
+- Synthetic test `scripts/coach-brain-duration-program-stress.mjs` exercises an entire three-day custom intake and verifies saved weekdays, routines, mode/deload plus unchanged history; checks fully specified PPL skip and full-body intentional choice.
+- Research/scoping `docs/coach-brain/PROGRAM_INTAKE_DESIGN_V090.md` explains scientific uncertainty and acceptance.
+- CI: PR #66 requires its **latest commit** green full regression; the new conversational multi-detail test is in `scripts/coach-brain-duration-program-stress.mjs`. Prior complete workflows (e.g. 38475744307) green, but check last branch HEAD after latest text/voice fixture. Existing generated v0.89 review remains available but a new qualitative v0.90 review is still needed before a release. **Do not claim a phone release or Beta approval.**
+- Next steps: inspect CI, fix actual regressions, review generated custom Arms/Back/Legs and other split quality, verify user-friendly phone layout and confirm time/planning semantics. Only then request user approval to promote the next signed Testing build (likely v0.90.0). Real Android owner acceptance remains open.
+
+---
+
+
 ## CURRENT RESUME CHECKPOINT: v0.89.0 SIGNED TESTING RELEASE (October 13, 2026)
 
 **Latest Testing: v0.89.0 / Android build 134, signed APK and in-app update live. Owner-approved Testing promotion complete.**

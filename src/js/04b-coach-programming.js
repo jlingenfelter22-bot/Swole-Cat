@@ -176,12 +176,16 @@ function coachDynamicCandidateScore(ex,request,coverage,patternCounts,familyCoun
  });
  meta.secondary.filter(m=>targets.has(m)).forEach(m=>score+=16/(1+(coverage[m]||0)));
  score-=(patternCounts[ex.pattern]||0)*34;
- // Avoid selecting a second demanding hip/knee barbell compound alongside a
- // squat when programming a short general/hypertrophy session.
- if(request.brainEquipment&&request.goal!=='strength'&&(Number(request.duration)||0)<=60
+ // Do not treat a long time budget as a reason to stack heavy deadlifts
+ // with squats in an automatically generated hypertrophy/general leg session.
+ // Preserve strength-specific programming and explicitly requested exercises.
+ // This is a fatigue/complexity *planning preference*, not an injury claim.
+ if(request.brainEquipment&&request.goal!=='strength'&&(Number(request.duration)||0)<=90
     &&ex.pattern==='hinge'&&patternCounts.squat
     &&/deadlift/i.test(ex.name)&&!/romanian|stiff.?leg|single.?leg/i.test(ex.name)
-    &&!(request.requiredExerciseIds||[]).includes(ex.id))score-=130;
+    &&!(request.requiredExerciseIds||[]).includes(ex.id)){
+   score-=Array.isArray(request.programHingeHistory)?220:130;
+ }
 
  score-=(familyCounts[family]||0)*118;
  const keys=coachRequestedTargetKeys(request);

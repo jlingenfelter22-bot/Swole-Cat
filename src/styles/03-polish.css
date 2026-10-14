@@ -862,6 +862,37 @@
   .coach-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   @media(max-width:430px){.coach-exercise{grid-template-columns:34px minmax(0,1fr)}.coach-exercise-actions{grid-column:2;justify-content:flex-start}.coach-choice-grid{grid-template-columns:1fr 1fr}}
 
+  /* COACH v0.93 // narrow Android preview and day-editor usability.
+     Scoped to Coach; do not alter established workout/session cards. */
+  .coach-program-day-card{min-width:0}
+  .coach-program-day-head{align-items:flex-start}
+  .coach-program-day-summary,.coach-preview-heading{min-width:0;flex:1 1 auto}
+  .coach-program-day-head>.tag{flex:0 0 auto}
+  .coach-program-exercise-row>.grow{min-width:0}
+  .coach-program-exercise-row .exercise-name{overflow-wrap:anywhere}
+  .coach-program-exercise-actions{flex:0 0 auto}
+  .coach-day-editor{min-width:0}
+  .coach-day-editor .search{min-width:0;min-height:48px;font-size:16px}
+  .coach-day-editor label{line-height:1.45;margin-bottom:6px}
+  .coach-day-custom-field[hidden]{display:none!important}
+  .coach-split-guidance .btn{text-align:left;white-space:normal;min-height:48px;line-height:1.4}
+  .coach-split-guidance .btn .mini{display:block;margin-top:4px;font-weight:500;line-height:1.5}
+  @media(max-width:430px){
+    .coach-choice-grid.coach-split-guidance{grid-template-columns:minmax(0,1fr)}
+    .coach-preview-head{flex-wrap:wrap}
+    .coach-preview-head>.tag{flex-shrink:0}
+    .coach-program-day-head{flex-wrap:wrap;gap:8px}
+    .coach-program-day-card{padding:12px}
+    .coach-program-exercise-row{flex-wrap:wrap;gap:7px;align-items:flex-start}
+    .coach-program-exercise-row>.grow{flex:1 1 100%}
+    .coach-program-exercise-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px}
+    .coach-program-exercise-actions .btn{min-width:0;min-height:44px}
+    .coach-program-save-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+    .coach-program-save-actions .btn{min-height:48px;white-space:normal}
+    .coach-day-editor .actions{display:grid;grid-template-columns:minmax(0,1fr)}
+    .coach-day-editor .actions .btn{min-height:48px;white-space:normal}
+  }
+
   /* V41 PERFORMANCE PASS 1 */
   :root{
     --motion-fast:85ms;

@@ -284,6 +284,11 @@ function coachSubmitPrompt(){
    coachProgramBuildDraft=null;coachGenerateExplicitWorkout(request,explicit);renderCoachPreview();return;
  }
  if(programIntent.isProgram){
+   const scoped=Object.values(programIntent.weekdayPlans||{});
+   if(scoped.some(d=>d.duration)&&!/\b(?:each|every|per)\s+(?:single\s+)?workout\b/i.test(prompt))request.duration=0;
+   if(scoped.some(d=>d.equipmentKey)&&!/\b(?:for all|every|each)\s+(?:of\s+)?(?:the\s+)?(?:days?|workouts?)\b[^.]*\b(?:gym|dumbbells|bodyweight)\b/i.test(prompt)){
+     request.allowedEquipment=[];request.brainEquipment=null;request.scopedEquipmentOnly=true;
+   }
    request.programFocusRegions=[...programIntent.focusRegions];request.programFocusLabels=[...programIntent.focusLabels];
    coachBuildDraft=null;
    coachProgramBuildDraft={request,intent:programIntent,days:[],dayOverrides:[],interactiveBrainFlow:true,createdAt:new Date().toISOString()};
@@ -302,7 +307,7 @@ function openCoachSwolecat(reset=false){
     <div class="exercise-name" style="font-size:1.17rem;margin-top:5px">What do you need?</div>
      <div class="mini" style="margin-top:5px">Build a workout or ask about your logged training history. Coach routes history questions without creating a workout.</div>
     <div class="coach-voice-field" style="margin-top:12px"><textarea id="coachPrompt" class="coach-prompt" placeholder="Build chest + back... or ask: what did I bench last time?"></textarea>${coachVoiceButtonHtml('coachPrompt')}</div>
-    <div class="coach-example-row"><button class="coach-example" onclick="coachFillExample('Chest and back, 45 minutes, dumbbells and cables')">Chest + back</button><button class="coach-example" onclick="coachFillExample('3-day full body program, Monday Wednesday Friday, 45 minutes')">3-day plan</button><button class="coach-example" onclick="coachFillExample('Push pull legs program, 3 days, 60 minutes')">PPL</button></div>
+    <div class="coach-example-row"><button class="coach-example" onclick="coachFillExample('Chest and back, 45 minutes, dumbbells and cables')">Chest + back</button><button class="coach-example" onclick="coachFillExample('Help me build a 3-day split')">3-day plan</button><button class="coach-example" onclick="coachFillExample('Push pull legs program, 3 days, 60 minutes')">PPL</button></div>
    </div>
    <div><div class="mini" style="margin-bottom:6px">Primary goal</div><div class="picker-chips"><button class="chip active" data-coach-goal="hypertrophy" onclick="coachSetGoal('hypertrophy')">Muscle growth</button><button class="chip" data-coach-goal="strength" onclick="coachSetGoal('strength')">Strength</button><button class="chip" data-coach-goal="general" onclick="coachSetGoal('general')">General</button></div></div>
    <div class="actions"><button class="btn" onclick="coachSubmitPrompt()">Ask / Build</button><button class="btn secondary" onclick="closeModal()">Cancel</button></div>
