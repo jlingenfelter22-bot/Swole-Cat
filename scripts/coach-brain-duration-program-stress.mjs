@@ -475,6 +475,16 @@ assert.equal(allGear.ok,true,allGear.message);
 assert.deepEqual(Array.from(program().days.map(d=>d.request.brainEquipment?.choice)),['gym','gym','gym']);
 assert.equal(program().intent.dayPlans[1].focusKey,'back','global duration/equipment changes do not erase day muscle priority');
 assert.equal(w.eval('JSON.stringify(state.sessions)'),historyBefore);
+// Preset gym access on a specific day must not re-enable explicitly banned barbells.
+const noBarbellPrompt='3-day push pull legs Monday 50 minutes at the gym, Wednesday 50 minutes with dumbbells only, Friday 65 minutes at the gym, no barbells, for muscle growth, track only';
+w.document.getElementById=id=>id==='coachPrompt'?{value:noBarbellPrompt}:originalGetter;
+w.coachSubmitPrompt();w.document.getElementById=originalGetter;
+assert.equal(program().days.length,3);
+assert(program().days.every(day=>day.request.excludedEquipment.includes('barbell')));
+assert(program().days.every(day=>day.selectedIds.every(id=>w.exById(id)?.equipment!=='barbell')),
+ 'per-day gym preset must respect the user\'s global barbell ban');
+assert.equal(w.eval('JSON.stringify(state.sessions)'),historyBefore);
+
 console.log('COACH_V092_DAILY '+JSON.stringify({durations:scopedSaved.coachPlannedDays.map(d=>d.durationMinutes),equipment:scopedSaved.coachPlannedDays.map(d=>d.equipmentLabel)}));
 
 console.log('Brain duration + multi-turn + interactive program intake PASS',
