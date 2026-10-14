@@ -260,8 +260,10 @@ function coachRefineProgramText(text){
   changed=true;
  }
  if(program.preferredDays.length){
+   if(program.preferredDays.length!==intent.frequency){
+     return {ok:false,message:'You named '+program.preferredDays.length+' weekdays for a '+intent.frequency+'-day program. Add missing weekdays, explicitly change the days-per-week frequency, or choose a flexible schedule. Coach will not silently change your program.'};
+   }
    intent.preferredDays=[...program.preferredDays];
-   if(!program.frequency)intent.frequency=program.preferredDays.length;
    changed=true;structureChanged=true;
  }
  if(equipment.allowed.length){
@@ -340,7 +342,7 @@ function coachSubmitProgramAnswer(){
  const d=coachProgramBuildDraft;if(!d)return;
  const text=document.getElementById('coachProgramAnswer')?.value.trim()||'';
  if(!text){showToast('Tell Coach your preference or tap a choice');return}
- if(!d.intent.split&&/\b(?:help me choose|recommend|suggest|not sure|you choose)\b/i.test(text)){
+ if(!d.intent.split&&/\b(?:help me choose|recommend|suggest|not sure|unsure|i don'?t know|no idea|surprise me|up to you|your call|you choose)\b/i.test(text)){
   coachProgramIntake(d).splitAdvice=true;coachContinueProgramRequest();return;
  }
  const intent=d.intent,req=d.request,a=coachProgramIntake(d),parsed=coachParseProgramIntent(text),p=coachParsePrompt(text,req.goal);
