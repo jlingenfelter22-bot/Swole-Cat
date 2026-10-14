@@ -243,8 +243,8 @@ const press=choose(x=>w.exerciseMuscleMetadata(x).primary.includes('chest')&&x.p
 const posterior=choose(x=>x.pattern==='hinge','hinge');
 const fakeDay=(key,ids)=>({
  key,label:w.COACH_TARGET_GROUPS?.[key]?.label||key,
- selectedIds:[...ids],brainSetCounts:{},
- request:{targetRegions:[]},defaults:w.coachProgrammingDefaults('hypertrophy',60)
+ selectedIds:[...ids],brainSetCounts:Object.fromEntries(ids.map(id=>[id,{sets:3}])),
+ request:{goal:'hypertrophy',targetRegions:[],targetKeys:[],allowedEquipment:[],excludedEquipment:[],excludedExerciseIds:[],requiredExerciseIds:[]},defaults:w.coachProgrammingDefaults('hypertrophy',60)
 });
 const samplePlan={
  intent:{frequency:3,split:'custom',customSlots:['arms','back','legs']},
