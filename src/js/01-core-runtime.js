@@ -425,9 +425,14 @@ function syncViewportMetrics(){
 }
 function scrollFocusedFieldIntoView(){
  const active=document.activeElement;
- if(active&&/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)){
-   setTimeout(()=>{try{active.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}},60);
- }
+ if(!active||!/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName))return;
+ // Android resize and the sticky Coach composer already keep this focused
+ // control visible. Do not add a competing smooth center scroll.
+ if(active.closest?.('.coach-program-composer'))return;
+ setTimeout(()=>{
+  if(document.activeElement!==active)return;
+  try{active.scrollIntoView({block:'nearest',behavior:'instant'})}catch(e){}
+ },80);
 }
 async function configureNativeUi(){
  syncViewportMetrics();
@@ -443,6 +448,7 @@ async function configureNativeUi(){
      const height=Math.max(0,Number(info?.keyboardHeight)||0);
      document.documentElement.style.setProperty('--sc-keyboard-height',height+'px');
      document.body.classList.add('keyboard-open');
+      syncViewportMetrics();
      scrollFocusedFieldIntoView();
    });
    await keyboard?.addListener?.('keyboardWillHide',()=>{
