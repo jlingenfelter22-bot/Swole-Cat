@@ -601,7 +601,7 @@ function coachContinueProgramRequest(){
   }
   coachProgramQuestion('A few ways to organize your week',
    `<div class="mini" style="margin:6px 0 12px">You have ${intent.frequency} days. None of these splits is universally best. Choose one that fits your priorities and that you can maintain.</div>
-   <div class="coach-choice-grid">
+   <div class="coach-choice-grid coach-split-guidance">
     ${intent.frequency>=3?`<button class="btn secondary" onclick="coachAnswerProgramSplit('ppl')"><b>Push / Pull / Legs</b><span class="mini">Separate movement days; ${intent.frequency===3?'each category appears once per three-session rotation':'Coach rotates movement categories to match your training days'}.</span></button>`:`<div class="mini">Push / Pull / Legs needs three separate training days. Choose three days or another split.</div>`}
     <button class="btn secondary" onclick="coachAnswerProgramSplit('upper_lower')"><b>Upper / Lower</b><span class="mini">Alternate upper- and lower-body work as days rotate.</span></button>
     <button class="btn secondary" onclick="coachAnswerProgramSplit('custom')"><b>Custom body-part days</b><span class="mini">Pick each day yourself, useful when certain muscles are your focus.</span></button>
