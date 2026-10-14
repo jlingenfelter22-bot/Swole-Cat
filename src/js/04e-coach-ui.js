@@ -287,7 +287,7 @@ function coachSubmitPrompt(){
    const scoped=Object.values(programIntent.weekdayPlans||{});
    if(scoped.some(d=>d.duration)&&!/\b(?:each|every|per)\s+(?:single\s+)?workout\b/i.test(prompt))request.duration=0;
    if(scoped.some(d=>d.equipmentKey)&&!/\b(?:for all|every|each)\s+(?:of\s+)?(?:the\s+)?(?:days?|workouts?)\b[^.]*\b(?:gym|dumbbells|bodyweight)\b/i.test(prompt)){
-     request.allowedEquipment=[];request.brainEquipment=null;
+     request.allowedEquipment=[];request.brainEquipment=null;request.scopedEquipmentOnly=true;
    }
    request.programFocusRegions=[...programIntent.focusRegions];request.programFocusLabels=[...programIntent.focusLabels];
    coachBuildDraft=null;
