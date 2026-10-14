@@ -1,5 +1,16 @@
 # Swole Cat - Next Chat Handoff
 
+## CURRENT SIGNED TESTING — v0.93.1 / Android build 136 (Oct 14, 2026)
+
+- Owner requested **physical Android validation first**, ahead of broader full-program conversational editing. This is a **Testing-only** release authorization. Release PR [#76](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/76) squash-merged into `main` as `8f4649824f6f11c5104e59ae4e39a0a69dddfa62`. Code is consolidated from development [PR #75](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/75), including parent #72/#73 and the safe top-of-list Coach refinement UI from #74. It uses #73's full guarded contextual saved-program draft editor, not #74's narrower routine picker.
+- Release PR exact-head full validate **SUCCESS, all 94 workflow steps**, run [38601381548](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38601381548). Permanently signed Android Testing workflow **SUCCESS**, run [38601818071](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38601818071); main push validation triggered separately. No new signing key, no Beta push, no Supabase/account schema/data work.
+- **LIVE SIGNED APK**: [v0.93.1 prerelease](https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.93.1), downloadable [signed Testing APK](https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.93.1/swole-cat-testing-v0.93.1-signed.apk). Android `versionCode=136`; same package `com.jlingenfelter.swolecat.testing`. SHA256 `c87ad62db8a97c2cc16c52766fdda74ceeeb6bcd37e90a96d043a66e826b2c66` matches release asset and `updates/testing.json`. Original Testing signer cert SHA256 remains `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`. Testing updater feed advanced correctly, not forced.
+- **CURRENT NEXT ACTION**: owner updates existing installed Testing app *in place*, **never uninstall/clear storage or switch cloud accounts**, follows [Android phone acceptance checklist](coach-brain/ANDROID_PHONE_ACCEPTANCE_V0931.md). Focus: Gboard open/close and scroll jumping, composer located above day cards, tapping/scrolling through collapsed days, Wednesday-only update, summary scroll resets, saved-program Coach review/Cancel and guarded Apply on disposable data. Collect annotated screenshots/video and fix any true Android regressions.
+- **PHYSICAL ANDROID ACCEPTANCE STILL PENDING**. Successful CI and signed release do not mean real hardware layout/IME works. Do **not** implement broader saved-program full-freeform conversation until owner feedback/signoff; do not promote any of these changes to Beta. Beta branch stays at `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, v0.73.1. Optional intake design PR #71 remains separate. Cloud Coach Memory remains deferred.
+
+---
+
+
 ## CURRENT DEVELOPMENT CHECKPOINT — Unified Coach phone UX + protected saved-program editing (Oct 14, 2026)
 
 - Integration work is on `feature/coach-v094-consolidated-phone-ux`, based **directly on draft PR #73** (`feature/coach-v094-saved-program-edit`), which already includes parent PR #72. PR #74 was independently based on v0.93 main, **not** a descendant of #73; do not directly merge it over the more capable program editor.
