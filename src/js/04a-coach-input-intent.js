@@ -514,7 +514,12 @@ function coachParseProgramIntent(text){
    if(n>=3&&n<=8)deload={enabled:true,intervalWeeks:n};
   }
  }
- const focus=coachParseProgramFocus(lower),weekdayPlans=coachParseWeekdayPlans(text);
+ const weekdayPlans=coachParseWeekdayPlans(text);
+ // A weekday-specific request for more shoulders does not mean the whole week
+ // should prioritize shoulders. Only unscoped text defines program-wide focus.
+ const firstWeekday=lower.search(/\b(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)\b/);
+ const focusSource=Object.values(weekdayPlans).some(p=>p.focusKey)&&firstWeekday>=0?lower.slice(0,firstWeekday):lower;
+ const focus=coachParseProgramFocus(focusSource);
  const isProgram=/\b(program|plan|split|weekly|week)\b/.test(lower)||!!dayMatch||!!weekMatch||preferredDays.length>=2||!!split;
  return {isProgram,frequency,preferredDays,split,trainingMode,deload,customSlots:[],weekdayPlans,dayPlans:[],focusLabels:focus.labels,focusRegions:focus.regions};
 }
