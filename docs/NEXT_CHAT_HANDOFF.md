@@ -1,5 +1,16 @@
 # Swole Cat - Next Chat Handoff
 
+## LATEST RELEASE: Signed Testing v0.93.2, Android code 137 (October 14, 2026)
+
+- **Owner explicitly authorized Testing-only publication to verify floating Coach composer alignment and native Android Gboard smoothness.** [Release PR #78](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/78) merged using squash into `main` as `40e7b31a8f8c266e2ac19228e5b3f39cadbff8d3`. Contains validated dev PR #77's scoped Coach preview keyboard/scroll structure, title and prompt polish, and package version bump to 0.93.2 / code 137.
+- Exact-head release PR automated [CI 38629960773](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38629960773) **PASS, all 94 steps**. Signed Android Testing [workflow 38630527904](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38630527904) **SUCCESS** with original Testing signing key and signing verification.
+- **LIVE:** [Testing v0.93.2 GitHub prerelease](https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.93.2) and [signed in-place-update APK](https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.93.2/swole-cat-testing-v0.93.2-signed.apk). `updates/testing.json` is version `0.93.2`, versionCode `137`, package `com.jlingenfelter.swolecat.testing`, SHA-256 `fad0f6186bcea6b7f6e4763190d132e043193319f4cbdeb157c4d92aaa98214a`, signer cert SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`. Manifest URL and digest exactly match the actual GitHub release asset. Update is **optional**, not forced. User may install with existing in-app updater or directly over existing Testing APK; **do not uninstall, reset storage or switch cloud accounts**.
+- **Beta remains v0.73.1, branch `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, unchanged.** No Supabase/account/schema/cloud migration or historical workout modifications.
+- **Next checkpoint: real-device owner acceptance**. Owner to reproduce original screen-video bug while scrolling through long Coach program preview and opening/closing Gboard repeatedly; verify header and floating input stay joined, exercise section doesn't jump upward, back/voice/focus behave normally, and scrolling is smooth. See `docs/coach-brain/ANDROID_FLOATING_COMPOSER_FIELD_REVIEW_V0932.md`. Automated success does not certify physical Android behavior. Hold broader Coach full-program conversational editing until on-device outcome reviewed.
+
+---
+
+
 ## ACTIVE: Physical Android v0.93.1 Coach floating-bar feedback, v0.93.2 development-only correction (Oct 14, 2026)
 
 - User's ~44-second real phone capture of Testing v0.93.1: floating Coach composer is a positive direction but looks disconnected from upper modal region; day exercise text peeks **above** the dock at the top, and opening/closing the Android software keyboard repositions the long workout content/jumps around. Keep floating experience, fix scroll/IME layout deliberately without visual patch animations.
