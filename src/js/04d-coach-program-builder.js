@@ -397,6 +397,12 @@ function coachContinueProgramRequest(){
    `<div class="coach-choice-grid">${[2,3,4,5,6].map(n=>`<button class="btn secondary" onclick="coachAnswerProgramFrequency(${n})">${n} days</button>`).join('')}</div>`);
   return;
  }
+ if(intent.split==='ppl'&&intent.frequency<3){
+  coachProgramQuestion('Push / Pull / Legs needs three distinct sessions for all three days.',
+   `<div class="mini" style="margin:6px 0 10px">You asked for ${intent.frequency} training days, so a two-day PPL week would leave one category out. Coach won't silently drop legs, push, or pull.</div>
+   <div class="coach-choice-grid"><button class="btn secondary" onclick="coachAnswerProgramFrequency(3)">Train 3 days instead</button><button class="btn secondary" onclick="coachAnswerProgramSplit('upper_lower')">Keep 2 days, Upper / Lower</button><button class="btn secondary" onclick="coachAnswerProgramSplit('full_body')">Keep 2 days, Full Body</button><button class="btn secondary" onclick="coachAnswerProgramSplit('custom')">Keep 2 days, choose day focuses</button></div>`);
+  return;
+ }
  if(!intent.split&&a.splitAdvice){
   if(!a.goalAnswered&&!coachProgramHasExplicitGoal(req)){
    coachProgramQuestion('What is the main thing you want out of this program?',
@@ -407,7 +413,7 @@ function coachContinueProgramRequest(){
   coachProgramQuestion('A few ways to organize your week',
    `<div class="mini" style="margin:6px 0 12px">You have ${intent.frequency} days. None of these splits is universally best. Choose one that fits your priorities and that you can maintain.</div>
    <div class="coach-choice-grid">
-    <button class="btn secondary" onclick="coachAnswerProgramSplit('ppl')"><b>Push / Pull / Legs</b><span class="mini">Separate movement days; ${intent.frequency===3?'each category appears once per three-session rotation':'Coach rotates movement categories to match your training days'}.</span></button>
+    ${intent.frequency>=3?`<button class="btn secondary" onclick="coachAnswerProgramSplit('ppl')"><b>Push / Pull / Legs</b><span class="mini">Separate movement days; ${intent.frequency===3?'each category appears once per three-session rotation':'Coach rotates movement categories to match your training days'}.</span></button>`:`<div class="mini">Push / Pull / Legs needs three separate training days. Choose three days or another split.</div>`}
     <button class="btn secondary" onclick="coachAnswerProgramSplit('upper_lower')"><b>Upper / Lower</b><span class="mini">Alternate upper- and lower-body work as days rotate.</span></button>
     <button class="btn secondary" onclick="coachAnswerProgramSplit('custom')"><b>Custom body-part days</b><span class="mini">Pick each day yourself, useful when certain muscles are your focus.</span></button>
     <button class="btn secondary" onclick="coachAnswerProgramSplit('full_body')"><b>Full body</b><span class="mini">Practice major movement areas across multiple sessions, if that is what you prefer.</span></button>
@@ -418,7 +424,7 @@ function coachContinueProgramRequest(){
  if(!intent.split){
   coachProgramQuestion('What kind of split did you have in mind?',
    `<div class="coach-choice-grid">
-    <button class="btn secondary" onclick="coachAnswerProgramSplit('ppl')">Push / Pull / Legs</button>
+    ${intent.frequency>=3?`<button class="btn secondary" onclick="coachAnswerProgramSplit('ppl')">Push / Pull / Legs</button>`:`<div class="mini">PPL needs at least 3 training days.</div>`}
     <button class="btn secondary" onclick="coachAnswerProgramSplit('upper_lower')">Upper / Lower rotation</button>
     <button class="btn secondary" onclick="coachAnswerProgramSplit('custom')">Choose each day's muscle focus</button>
     <button class="btn secondary" onclick="coachAnswerProgramSplit('full_body')">Full body each day</button><button class="btn secondary" onclick="coachAskForSplitRecommendation()">Help me choose</button></div>`,
