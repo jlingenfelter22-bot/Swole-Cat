@@ -1,5 +1,24 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-14 · Testing v0.93.0 Coach Integrated Phone Candidate
+
+**Current signed Testing:** v0.93.0 / Android versionCode **135**, package `com.jlingenfelter.swolecat.testing`, unchanged permanent Testing signing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+
+- Owner explicitly **authorized the signed Testing candidate** for physical Android combined-Coach review, but gave **no Beta promotion authorization**.
+- Integration release PR [#70](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/70) merged the full v0.90–v0.93 Coach stack into `main` in one squash commit `05f65acf2506408abfe493b93b0ec437d76145be`. v0.90 intent-first interactive setup; v0.91 opt-in split guidance and read-only whole-week audit; v0.92 per-day time/gear/focus/editing; v0.93 mobile previews and narrow-screen DOM acceptance. Original development PRs #66–#69 are superseded by #70, not to be merged separately.
+- Release PR validation **94/94 PASS** [38581996912](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38581996912); post-merge main validation **94/94 PASS** [38582524614](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38582524614); Testing Android signed build/package/version/certificate verification **PASS** [38582524189](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38582524189).
+- Published prerelease: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.93.0
+- Direct APK: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.93.0/swole-cat-testing-v0.93.0-signed.apk
+- Signed APK SHA-256 **`9730aafc2b16b22f855a28e3e5d656076d40dff5ed5a4294af3599d312bfaf4c`** is independently matched in GitHub release asset digest and `updates/testing.json`. Testing updater channel now points to v0.93.0/code135; in-place installation over v0.89.0 is supported by unchanged package name and signing certificate.
+- **Beta untouched**: Beta branch `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`; field Beta remains v0.73.1. No Supabase migrations/account mutations, live workout history changes, keystore changes or forced updater action in release.
+- **NEXT APPROVAL GATE:** owner installs/updates existing Testing **in place**, does not uninstall/reset or switch cloud accounts. Review conversational split selection, 3-day mixed-gear 30/45/75-minute PPL, whole-week warnings, Adjust Day, keyboard/scroll/voice, visible Swap/Remove, Save vs Start on actual phone. Ask for feedback screenshots/video, note any clipping/input issues. `docs/coach-brain/ANDROID_ACCEPTANCE_V093.md` is the review matrix. Automated JSDOM passing is **not** physical Android acceptance.
+- Next after physical feedback: targeted UX/logic remediation in Testing; later compare stopwatch observations with time estimates, and **only** promote to Beta with separate explicit owner approval. Deferred Cloud Coach Memory remains future roadmap design, not a shipped feature.
+
+Older milestones below are historical.
+
+---
+
+
 ## Latest milestone: 2026-10-13 · Testing v0.89.0 Coach Brain Real-Device Acceptance Release
 
 **Current signed Testing:** v0.89.0 / Android build **134**, permanent Testing signature unchanged and in-app updater advanced.
