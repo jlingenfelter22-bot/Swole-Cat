@@ -374,6 +374,13 @@ assert.equal(program().request.scopedEquipmentOnly,true);
 assert.deepEqual(Array.from(program().days.map(d=>d.request.brainEquipment?.choice)),['gym','dumbbells','gym']);
 assert.deepEqual(Array.from(program().days.map(d=>d.request.duration)),[30,45,75]);
 assert(program().days[1].selectedIds.every(id=>w.coachBrainExerciseService().evaluateAvailability(id,w.coachBrainEquipmentConstraints(program().days[1].request)).status==='available'));
+assert(program().days.every(d=>d.brainTime?.targetMinutes===d.request.duration),'each day needs its own correct time target');
+console.log('COACH_V092_MIXED '+JSON.stringify({days:program().days.map(d=>({
+ label:d.label,time:d.request.duration,estimate:d.brainTime?.estimateMinutes,
+ range:[d.brainTime?.lowerMinutes,d.brainTime?.upperMinutes],
+ equipment:d.request.brainEquipment?.label,
+ exercises:d.selectedIds.map(id=>w.exById(id)?.name)
+}))}));
 
 // Once built, a single-weekday edit updates only that day and preserves the 3-day split.
 const priorPlan=program().days.map(d=>d.selectedIds.join(','));
