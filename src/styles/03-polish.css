@@ -912,7 +912,7 @@
   .modal-mode-coach-program .sheet-head{
     flex:0 0 auto;
     min-height:50px;
-    margin:0 0 6px;
+    margin:0;
     padding:0 2px 10px;
     border-bottom:1px solid rgba(167,139,250,.21);
     background:#111722;
