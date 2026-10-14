@@ -109,7 +109,7 @@ assert.equal(w.eval('JSON.stringify({sessions:state.sessions,routines:state.rout
 // JSDOM does not compute pixel layouts; physical phone remains a separate gate.
 const css=fs.readFileSync('src/styles/03-polish.css','utf8');
 const base=fs.readFileSync('src/styles/00-base.css','utf8');
-assert(css.includes('@media(max-width:430px){')&&css.includes('.coach-choice-grid.coach-split-guidance{grid-template-columns:minmax(0,1fr}'),'rich split guidance has one-column mobile layout');
+assert(css.includes('@media(max-width:430px){')&&css.includes('.coach-choice-grid.coach-split-guidance{grid-template-columns:minmax(0,1fr)}'),'rich split guidance has one-column mobile layout');
 assert(css.includes('.coach-program-exercise-row{flex-wrap:wrap'));
 assert(css.includes('.coach-program-exercise-actions .btn{min-width:0;min-height:44px}'));
 assert(css.includes('.coach-program-save-actions .btn{min-height:48px'));
