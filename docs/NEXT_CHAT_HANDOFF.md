@@ -1,5 +1,17 @@
 # Swole Cat - Next Chat Handoff
 
+## ACTIVE DEVELOPMENT CHECKPOINT: Coach v0.93 Mobile Acceptance (October 14, 2026)
+
+- User explicitly authorized proceeding to the next Coach checkpoint after deferring Cloud Coach Memory in the Phase 12 roadmap. No APK release or Beta promotion approval was given.
+- Draft PR [#69](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/69) branch `feature/coach-v093-mobile-acceptance` adds narrow-screen polish and acceptance tests on top of v0.92 [#68](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/68), v0.91 [#67](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/67), v0.90 [#66](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/66). Temporary PR #69 base `main` is solely to trigger existing full CI; restore base to `feature/coach-v092-per-day-planning` after green checks.
+- Mobile UX: rich split recommendation cards one-column at <=430px, readable program exercise rows with Swap/Remove below title, better touch targets, stacked Save/Save+Start controls, 16px day-edit form inputs. Custom equipment remains hidden/disabled unless selected; correct overview label for equipment scoped by day. No Coach programming logic, cloud schema, auth, sync or saved history changes.
+- Mobile DOM acceptance `scripts/coach-mobile-program-acceptance.mjs` is now a `validate.yml` CI gate; it renders actual modal HTML, checks labels, split advice, day card actions, custom gear disclosure, validation rollback, per-day refinements, save-button separation, CSS contracts and no history writes.
+- **Important limit:** Synthetic JSDOM tests do **not** show Android WebView visuals, actual keyboard behavior, true hit target measurements, device scrolling or speech recognition. A physical Android owner review remains **PENDING** per `docs/coach-brain/ANDROID_ACCEPTANCE_V093.md`; do not conflate a green CI with device signoff.
+- Latest signed Testing remains v0.89.0 code 134; separate Beta v0.73.1 unchanged; owner must separately approve any signed Testing release. Cloud Coach Memory remains deferred in `docs/ROADMAP.md`.
+
+---
+
+
 ## OWNER DIRECTION: Cloud Coach Memory deferred; continue Coach quality (October 14, 2026)
 
 - Explicit owner request: document **Cloud Coach Memory** in canonical future roadmap and **continue existing Coach engineering first**. Logged as **deferred** in `docs/ROADMAP.md` → Phase 12. Proposed optional Lifetime Pro value: private account-owned preferences, compact workout-history context and cross-device memory; preserve free/offline local Coach. No schema migrations, Supabase mutations, entitlements, new AI vendor, unlimited inference promise or added subscription.
