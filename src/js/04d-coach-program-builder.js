@@ -819,6 +819,7 @@ function coachOpenSavedProgramEditor(programId){
   programId:p.id,
   originalProgram:cloneData(p),
   originalRoutines:originals.map(cloneData),
+  signedInOwnerId:typeof syncIdentityUser==='function'?(syncIdentityUser()?.id||null):null,
   program:cloneData(p),
   routines:originals.map(cloneData),
   notes:[],
@@ -980,6 +981,10 @@ function coachSubmitSavedProgramEdit(){
 }
 function coachApplySavedProgramEdits(){
  const d=coachSavedProgramEditDraft;if(!d||!coachSavedProgramEditorChanged(d)){showToast('No changes to apply');return false}
+ const ownerNow=typeof syncIdentityUser==='function'?(syncIdentityUser()?.id||null):null;
+ if(ownerNow!==d.signedInOwnerId){
+  showToast('Cloud account changed. Reopen the editor in the current workspace.');return false;
+ }
  const p=programById(d.programId);
  if(!p||coachSavedProgramEditorProgramSnapshot(p)!==coachSavedProgramEditorProgramSnapshot(d.originalProgram)){
   showToast('This program changed since Coach opened it. Reopen the editor.');return false;
