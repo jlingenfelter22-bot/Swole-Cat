@@ -1108,6 +1108,17 @@ The feature should remain training-focused. Full social-media feeds, public foll
 
 These are intentionally later because they depend on the data model and core experience being stable.
 
+### Deferred — Cloud Coach Memory (Lifetime Pro exploration)
+
+**Owner-approved roadmap direction (2026-10-14); not approved for implementation or release yet.** Revisit after the current Coach conversational intake, whole-week coverage, per-day constraint-quality work, actual Android acceptance, and cloud-account isolation testing have stabilized. Do **not** interrupt the current v0.90–v0.92 quality work or change cloud schemas/accounts now.
+
+- **What it could unlock:** An optional, owner-specific Coach memory synchronized across a person's devices: explicitly confirmed equipment access, typical time limits, preferred/excluded movements, program structure, user-approved coaching preferences, and compact summaries derived from the user's own completed workouts (e.g. recent actual session duration, consistent substitutions, comparable performance patterns).
+- **Why it matters:** Coach can personalize a new program or answer a history-informed question without repeatedly asking for context already consented to. Suggestions must cite the underlying history/assumption, distinguish observations from recommendations, and offer user review before changing any program.
+- **Architecture direction:** Keep the free **local Coach** fully functional offline; cloud is a complementary account-owned context/sync layer, not a required source of reasoning. Prefer bounded deterministic analysis and syncable summarized data first, behind existing provider-neutral runtime service contracts.
+- **Privacy and safety prerequisites:** Strict Google/Supabase account ownership and verified row-level security, no cross-account merges or shared memory, explicit opt-in for retaining durable coaching preferences, review/edit/delete controls, conservative data retention, and no training a general model on private workout data. Never mistake synthetic/partial sessions for evidence or infer medical readiness.
+- **Monetization guardrail:** Explore as a value-add to the optional **one-time Swole Cat Pro lifetime unlock** (initial target $7.99); preserve the no-subscription, ad-free/free-core principles. Storage and bounded analyses have ongoing operating costs to budget. Unlimited paid-model conversations carry recurring per-use expense and are **not** included in this commitment; any optional LLM offering needs a separate product/financial/privacy decision.
+- **Implementation gate:** Owner approval of exact data inventory, permission and revocation UX, storage/RLS design, bounded compute budget, export/account switching behavior, non-regression tests and real Android UX. No Supabase deployment, subscription changes, keys, or API spend authorized by this roadmap entry.
+
 Possible directions:
 - advanced Coach Swole Cat intelligence beyond the Phase 6 local builder
 - program templates
