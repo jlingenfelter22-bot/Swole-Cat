@@ -264,20 +264,20 @@ function renderCoachProgramPreview(){
  const draft=coachProgramBuildDraft;if(!draft)return;
  const req=draft.request,intent=draft.intent,coverage=coachProgramCoverageText(draft);
  const varied= draft.days.some((day,di)=>day.request.duration!==draft.days[0]?.request.duration||day.request.brainEquipment?.choice!==draft.days[0]?.request.brainEquipment?.choice);
- const equipment=coachBrainResolveEquipment(req)?.label||(req.allowedEquipment.length?req.allowedEquipment.join(', '):'Equipment not specified');
+ const equipment=coachBrainResolveEquipment(req)?.label||(req.allowedEquipment.length?req.allowedEquipment.join(', '):draft.days.every(day=>day.request.brainEquipment)?'Equipment varies by day':'Equipment not specified');
  openModal('Coach Swolecat',`
   <div class="coach-builder">
    <div class="coach-console">
     <div class="eyebrow">PROGRAM BUILD // LOCAL ENGINE</div>
-    <div class="coach-preview-head"><div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(coachProgramName(req,intent))}</div><div class="mini" style="margin-top:5px">${intent.frequency} workouts · ${esc(coachProgramScheduleText(draft))} · ${varied?'session settings vary by day':`each workout targets about ${draft.days[0]?.request.duration||req.duration} minutes`}</div></div><span class="tag">${esc(coachProgramSplitLabel(intent.split))}</span></div>
+    <div class="coach-preview-head"><div class="coach-preview-heading"><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(coachProgramName(req,intent))}</div><div class="mini" style="margin-top:5px">${intent.frequency} workouts · ${esc(coachProgramScheduleText(draft))} · ${varied?'session settings vary by day':`each workout targets about ${draft.days[0]?.request.duration||req.duration} minutes`}</div></div><span class="tag">${esc(coachProgramSplitLabel(intent.split))}</span></div>
     ${draft.lastRefinement?`<div class="mini" style="margin-top:8px"><b>Last change:</b> ${esc(draft.lastRefinement)}</div>`:''}
     <div class="coach-preview-meta"><span class="tag">${esc(coachGoalLabel(req.goal))}</span><span class="tag">${esc(equipment)}</span><span class="tag">${intent.frequency}×/week</span><span class="tag">${esc(programTrainingModeLabel(intent.trainingMode||'inherit'))}</span></div>
      ${intent.trainingMode==='guided'?`<div class="mini" style="margin-top:9px">Deloads: ${intent.deload?.enabled?`every ${intent.deload.intervalWeeks}th training week, subject to your confirmation`:'not scheduled (you can add these later)'}</div>`:''}
    </div>
    <div class="coach-exercise-list">
-    ${draft.days.map((day,di)=>`<div class="card" style="margin:0">
-      <div class="row"><div><div class="eyebrow">DAY ${di+1}</div><div class="exercise-name" style="margin-top:4px">${esc(day.label)}</div><div class="mini">${day.selectedIds.length} exercises · ${day.brainTime?`about ${day.brainTime.estimateMinutes} min (range ${day.brainTime.lowerMinutes}–${day.brainTime.upperMinutes})`:`${day.defaults.sets} sets each`} · ${day.defaults.minReps}–${day.defaults.maxReps} reps</div><button class="btn small secondary" style="margin-top:7px" onclick="coachEditProgramDay(${di})" aria-label="Adjust ${esc(day.label)} time equipment and focus">Adjust day</button>${coachProgramDayPlanSummary(day)?`<div class="mini" style="margin-top:5px">${esc(coachProgramDayPlanSummary(day))}</div>`:''}</div>${intent.preferredDays?.[di]!=null?`<span class="tag">${PROGRAM_DAYS[intent.preferredDays[di]]}</span>`:''}</div>
-      <div style="margin-top:9px">${day.selectedIds.map((id,ei)=>{const ex=exById(id);return `<div class="list-item"><div class="grow"><div class="exercise-name">${esc(ex?.name||'Exercise')} ${preferenceBadgeHtml(id)}</div><div class="mini">${esc(coachExerciseReason(ex,day.request))} · ${day.brainSetCounts?.[id]?.sets||coachExercisePrescription(ex,day.request,day.defaults).sets} working sets</div></div><div class="actions" style="margin:0"><button class="btn small secondary" onclick="coachProgramSwapExercise(${di},${ei})">Swap</button><button class="btn small secondary" onclick="coachProgramRemoveExercise(${di},${ei})">Remove</button></div></div>`}).join('')}</div>
+    ${draft.days.map((day,di)=>`<div class="card coach-program-day-card" style="margin:0">
+      <div class="row coach-program-day-head"><div class="coach-program-day-summary"><div class="eyebrow">DAY ${di+1}</div><div class="exercise-name" style="margin-top:4px">${esc(day.label)}</div><div class="mini">${day.selectedIds.length} exercises · ${day.brainTime?`about ${day.brainTime.estimateMinutes} min (range ${day.brainTime.lowerMinutes}–${day.brainTime.upperMinutes})`:`${day.defaults.sets} sets each`} · ${day.defaults.minReps}–${day.defaults.maxReps} reps</div><button class="btn small secondary" style="margin-top:7px" onclick="coachEditProgramDay(${di})" aria-label="Adjust ${esc(day.label)} time equipment and focus">Adjust day</button>${coachProgramDayPlanSummary(day)?`<div class="mini" style="margin-top:5px">${esc(coachProgramDayPlanSummary(day))}</div>`:''}</div>${intent.preferredDays?.[di]!=null?`<span class="tag">${PROGRAM_DAYS[intent.preferredDays[di]]}</span>`:''}</div>
+      <div style="margin-top:9px">${day.selectedIds.map((id,ei)=>{const ex=exById(id);return `<div class="list-item coach-program-exercise-row"><div class="grow"><div class="exercise-name">${esc(ex?.name||'Exercise')} ${preferenceBadgeHtml(id)}</div><div class="mini">${esc(coachExerciseReason(ex,day.request))} · ${day.brainSetCounts?.[id]?.sets||coachExercisePrescription(ex,day.request,day.defaults).sets} working sets</div></div><div class="actions coach-program-exercise-actions" style="margin:0"><button class="btn small secondary" onclick="coachProgramSwapExercise(${di},${ei})">Swap</button><button class="btn small secondary" onclick="coachProgramRemoveExercise(${di},${ei})">Remove</button></div></div>`}).join('')}</div>
     </div>`).join('')}
    </div>
    ${coverage?`<div class="coach-rationale"><b>Planned weekly set-equivalents:</b> ${esc(coverage)}.<br><span class="mini">Primary involvement counts as 1.0 set and secondary involvement as 0.5. This is a planning aid, not a claim about muscle damage or recovery.</span></div>`:''}
@@ -286,7 +286,7 @@ function renderCoachProgramPreview(){
    ${coachBrainEquipmentPreviewNotice(req)?`<div class="notice">${esc(coachBrainEquipmentPreviewNotice(req))}</div>`:''}
    ${draft.days.some(day=>day.brainTime?.overTarget)?`<div class="notice">One or more days exceed your requested time at the estimated midpoint. Review the work or allow more time before saving.</div>`:draft.days.some(day=>day.brainTime&&day.brainTime.upperMinutes>day.brainTime.targetMinutes)?`<div class="notice">Some days could run past your target if warm-ups, equipment transitions or rest take longer. Each day's time range is a planning estimate, not a guaranteed finish time.</div>`:''}
    <div class="notice">Coach distributes work across the week using your requested frequency, split, equipment, goal, exercise preferences, completed training history, planned muscle set-equivalents from earlier program days, and progression continuity. Weekly workload is used as programming context only; the plan does not diagnose recovery or medical readiness.</div>
-   <div class="actions"><button class="btn green" onclick="coachStartProgramFirstWorkout()">Save + Start Day 1</button><button class="btn" onclick="coachSaveGeneratedProgram()">Save Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
+   <div class="actions coach-program-save-actions"><button class="btn green" onclick="coachStartProgramFirstWorkout()">Save + Start Day 1</button><button class="btn" onclick="coachSaveGeneratedProgram()">Save Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
   </div>`);
 }
 // Dedicated day editor keeps controls accessible on narrow Android screens.
@@ -301,7 +301,7 @@ function coachEditProgramDay(index){
   .filter(k=>(COACH_TARGET_GROUPS[k]?.regions||[]).some(m=>day.request.targetRegions.includes(m)))
   .map(k=>[k,'More '+COACH_TARGET_GROUPS[k].label])];
  const focus=plan.focusKey||'none';
- openModal('Coach Swolecat',`<div class="coach-builder">
+ openModal('Coach Swolecat',`<div class="coach-builder coach-day-editor">
    <div class="coach-console">
     <div class="eyebrow">PROGRAM DAY ${index+1} // ADJUST</div>
     <div class="exercise-name" style="font-size:1.1rem">${esc(day.label)}</div>
@@ -310,14 +310,26 @@ function coachEditProgramDay(index){
    <label for="coachDayMinutes">Time available for this workout (15–120 minutes)</label>
    <input id="coachDayMinutes" class="search" type="number" min="15" max="120" step="1" value="${plan.duration||day.request.duration}" aria-label="Minutes for this workout">
    <label for="coachDayEquipment">Equipment available for this workout</label>
-   <select id="coachDayEquipment" class="search" aria-label="Equipment for this workout">${equipmentChoices.map(([id,label])=>`<option value="${id}"${key===id?' selected':''}>${esc(label)}</option>`).join('')}</select>
-   <label for="coachDayCustomEquipment">Other equipment (only when selected above)</label>
-   <input id="coachDayCustomEquipment" class="search" aria-label="Other equipment for this workout" maxlength="160" placeholder="Dumbbells and cables..." value="${escAttr(plan.equipmentText||'')}">
+   <select id="coachDayEquipment" class="search" aria-label="Equipment for this workout" onchange="coachToggleProgramDayCustomEquipment()">${equipmentChoices.map(([id,label])=>`<option value="${id}"${key===id?' selected':''}>${esc(label)}</option>`).join('')}</select>
+   <div class="coach-day-custom-field" id="coachDayCustomBlock" ${key==='custom'?'':'hidden'}>
+    <label for="coachDayCustomEquipment">Other equipment</label>
+    <input id="coachDayCustomEquipment" class="search" aria-label="Other equipment for this workout" maxlength="160" placeholder="Dumbbells and cables..." value="${escAttr(plan.equipmentText||'')}" ${key==='custom'?'':'disabled'}>
+   </div>
    <label for="coachDayFocus">Extra emphasis on this day</label>
    <select id="coachDayFocus" class="search" aria-label="Extra focus for this workout">${focusChoices.map(([id,label])=>`<option value="${id}"${focus===id?' selected':''}>${esc(label)}</option>`).join('')}</select>
    <div class="mini">Only muscle groups already within ${esc(day.label)} are offered; change the split separately if you want a different day type.</div>
    <div class="actions"><button class="btn" onclick="coachSaveProgramDaySettings(${index})">Apply to Day ${index+1}</button><button class="btn secondary" onclick="renderCoachProgramPreview()">Cancel</button></div>
   </div>`);
+}
+function coachToggleProgramDayCustomEquipment(){
+ const custom=document.getElementById('coachDayEquipment')?.value==='custom';
+ const wrap=document.getElementById('coachDayCustomBlock');
+ const input=document.getElementById('coachDayCustomEquipment');
+ if(wrap)wrap.hidden=!custom;
+ if(input){
+  input.disabled=!custom;
+  if(custom)input.focus();
+ }
 }
 function coachSaveProgramDaySettings(index){
  const draft=coachProgramBuildDraft,day=draft?.days?.[index];if(!day)return false;
