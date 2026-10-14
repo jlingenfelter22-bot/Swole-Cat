@@ -248,6 +248,64 @@ function renderCoachProgramPreview(){
    <div class="actions"><button class="btn green" onclick="coachStartProgramFirstWorkout()">Save + Start Day 1</button><button class="btn" onclick="coachSaveGeneratedProgram()">Save Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
   </div>`);
 }
+// Dedicated day editor keeps controls accessible on narrow Android screens.
+// It changes the unsaved draft only after successful feasibility regeneration.
+function coachEditProgramDay(index){
+ const draft=coachProgramBuildDraft,day=draft?.days?.[index];if(!day)return;
+ const plan=coachProgramEffectiveDayPlan(draft.intent,index);
+ const key=plan.equipmentKey||'inherit';
+ const equipmentChoices=[['inherit','Use program equipment'],['gym','Gym (common equipment)'],
+  ['dumbbells','Dumbbells + bodyweight'],['bodyweight','Bodyweight only'],['custom','Other equipment']];
+ const focusChoices=[['none','Keep the usual day focus'],...['chest','back','shoulders','arms','biceps','triceps','quads','hamstrings','glutes','calves','core']
+  .filter(k=>(COACH_TARGET_GROUPS[k]?.regions||[]).some(m=>day.request.targetRegions.includes(m)))
+  .map(k=>[k,'More '+COACH_TARGET_GROUPS[k].label])];
+ const focus=plan.focusKey||'none';
+ openModal('Coach Swolecat',`<div class="coach-builder">
+   <div class="coach-console">
+    <div class="eyebrow">PROGRAM DAY ${index+1} // ADJUST</div>
+    <div class="exercise-name" style="font-size:1.1rem">${esc(day.label)}</div>
+    <div class="mini" style="margin-top:7px">Adjust only this session. Your chosen split, other days and previous workout history stay the same.</div>
+   </div>
+   <label for="coachDayMinutes">Time available for this workout (15–120 minutes)</label>
+   <input id="coachDayMinutes" class="search" type="number" min="15" max="120" step="1" value="${plan.duration||day.request.duration}" aria-label="Minutes for this workout">
+   <label for="coachDayEquipment">Equipment available for this workout</label>
+   <select id="coachDayEquipment" class="search" aria-label="Equipment for this workout">${equipmentChoices.map(([id,label])=>`<option value="${id}"${key===id?' selected':''}>${esc(label)}</option>`).join('')}</select>
+   <label for="coachDayCustomEquipment">Other equipment (only when selected above)</label>
+   <input id="coachDayCustomEquipment" class="search" aria-label="Other equipment for this workout" maxlength="160" placeholder="Dumbbells and cables..." value="${escAttr(plan.equipmentText||'')}">
+   <label for="coachDayFocus">Extra emphasis on this day</label>
+   <select id="coachDayFocus" class="search" aria-label="Extra focus for this workout">${focusChoices.map(([id,label])=>`<option value="${id}"${focus===id?' selected':''}>${esc(label)}</option>`).join('')}</select>
+   <div class="mini">Only muscle groups already within ${esc(day.label)} are offered; change the split separately if you want a different day type.</div>
+   <div class="actions"><button class="btn" onclick="coachSaveProgramDaySettings(${index})">Apply to Day ${index+1}</button><button class="btn secondary" onclick="renderCoachProgramPreview()">Cancel</button></div>
+  </div>`);
+}
+function coachSaveProgramDaySettings(index){
+ const draft=coachProgramBuildDraft,day=draft?.days?.[index];if(!day)return false;
+ const minutes=Number(document.getElementById('coachDayMinutes')?.value);
+ const equipmentKey=document.getElementById('coachDayEquipment')?.value||'inherit';
+ const equipmentText=(document.getElementById('coachDayCustomEquipment')?.value||'').trim();
+ const focusKey=document.getElementById('coachDayFocus')?.value||'none';
+ if(!Number.isInteger(minutes)||minutes<15||minutes>120){showToast('Choose 15–120 minutes for this day');return false}
+ if(!['inherit','gym','dumbbells','bodyweight','custom'].includes(equipmentKey)){showToast('Choose a valid equipment option');return false}
+ if(equipmentKey==='custom'){
+  const check=coachBrainApplyEquipmentChoice(day.request,'custom',equipmentText);
+  if(!check.ok){showToast(check.message);return false}
+ }
+ if(focusKey!=='none'&&!(COACH_TARGET_GROUPS[focusKey]?.regions||[]).some(m=>day.request.targetRegions.includes(m))){
+  showToast('Choose a muscle group within this workout focus');return false;
+ }
+ const updated={...draft.intent,preferredDays:[...(draft.intent.preferredDays||[])],
+  dayPlans:[...(draft.intent.dayPlans||[])].map(p=>({...p})),
+  weekdayPlans:{...(draft.intent.weekdayPlans||{})}};
+ updated.dayPlans[index]={duration:minutes,equipmentKey,
+  equipmentText:equipmentKey==='custom'?equipmentText:'',focusKey};
+ const previous={...draft,dayOverrides:draft.dayOverrides};
+ if(!coachGenerateProgram(draft.request,updated,previous)){
+  showToast('These day-specific constraints could not produce a workable workout. Try more time or different equipment.');
+  return false;
+ }
+ coachProgramBuildDraft.lastRefinement='Adjusted '+day.label+' only';
+ renderCoachProgramPreview();return true;
+}
 function coachProgramRegenerateWithOverrides(){
  const draft=coachProgramBuildDraft;if(!draft)return false;
  const previous={...draft,lastRefinement:draft.lastRefinement,dayOverrides:draft.dayOverrides};
