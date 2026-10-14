@@ -134,6 +134,10 @@ assert.equal(program().intent.deload.intervalWeeks,4);
 assert.equal(program().days.length,3);
 assert.match(modal,/PROGRAM BUILD/);
 assert.match(modal,/Custom Body-Part Split/);
+assert(program().days[0].request.priorityRegions.includes('biceps')&&program().days[0].request.priorityRegions.includes('triceps'),
+ 'unspecified custom Arms day should prioritize biceps/triceps');
+const firstArms=w.exerciseMuscleMetadata(w.exById(program().days[0].selectedIds[0])).primary;
+assert(firstArms.includes('biceps')||firstArms.includes('triceps'),'wrist-curl accessories should not be first in a general Arms day');
 console.log('COACH_V091_REVIEW '+JSON.stringify({scenario:'Custom Arms/Back/Legs',split:program().intent.split,days:program().days.map(d=>({label:d.label,exercises:d.selectedIds.map(id=>w.exById(id)?.name),minutes:d.brainTime?.estimateMinutes,range:[d.brainTime?.lowerMinutes,d.brainTime?.upperMinutes]})),review:w.coachBrainProgramWeekReview(program()).notes}));
 const savedCustom=w.coachPersistGeneratedProgram();
 assert.equal(savedCustom.trainingMode,'guided','generated program must save explicit training mode');
