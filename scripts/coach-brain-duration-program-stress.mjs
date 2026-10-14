@@ -333,6 +333,98 @@ assert.equal(w.coachBrainProgramWeekReview(regularPlan).notes.length,0,'adequate
 startProgram('3-day push pull legs Monday Wednesday Friday 60 minutes at a full gym for muscle growth track only');
 assert.match(modal,/WHOLE-WEEK REVIEW/,'rendered preview includes live whole-week analysis');
 
+
+// v0.92: weekday-scoped instructions must not become global plan defaults.
+const variedPrompt='3-day push pull legs, at a full gym, Monday 30 minutes, Wednesday 45 minutes, Friday 75 minutes, for muscle growth, track only';
+const parsedDayIntent=w.coachParseProgramIntent(variedPrompt);
+assert.equal(parsedDayIntent.weekdayPlans[1].duration,30);
+assert.equal(parsedDayIntent.weekdayPlans[3].duration,45);
+assert.equal(parsedDayIntent.weekdayPlans[5].duration,75);
+const originalGetter=w.document.getElementById.bind(w.document);
+w.document.getElementById=id=>id==='coachPrompt'?{value:variedPrompt}:originalGetter(id);
+w.coachSubmitPrompt();
+w.document.getElementById=originalGetter;
+assert.equal(program().days.length,3,'complete day-level program should not require a fake shared time');
+assert.equal(program().request.duration,0,'weekday 30 min cannot silently become the global program limit');
+assert.deepEqual(Array.from(program().days.map(d=>d.request.duration)),[30,45,75]);
+assert.match(modal,/settings vary by day/);
+assert.match(modal,/Adjust day/);
+assert.match(modal,/WHOLE-WEEK REVIEW/);
+assert.equal(program().intent.trainingMode,'track');
+assert.deepEqual(Array.from(program().intent.preferredDays),[1,3,5]);
+
+// A partially specified week must ask how long unspecified sessions take.
+const partialPrompt='3-day push pull legs, at a full gym, Monday 30 minutes, Wednesday 45 minutes, Friday flexible, for muscle growth';
+w.document.getElementById=id=>id==='coachPrompt'?{value:partialPrompt}:originalGetter(id);
+w.coachSubmitPrompt();w.document.getElementById=originalGetter;
+assert.match(modal,/How much time do you have per workout/i);
+assert.equal(program().request.duration,0);
+w.coachAnswerProgramDuration(60);
+assert.match(modal,/How would you like to track progression/);
+w.coachAnswerProgramTrainingMode('track');
+assert.deepEqual(Array.from(program().days.map(d=>d.request.duration)),[30,45,60]);
+
+// Distinct equipment by weekday, with NO implied full-week machine access.
+const scopedPrompt='3-day push pull legs Monday 30 minutes at the gym, Wednesday 45 minutes with dumbbells only, Friday 75 minutes at the gym, for muscle growth, track only';
+w.document.getElementById=id=>id==='coachPrompt'?{value:scopedPrompt}:originalGetter(id);
+w.coachSubmitPrompt();w.document.getElementById=originalGetter;
+assert.equal(program().days.length,3);
+assert.equal(program().request.brainEquipment,null,'equipment scoped to weekdays cannot be elevated to global gym access');
+assert.equal(program().request.scopedEquipmentOnly,true);
+assert.deepEqual(Array.from(program().days.map(d=>d.request.brainEquipment?.choice)),['gym','dumbbells','gym']);
+assert.deepEqual(Array.from(program().days.map(d=>d.request.duration)),[30,45,75]);
+assert(program().days[1].selectedIds.every(id=>w.coachBrainExerciseService().evaluateAvailability(id,w.coachBrainEquipmentConstraints(program().days[1].request)).status==='available'));
+
+// Once built, a single-weekday edit updates only that day and preserves the 3-day split.
+const priorPlan=program().days.map(d=>d.selectedIds.join(','));
+const originalPreferred=JSON.stringify(program().intent.preferredDays);
+const mid=w.coachRefineProgramText('Wednesday 55 minutes');
+assert.equal(mid.ok,true,JSON.stringify(mid));
+assert.deepEqual(Array.from(program().days.map(d=>d.request.duration)),[30,55,75]);
+assert.equal(JSON.stringify(program().intent.preferredDays),originalPreferred);
+assert.equal(program().request.duration,0);
+assert.equal(program().intent.frequency,3);
+assert.equal(program().intent.split,'ppl');
+
+// Each day has an accessible editor; simulate the save without changing any other day.
+w.coachEditProgramDay(1);
+assert.match(modal,/Time available for this workout/);
+assert.match(modal,/Equipment available for this workout/);
+assert.match(modal,/Extra emphasis on this day/);
+assert.match(modal,/aria-label="Minutes for this workout"/);
+const fields={
+ coachDayMinutes:{value:'60'},coachDayEquipment:{value:'gym'},
+ coachDayCustomEquipment:{value:''},coachDayFocus:{value:'back'}
+};
+w.document.getElementById=id=>fields[id]||originalGetter(id);
+assert.equal(w.coachSaveProgramDaySettings(1),true);
+w.document.getElementById=originalGetter;
+assert.deepEqual(Array.from(program().days.map(d=>d.request.duration)),[30,60,75]);
+assert.deepEqual(Array.from(program().days.map(d=>d.request.brainEquipment?.choice)),['gym','gym','gym']);
+assert(program().days[1].request.priorityRegions.includes('lats'));
+assert.equal(program().days[0].selectedIds.join(','),priorPlan[0]);
+assert.equal(JSON.stringify(program().intent.preferredDays),originalPreferred);
+
+// Invalid custom equipment is rejected atomically; nothing is silently replaced.
+const beforeInvalid=JSON.stringify(program().days.map(d=>({ids:d.selectedIds,duration:d.request.duration})));
+const beforePrefs=JSON.stringify(program().intent.dayPlans);
+w.document.getElementById=id=>({
+ coachDayMinutes:{value:'40'},coachDayEquipment:{value:'custom'},
+ coachDayCustomEquipment:{value:'quantum equipment'},coachDayFocus:{value:'none'}
+}[id]||originalGetter(id));
+assert.equal(w.coachSaveProgramDaySettings(0),false);
+w.document.getElementById=originalGetter;
+assert.equal(JSON.stringify(program().days.map(d=>({ids:d.selectedIds,duration:d.request.duration}))),beforeInvalid);
+assert.equal(JSON.stringify(program().intent.dayPlans),beforePrefs);
+
+// Saved programs retain day-specific intent as metadata, not history mutations.
+const scopedSaved=w.coachPersistGeneratedProgram();
+assert.deepEqual(Array.from(scopedSaved.coachPlannedDays.map(d=>d.durationMinutes)),[30,60,75]);
+assert.equal(scopedSaved.coachPlannedDays[1].focusKey,'back');
+assert.equal(scopedSaved.trainingMode,'track');
+assert.equal(w.eval('JSON.stringify(state.sessions)'),historyBefore);
+console.log('COACH_V092_DAILY '+JSON.stringify({durations:scopedSaved.coachPlannedDays.map(d=>d.durationMinutes),equipment:scopedSaved.coachPlannedDays.map(d=>d.equipmentLabel)}));
+
 console.log('Brain duration + multi-turn + interactive program intake PASS',
  JSON.stringify({sampleMinutes:t1.estimateMinutes,programDays:3,historyUntouched:true,sourceExerciseCount:trio.length}));
 dom.window.close();
