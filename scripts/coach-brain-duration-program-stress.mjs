@@ -517,3 +517,5 @@ console.log('COACH_V092_DAILY '+JSON.stringify({durations:scopedSaved.coachPlann
 console.log('Brain duration + multi-turn + interactive program intake PASS',
  JSON.stringify({sampleMinutes:t1.estimateMinutes,programDays:3,historyUntouched:true,sourceExerciseCount:trio.length}));
 dom.window.close();
+// Mobile DOM acceptance is part of this existing Coach regression CI step.
+await import('./coach-mobile-program-acceptance.mjs');
