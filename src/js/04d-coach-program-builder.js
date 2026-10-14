@@ -409,7 +409,8 @@ function coachRefineProgramText(text){
    req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:raw,allowedEquipment:[]});
    req.allowedEquipment=[...(req.brainEquipment?.allowed||[])];changed=true;
  }
- if(explicitAll&&!hasScopedEquipment&&req.brainEquipment)coachProgramClearDayField(intent,'equipmentKey');
+ if(explicitAll&&!hasScopedEquipment&&req.brainEquipment&&
+   (equipment.allowed.length||/\b(?:full|commercial|standard|well[- ]equipped)\s+gym\b/i.test(raw)))coachProgramClearDayField(intent,'equipmentKey');
  const natural=coachBrainApplyNaturalExerciseChange(req,raw);
  if(natural.changed){req.excludedMovementPatterns=natural.request.excludedMovementPatterns;changed=true;}
  if(equipment.excluded.length){req.excludedEquipment=[...new Set([...req.excludedEquipment,...equipment.excluded])];req.allowedEquipment=req.allowedEquipment.filter(x=>!equipment.excluded.includes(x));changed=true}
@@ -526,7 +527,8 @@ function coachSubmitProgramAnswer(){
    intent.weekdayPlans[day]={...(intent.weekdayPlans[day]||{}),...setting};
   changed=true;
  }
- if(explicitAll&&!hasScopedEquipment&&req.brainEquipment)coachProgramClearDayField(intent,'equipmentKey');
+ if(explicitAll&&!hasScopedEquipment&&req.brainEquipment&&
+  (equipment.allowed.length||/\b(?:full|commercial|standard|well[- ]equipped)\s+gym\b/i.test(text)))coachProgramClearDayField(intent,'equipmentKey');
  if(parsed.preferredDays.length&&!(scoped.length&&intent.preferredDays?.length===intent.frequency&&parsed.preferredDays.length<intent.frequency)){
   intent.preferredDays=[...parsed.preferredDays];
   a.scheduleAnswered=parsed.preferredDays.length===intent.frequency;changed=true;
