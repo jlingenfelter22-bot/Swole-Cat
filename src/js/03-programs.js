@@ -90,7 +90,8 @@ function openProgramCardMenu(id){
      <div class="mini">${p.routineIds.length} workout${p.routineIds.length===1?'':'s'} · ${p.frequency}×/week · ${esc(programDaysText(p))}</div>
    </div>
    <div class="routine-manage-actions">
-     <button class="btn" onclick="closeModal();newProgram('${escAttr(p.id)}')">Edit Program</button>
+     <button class="btn" onclick="closeModal();coachOpenSavedProgramEditor('${escAttr(p.id)}')">Edit with Coach</button>
+      <button class="btn secondary" onclick="closeModal();newProgram('${escAttr(p.id)}')">Edit Manually</button>
      ${!isActive?`<button class="btn secondary" onclick="closeModal();activateProgram('${escAttr(p.id)}')">Set Active</button>`:''}
      <button class="btn secondary" onclick="closeModal();openCoachProgramAudit('${escAttr(p.id)}')">Coach Audit</button>
      <button class="btn secondary" onclick="closeModal();openProgramShare('${escAttr(p.id)}')">Share Program</button>
@@ -111,7 +112,8 @@ function programCard(p){
    <div class="program-card-meta">${next?`Next: <b>${esc(next.name)}</b>`:'Add a routine to start'}${last?` · Last: ${esc(last.routineName)} ${new Date(last.date).toLocaleDateString()}`:''} · ${logs.length} completed</div>
    <div class="program-card-actions">
      ${next?`<button class="btn small ${isActive?'green':''} program-start-btn" onclick="startProgramWorkout('${escAttr(p.id)}')">${state.activeWorkout?.programId===p.id?'Resume Program':'Start Next'}</button>`:''}
-     <button class="btn small secondary program-edit-btn" onclick="newProgram('${escAttr(p.id)}')">Edit</button>
+     <button class="btn small secondary program-coach-edit-btn" onclick="coachOpenSavedProgramEditor('${escAttr(p.id)}')">Edit with Coach</button>
+      <button class="btn small secondary program-edit-btn" onclick="newProgram('${escAttr(p.id)}')">Edit Manually</button>
    </div>
  </div>`;
 }
