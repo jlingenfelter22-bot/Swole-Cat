@@ -28,7 +28,11 @@ function coachGenerateProgram(request,intent,previous=null){
    const targetRegions=[...(group?.regions||[])].filter(region=>!excludedRegions.has(region)),targetSet=new Set(targetRegions);
    const dayReq=coachCloneRequest(req);
    dayReq.targetKeys=[key];dayReq.targetLabels=[group?.label||'Workout'];dayReq.targetRegions=targetRegions;
-   dayReq.priorityRegions=req.programFocusRegions.filter(region=>targetSet.has(region));
+   // A generic custom "Arms" day should emphasize biceps/triceps before
+   // optional forearm accessories. An explicit forearm emphasis always wins.
+   const primaryArmFocus=split==='custom'&&key==='arms'&&!req.programFocusRegions.includes('forearms')
+     ?['biceps','triceps']: [];
+   dayReq.priorityRegions=[...new Set([...primaryArmFocus,...req.programFocusRegions.filter(region=>targetSet.has(region))])];
    dayReq.excludedExerciseIds=[...new Set([...(req.excludedExerciseIds||[]),...(override.excludedExerciseIds||[])])];
    dayReq.requiredExerciseIds=[...new Set(override.requiredExerciseIds||[])];
    dayReq.programHingeHistory=[...hingeHistory];
