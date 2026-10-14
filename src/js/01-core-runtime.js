@@ -425,9 +425,14 @@ function syncViewportMetrics(){
 }
 function scrollFocusedFieldIntoView(){
  const active=document.activeElement;
- if(active&&/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)){
-   setTimeout(()=>{try{active.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}},60);
- }
+ if(!active||!/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName))return;
+ // Android IME shrinks the visual viewport. Centering a field in the page
+ // scrolls the entire long Coach dialog away from the user's typing position.
+ // Keep the nearest scrollable sheet in control and only move if obscured.
+ setTimeout(()=>{
+   if(document.activeElement!==active)return;
+   try{active.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'})}catch(e){}
+ },100);
 }
 async function configureNativeUi(){
  syncViewportMetrics();
