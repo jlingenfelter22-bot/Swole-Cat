@@ -268,6 +268,18 @@ assert.match(modal,/What kind of split did you have in mind/);
 assert.doesNotMatch(modal,/onclick="coachAnswerProgramSplit\('ppl'\)"/);
 assert.match(modal,/PPL needs at least 3 training days/);
 
+// Preview refinements also protect the user's explicit weekly frequency.
+startProgram('4-day upper lower program Monday Tuesday Thursday Friday 45 minutes at a full gym for muscle growth track only');
+assert.equal(program().days.length,4);
+const fourDayIds=program().days.map(d=>d.selectedIds.join(','));
+const fourDaySchedule=JSON.stringify(program().intent.preferredDays);
+const badWeekdays=w.coachRefineProgramText('Monday Wednesday Friday');
+assert.equal(badWeekdays.ok,false,'three weekdays cannot override a four-day program');
+assert.match(badWeekdays.message,/will not silently change/i);
+assert.equal(program().intent.frequency,4);
+assert.equal(JSON.stringify(program().intent.preferredDays),fourDaySchedule);
+assert.deepEqual(program().days.map(d=>d.selectedIds.join(',')),fourDayIds);
+
 // Whole-week planning review is read-only and reflects CURRENT preview exercises,
 // not a stale generated baseline. Intentional narrow splits receive *choices*, not edits.
 const fullLibrary=w.allExercises();
