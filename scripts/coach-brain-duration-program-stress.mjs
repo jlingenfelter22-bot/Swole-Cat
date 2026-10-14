@@ -411,6 +411,16 @@ assert.deepEqual(Array.from(program().days.map(d=>d.request.brainEquipment?.choi
 assert(program().days[1].request.priorityRegions.includes('lats'));
 assert.equal(program().days[0].selectedIds.join(','),priorPlan[0]);
 assert.equal(JSON.stringify(program().intent.preferredDays),originalPreferred);
+// A later spoken weekday correction wins over the earlier editor time, but
+// preserves the editor's equipment choice and muscle emphasis.
+const newerDayTime=w.coachRefineProgramText('Wednesday 55 minutes');
+assert.equal(newerDayTime.ok,true,newerDayTime.message);
+assert.deepEqual(Array.from(program().days.map(d=>d.request.duration)),[30,55,75]);
+assert.equal(program().days[1].request.brainEquipment?.choice,'gym');
+assert(program().days[1].request.priorityRegions.includes('lats'));
+assert.equal(w.coachRefineProgramText('Wednesday 60 minutes').ok,true);
+assert.deepEqual(Array.from(program().days.map(d=>d.request.duration)),[30,60,75]);
+assert.equal(JSON.stringify(program().intent.preferredDays),originalPreferred);
 
 // Invalid custom equipment is rejected atomically; nothing is silently replaced.
 const beforeInvalid=JSON.stringify(program().days.map(d=>({ids:d.selectedIds,duration:d.request.duration})));
