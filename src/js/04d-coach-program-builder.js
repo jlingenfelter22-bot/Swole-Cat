@@ -835,6 +835,10 @@ function coachSavedProgramEditorChanged(d){
 function coachRenderSavedProgramEditor(){
  const d=coachSavedProgramEditDraft;if(!d)return;
  const dirty=coachSavedProgramEditorChanged(d);
+ const unchangedDays=d.routines.map((r,i)=>(
+  JSON.stringify(r)===JSON.stringify(d.originalRoutines[i])&&
+  JSON.stringify(d.program.coachPlannedDays?.[i]||{})===JSON.stringify(d.originalProgram.coachPlannedDays?.[i]||{})
+ )?coachSavedProgramEditDayName(d,i):null).filter(Boolean);
  openModal('Edit with Coach',`
   <div class="coach-builder coach-saved-editor">
     <div class="coach-console">
@@ -855,7 +859,8 @@ function coachRenderSavedProgramEditor(){
     }).join('')}
     ${d.notes.length?`<div class="coach-console" role="status"><div class="eyebrow">PROPOSED CHANGES // NOT SAVED</div>
        ${d.notes.map(n=>`<div class="mini" style="margin-top:7px">• ${esc(n)}</div>`).join('')}
-       <div class="mini" style="margin-top:9px">Only the changes above will be applied. Existing routines used by another program are never edited in place.</div></div>`:
+       <div class="mini" style="margin-top:9px"><b>Unchanged days:</b> ${esc(unchangedDays.join(' / ')||'None')}</div>
+       <div class="mini" style="margin-top:6px">Only the changes above will be applied. Existing routines used by another program are never edited in place.</div></div>`:
        '<div class="mini">Nothing has changed yet. Tell Coach exactly which day or setting to change.</div>'}
     <div class="coach-console coach-program-composer">
       <div class="eyebrow">ASK COACH // EDIT THIS SAVED PLAN</div>
@@ -968,8 +973,9 @@ function coachSavedProgramEditApplyText(d,raw){
    const minutes=Number(m[1]);
    if(minutes<15||minutes>120)return {ok:false,message:'Use a time target between 15 and 120 minutes.'};
    if(!Array.isArray(d.program.coachPlannedDays))d.program.coachPlannedDays=d.routines.map((r,j)=>({label:r.name,weekday:d.program.preferredDays?.[j]??null}));
+   const prior=d.program.coachPlannedDays[i].durationMinutes||'unspecified';
    d.program.coachPlannedDays[i].durationMinutes=minutes;
-   return {ok:true,note:`Day ${i+1}: time target is now ${minutes} min; exercises and working-set counts are unchanged. Review feasibility.`};
+   return {ok:true,note:`Day ${i+1}: planned time ${prior} → ${minutes} min; exercises and working-set counts are unchanged. Review feasibility.`};
   }
  }
  if(mode.trainingMode){
