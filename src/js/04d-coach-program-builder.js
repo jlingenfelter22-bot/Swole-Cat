@@ -24,6 +24,10 @@ function coachProgramEffectiveDayPlan(intent,index){
  const byWeekday=weekday!=null?intent?.weekdayPlans?.[weekday]||{}:{};
  return {...byWeekday,...byDay};
 }
+function coachProgramAllDaysHaveEquipment(intent){
+ if(!intent?.frequency)return false;
+ return Array.from({length:intent.frequency},(_,i)=>!!coachProgramEffectiveDayPlan(intent,i).equipmentKey).every(Boolean);
+}
 function coachProgramAllDaysHaveTime(intent){
  if(!intent?.frequency)return false;
  return Array.from({length:intent.frequency},(_,i)=>Number(coachProgramEffectiveDayPlan(intent,i).duration)>0).every(Boolean);
@@ -330,7 +334,7 @@ function coachProgramSwapExercise(dayIndex,exerciseIndex){
 }
 function coachRefineProgramText(text){
  const draft=coachProgramBuildDraft,raw=String(text||'').trim();if(!draft||!raw)return {ok:false,message:'Tell Coach what you want changed.'};
- const req=coachCloneRequest(draft.request),intent={...draft.intent,preferredDays:[...(draft.intent.preferredDays||[])],customSlots:[...(draft.intent.customSlots||[])]};
+ const req=coachCloneRequest(draft.request),intent={...draft.intent,preferredDays:[...(draft.intent.preferredDays||[])],customSlots:[...(draft.intent.customSlots||[])],dayPlans:(draft.intent.dayPlans||[]).map(p=>({...p})),weekdayPlans:Object.fromEntries(Object.entries(draft.intent.weekdayPlans||{}).map(([k,v])=>[k,{...v}]))};
  const clauses=coachBrainSplitEditClauses(raw);
  if(clauses.length>1){
    const previous=coachProgramBuildDraft;
@@ -342,8 +346,10 @@ function coachRefineProgramText(text){
    return {ok:true,message:'Updated all '+clauses.length+' instructions.'};
  }
  const parsed=coachParsePrompt(raw,req.goal),program=coachParseProgramIntent(raw),goal=coachExplicitGoal(raw),equipment=coachParseEquipment(raw);
+ const scoped=Object.values(program.weekdayPlans||{}),hasScopedTime=scoped.some(x=>x.duration),hasScopedEquipment=scoped.some(x=>x.equipmentKey);
+ const explicitSharedTime=/\b(?:each|every|per)\s+(?:single\s+)?(?:workout|session)\b/i.test(raw);
  let changed=false,structureChanged=false;
- if(parsed.duration){req.duration=parsed.duration;changed=true}
+ if(parsed.duration&&(!hasScopedTime||explicitSharedTime)){req.duration=parsed.duration;changed=true}
  if(goal&&goal!==req.goal){req.goal=goal;changed=true}
  const explicitFrequency=/\b[2-6]\s*[- ]?days?(?:\s+(?:a|per)\s+week)?\b|\b[2-6]\s*(?:x|times)\s*(?:a|per)?\s*week\b/i.test(coachNumbersToDigits(raw));
  if(explicitFrequency&&program.frequency&&program.frequency!==intent.frequency){intent.frequency=program.frequency;changed=true;structureChanged=true}
@@ -357,6 +363,12 @@ function coachRefineProgramText(text){
   intent.deload=programDeloadConfig(program.deload);
   changed=true;
  }
+ if(scoped.length){
+   intent.weekdayPlans={...(intent.weekdayPlans||{})};
+   for(const [weekday,settings] of Object.entries(program.weekdayPlans||{}))
+     intent.weekdayPlans[weekday]={...(intent.weekdayPlans[weekday]||{}),...settings};
+   changed=true;
+ }
  if(program.preferredDays.length){
    if(program.preferredDays.length!==intent.frequency){
      return {ok:false,message:'You named '+program.preferredDays.length+' weekdays for a '+intent.frequency+'-day program. Add missing weekdays, explicitly change the days-per-week frequency, or choose a flexible schedule. Coach will not silently change your program.'};
@@ -364,12 +376,12 @@ function coachRefineProgramText(text){
    intent.preferredDays=[...program.preferredDays];
    changed=true;structureChanged=true;
  }
- if(equipment.allowed.length){
+ if(equipment.allowed.length&&!hasScopedEquipment){
    req.allowedEquipment=[...equipment.allowed];
    req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:raw,allowedEquipment:equipment.allowed});
    req.excludedEquipment=req.excludedEquipment.filter(x=>!equipment.allowed.includes(x));changed=true;
  }
- if(/\\b(?:full|commercial|standard|well[- ]equipped)\\s+gym\\b/i.test(raw)){
+ if(!hasScopedEquipment&&/\b(?:full|commercial|standard|well[- ]equipped)\s+gym\b/i.test(raw)){
    req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:raw,allowedEquipment:[]});
    req.allowedEquipment=[...(req.brainEquipment?.allowed||[])];changed=true;
  }
@@ -378,7 +390,7 @@ function coachRefineProgramText(text){
  if(equipment.excluded.length){req.excludedEquipment=[...new Set([...req.excludedEquipment,...equipment.excluded])];req.allowedEquipment=req.allowedEquipment.filter(x=>!equipment.excluded.includes(x));changed=true}
  if(/\bbalanced\b|\bno (?:special )?focus\b|\bevenly\b/.test(raw.toLowerCase())){
    intent.focusRegions=[];intent.focusLabels=[];changed=true;
- }else if(program.focusRegions.length){
+ }else if(program.focusRegions.length&&!scoped.some(x=>x.focusKey)){
    intent.focusRegions=[...new Set(program.focusRegions)];intent.focusLabels=[...new Set(program.focusLabels)];changed=true;
  }
  if(!changed)return {ok:false,message:'I did not find a program change. Try “4 days,” “35 minutes,” “dumbbells only,” “no squats,” or “more shoulders.”'};
@@ -450,6 +462,9 @@ function coachSubmitProgramAnswer(){
   coachProgramIntake(d).splitAdvice=true;coachContinueProgramRequest();return;
  }
  const intent=d.intent,req=d.request,a=coachProgramIntake(d),parsed=coachParseProgramIntent(text),p=coachParsePrompt(text,req.goal);
+ const scoped=Object.values(parsed.weekdayPlans||{});
+ const hasScopedTime=scoped.some(x=>x.duration),hasScopedEquipment=scoped.some(x=>x.equipmentKey);
+ const explicitSharedTime=/\b(?:each|every|per)\s+(?:single\s+)?(?:workout|session)\b/i.test(text);
  let changed=false;
  const explicitlySaidFrequency=/\b[2-6]\s*[- ]?days?(?:\s+(?:a|per)\s+week)?\b|\b[2-6]\s*(?:x|times)\s*(?:a|per)?\s*week\b/i.test(coachNumbersToDigits(text));
  if(parsed.frequency&&(!intent.frequency||explicitlySaidFrequency)&&parsed.frequency!==intent.frequency){
@@ -464,15 +479,21 @@ function coachSubmitProgramAnswer(){
   const focus=COACH_PROGRAM_DAY_FOCUSES.find(key=>normalized===key||normalized===key+' day'||normalized===key+' workout');
   if(focus){intent.customSlots=[...(intent.customSlots||[]),focus];changed=true}
  }
- if(p.duration>0){req.duration=p.duration;changed=true}
+ if(p.duration>0&&(!hasScopedTime||explicitSharedTime)){req.duration=p.duration;changed=true}
  const equipment=coachParseEquipment(text);
- if(equipment.allowed.length){
+ if(equipment.allowed.length&&!hasScopedEquipment){
   req.allowedEquipment=[...equipment.allowed];
   req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:text,allowedEquipment:equipment.allowed});
   req.excludedEquipment=req.excludedEquipment.filter(x=>!equipment.allowed.includes(x));changed=true;
- }else if(/\b(?:full|commercial|standard|well[- ]equipped)\s+gym\b/i.test(text)){
+ }else if(!hasScopedEquipment&&/\b(?:full|commercial|standard|well[- ]equipped)\s+gym\b/i.test(text)){
   req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:text,allowedEquipment:[]});
   req.allowedEquipment=[...(req.brainEquipment?.allowed||[])];changed=true;
+ }
+ if(scoped.length){
+  intent.weekdayPlans={...(intent.weekdayPlans||{})};
+  for(const [day,setting] of Object.entries(parsed.weekdayPlans||{}))
+   intent.weekdayPlans[day]={...(intent.weekdayPlans[day]||{}),...setting};
+  changed=true;
  }
  if(parsed.preferredDays.length){
   intent.preferredDays=[...parsed.preferredDays];
@@ -547,13 +568,13 @@ function coachContinueProgramRequest(){
    'Each choice will become a separate routine; Coach will not switch it to full body.');
   return;
  }
- if(!(req.duration>0)){
+ if(!(req.duration>0)&&!coachProgramAllDaysHaveTime(intent)){
   coachProgramQuestion('How much time do you have per workout?',
    `<div class="coach-choice-grid">${[30,45,60,75,90].map(m=>`<button class="btn secondary" onclick="coachAnswerProgramDuration(${m})">${m} minutes</button>`).join('')}</div>`,
    'We estimate working sets, rest, warm-up and equipment transitions for each day.');
   return;
  }
- if(d.interactiveBrainFlow&&coachBrainProgramNeedsQuestion(req)==='equipment'){
+ if(d.interactiveBrainFlow&&!coachProgramAllDaysHaveEquipment(intent)&&coachBrainProgramNeedsQuestion({...req,duration:req.duration||45})==='equipment'){
   coachProgramQuestion('Where will you train, and what equipment do you have?',
    `<div class="coach-choice-grid">${COACH_BRAIN_EQUIPMENT_CHOICES.map(c=>`<button class="btn secondary" onclick="coachAnswerProgramBrainEquipment('${c.key}')">${esc(c.label)}</button>`).join('')}</div>`);
   return;
