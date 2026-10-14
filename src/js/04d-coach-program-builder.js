@@ -24,6 +24,15 @@ function coachProgramEffectiveDayPlan(intent,index){
  const byWeekday=weekday!=null?intent?.weekdayPlans?.[weekday]||{}:{};
  return {...byWeekday,...byDay};
 }
+function coachProgramConflictingFocus(intent){
+ const days=coachProgramSlots(intent.frequency,intent.split,intent.customSlots);
+ for(let i=0;i<days.length;i++){
+  const plan=coachProgramEffectiveDayPlan(intent,i),focus=COACH_TARGET_GROUPS[plan.focusKey],group=COACH_TARGET_GROUPS[days[i]];
+  if(focus&&group&&!focus.regions.some(region=>group.regions.includes(region)))
+   return {index:i,dayKey:days[i],focusKey:plan.focusKey};
+ }
+ return null;
+}
 function coachProgramAllDaysHaveEquipment(intent){
  if(!intent?.frequency)return false;
  return Array.from({length:intent.frequency},(_,i)=>!!coachProgramEffectiveDayPlan(intent,i).equipmentKey).every(Boolean);
@@ -42,7 +51,7 @@ function coachProgramDayPlanSummary(day){
 function coachGenerateProgram(request,intent,previous=null){
  const frequency=Math.max(2,Math.min(6,Number(intent.frequency)||0));if(!frequency)return null;
  const split=intent.split||coachDefaultProgramSplit(frequency),slots=coachProgramSlots(frequency,split,intent.customSlots);
- if(slots.length!==frequency)return null;
+ if(slots.length!==frequency||coachProgramConflictingFocus({...intent,frequency,split}))return null;
  const req=coachCloneRequest({...request,duration:request.duration|| (coachProgramAllDaysHaveTime(intent)?0:45)});
  req.programFocusRegions=[...new Set(intent.focusRegions||request.programFocusRegions||[])];
  req.programFocusLabels=[...new Set(intent.focusLabels||request.programFocusLabels||[])];
@@ -393,6 +402,8 @@ function coachRefineProgramText(text){
  }else if(program.focusRegions.length&&!scoped.some(x=>x.focusKey)){
    intent.focusRegions=[...new Set(program.focusRegions)];intent.focusLabels=[...new Set(program.focusLabels)];changed=true;
  }
+ const badFocus=coachProgramConflictingFocus(intent);
+ if(badFocus)return {ok:false,message:'Day '+(badFocus.index+1)+' is '+(COACH_TARGET_GROUPS[badFocus.dayKey]?.label||badFocus.dayKey)+', but the requested '+(COACH_TARGET_GROUPS[badFocus.focusKey]?.label||badFocus.focusKey)+' emphasis does not belong to that day. Change the split or select a matching focus.'};
  if(!changed)return {ok:false,message:'I did not find a program change. Try “4 days,” “35 minutes,” “dumbbells only,” “no squats,” or “more shoulders.”'};
  if(intent.preferredDays.length&&intent.preferredDays.length!==intent.frequency)intent.preferredDays=[];
  if(intent.split==='custom'&&intent.customSlots?.length!==intent.frequency)
@@ -607,12 +618,24 @@ function coachContinueProgramRequest(){
    'Deloads are lighter planned weeks, not a diagnosis. Review and confirm each one before it begins.');
   return;
  }
+ const conflict=coachProgramConflictingFocus(intent);
+ if(conflict){
+  coachProgramQuestion('That day emphasis conflicts with your chosen split.',
+   `<div class="mini">Day ${conflict.index+1} is ${esc(COACH_TARGET_GROUPS[conflict.dayKey]?.label||conflict.dayKey)}, but you requested more ${esc(COACH_TARGET_GROUPS[conflict.focusKey]?.label||conflict.focusKey)}. Coach won't quietly ignore or relocate that priority.</div><div class="actions"><button class="btn" onclick="coachClearProgramDayFocus(${conflict.index})">Keep split · Remove extra emphasis</button><button class="btn secondary" onclick="coachRestartProgramSplit()">Change my split</button></div>`);
+  return;
+ }
  if(!coachGenerateProgram(req,intent,d)){
   coachProgramQuestion('That combination needs a few adjustments.',
    '<div class="mini">Some days need more time, a different focus, or different available equipment. Coach will not invent equipment.</div><div class="actions"><button class="btn" onclick="coachRetryProgramBrainEquipment()">Change equipment</button><button class="btn secondary" onclick="coachRestartProgramSplit()">Change split</button><button class="btn secondary" onclick="coachReviseProgramDuration()">Change time</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New request</button></div>');
   return;
  }
  renderCoachProgramPreview();
+}
+function coachClearProgramDayFocus(index){
+ const d=coachProgramBuildDraft;if(!d||index<0||index>=d.intent.frequency)return;
+ d.intent.dayPlans=(d.intent.dayPlans||[]).map(p=>({...p}));
+ d.intent.dayPlans[index]={...(d.intent.dayPlans[index]||{}),focusKey:'none'};
+ coachContinueProgramRequest();
 }
 function coachAnswerProgramFrequency(days){
  const d=coachProgramBuildDraft;if(!d)return;
