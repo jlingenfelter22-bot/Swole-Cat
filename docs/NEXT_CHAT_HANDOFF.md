@@ -1,5 +1,18 @@
 # Swole Cat - Next Chat Handoff
 
+## CURRENT RELEASE: Signed Testing v0.93.0 · Owner's real Android Coach acceptance (October 14, 2026)
+
+- The user authorized publishing a **Testing-only** candidate; no Beta authorization. Combined v0.90–v0.93 Coach release PR [#70](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/70) merged to `main` at `05f65acf2506408abfe493b93b0ec437d76145be`. Older development PR #66–#69 are superseded. Main contains conversational split intake, whole-week quality review, per-day duration/equipment/focus, and narrow-screen day editor.
+- **SIGNED TESTING LIVE**: v0.93.0, Android versionCode **135**, package `com.jlingenfelter.swolecat.testing`. Prerelease https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.93.0; signed APK https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.93.0/swole-cat-testing-v0.93.0-signed.apk.
+- Release PR full CI **94/94 PASS**: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38581996912. Main push full CI **94/94 PASS** https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38582524614. Permanently signed Testing Android build, manifest advance **PASS** https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38582524189.
+- `updates/testing.json` live version **0.93.0**, code **135**, SHA-256 `9730aafc2b16b22f855a28e3e5d656076d40dff5ed5a4294af3599d312bfaf4c`, same original Testing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`. GitHub release asset digest matches manifest.
+- **Beta untouched** branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, Beta v0.73.1. No Supabase changes, no account switching, no data destruction, no Beta release.
+- **IMMEDIATE NEXT:** user upgrades installed Testing in place via in-app updater or signed APK. Do not uninstall Testing, clear storage, change Google cloud accounts, or experiment on Beta. Review actual phone with `docs/coach-brain/ANDROID_ACCEPTANCE_V093.md`: ask for vague 3-day split and opt-in guidance, then mixed Monday/Wednesday/Friday gym/dumbbell PPL (30/45/75 min), inspect weekly review, adjust Wednesday to 55 min, keyboard/scroll/voice behavior, Swap/Remove, Save Program vs Save + Start. Review screenshots/video and fix observed usability problems before discussing Beta.
+- **Android signoff remains PENDING** until user's actual device review; synthetic DOM checks do not establish physical rendering. Stopwatch-based duration calibration and deeper training quality follow afterward. Cloud Coach Memory is **deferred** in Phase 12 roadmap, not in this release.
+
+---
+
+
 ## ACTIVE DEVELOPMENT CHECKPOINT: Coach v0.93 Mobile Acceptance (October 14, 2026)
 
 - User explicitly authorized proceeding to the next Coach checkpoint after deferring Cloud Coach Memory in the Phase 12 roadmap. No APK release or Beta promotion approval was given.
