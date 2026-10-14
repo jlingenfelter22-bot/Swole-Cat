@@ -61,7 +61,8 @@ assert.equal(draft.program.coachPlannedDays[1].durationMinutes,45);
 assert.equal(draft.program.coachPlannedDays[0].durationMinutes,60);
 assert.equal(draft.program.coachPlannedDays[2].durationMinutes,60);
 assert.equal(JSON.stringify(draft.routines[1].exercises),JSON.stringify(b.exercises),'time target does not pretend to change working sets');
-assert.match(body.textContent,/time target is now 45 min/i);
+assert.match(body.textContent,/planned time 60 → 45 min/i);
+assert.match(body.textContent,/Unchanged days:/i);
 assert.equal(w.eval('JSON.stringify({routines:state.routines,programs:state.programs,sessions:state.sessions})'),baseline,
  'proposals cannot mutate the live state');
 send('Tuesday 35 minutes');
