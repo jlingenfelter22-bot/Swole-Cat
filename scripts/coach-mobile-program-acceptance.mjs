@@ -92,7 +92,7 @@ assert(block.hidden&&custom.disabled,'switching back hides and disables field');
 assert.equal(w.coachSaveProgramDaySettings(1),true,'valid one-day edit succeeds');
 assert.deepEqual(Array.from(draft().days.map(day=>day.request.duration)),[30,55,75]);
 assert.equal(body.querySelectorAll('.coach-program-day-card').length,3,'editor returns to full preview after apply');
-assert.match(body.textContent,/about d+ min/,'day estimate remains visible');
+assert.match(body.textContent,/about [0-9]+ min/,'day estimate remains visible');
 const edited=snapshot('adjust day editor and live updated preview');
 
 // Keyboard/IME path, using the same button as a tap; one-day correction must remain scoped.
@@ -109,12 +109,12 @@ assert.equal(w.eval('JSON.stringify({sessions:state.sessions,routines:state.rout
 // JSDOM does not compute pixel layouts; physical phone remains a separate gate.
 const css=fs.readFileSync('src/styles/03-polish.css','utf8');
 const base=fs.readFileSync('src/styles/00-base.css','utf8');
-assert.match(css,/@media(max-width:430px)[sS]*?.coach-choice-grid.coach-split-guidance{grid-template-columns:minmax(0,1fr)/);
-assert.match(css,/.coach-program-exercise-row{flex-wrap:wrap/);
-assert.match(css,/.coach-program-exercise-actions .btn{min-width:0;min-height:44px}/);
-assert.match(css,/.coach-program-save-actions .btn{min-height:48px/);
-assert.match(css,/.coach-day-editor .search{min-width:0;min-height:48px;font-size:16px}/);
-assert.match(css,/.coach-day-custom-field[hidden]{display:none!important}/);
+assert(css.includes('@media(max-width:430px){')&&css.includes('.coach-choice-grid.coach-split-guidance{grid-template-columns:minmax(0,1fr}'),'rich split guidance has one-column mobile layout');
+assert(css.includes('.coach-program-exercise-row{flex-wrap:wrap'));
+assert(css.includes('.coach-program-exercise-actions .btn{min-width:0;min-height:44px}'));
+assert(css.includes('.coach-program-save-actions .btn{min-height:48px'));
+assert(css.includes('.coach-day-editor .search{min-width:0;min-height:48px;font-size:16px}'));
+assert(css.includes('.coach-day-custom-field[hidden]{display:none!important}'));
 assert(base.includes('max-height:min(88dvh'),'modal handles Android dynamic viewport height');
 console.log('COACH_MOBILE_DOM_ACCEPTANCE PASS '+JSON.stringify({
  emulatedCssWidths:[320,360,393,430],guidance,preview,edited,
