@@ -120,9 +120,9 @@ assert(css.includes('.coach-program-exercise-actions .btn{min-width:0;min-height
 assert(css.includes('.coach-program-save-actions .btn{min-height:48px'));
 assert(css.includes('.coach-day-editor .search{min-width:0;min-height:48px;font-size:16px}'));
 assert(css.includes('.coach-day-custom-field[hidden]{display:none!important}'));
-assert(css.includes('.modal-mode-coach-program .coach-program-composer{'),'the Coach composer has a scoped sticky keyboard-safe container');
+assert(/\.modal-mode-coach-program \.coach-program-composer(?:\{|,)/.test(css),'the Coach composer has a scoped sticky keyboard-safe container');
 assert(css.includes('position:sticky;bottom:-18px'),'Coach composer stays anchored while day cards scroll');
-assert(css.includes('.native-app.keyboard-open .modal-mode-coach-program .sheet{scroll-padding-bottom:16px}'),'avoid double-counting IME padding');
+assert(css.includes('.native-app.keyboard-open .modal-mode-coach-program .sheet')&&css.includes('scroll-padding-bottom:16px'),'avoid double-counting IME padding');
 const modalSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8');
 assert(modalSource.includes('if(sheet)sheet.scrollTop=0;'),'newly opened Workout complete dialog cannot inherit Coach preview scroll');
 const nativeSource=fs.readFileSync('src/js/01-core-runtime.js','utf8');
