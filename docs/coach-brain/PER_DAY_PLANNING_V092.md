@@ -12,6 +12,7 @@ A real training week can differ by day: *Monday has 30 minutes at a gym; Wednesd
 - Keep the day name and the saved preferred-day mapping separate from per-slot overrides. The weekday directive follows its weekday even when a routine's position changes; a manual Day 2 adjustment stays attached to Day 2.
 - If all selected weekdays have specified durations, **do not ask for a redundant global duration**. When only some times are supplied, request a common default for unspecified sessions.
 - If all weekdays have explicit equipment choices, Coach may build without asking a global equipment question. If only some are specified and no shared choice was given, ask for remaining workouts; never assume one gym mention grants access every day.
+- **Incompatible focus clarification:** When a weekday-specific muscle priority cannot fit that day's split (e.g. Friday **more shoulders** but Friday is **Legs** in PPL), Coach pauses and asks whether to change the split or remove that extra emphasis. It must not quietly ignore the request, relocate it, or promote it to a whole-week preference.
 - Each day gets independent exercise selection, time trimming, equipment checks, rest/prescription defaults, and emphasis within its already selected muscle group. Respect the weekly plan's chosen split.
 - Preview shows **Adjust day** on each day card. The accessible editor exposes duration 15–120 minutes, shared/gym/dumbbell/bodyweight/custom equipment, and optional additional focus limited to that day. Failed validation keeps prior draft intact.
 - Preview shows honest day-specific time ranges; generated routine descriptions and an optional `coachPlannedDays` Program metadata field retain planning context, without changing existing session histories or workout load semantics.
@@ -29,8 +30,9 @@ Training modes, optional Guided deloads, user sets/reps and bodyweight/assisted 
 2. Partial time information causes a question, rather than silently assigning the first mentioned day duration to the entire week.
 3. Day-specific gym/dumbbell/gym equipment is honored and every generated exercise is available in that day's verified equipment context.
 4. The narrow modal editor permits valid one-day changes and rejects invalid equipment without mutation; rest of the week, user's calendar and previous sessions remain unchanged.
-5. Preview, estimated day times, saved routines and `coachPlannedDays` must agree.
-6. CI plus qualitative generated-session review and actual Android small-screen review before any signed Testing promotion. No Beta/cloud account changes.
+5. Natural-language day emphasis outside the chosen muscle group triggers a helpful clarification without rewriting the split or spreading that priority across other days.
+6. Preview, estimated day times, saved routines and `coachPlannedDays` must agree.
+7. CI plus qualitative generated-session review and actual Android small-screen review before any signed Testing promotion. No Beta/cloud account changes.
 
 ### Deferred
 
