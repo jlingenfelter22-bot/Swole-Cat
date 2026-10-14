@@ -64,6 +64,15 @@ const actions=body.querySelectorAll('.coach-program-exercise-row .coach-program-
 assert.equal(actions.length,names.length,'each exercise has local actions');
 assert([...actions].every(x=>x.querySelectorAll('button').length===2));
 assert([...actions].every(x=>[...x.querySelectorAll('button')].every(b=>['Swap','Remove'].includes(b.textContent.trim()))));
+assert.equal(body.querySelectorAll('.coach-program-day-details').length,3,'each day can collapse a long exercise list');
+assert.equal(body.querySelectorAll('.coach-program-day-details[open]').length,1,'only the first day is expanded initially');
+const composer=body.querySelector('.coach-program-composer');
+assert(composer?.querySelector('input#coachProgramRefinePrompt'),'Coach composer is available in the preview');
+assert.equal(body.querySelectorAll('#coachProgramRefinePrompt').length,1,'no duplicated Coach input in a long program');
+assert(composer.compareDocumentPosition(body.querySelector('.coach-exercise-list'))&w.Node.DOCUMENT_POSITION_FOLLOWING,
+ 'Talk to Coach must appear BEFORE the long day/exercise breakdown');
+assert(body.querySelector('details.coach-program-prompt-tips'),'long example prompts are hidden on demand');
+assert(body.querySelector('details.coach-program-secondary'),'weekly planning notes use disclosure');
 const preview=snapshot('mixed-gym-and-home preview');
 
 // Editor for only Wednesday, without the user being asked to re-enter global gear.
@@ -115,6 +124,24 @@ assert(css.includes('.coach-program-exercise-actions .btn{min-width:0;min-height
 assert(css.includes('.coach-program-save-actions .btn{min-height:48px'));
 assert(css.includes('.coach-day-editor .search{min-width:0;min-height:48px;font-size:16px}'));
 assert(css.includes('.coach-day-custom-field[hidden]{display:none!important}'));
+assert(/\.modal-mode-coach-program \.coach-program-composer(?:\{|,)/.test(css),'the Coach composer has a scoped sticky keyboard-safe container');
+assert(css.includes('.modal-mode-coach-program .coach-program-composer{')&&css.includes('position:sticky;top:0;bottom:auto'),
+ 'generated plan has top-anchored Coach composer before the day breakdown');
+assert(css.includes('.modal-mode-coach-saved .coach-program-composer')&&css.includes('position:sticky;bottom:-18px'),
+ 'saved program editor retains its bottom-anchored proposal input');
+assert(css.includes('.native-app.keyboard-open .modal-mode-coach-program .sheet')&&css.includes('scroll-padding-bottom:16px'),'avoid double-counting IME padding');
+const modalSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8');
+assert(modalSource.includes('if(sheet)sheet.scrollTop=0;'),'newly opened Workout complete dialog cannot inherit Coach preview scroll');
+const nativeSource=fs.readFileSync('src/js/01-core-runtime.js','utf8');
+assert(nativeSource.includes("active.closest?.('.coach-program-composer')"),'avoid competing input centering animation during Android keyboard open');
+assert(!nativeSource.includes("active.scrollIntoView({block:'center'"),'old Android centered smooth focus path cannot return');
+const programSource=fs.readFileSync('src/js/03-programs.js','utf8');
+const editorSource=fs.readFileSync('src/js/04d-coach-program-builder.js','utf8');
+assert(programSource.includes('coachOpenSavedProgramEditor('),'saved Program card/menu routes to contextual Coach editor');
+assert(editorSource.includes('function coachApplySavedProgramEdits()'),'contextual editor requires explicit reviewed apply');
+assert(editorSource.includes('newRoutine.id=uid()'),'edited routines remain copy-on-write');
+assert(editorSource.includes('ownerNow!==d.signedInOwnerId'),'edits cannot cross cloud-account changes');
+assert(!programSource.includes('function openCoachSavedProgramWorkouts('),'do not regress to the separate day-only menu flow');
 assert(base.includes('max-height:min(88dvh'),'modal handles Android dynamic viewport height');
 console.log('COACH_MOBILE_DOM_ACCEPTANCE PASS '+JSON.stringify({
  emulatedCssWidths:[320,360,393,430],guidance,preview,edited,

@@ -274,20 +274,20 @@ function renderCoachProgramPreview(){
     <div class="coach-preview-meta"><span class="tag">${esc(coachGoalLabel(req.goal))}</span><span class="tag">${esc(equipment)}</span><span class="tag">${intent.frequency}×/week</span><span class="tag">${esc(programTrainingModeLabel(intent.trainingMode||'inherit'))}</span></div>
      ${intent.trainingMode==='guided'?`<div class="mini" style="margin-top:9px">Deloads: ${intent.deload?.enabled?`every ${intent.deload.intervalWeeks}th training week, subject to your confirmation`:'not scheduled (you can add these later)'}</div>`:''}
    </div>
+   <div class="coach-console coach-program-composer"><div class="eyebrow">ASK COACH // REFINE THIS PLAN</div><details class="coach-program-prompt-tips"><summary>Ideas for changes</summary><div class="mini" style="margin:5px 0 9px">Try “4 days, upper/lower and 35 minutes,” “dumbbells only,” “no squats, more glutes,” or “Monday Tuesday Thursday Saturday.”</div></details><div class="home-coach-row"><div class="coach-voice-field"><input id="coachProgramRefinePrompt" placeholder="4 days, upper/lower, 40 min, more shoulders..." onkeydown="if(event.key==='Enter')coachApplyProgramRefinement()">${coachVoiceButtonHtml('coachProgramRefinePrompt')}</div><button class="btn" onclick="coachApplyProgramRefinement()">Update</button></div></div>
    <div class="coach-exercise-list">
     ${draft.days.map((day,di)=>`<div class="card coach-program-day-card" style="margin:0">
       <div class="row coach-program-day-head"><div class="coach-program-day-summary"><div class="eyebrow">DAY ${di+1}</div><div class="exercise-name" style="margin-top:4px">${esc(day.label)}</div><div class="mini">${day.selectedIds.length} exercises · ${day.brainTime?`about ${day.brainTime.estimateMinutes} min (range ${day.brainTime.lowerMinutes}–${day.brainTime.upperMinutes})`:`${day.defaults.sets} sets each`} · ${day.defaults.minReps}–${day.defaults.maxReps} reps</div><button class="btn small secondary" style="margin-top:7px" onclick="coachEditProgramDay(${di})" aria-label="Adjust ${esc(day.label)} time equipment and focus">Adjust day</button>${coachProgramDayPlanSummary(day)?`<div class="mini" style="margin-top:5px">${esc(coachProgramDayPlanSummary(day))}</div>`:''}</div>${intent.preferredDays?.[di]!=null?`<span class="tag">${PROGRAM_DAYS[intent.preferredDays[di]]}</span>`:''}</div>
-      <div style="margin-top:9px">${day.selectedIds.map((id,ei)=>{const ex=exById(id);return `<div class="list-item coach-program-exercise-row"><div class="grow"><div class="exercise-name">${esc(ex?.name||'Exercise')} ${preferenceBadgeHtml(id)}</div><div class="mini">${esc(coachExerciseReason(ex,day.request))} · ${day.brainSetCounts?.[id]?.sets||coachExercisePrescription(ex,day.request,day.defaults).sets} working sets</div></div><div class="actions coach-program-exercise-actions" style="margin:0"><button class="btn small secondary" onclick="coachProgramSwapExercise(${di},${ei})">Swap</button><button class="btn small secondary" onclick="coachProgramRemoveExercise(${di},${ei})">Remove</button></div></div>`}).join('')}</div>
+      <details class="coach-program-day-details" ${di===0?'open':''}><summary>Review ${day.selectedIds.length} exercises and make changes</summary><div style="margin-top:9px">${day.selectedIds.map((id,ei)=>{const ex=exById(id);return `<div class="list-item coach-program-exercise-row"><div class="grow"><div class="exercise-name">${esc(ex?.name||'Exercise')} ${preferenceBadgeHtml(id)}</div><div class="mini">${esc(coachExerciseReason(ex,day.request))} · ${day.brainSetCounts?.[id]?.sets||coachExercisePrescription(ex,day.request,day.defaults).sets} working sets</div></div><div class="actions coach-program-exercise-actions" style="margin:0"><button class="btn small secondary" onclick="coachProgramSwapExercise(${di},${ei})">Swap</button><button class="btn small secondary" onclick="coachProgramRemoveExercise(${di},${ei})">Remove</button></div></div>`}).join('')}</div></details>
     </div>`).join('')}
    </div>
-   ${coverage?`<div class="coach-rationale"><b>Planned weekly set-equivalents:</b> ${esc(coverage)}.<br><span class="mini">Primary involvement counts as 1.0 set and secondary involvement as 0.5. This is a planning aid, not a claim about muscle damage or recovery.</span></div>`:''}
-   ${coachBrainProgramWeekReviewHtml(draft)}
-   <div class="coach-console"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Try “4 days, upper/lower and 35 minutes,” “dumbbells only,” “no squats, more glutes,” or “Monday Tuesday Thursday Saturday.”</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachProgramRefinePrompt" placeholder="4 days, upper/lower, 40 min, more shoulders..." onkeydown="if(event.key==='Enter')coachApplyProgramRefinement()">${coachVoiceButtonHtml('coachProgramRefinePrompt')}</div><button class="btn" onclick="coachApplyProgramRefinement()">Update</button></div></div>
+   ${coverage?`<details class="coach-program-secondary"><summary>Weekly muscle distribution</summary><div class="coach-rationale"><b>Planned weekly set-equivalents:</b> ${esc(coverage)}.<br><span class="mini">Primary involvement counts as 1.0 set and secondary involvement as 0.5. This is a planning aid, not a claim about muscle damage or recovery.</span></div></details>`:''}
+   <details class="coach-program-secondary"><summary>Whole-week coaching review</summary>${coachBrainProgramWeekReviewHtml(draft)}</details>
    ${coachBrainEquipmentPreviewNotice(req)?`<div class="notice">${esc(coachBrainEquipmentPreviewNotice(req))}</div>`:''}
    ${draft.days.some(day=>day.brainTime?.overTarget)?`<div class="notice">One or more days exceed your requested time at the estimated midpoint. Review the work or allow more time before saving.</div>`:draft.days.some(day=>day.brainTime&&day.brainTime.upperMinutes>day.brainTime.targetMinutes)?`<div class="notice">Some days could run past your target if warm-ups, equipment transitions or rest take longer. Each day's time range is a planning estimate, not a guaranteed finish time.</div>`:''}
-   <div class="notice">Coach distributes work across the week using your requested frequency, split, equipment, goal, exercise preferences, completed training history, planned muscle set-equivalents from earlier program days, and progression continuity. Weekly workload is used as programming context only; the plan does not diagnose recovery or medical readiness.</div>
+   <details class="coach-program-secondary"><summary>Why Coach chose this plan</summary><div class="notice">Coach distributes work across the week using your requested frequency, split, equipment, goal, exercise preferences, completed training history, planned muscle set-equivalents from earlier program days, and progression continuity. Weekly workload is used as programming context only; the plan does not diagnose recovery or medical readiness.</div></details>
    <div class="actions coach-program-save-actions"><button class="btn green" onclick="coachStartProgramFirstWorkout()">Save + Start Day 1</button><button class="btn" onclick="coachSaveGeneratedProgram()">Save Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
-  </div>`);
+  </div>`, 'modal-mode-coach-program');
 }
 // Dedicated day editor keeps controls accessible on narrow Android screens.
 // It changes the unsaved draft only after successful feasibility regeneration.
@@ -776,4 +776,267 @@ function coachSubmitProgramBrainCustomEquipment(){
  const result=coachBrainApplyEquipmentChoice(coachProgramBuildDraft.request,'custom',text);
  if(!result.ok){showToast(result.message);return}
  coachProgramBuildDraft.request=result.request;coachContinueProgramRequest();
+}
+
+
+// v0.94: contextual editing of EXISTING saved Programs.
+// All changes remain in memory until an explicit Apply. Routine changes are
+// copy-on-write: shared routines and past workout sessions never get rewritten.
+let coachSavedProgramEditDraft=null;
+
+function coachSavedProgramEditDayName(d,index){
+ const day=d.program.coachPlannedDays?.[index];
+ return day?.label||d.routines[index]?.name||('Day '+(index+1));
+}
+function coachSavedProgramEditorDayIndex(raw,d){
+ const text=coachNumbersToDigits(String(raw||'')).toLowerCase();
+ const numbered=text.match(/\bday\s*([1-6])\b/);
+ const days=[];
+ if(numbered)days.push(Number(numbered[1])-1);
+ for(const [key,weekday] of COACH_WEEKDAY_TERMS){
+  if(new RegExp('\\b'+key+'\\b','i').test(text)){
+   const idx=(d.program.preferredDays||[]).indexOf(weekday);
+   if(idx<0)return {error:'That weekday is not part of this program. Name a current training day.'};
+   days.push(idx);
+  }
+ }
+ const unique=[...new Set(days)];
+ if(unique.length>1)return {error:'Name just one workout day per change.'};
+ if(unique.some(i=>i<0||i>=d.routines.length))return {error:'That day number is not in this program.'};
+ if(!unique.length)return {index:-1};
+ return {index:unique[0]};
+}
+function coachSavedProgramEditorProgramSnapshot(program){
+ return JSON.stringify(program);
+}
+function coachOpenSavedProgramEditor(programId){
+ const p=programById(programId);
+ if(!p){showToast('Program not found');return false}
+ if(state.activeWorkout?.programId===p.id){showToast('Finish or cancel the active program workout before editing its saved plan');return false}
+ const originals=p.routineIds.map(id=>state.routines.find(r=>r.id===id));
+ if(!originals.length||originals.some(r=>!r)){showToast('This program has missing routines. Edit it manually first.');return false}
+ coachSavedProgramEditDraft={
+  programId:p.id,
+  originalProgram:cloneData(p),
+  originalRoutines:originals.map(cloneData),
+  signedInOwnerId:typeof syncIdentityUser==='function'?(syncIdentityUser()?.id||null):null,
+  program:cloneData(p),
+  routines:originals.map(cloneData),
+  notes:[],
+  createdAt:Date.now()
+ };
+ coachRenderSavedProgramEditor();
+ return true;
+}
+function coachSavedProgramEditorChanged(d){
+ return JSON.stringify(d.program)!==JSON.stringify(d.originalProgram)||
+  d.routines.some((r,i)=>JSON.stringify(r)!==JSON.stringify(d.originalRoutines[i]));
+}
+function coachRenderSavedProgramEditor(){
+ const d=coachSavedProgramEditDraft;if(!d)return;
+ const dirty=coachSavedProgramEditorChanged(d);
+ const unchangedDays=d.routines.map((r,i)=>(
+  JSON.stringify(r)===JSON.stringify(d.originalRoutines[i])&&
+  JSON.stringify(d.program.coachPlannedDays?.[i]||{})===JSON.stringify(d.originalProgram.coachPlannedDays?.[i]||{})
+ )?coachSavedProgramEditDayName(d,i):null).filter(Boolean);
+ openModal('Edit with Coach',`
+  <div class="coach-builder coach-saved-editor">
+    <div class="coach-console">
+      <div class="eyebrow">EDIT SAVED PROGRAM // LOCAL DRAFT</div>
+      <div class="exercise-name" style="font-size:1.1rem">${esc(d.program.name)}</div>
+      <div class="mini" style="margin-top:6px">${d.program.routineIds.length} workouts · ${esc(programDaysText(d.program))} · ${esc(programTrainingModeLabel(d.program.trainingMode))}</div>
+      <div class="mini" style="margin-top:7px">Coach is editing a proposal, not your live workouts. Unrelated days, completed history and your existing progression position are preserved.</div>
+    </div>
+    ${d.routines.map((r,i)=>{
+      const changed=JSON.stringify(r)!==JSON.stringify(d.originalRoutines[i])||
+       JSON.stringify(d.program.coachPlannedDays?.[i]||{})!==JSON.stringify(d.originalProgram.coachPlannedDays?.[i]||{});
+      const info=d.program.coachPlannedDays?.[i];
+      return `<details class="coach-program-day-details" ${changed||i===0?'open':''}>
+        <summary>${esc(coachSavedProgramEditDayName(d,i))} ${changed?'· Changes proposed':''} · ${r.exercises.length} exercises${info?.durationMinutes?' · '+info.durationMinutes+' min target':''}</summary>
+        <div class="card" style="margin-top:6px">
+        ${r.exercises.map(e=>`<div class="mini" style="padding:5px 0">${esc(exById(e.exerciseId)?.name||e.exerciseId)} · ${Number(e.sets)||0} sets · ${Number(e.minReps)||0}–${Number(e.maxReps)||0} reps</div>`).join('')}
+        </div></details>`;
+    }).join('')}
+    ${d.notes.length?`<div class="coach-console" role="status"><div class="eyebrow">PROPOSED CHANGES // NOT SAVED</div>
+       ${d.notes.map(n=>`<div class="mini" style="margin-top:7px">• ${esc(n)}</div>`).join('')}
+       <div class="mini" style="margin-top:9px"><b>Unchanged days:</b> ${esc(unchangedDays.join(' / ')||'None')}</div>
+       <div class="mini" style="margin-top:6px">Only the changes above will be applied. Existing routines used by another program are never edited in place.</div></div>`:
+       '<div class="mini">Nothing has changed yet. Tell Coach exactly which day or setting to change.</div>'}
+    <div class="coach-console coach-program-composer">
+      <div class="eyebrow">ASK COACH // EDIT THIS SAVED PLAN</div>
+      <details class="coach-program-prompt-tips"><summary>Supported commands and limits</summary><div class="mini">
+       Try “Wednesday 45 minutes,” “remove Barbell Row from Wednesday,”
+       “replace Deadlift with Romanian Deadlift on Friday,”
+       “add Lateral Raise to Monday,” “switch to Track Only,”
+       or “move Wednesday to Thursday.”
+       Time changes update the planning target, not existing exercise volume;
+       review workload before training. A full split redesign still requires manual editing or a new Coach plan.
+      </div></details>
+      <div class="home-coach-row"><div class="coach-voice-field">
+       <input id="coachSavedProgramPrompt" aria-label="Ask Coach to edit this program"
+        placeholder="Change Wednesday to 45 minutes…" onkeydown="if(event.key==='Enter')coachSubmitSavedProgramEdit()">
+       ${coachVoiceButtonHtml('coachSavedProgramPrompt')}
+      </div><button class="btn" onclick="coachSubmitSavedProgramEdit()">Propose</button></div>
+    </div>
+    <div class="actions coach-program-save-actions">
+      <button class="btn green" onclick="coachApplySavedProgramEdits()" ${dirty?'':'disabled'}>Apply reviewed changes</button>
+      <button class="btn secondary" onclick="coachSavedProgramEditDraft=null;closeModal()">Cancel · Keep original</button>
+    </div>
+  </div>`,'modal-mode-coach-saved');
+}
+// If a saved day explicitly says dumbbells/bodyweight only, its new movements
+// must pass the same deterministic equipment checks as new Coach drafts.
+function coachSavedProgramExerciseFitsEquipment(ex,d,index){
+ const label=String(d.program.coachPlannedDays?.[index]?.equipmentLabel||'').toLowerCase();
+ const key=/dumbbell/.test(label)?'dumbbells':/bodyweight|floor.only|no equipment/.test(label)?'bodyweight':null;
+ if(!key)return true; // broader/unverified labels are not asserted as verified equipment
+ const cfg=coachBrainApplyEquipmentChoice({allowedEquipment:[],excludedEquipment:[],targetRegions:[]},key);
+ if(!cfg.ok)return false;
+ if(ex.equipment&&!cfg.request.allowedEquipment.includes(ex.equipment))return false;
+ return coachBrainEquipmentAllowed(ex,cfg.request);
+}
+function coachSavedProgramEditApplyText(d,raw){
+ const text=String(raw||'').trim(),normalized=coachNumbersToDigits(text);
+ if(!text)return {ok:false,message:'Describe one change to the saved program.'};
+ const clauses=coachBrainSplitEditClauses(text);
+ if(clauses.length>1){
+  const copy={...d,program:cloneData(d.program),routines:d.routines.map(cloneData)};
+  const descriptions=[];
+  for(const clause of clauses){
+   const result=coachSavedProgramEditApplyText(copy,clause);
+   if(!result.ok)return {ok:false,message:'No changes proposed. '+result.message,failedClause:clause};
+   descriptions.push(result.note);
+  }
+  d.program=copy.program;d.routines=copy.routines;
+  return {ok:true,note:descriptions.join(' ')};
+ }
+ const mode=coachParseProgramIntent(normalized);
+ // A destination weekday is naturally not in the current program, so handle
+ // moves before selecting the day to edit.
+ const move=normalized.match(/\bmove\s+(\w+)\s+(?:to|onto)\s+(\w+)\b/i);
+ if(move){
+  const from=COACH_WEEKDAY_TERMS.find(([s])=>s===move[1].toLowerCase())?.[1];
+  const to=COACH_WEEKDAY_TERMS.find(([s])=>s===move[2].toLowerCase())?.[1];
+  const oldIndex=(d.program.preferredDays||[]).indexOf(from);
+  if(from==null||to==null||oldIndex<0)return {ok:false,message:'Name a weekday already in this program and the replacement weekday.'};
+  if(d.program.preferredDays.includes(to))return {ok:false,message:'The destination weekday is already in this program.'};
+  d.program.preferredDays[oldIndex]=to;
+  if(d.program.coachPlannedDays?.[oldIndex])d.program.coachPlannedDays[oldIndex].weekday=to;
+  return {ok:true,note:`Moved ${PROGRAM_DAYS[from]} to ${PROGRAM_DAYS[to]}; routine order unchanged.`};
+ }
+ const dayResult=coachSavedProgramEditorDayIndex(normalized,d);
+ if(dayResult.error)return {ok:false,message:dayResult.error};
+ const i=dayResult.index;
+ const swap=normalized.match(/\b(?:replace|swap)\s+(.+?)\s+(?:with|for)\s+(.+?)(?:\s+(?:on|in|for)\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|day\s+[1-6]))?[.!?]?\s*$/i);
+ const remove=normalized.match(/\b(?:remove|drop|delete)\s+(.+?)(?:\s+(?:on|from|in)\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|day\s+[1-6]))?[.!?]?\s*$/i);
+ const add=normalized.match(/\b(?:add|include)\s+(.+?)(?:\s+(?:on|to|in)\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|day\s+[1-6]))?[.!?]?\s*$/i);
+ if(swap||remove||add){
+  if(i<0)return {ok:false,message:'Which workout day should Coach edit? Name Monday, Wednesday, Friday or a day number.'};
+  const routine=d.routines[i],currentIds=routine.exercises.map(e=>e.exerciseId);
+  if(swap){
+   const old=coachResolveExercisePhrase(swap[1],currentIds),replacement=coachResolveExercisePhrase(swap[2]);
+   if(!old||!replacement)return {ok:false,message:'I could not confidently identify both exercises. Name their exact exercise titles.'};
+   if(currentIds.includes(replacement.id))return {ok:false,message:'That replacement is already in this workout.'};
+   if(old.pattern!==replacement.pattern)return {ok:false,message:'These exercises use different movement patterns. Review the prescription in Edit Manually instead of transferring it automatically.'};
+   if(!coachSavedProgramExerciseFitsEquipment(replacement,d,i))return {ok:false,message:'That replacement does not fit the day\'s recorded equipment. Choose another movement or adjust the day manually.'};
+   const idx=routine.exercises.findIndex(e=>e.exerciseId===old.id);
+   if(idx<0)return {ok:false,message:'The exercise to replace is not in that day.'};
+   routine.exercises[idx]={...routine.exercises[idx],exerciseId:replacement.id};
+   return {ok:true,note:`Day ${i+1}: ${old.name} → ${replacement.name}. Reps/rest carried forward; review whether this prescription suits the replacement.`};
+  }
+  if(remove){
+   const ex=coachResolveExercisePhrase(remove[1],currentIds);
+   if(!ex||!currentIds.includes(ex.id))return {ok:false,message:'That exercise is not in this day. Use its full name.'};
+   if(routine.exercises.length<=1)return {ok:false,message:'Keep at least one exercise in a training day.'};
+   routine.exercises=routine.exercises.filter(e=>e.exerciseId!==ex.id);
+   return {ok:true,note:`Day ${i+1}: removed ${ex.name}; no other exercise changed.`};
+  }
+  const ex=coachResolveExercisePhrase(add[1]);
+  if(!ex)return {ok:false,message:'I could not recognize that exercise. Use its full name.'};
+  if(currentIds.includes(ex.id))return {ok:false,message:'That exercise is already in this day.'};
+  if(!coachSavedProgramExerciseFitsEquipment(ex,d,i))return {ok:false,message:'That exercise is not available with the day\'s recorded equipment.'};
+  const goal='general',defaults=coachProgrammingDefaults(goal,Number(d.program.coachPlannedDays?.[i]?.durationMinutes)||45);
+  const prescription=coachExercisePrescription(ex,{goal,targetRegions:exerciseMuscleMetadata(ex).primary,duration:defaults.duration},defaults);
+  routine.exercises.push({
+   exerciseId:ex.id,sets:prescription.sets,minReps:prescription.minReps,maxReps:prescription.maxReps,
+   increment:state.settings.defaultIncrement,mode:'double',progressionStrategy:prescription.progressionStrategy||'double',
+   adaptiveProgression:!!prescription.adaptiveProgression,setStructure:null,
+   trainingGoal:goal,restSeconds:prescription.restSeconds,
+   targetRIR:Number.isFinite(Number(prescription.targetRIR))?Number(prescription.targetRIR):null
+  });
+  return {ok:true,note:`Day ${i+1}: added ${ex.name} with editable general-training set/rep defaults; no starting weight assumed.`};
+ }
+ if(/\b(?:change|make|set|shorten|longer|minutes?|mins?|hours?)\b/i.test(normalized)){
+  const m=normalized.match(/\b(\d{2,3})\s*(?:minutes?|mins?|min|m)\b/i);
+  if(m){
+   if(i<0)return {ok:false,message:'Specify which day should receive the new time target.'};
+   const minutes=Number(m[1]);
+   if(minutes<15||minutes>120)return {ok:false,message:'Use a time target between 15 and 120 minutes.'};
+   if(!Array.isArray(d.program.coachPlannedDays))d.program.coachPlannedDays=d.routines.map((r,j)=>({label:r.name,weekday:d.program.preferredDays?.[j]??null}));
+   const prior=d.program.coachPlannedDays[i].durationMinutes||'unspecified';
+   d.program.coachPlannedDays[i].durationMinutes=minutes;
+   return {ok:true,note:`Day ${i+1}: planned time ${prior} → ${minutes} min; exercises and working-set counts are unchanged. Review feasibility.`};
+  }
+ }
+ if(mode.trainingMode){
+  const chosen=mode.trainingMode;
+  if(!['track','guided','strength'].includes(chosen))return {ok:false,message:'Choose Track Only, Guided Progressive Overload or Strength Focus.'};
+  d.program.trainingMode=chosen;
+  if(chosen!=='guided')d.program.deload=programDeloadConfig({enabled:false});
+  return {ok:true,note:`Program training mode changed to ${programTrainingModeLabel(chosen)}. Routine-level settings and completed logs are unchanged.`};
+ }
+ return {ok:false,message:'I could not safely make that change yet. Try a specific day time, named exercise add/remove/replace, training mode, or weekday move. For a split or frequency redesign, use Edit Manually.'};
+}
+function coachSubmitSavedProgramEdit(){
+ const d=coachSavedProgramEditDraft;if(!d)return;
+ const raw=document.getElementById('coachSavedProgramPrompt')?.value.trim()||'';
+ const next={...d,program:cloneData(d.program),routines:d.routines.map(cloneData),notes:[...d.notes]};
+ const result=coachSavedProgramEditApplyText(next,raw);
+ if(!result.ok){showToast(result.message);return}
+ // Propose is transactional: only accepted changes advance the local draft.
+ next.notes.push(result.note);
+ coachSavedProgramEditDraft=next;
+ coachRenderSavedProgramEditor();
+}
+function coachApplySavedProgramEdits(){
+ const d=coachSavedProgramEditDraft;if(!d||!coachSavedProgramEditorChanged(d)){showToast('No changes to apply');return false}
+ const ownerNow=typeof syncIdentityUser==='function'?(syncIdentityUser()?.id||null):null;
+ if(ownerNow!==d.signedInOwnerId){
+  showToast('Cloud account changed. Reopen the editor in the current workspace.');return false;
+ }
+ const p=programById(d.programId);
+ if(!p||coachSavedProgramEditorProgramSnapshot(p)!==coachSavedProgramEditorProgramSnapshot(d.originalProgram)){
+  showToast('This program changed since Coach opened it. Reopen the editor.');return false;
+ }
+ for(let i=0;i<d.originalRoutines.length;i++){
+  const live=state.routines.find(r=>r.id===d.originalRoutines[i].id);
+  if(!live||JSON.stringify(live)!==JSON.stringify(d.originalRoutines[i])){
+   showToast('A routine changed since Coach opened it. Reopen the editor.');return false;
+  }
+ }
+ if(state.activeWorkout?.programId===p.id){
+  showToast('Finish or cancel this program workout before applying edits.');return false;
+ }
+ const nextProgram=cloneData(d.program),newRoutines=[];
+ for(let i=0;i<d.routines.length;i++){
+  if(JSON.stringify(d.routines[i])===JSON.stringify(d.originalRoutines[i]))continue;
+  const newRoutine=cloneData(d.routines[i]);
+  newRoutine.id=uid(); // copy-on-write, even if the original is shared elsewhere
+  newRoutines.push(newRoutine);
+  nextProgram.routineIds[i]=newRoutine.id;
+ }
+ // Preserve the same Program ID, next rotation index and completed history.
+ nextProgram.id=p.id;
+ nextProgram.nextIndex=p.nextIndex;
+ const snapshot=cloneData(state);
+ state.routines.push(...newRoutines);
+ state.programs=state.programs.map(row=>row.id===p.id?nextProgram:row);
+ if(!save()){
+  state=normalizeState(snapshot);
+  showToast('Save failed. The original program is intact.');return false;
+ }
+ coachSavedProgramEditDraft=null;
+ closeModal();renderPrograms();renderRoutines();renderHome();
+ showToast('Saved program updated · workout history preserved');
+ return true;
 }

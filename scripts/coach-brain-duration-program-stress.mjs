@@ -519,3 +519,5 @@ console.log('Brain duration + multi-turn + interactive program intake PASS',
 dom.window.close();
 // Mobile DOM acceptance is part of this existing Coach regression CI step.
 await import('./coach-mobile-program-acceptance.mjs');
+// Saved Program editing is another Coach integration gate.
+await import('./coach-saved-program-edit-stress.mjs');

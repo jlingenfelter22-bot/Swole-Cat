@@ -340,9 +340,20 @@ function openModal(title,body,modeClass=''){
  resetModalModeClasses(modal);
  if(modeClass)modal.classList.add(modeClass);
  document.getElementById('modalTitle').innerHTML=title;
- document.getElementById('modalBody').innerHTML=body;
+ const modalBody=document.getElementById('modalBody');
+ modalBody.innerHTML=body;
  modal.classList.add('open');
- enhanceAppSelects(document.getElementById('modalBody'));
+ // Every new dialog starts at the top; the recycled sheet previously kept
+ // Coach's long preview scroll offset when Workout complete opened.
+ const sheet=modal.querySelector('.sheet');
+ if(sheet)sheet.scrollTop=0;
+ modalBody.scrollTop=0;
+ if(title==='Workout complete'&&typeof requestAnimationFrame==='function'){
+  requestAnimationFrame(()=>{
+   if(modal.classList.contains('open')&&document.getElementById('modalTitle')?.textContent==='Workout complete'&&sheet)sheet.scrollTop=0;
+  });
+ }
+ enhanceAppSelects(modalBody);
 }
 function closeModal(){
  closeAppSelect();

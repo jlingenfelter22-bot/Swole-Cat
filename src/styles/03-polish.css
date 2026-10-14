@@ -893,6 +893,65 @@
     .coach-day-editor .actions .btn{min-height:48px;white-space:normal}
   }
 
+  /* v0.93.1: the native WebView already shrinks for IME; do not double
+     count the keyboard inset in Coach's persistent refinement area. */
+  .modal-mode-coach-program .sheet,.modal-mode-coach-saved .sheet{scroll-padding-bottom:16px}
+  .modal-mode-coach-program .coach-program-composer,
+  .modal-mode-coach-saved .coach-program-composer{
+    position:sticky;bottom:-18px;z-index:5;overflow:visible;
+    margin:4px -14px -18px;padding:12px 14px calc(12px + var(--sc-safe-bottom,0px));
+    border-radius:14px 14px 0 0;border:1px solid rgba(167,139,250,.56);
+    background:linear-gradient(120deg,#171428,#0d1725);
+    box-shadow:0 -8px 28px rgba(1,4,12,.6);
+  }
+  /* Generated program: keep the actual refinement input above day cards.
+     A compact top anchor stays reachable during long previews. The saved
+     program editor keeps its distinct bottom composer and review controls. */
+  .modal-mode-coach-program .coach-program-composer{
+    position:sticky;top:0;bottom:auto;z-index:6;
+    margin:8px -14px 12px;padding:10px 14px;
+    border-radius:0 0 14px 14px;
+    box-shadow:0 8px 24px rgba(1,4,12,.55);
+  }
+  @media(max-height:540px){
+    .modal-mode-coach-program .coach-program-composer{position:relative;top:auto}
+  }
+  .coach-program-composer:after{display:none}
+  .coach-program-composer .eyebrow{color:#d9c7ff}
+  .coach-program-composer input{min-height:48px;font-size:16px}
+  .coach-program-composer .home-coach-row>.btn{min-height:48px}
+  .coach-program-composer .coach-mic-btn{min-height:42px;min-width:42px;width:42px;height:42px}
+  .coach-program-prompt-tips{margin:4px 0 9px}
+  .coach-program-prompt-tips summary{color:#bba5ec;font-size:.7rem;cursor:pointer}
+  .coach-program-day-details{margin-top:10px}
+  .coach-program-day-details>summary,
+  .coach-program-secondary>summary{
+    list-style:none;cursor:pointer;padding:11px 12px;border-radius:10px;
+    border:1px solid rgba(117,89,171,.36);background:rgba(103,72,151,.11);
+    color:#d5c4fa;font-size:.75rem;font-weight:800;
+    min-height:44px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .coach-program-day-details>summary:after,.coach-program-secondary>summary:after{content:'⌄';font-size:1rem}
+  .coach-program-day-details[open]>summary:after,.coach-program-secondary[open]>summary:after{content:'⌃'}
+  .coach-program-day-details>summary::-webkit-details-marker,
+  .coach-program-secondary>summary::-webkit-details-marker{display:none}
+  .coach-program-secondary{margin:6px 0}
+  .coach-program-secondary .coach-rationale{margin-top:6px}
+  .modal-mode-coach-program .coach-program-save-actions{margin-top:8px}
+  .program-coach-edit-btn{border-color:rgba(174,129,235,.62)!important;background:rgba(128,79,178,.17)!important;color:#e1d2ff!important}
+  .coach-saved-editor .coach-program-save-actions{margin:8px 0 0}
+  .modal-mode-coach-saved .coach-program-composer{margin-bottom:0}
+  .coach-saved-editor .coach-program-day-details>summary{overflow-wrap:anywhere}
+  .home-coach-go{background:rgba(128,79,178,.22)!important;border-color:rgba(174,129,235,.66)!important;color:#e1d2ff!important}
+  .home-coach-go:focus-visible,.coach-program-day-details>summary:focus-visible,.coach-program-secondary>summary:focus-visible{outline:2px solid #d2aeff;outline-offset:2px}
+  @media(max-width:430px){
+    .modal-mode-coach-program .coach-program-composer,.modal-mode-coach-saved .coach-program-composer{margin-inline:-14px}
+    .coach-program-composer .home-coach-row{grid-template-columns:minmax(0,1fr) auto}
+    .coach-program-composer .home-coach-row>.btn{width:auto;min-width:78px}
+  }
+  .native-app.keyboard-open .modal-mode-coach-program .sheet,
+  .native-app.keyboard-open .modal-mode-coach-saved .sheet{scroll-padding-bottom:16px}
+
   /* V41 PERFORMANCE PASS 1 */
   :root{
     --motion-fast:85ms;
