@@ -417,8 +417,32 @@ w.document.getElementById=originalGetter;
 assert.equal(JSON.stringify(program().days.map(d=>({ids:d.selectedIds,duration:d.request.duration}))),beforeInvalid);
 assert.equal(JSON.stringify(program().intent.dayPlans),beforePrefs);
 
+// A day-specific priority outside its actual split must be clarified, not ignored.
+const conflictPrompt='3-day push pull legs at a full gym, Monday 30 minutes, Wednesday 45 minutes, Friday 75 minutes more shoulders, for muscle growth, track only';
+w.document.getElementById=id=>id==='coachPrompt'?{value:conflictPrompt}:originalGetter;
+w.coachSubmitPrompt();w.document.getElementById=originalGetter;
+assert.match(modal,/day emphasis conflicts with your chosen split/i);
+assert.match(modal,/Coach won.t quietly ignore or relocate that priority/i);
+assert.equal(program().days.length,0,'cannot silently generate after contradictory priority');
+assert.equal(program().request.programFocusRegions.includes('side_delts'),false,'Friday focus must not be global');
+w.coachClearProgramDayFocus(2);
+assert.equal(program().days.length,3);
+assert.equal(program().intent.dayPlans[2].focusKey,'none');
+assert.equal(program().intent.split,'ppl');
+
 // Saved programs retain day-specific intent as metadata, not history mutations.
-const scopedSaved=w.coachPersistGeneratedProgram();
+const savedConflict=w.coachPersistGeneratedProgram();
+assert.equal(savedConflict.frequency,3);
+const scopedSaved=(()=>{ 
+ // Use a freshly regenerated mixed-equipment draft for persistence proof.
+ const request=w.coachParsePrompt(scopedPrompt,'hypertrophy'),intent=w.coachParseProgramIntent(scopedPrompt);
+ request.duration=0;request.scopedEquipmentOnly=true;request.allowedEquipment=[];request.brainEquipment=null;
+ w.coachGenerateProgram(request,intent,{interactiveBrainFlow:true,dayOverrides:[],intake:{}});
+ const d=program();
+ const changes={...d.intent,dayPlans:[{}, {duration:60,equipmentKey:'gym',focusKey:'back'}, {}]};
+ w.coachGenerateProgram(d.request,changes,d);
+ return w.coachPersistGeneratedProgram();
+})();
 assert.deepEqual(Array.from(scopedSaved.coachPlannedDays.map(d=>d.durationMinutes)),[30,60,75]);
 assert.equal(scopedSaved.coachPlannedDays[1].focusKey,'back');
 assert.equal(scopedSaved.trainingMode,'track');
