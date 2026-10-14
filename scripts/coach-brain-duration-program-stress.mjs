@@ -459,6 +459,15 @@ assert.deepEqual(Array.from(scopedSaved.coachPlannedDays.map(d=>d.durationMinute
 assert.equal(scopedSaved.coachPlannedDays[1].focusKey,'back');
 assert.equal(scopedSaved.trainingMode,'track');
 assert.equal(w.eval('JSON.stringify(state.sessions)'),historyBefore);
+// Explicit whole-week changes must supersede earlier per-day overrides.
+const allTime=w.coachRefineProgramText('make every workout 50 minutes');
+assert.equal(allTime.ok,true,allTime.message);
+assert.deepEqual(Array.from(program().days.map(d=>d.request.duration)),[50,50,50]);
+const allGear=w.coachRefineProgramText('use a full gym for every workout');
+assert.equal(allGear.ok,true,allGear.message);
+assert.deepEqual(Array.from(program().days.map(d=>d.request.brainEquipment?.choice)),['gym','gym','gym']);
+assert.equal(program().intent.dayPlans[1].focusKey,'back','global duration/equipment changes do not erase day muscle priority');
+assert.equal(w.eval('JSON.stringify(state.sessions)'),historyBefore);
 console.log('COACH_V092_DAILY '+JSON.stringify({durations:scopedSaved.coachPlannedDays.map(d=>d.durationMinutes),equipment:scopedSaved.coachPlannedDays.map(d=>d.equipmentLabel)}));
 
 console.log('Brain duration + multi-turn + interactive program intake PASS',
