@@ -91,6 +91,73 @@ function coachProgramCoverageText(draft=coachProgramBuildDraft){
  if(!rows.length)return '';
  return rows.map(([region,sets])=>`${MUSCLE_REGION_LABELS[region]||region} ${Number(sets.toFixed(1))}`).join(' · ');
 }
+// Planning-only quality review of the *current* generated preview.
+// No automatic plan changes, physiological "readiness" claims, or storage writes.
+function coachBrainProgramWeekReview(draft=coachProgramBuildDraft){
+ if(!draft?.days?.length)return {notes:[],roles:{},primary:{},focus:[]};
+ const roleSpecs={
+  press:new Set(['horizontal_press','incline_press','vertical_press','dip_press']),
+  pull:new Set(['horizontal_pull','vertical_pull']),
+  knee:new Set(['squat','lunge','knee_extension']),
+  posterior:new Set(['hinge','knee_flexion','hip_extension','back_extension'])
+ };
+ const roles={press:0,pull:0,knee:0,posterior:0},primary={},notes=[],dayRoles=[];
+ const scores=coachProgramWeeklyCoverage(draft);
+ const focusRegions=[...new Set((draft.request?.programFocusRegions||draft.intent?.focusRegions||[]).filter(Boolean))];
+ const focus=focusRegions.filter(m=>Number(scores[m]||0)>0).map(m=>({region:m,sets:Number((scores[m]||0).toFixed(1))}));
+ draft.days.forEach((day,idx)=>{
+  const dayPrimary=new Set(),dayPatterns=new Set();
+  for(const id of day.selectedIds||[]){
+   const ex=exById(id);if(!ex)continue;
+   const meta=exerciseMuscleMetadata(ex);
+   for(const m of meta.primary){dayPrimary.add(m);primary[m]=(primary[m]||0)+1}
+   dayPatterns.add(ex.pattern);
+   for(const [role,patterns] of Object.entries(roleSpecs)){
+    if(patterns.has(ex.pattern))roles[role]++;
+   }
+  }
+  const requested=day.request?.targetRegions||COACH_TARGET_GROUPS[day.key]?.regions||[];
+  if(requested.length&&day.selectedIds?.length&&!requested.some(m=>dayPrimary.has(m))){
+   notes.push({key:'day_focus_'+idx,kind:'review',text:`Day ${idx+1} (${day.label}) has no primary exercise for its chosen focus. Review the exercise selection or broaden available equipment.`});
+  }
+  dayRoles.push({label:day.label,patterns:[...dayPatterns]});
+ });
+ // A total lack of a broad movement role is worth surfacing even when a
+ // deliberate body-part split is narrower than general whole-body programming.
+ const missed=[];
+ if(!roles.press)missed.push('pressing');
+ if(!roles.pull)missed.push('rowing or pulldown');
+ if(!roles.knee)missed.push('knee-dominant leg');
+ if(!roles.posterior)missed.push('posterior-chain');
+ if(missed.length){
+  notes.push({key:'movement_coverage',kind:'choice',text:`This week has no ${missed.join(', ')} movement selected. That may fit a deliberately narrow split, but consider whether you want broader coverage.`});
+ }
+ // Separate chest-specific underrepresentation from shoulder pressing. Only
+ // mention it for a self-chosen custom split, not every targeted session.
+ if(draft.intent?.split==='custom'&&!primary.chest){
+  notes.push({key:'chest_direct',kind:'choice',text:'Your custom split includes no primary chest exercise. If chest growth matters to you, consider adding direct chest work while keeping your preferred day structure.'});
+ }
+ if(focusRegions.length){
+  const unserved=focusRegions.filter(m=>(scores[m]||0)===0);
+  if(unserved.length){
+   const labels=unserved.slice(0,3).map(m=>MUSCLE_REGION_LABELS[m]||m);
+   notes.push({key:'focus_gap',kind:'review',text:`Your requested emphasis includes ${labels.join(', ')}, but those regions have no planned set contribution. Consider an exercise change if that emphasis is important.`});
+  }
+ }
+ return {notes:notes.slice(0,4),roles,primary,focus,dayRoles,scores};
+}
+function coachBrainProgramWeekReviewHtml(draft=coachProgramBuildDraft){
+ const review=coachBrainProgramWeekReview(draft);
+ if(!draft?.days?.length)return '';
+ const roles=[['press','Press'],['pull','Pull'],['knee','Knee'],['posterior','Posterior']]
+  .map(([key,name])=>`${name}: ${review.roles[key]>0?'present':'not selected'}`).join(' · ');
+ return `<div class="coach-rationale" id="coachProgramWeekReview" role="region" aria-label="Coach whole-week review">
+  <div class="eyebrow">WHOLE-WEEK REVIEW // YOUR CHOICES</div>
+  <div class="mini" style="margin:6px 0 9px">${esc(roles)}</div>
+  ${review.notes.length?review.notes.map(n=>`<div class="mini" style="margin:7px 0">• ${esc(n.text)}</div>`).join(''):'<div class="mini">Your selected week has the major push, pull, knee and posterior patterns represented. Review its exact exercises and time ranges before saving.</div>'}
+  <div class="mini" style="margin-top:8px">Planning observations, not diagnoses or mandatory training targets. Coach never changes your chosen split based on this review.</div>
+ </div>`;
+}
 function coachProgramScheduleText(draft=coachProgramBuildDraft){
  const days=draft?.intent?.preferredDays||[];
  return days.length?days.map(d=>PROGRAM_DAYS[d]).join(' / '):'Flexible training days';
@@ -134,6 +201,7 @@ function renderCoachProgramPreview(){
     </div>`).join('')}
    </div>
    ${coverage?`<div class="coach-rationale"><b>Planned weekly set-equivalents:</b> ${esc(coverage)}.<br><span class="mini">Primary involvement counts as 1.0 set and secondary involvement as 0.5. This is a planning aid, not a claim about muscle damage or recovery.</span></div>`:''}
+   ${coachBrainProgramWeekReviewHtml(draft)}
    <div class="coach-console"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">Try “4 days, upper/lower and 35 minutes,” “dumbbells only,” “no squats, more glutes,” or “Monday Tuesday Thursday Saturday.”</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachProgramRefinePrompt" placeholder="4 days, upper/lower, 40 min, more shoulders..." onkeydown="if(event.key==='Enter')coachApplyProgramRefinement()">${coachVoiceButtonHtml('coachProgramRefinePrompt')}</div><button class="btn" onclick="coachApplyProgramRefinement()">Update</button></div></div>
    ${coachBrainEquipmentPreviewNotice(req)?`<div class="notice">${esc(coachBrainEquipmentPreviewNotice(req))}</div>`:''}
    ${draft.days.some(day=>day.brainTime?.overTarget)?`<div class="notice">One or more days exceed your requested time at the estimated midpoint. Review the work or allow more time before saving.</div>`:draft.days.some(day=>day.brainTime&&day.brainTime.upperMinutes>day.brainTime.targetMinutes)?`<div class="notice">Some days could run past your target if warm-ups, equipment transitions or rest take longer. Each day's time range is a planning estimate, not a guaranteed finish time.</div>`:''}
