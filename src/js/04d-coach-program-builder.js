@@ -267,7 +267,7 @@ function coachEditProgramDay(index){
  const draft=coachProgramBuildDraft,day=draft?.days?.[index];if(!day)return;
  const plan=coachProgramEffectiveDayPlan(draft.intent,index);
  const key=plan.equipmentKey||'inherit';
- const equipmentChoices=[['inherit','Use program equipment'],['gym','Gym (common equipment)'],
+ const equipmentChoices=[...(draft.request.brainEquipment||coachBrainExplicitEquipment(draft.request)?[['inherit','Use shared program equipment']]:[]),['gym','Gym (common equipment)'],
   ['dumbbells','Dumbbells + bodyweight'],['bodyweight','Bodyweight only'],['custom','Other equipment']];
  const focusChoices=[['none','Keep the usual day focus'],...['chest','back','shoulders','arms','biceps','triceps','quads','hamstrings','glutes','calves','core']
   .filter(k=>(COACH_TARGET_GROUPS[k]?.regions||[]).some(m=>day.request.targetRegions.includes(m)))
@@ -299,6 +299,9 @@ function coachSaveProgramDaySettings(index){
  const focusKey=document.getElementById('coachDayFocus')?.value||'none';
  if(!Number.isInteger(minutes)||minutes<15||minutes>120){showToast('Choose 15–120 minutes for this day');return false}
  if(!['inherit','gym','dumbbells','bodyweight','custom'].includes(equipmentKey)){showToast('Choose a valid equipment option');return false}
+ if(equipmentKey==='inherit'&&!draft.request.brainEquipment&&!coachBrainExplicitEquipment(draft.request)){
+  showToast('No shared equipment is set. Choose what is available for this workout.');return false;
+ }
  if(equipmentKey==='custom'){
   const check=coachBrainApplyEquipmentChoice(day.request,'custom',equipmentText);
   if(!check.ok){showToast(check.message);return false}
