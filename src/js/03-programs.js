@@ -80,6 +80,25 @@ function programRouteHtml(p){
    return `<div class="program-step ${i===next?'next':''}"><span class="program-letter">${programSlotLabel(i)}</span><span>${esc(r?.name||'Missing routine')}</span></div>`;
  }).join('')}</div>`;
 }
+// Existing saved-routine Coach draft editor is available from each Program.
+// Workouts retain their routine IDs and completed session history.
+function openCoachSavedProgramWorkouts(id){
+ const p=programById(id);if(!p)return;
+ openModal('Edit program with Coach',`
+  <div class="coach-console"><div class="eyebrow">SAVED PROGRAM · COACH</div>
+   <div class="exercise-name">${esc(p.name)}</div>
+   <div class="mini">Choose a workout to modify with Coach. Nothing is saved until you confirm Save Changes.</div>
+  </div>
+  <div class="routine-manage-actions">
+   ${p.routineIds.map((rid,i)=>{
+     const r=state.routines.find(item=>item.id===rid);
+     return r?`<button class="btn secondary" onclick="openCoachRoutineControl('${escAttr(rid)}')">Day ${i+1} · ${esc(r.name)}</button>`:'';
+   }).join('')}
+  </div>
+  <div class="notice">For schedule, frequency, progression mode or adding/removing program days, choose Edit Program Settings. Individual Coach workout edits preserve completed history and program identity.</div>
+  <div class="actions"><button class="btn secondary" onclick="newProgram('${escAttr(p.id)}')">Edit Program Settings</button><button class="btn secondary" onclick="closeModal()">Close</button></div>
+ `);
+}
 function openProgramCardMenu(id){
  const p=programById(id);if(!p)return;
  const isActive=state.activeProgramId===p.id;
@@ -90,7 +109,8 @@ function openProgramCardMenu(id){
      <div class="mini">${p.routineIds.length} workout${p.routineIds.length===1?'':'s'} · ${p.frequency}×/week · ${esc(programDaysText(p))}</div>
    </div>
    <div class="routine-manage-actions">
-     <button class="btn" onclick="closeModal();newProgram('${escAttr(p.id)}')">Edit Program</button>
+     <button class="btn" onclick="openCoachSavedProgramWorkouts('${escAttr(p.id)}')">Edit Workouts with Coach</button>
+     <button class="btn secondary" onclick="closeModal();newProgram('${escAttr(p.id)}')">Edit Program Settings</button>
      ${!isActive?`<button class="btn secondary" onclick="closeModal();activateProgram('${escAttr(p.id)}')">Set Active</button>`:''}
      <button class="btn secondary" onclick="closeModal();openCoachProgramAudit('${escAttr(p.id)}')">Coach Audit</button>
      <button class="btn secondary" onclick="closeModal();openProgramShare('${escAttr(p.id)}')">Share Program</button>
@@ -111,7 +131,7 @@ function programCard(p){
    <div class="program-card-meta">${next?`Next: <b>${esc(next.name)}</b>`:'Add a routine to start'}${last?` · Last: ${esc(last.routineName)} ${new Date(last.date).toLocaleDateString()}`:''} · ${logs.length} completed</div>
    <div class="program-card-actions">
      ${next?`<button class="btn small ${isActive?'green':''} program-start-btn" onclick="startProgramWorkout('${escAttr(p.id)}')">${state.activeWorkout?.programId===p.id?'Resume Program':'Start Next'}</button>`:''}
-     <button class="btn small secondary program-edit-btn" onclick="newProgram('${escAttr(p.id)}')">Edit</button>
+     <button class="btn small secondary program-edit-btn" onclick="openCoachSavedProgramWorkouts('${escAttr(p.id)}')">Edit with Coach</button>
    </div>
  </div>`;
 }
