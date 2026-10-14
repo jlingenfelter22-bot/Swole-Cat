@@ -14,6 +14,27 @@ function coachCloneRequest(request){
    excludedMovementPatterns:[...(request.excludedMovementPatterns||[])],brainEquipment:request.brainEquipment||null
  };
 }
+// Day settings are planning instructions, not changes to logged workouts.
+// Weekday settings follow their weekday; day index settings follow the slot.
+function coachProgramEffectiveDayPlan(intent,index){
+ const dayIndex=Math.max(0,Math.trunc(index)||0);
+ const weekday=Array.isArray(intent?.preferredDays)&&intent.preferredDays.length===intent.frequency
+  ?intent.preferredDays[dayIndex]:null;
+ const byDay=intent?.dayPlans?.[dayIndex]||{};
+ const byWeekday=weekday!=null?intent?.weekdayPlans?.[weekday]||{}:{};
+ return {...byWeekday,...byDay};
+}
+function coachProgramAllDaysHaveTime(intent){
+ if(!intent?.frequency)return false;
+ return Array.from({length:intent.frequency},(_,i)=>Number(coachProgramEffectiveDayPlan(intent,i).duration)>0).every(Boolean);
+}
+function coachProgramDayPlanSummary(day){
+ const p=day.dayPlan||{},out=[];
+ if(p.duration)out.push(p.duration+' min');
+ if(p.equipmentKey&&p.equipmentKey!=='inherit')out.push(day.request.brainEquipment?.label||p.equipmentKey);
+ if(p.focusKey&&p.focusKey!=='none')out.push('More '+(COACH_TARGET_GROUPS[p.focusKey]?.label||p.focusKey));
+ return out.join(' · ');
+}
 function coachGenerateProgram(request,intent,previous=null){
  const frequency=Math.max(2,Math.min(6,Number(intent.frequency)||0));if(!frequency)return null;
  const split=intent.split||coachDefaultProgramSplit(frequency),slots=coachProgramSlots(frequency,split,intent.customSlots);
@@ -21,18 +42,29 @@ function coachGenerateProgram(request,intent,previous=null){
  const req=coachCloneRequest({...request,duration:request.duration||45});
  req.programFocusRegions=[...new Set(intent.focusRegions||request.programFocusRegions||[])];
  req.programFocusLabels=[...new Set(intent.focusLabels||request.programFocusLabels||[])];
- const defaults=coachProgrammingDefaults(req.goal,req.duration),usage={},muscleUsage={},hingeHistory=[],dayOverrides=previous?.dayOverrides||[];
+ const usage={},muscleUsage={},hingeHistory=[],dayOverrides=previous?.dayOverrides||[];
  const days=slots.map((key,index)=>{
    const group=COACH_TARGET_GROUPS[key],override=dayOverrides[index]||{excludedExerciseIds:[],requiredExerciseIds:[]};
    const excludedRegions=new Set(req.excludedTargetRegions||[]);
    const targetRegions=[...(group?.regions||[])].filter(region=>!excludedRegions.has(region)),targetSet=new Set(targetRegions);
-   const dayReq=coachCloneRequest(req);
+   const plan=coachProgramEffectiveDayPlan(intent,index),dayReq=coachCloneRequest(req);
    dayReq.targetKeys=[key];dayReq.targetLabels=[group?.label||'Workout'];dayReq.targetRegions=targetRegions;
+   if(Number(plan.duration)>0)dayReq.duration=Number(plan.duration);
+   if(plan.equipmentKey&&plan.equipmentKey!=='inherit'){
+     const result=coachBrainApplyEquipmentChoice(dayReq,plan.equipmentKey,plan.equipmentText||'');
+     if(!result.ok)return {key,label:coachProgramDayDisplayLabel(key,index,slots),selectedIds:[],brainFeasible:false};
+     Object.assign(dayReq,result.request);
+   }
+   const defaults=coachProgrammingDefaults(dayReq.goal,dayReq.duration);
    // A generic custom "Arms" day should emphasize biceps/triceps before
    // optional forearm accessories. An explicit forearm emphasis always wins.
    const primaryArmFocus=split==='custom'&&key==='arms'&&!req.programFocusRegions.includes('forearms')
      ?['biceps','triceps']: [];
    dayReq.priorityRegions=[...new Set([...primaryArmFocus,...req.programFocusRegions.filter(region=>targetSet.has(region))])];
+   if(plan.focusKey&&plan.focusKey!=='none'){
+     const regions=COACH_TARGET_GROUPS[plan.focusKey]?.regions||[];
+     dayReq.priorityRegions=[...new Set([...dayReq.priorityRegions,...regions.filter(region=>targetSet.has(region))])];
+   }
    dayReq.excludedExerciseIds=[...new Set([...(req.excludedExerciseIds||[]),...(override.excludedExerciseIds||[])])];
    dayReq.requiredExerciseIds=[...new Set(override.requiredExerciseIds||[])];
    dayReq.programHingeHistory=[...hingeHistory];
@@ -50,7 +82,7 @@ function coachGenerateProgram(request,intent,previous=null){
      meta.secondary.forEach(region=>muscleUsage[region]=(muscleUsage[region]||0)+sets*.5);
    });
    return {
-     key,label:coachProgramDayDisplayLabel(key,index,slots),request:dayReq,
+     key,label:coachProgramDayDisplayLabel(key,index,slots),dayPlan:{...plan},request:dayReq,
      defaults:{...defaults},selectedIds:selected.map(ex=>ex.id),brainTime:durationPlan.time,brainTimeRemoved:durationPlan.removed,brainSetCounts:durationPlan.setCounts,brainFeasible:durationPlan.feasible
    };
  });
@@ -66,7 +98,9 @@ function coachGenerateProgram(request,intent,previous=null){
  }
  coachProgramBuildDraft={
    request:req,
-   intent:{...intent,frequency,split,preferredDays:[...(intent.preferredDays||[])],customSlots:[...(intent.customSlots||[])]},
+   intent:{...intent,frequency,split,preferredDays:[...(intent.preferredDays||[])],customSlots:[...(intent.customSlots||[])],
+     dayPlans:(intent.dayPlans||[]).map(p=>p?{...p}:{}),
+     weekdayPlans:Object.fromEntries(Object.entries(intent.weekdayPlans||{}).map(([k,v])=>[k,{...v}]))},
   intake:{...(previous?.intake||{})},
    slots,days,dayOverrides:slots.map((_,i)=>({
      excludedExerciseIds:[...(dayOverrides[i]?.excludedExerciseIds||[])],
