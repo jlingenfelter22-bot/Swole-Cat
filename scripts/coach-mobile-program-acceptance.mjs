@@ -127,6 +127,16 @@ assert(css.includes('.coach-day-custom-field[hidden]{display:none!important}'));
 assert(/\.modal-mode-coach-program \.coach-program-composer(?:\{|,)/.test(css),'the Coach composer has a scoped sticky keyboard-safe container');
 assert(css.includes('.modal-mode-coach-program .coach-program-composer{')&&css.includes('position:sticky;top:0;bottom:auto'),
  'generated plan has top-anchored Coach composer before the day breakdown');
+assert(css.includes('.modal-mode-coach-program .sheet{')&&css.includes('height:calc(100dvh - max(var(--sc-safe-top,0px),24px) - 8px)'),
+ 'Coach sheet uses one keyboard-responsive height source and stays bottom-aligned');
+assert(css.includes('.modal-mode-coach-program .sheet-head{')&&css.includes('flex:0 0 auto;'),
+ 'modal header stays in a stationary top rail');
+assert(css.includes('.modal-mode-coach-program #modalBody{')&&css.includes('overflow-y:auto;')&&css.includes('overscroll-behavior-y:contain;'),
+ 'long workouts scroll in modal body, without pushing the header or dock away');
+assert(!css.includes('.modal-mode-coach-program .coach-program-composer{position:relative;top:auto}'),
+ 'opening the keyboard must never demote the floating composer to a normal in-flow element');
+assert(css.includes('margin:0 -18px 12px;')&&css.includes('position:sticky;top:0;bottom:auto'),
+ 'Coach bar docks flush below the header with no exposed scroll content gap');
 assert(css.includes('.modal-mode-coach-saved .coach-program-composer')&&css.includes('position:sticky;bottom:-18px'),
  'saved program editor retains its bottom-anchored proposal input');
 assert(css.includes('.native-app.keyboard-open .modal-mode-coach-program .sheet')&&css.includes('scroll-padding-bottom:16px'),'avoid double-counting IME padding');
