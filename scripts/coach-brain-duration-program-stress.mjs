@@ -253,6 +253,19 @@ w.document.getElementById=recommendationGetter;
 assert.match(modal,/A few ways to organize your week/);
 assert.equal(program().intent.split,'');
 
+// A 2-day PPL request cannot secretly drop Legs (or other day): negotiate explicitly.
+startProgram('2-day push pull legs program Monday Wednesday 45 minutes at a full gym for muscle growth track only');
+assert.match(modal,/needs three distinct sessions/i);
+assert.equal(program().days.length,0,'incompatible PPL frequency is not generated');
+w.coachAnswerProgramSplit('upper_lower');
+assert.deepEqual(Array.from(program().slots),['upper body','lower body']);
+assert.equal(program().intent.frequency,2,'coach preserves requested frequency unless user changes it');
+
+startProgram('2-day program');
+assert.match(modal,/What kind of split did you have in mind/);
+assert.doesNotMatch(modal,/onclick="coachAnswerProgramSplit\('ppl'\)"/);
+assert.match(modal,/PPL needs at least 3 training days/);
+
 // Whole-week planning review is read-only and reflects CURRENT preview exercises,
 // not a stale generated baseline. Intentional narrow splits receive *choices*, not edits.
 const fullLibrary=w.allExercises();
