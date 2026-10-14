@@ -115,7 +115,7 @@ assert.match(css,/.coach-program-exercise-actions .btn{min-width:0;min-height:44
 assert.match(css,/.coach-program-save-actions .btn{min-height:48px/);
 assert.match(css,/.coach-day-editor .search{min-width:0;min-height:48px;font-size:16px}/);
 assert.match(css,/.coach-day-custom-field[hidden]{display:none!important}/);
-assert.match(base,/max-height:min(88dvh/,'modal handles Android dynamic viewport height');
+assert(base.includes('max-height:min(88dvh'),'modal handles Android dynamic viewport height');
 console.log('COACH_MOBILE_DOM_ACCEPTANCE PASS '+JSON.stringify({
  emulatedCssWidths:[320,360,393,430],guidance,preview,edited,
  inputFontPx:16,minActionHeightPx:44,historyUntouched:true,
