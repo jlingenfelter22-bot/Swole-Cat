@@ -1,5 +1,16 @@
 # Swole Cat - Next Chat Handoff
 
+## CURRENT DEVELOPMENT CHECKPOINT — Unified Coach phone UX + protected saved-program editing (Oct 14, 2026)
+
+- Integration work is on `feature/coach-v094-consolidated-phone-ux`, based **directly on draft PR #73** (`feature/coach-v094-saved-program-edit`), which already includes parent PR #72. PR #74 was independently based on v0.93 main, **not** a descendant of #73; do not directly merge it over the more capable program editor.
+- Consolidated priority from PR #74: **Talk to Coach now appears before** the generated program exercise-day breakdown. Program refinement remains one actual input, with sticky top placement (and short-viewport fall-back), compact optional prompt tips, one expanded day and the rest collapsed. Shared modal reset-to-top, nearest keyboard scroll, and optional method review already exist in #72/#73 and are preserved. Saved-program editing retains its *separate* bottom proposal input and explicit Apply/Cancel.
+- Keep PR #73's contextual saved-program draft editor, not PR #74's simpler routine picker. Current editor supports named day time targets, move weekday, named exercise add/remove/same-pattern replacement, training-mode changes, multi-clause draft isolation, review-before-apply, copy-on-write for modified routines, original history preservation, stale snapshot guard, account-switch guard, and active-workout guard. Full freeform program redesign is **not** implemented.
+- Strengthened `scripts/coach-mobile-program-acceptance.mjs` to verify above-list composer ordering, exactly one Coach input, scoped sticky mobile styling, shared Android/modal protections, and that saved-program editor safety entry points survived integration. Existing dedicated `scripts/coach-saved-program-edit-stress.mjs` tests scoped editing/copy-on-write/history/conflicts. Full CI on **integration exact HEAD** is mandatory; real Android Gboard/voice/screen-size validation remains pending and cannot be inferred from synthetic tests.
+- **NO RELEASE AUTHORIZATION:** Signed Testing remains v0.93.0 / code 135, Beta v0.73.1 unchanged. No signed APK, no merging into main/beta, no account/Supabase/history writes. Optional first-run profile design PR #71 remains separate. Subsequent checkpoint: inspect CI, Android QA for sticky refinements and saved-editor review/cancel/apply, then determine whether a separate Testing candidate is warranted.
+
+---
+
+
 ## CURRENT DEVELOPMENT — Owner Walkthrough Remediation (Oct 14, 2026)
 
 - Owner approved moving ahead with the prioritized findings of the actual signed **Testing v0.93.0** Coach walkthrough and detailed research report. No explicit new signed release/Beta promotion authorization was given; **Testing remains signed v0.93.0 build 135**, **Beta v0.73.1 untouched**, no Supabase/account mutations.
