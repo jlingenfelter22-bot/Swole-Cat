@@ -895,8 +895,9 @@
 
   /* v0.93.1: the native WebView already shrinks for IME; do not double
      count the keyboard inset in Coach's persistent refinement area. */
-  .modal-mode-coach-program .sheet{scroll-padding-bottom:16px}
-  .modal-mode-coach-program .coach-program-composer{
+  .modal-mode-coach-program .sheet,.modal-mode-coach-saved .sheet{scroll-padding-bottom:16px}
+  .modal-mode-coach-program .coach-program-composer,
+  .modal-mode-coach-saved .coach-program-composer{
     position:sticky;bottom:-18px;z-index:5;overflow:visible;
     margin:4px -14px -18px;padding:12px 14px calc(12px + var(--sc-safe-bottom,0px));
     border-radius:14px 14px 0 0;border:1px solid rgba(167,139,250,.56);
@@ -925,14 +926,19 @@
   .coach-program-secondary{margin:6px 0}
   .coach-program-secondary .coach-rationale{margin-top:6px}
   .modal-mode-coach-program .coach-program-save-actions{margin-top:8px}
+  .program-coach-edit-btn{border-color:rgba(174,129,235,.62)!important;background:rgba(128,79,178,.17)!important;color:#e1d2ff!important}
+  .coach-saved-editor .coach-program-save-actions{margin:8px 0 0}
+  .modal-mode-coach-saved .coach-program-composer{margin-bottom:0}
+  .coach-saved-editor .coach-program-day-details>summary{overflow-wrap:anywhere}
   .home-coach-go{background:rgba(128,79,178,.22)!important;border-color:rgba(174,129,235,.66)!important;color:#e1d2ff!important}
   .home-coach-go:focus-visible,.coach-program-day-details>summary:focus-visible,.coach-program-secondary>summary:focus-visible{outline:2px solid #d2aeff;outline-offset:2px}
   @media(max-width:430px){
-    .modal-mode-coach-program .coach-program-composer{margin-inline:-14px}
+    .modal-mode-coach-program .coach-program-composer,.modal-mode-coach-saved .coach-program-composer{margin-inline:-14px}
     .coach-program-composer .home-coach-row{grid-template-columns:minmax(0,1fr) auto}
     .coach-program-composer .home-coach-row>.btn{width:auto;min-width:78px}
   }
-  .native-app.keyboard-open .modal-mode-coach-program .sheet{scroll-padding-bottom:16px}
+  .native-app.keyboard-open .modal-mode-coach-program .sheet,
+  .native-app.keyboard-open .modal-mode-coach-saved .sheet{scroll-padding-bottom:16px}
 
   /* V41 PERFORMANCE PASS 1 */
   :root{
