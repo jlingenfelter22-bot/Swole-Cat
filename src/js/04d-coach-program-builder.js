@@ -879,6 +879,17 @@ function coachRenderSavedProgramEditor(){
     </div>
   </div>`,'modal-mode-coach-saved');
 }
+// If a saved day explicitly says dumbbells/bodyweight only, its new movements
+// must pass the same deterministic equipment checks as new Coach drafts.
+function coachSavedProgramExerciseFitsEquipment(ex,d,index){
+ const label=String(d.program.coachPlannedDays?.[index]?.equipmentLabel||'').toLowerCase();
+ const key=/dumbbell/.test(label)?'dumbbells':/bodyweight|floor.only|no equipment/.test(label)?'bodyweight':null;
+ if(!key)return true; // broader/unverified labels are not asserted as verified equipment
+ const cfg=coachBrainApplyEquipmentChoice({allowedEquipment:[],excludedEquipment:[],targetRegions:[]},key);
+ if(!cfg.ok)return false;
+ if(ex.equipment&&!cfg.request.allowedEquipment.includes(ex.equipment))return false;
+ return coachBrainEquipmentAllowed(ex,cfg.request);
+}
 function coachSavedProgramEditApplyText(d,raw){
  const text=String(raw||'').trim(),normalized=coachNumbersToDigits(text);
  if(!text)return {ok:false,message:'Describe one change to the saved program.'};
@@ -922,6 +933,7 @@ function coachSavedProgramEditApplyText(d,raw){
    if(!old||!replacement)return {ok:false,message:'I could not confidently identify both exercises. Name their exact exercise titles.'};
    if(currentIds.includes(replacement.id))return {ok:false,message:'That replacement is already in this workout.'};
    if(old.pattern!==replacement.pattern)return {ok:false,message:'These exercises use different movement patterns. Review the prescription in Edit Manually instead of transferring it automatically.'};
+   if(!coachSavedProgramExerciseFitsEquipment(replacement,d,i))return {ok:false,message:'That replacement does not fit the day\'s recorded equipment. Choose another movement or adjust the day manually.'};
    const idx=routine.exercises.findIndex(e=>e.exerciseId===old.id);
    if(idx<0)return {ok:false,message:'The exercise to replace is not in that day.'};
    routine.exercises[idx]={...routine.exercises[idx],exerciseId:replacement.id};
@@ -937,6 +949,7 @@ function coachSavedProgramEditApplyText(d,raw){
   const ex=coachResolveExercisePhrase(add[1]);
   if(!ex)return {ok:false,message:'I could not recognize that exercise. Use its full name.'};
   if(currentIds.includes(ex.id))return {ok:false,message:'That exercise is already in this day.'};
+  if(!coachSavedProgramExerciseFitsEquipment(ex,d,i))return {ok:false,message:'That exercise is not available with the day\'s recorded equipment.'};
   const goal='general',defaults=coachProgrammingDefaults(goal,Number(d.program.coachPlannedDays?.[i]?.durationMinutes)||45);
   const prescription=coachExercisePrescription(ex,{goal,targetRegions:exerciseMuscleMetadata(ex).primary,duration:defaults.duration},defaults);
   routine.exercises.push({
