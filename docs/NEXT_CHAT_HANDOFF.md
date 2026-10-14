@@ -1,5 +1,18 @@
 # Swole Cat - Next Chat Handoff
 
+## ACTIVE DEVELOPMENT CHECKPOINT: Per-Day Coach Planning v0.92 (October 13, 2026)
+
+- User explicitly authorized proceeding to the next Coach quality pass after v0.91 (follow-up in same Swole Cat conversation). **Development only.** No APK publication authorization; signed Testing remains v0.89.0 (code 134), Beta remains v0.73.1. Do not touch Supabase or recovery history.
+- Draft PR [#68](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/68), branch `feature/coach-v092-per-day-planning`, stacked on v0.91 [#67](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/67) and v0.90 [#66](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/66). PR #68's base is temporarily main solely for full Actions CI; retarget to #67 branch after its HEAD validates.
+- v0.92 recognizes weekday-scoped time/equipment/focus directives (e.g. `Mon 30 min gym, Wed 45 min dumbbells, Fri 75 min gym`), asks for a common time/equipment when some days lack it, and builds independent exercise/time/equipment settings per day without assuming a weekday's gear/time applies globally.
+- Program preview has accessible `Adjust day` editor (15–120 min, inherit/gym/dumbbells/bodyweight/custom gear, emphasis on that day's muscles), atomic validation/regeneration and per-day range review. Saved Program includes `coachPlannedDays` contextual metadata and per-day routine descriptions. No existing workout session changes.
+- Day focus incompatible with slot (e.g. Friday Legs, more shoulders) triggers clarification, offering to keep split and remove emphasis or change split. Does not silently ignore or spread priorities globally.
+- `scripts/coach-brain-duration-program-stress.mjs` tests full prompt routing, partial defaults, mixed gym/dumbbells/gym, weekday refinements, day editor, rollback, saved metadata, conflicts, and history non-mutation. Generated output logged as `COACH_V092_DAILY`.
+- Initial full CI **PASS** https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38514095460. Later head(s) include the additional focus conflict; verify latest run's result and inspect logs before claiming green. Design and limitations: `docs/coach-brain/PER_DAY_PLANNING_V092.md`.
+- Immediate next: confirm newest CI on HEAD, retarget #68 to #67 stacked base, run qualitative review and request real physical Android UX validation from owner before any signed Testing release. Next potential engineering step: human-reviewed time calibration, more sophisticated multi-week/cycle intent, nonuniform recovery day-spacing checks. No Beta release.
+
+---
+
 ## ACTIVE DEVELOPMENT CHECKPOINT: Whole-Week Coach Review + Split Guidance v0.91 (October 13, 2026)
 
 - Owner approved starting the next intent-first Coach improvements after v0.90. This is **development-only** and does not authorize publishing an APK. Signed Testing stays v0.89.0 build 134; Beta unchanged v0.73.1. Do not touch accounts, recovery, Supabase data, or workout history.
