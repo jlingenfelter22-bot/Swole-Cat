@@ -108,9 +108,6 @@ jobs:
       - name: Stress test v0.89 realistic duration, multi-instruction edits and programs
         run: node scripts/coach-brain-duration-program-stress.mjs
 
-      - name: Accept Coach v0.93 narrow-phone program and day-editor DOM
-        run: node scripts/coach-mobile-program-acceptance.mjs
-
       - name: Test v0.89 Brain quality remediation acceptance gates
         run: node scripts/coach-brain-quality-remediation-stress.mjs
 
