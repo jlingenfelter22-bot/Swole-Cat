@@ -8,6 +8,7 @@ The owner approved an intent-first coach. The current interactive intake asks wh
 
 ## Behavior and guarantees
 
+- **Incompatible frequency guard:** an explicit two-day Push/Pull/Legs request cannot falsely schedule all three categories. Coach explains the mismatch and offers a three-day plan or a user-approved two-day Upper/Lower, Full Body or Custom split. When choosing among splits for two days, the PPL option is withheld rather than silently dropping Legs.
 - **Help me choose / recommend** is user-initiated. If the user's primary goal was not explicitly given, Coach asks it first. It then explains relative tradeoffs of PPL, Upper/Lower, Custom Body-Part and Full Body for the stated frequency. **It does not auto-select a split**, favor Full Body by default, or promise a superior training outcome.
 - Whole-week draft review aggregates selected exercise movement patterns and audited muscle-region metadata. It identifies whether representative **press**, **pull**, **knee**, and **posterior-chain** patterns appear somewhere across the draft week.
 - For custom body-part splits, it can flag no primary chest training as a **choice to consider**. An intentionally narrow program is not called medically unsafe or invalid. If the lifter selected a muscle focus but current exercises provide no planned contribution, surface that mismatch.
@@ -27,6 +28,7 @@ The owner approved an intent-first coach. The current interactive intake asks wh
 
 - Vague "3-day split" → Coach asks split; "Help me choose" → if necessary asks goal, then displays informed choices; no program created without the user's selection.
 - Explicit "3-day Full Body" → respects the full-body choice with no repeated split question.
+- Explicit "2-day PPL" → explains the unsatisfied three-session structure, offers choices and never silently drops Legs.
 - Custom Arms / Back / Legs with no chest press → explain pressing/chest choice; preserve every day and existing split.
 - Introduce a chest press to draft → review updates and no longer claims primary chest/pressing is absent.
 - Program with all four broad patterns represented → do not fabricate deficiencies.
