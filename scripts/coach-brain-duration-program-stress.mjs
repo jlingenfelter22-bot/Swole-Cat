@@ -229,6 +229,55 @@ w.coachAnswerProgramSplit('upper_lower');
 assert.match(modal,/what equipment do you have/i);
 assert.equal(w.eval('JSON.stringify(state.sessions)'),originalSessions,'tests must never change workout history');
 
+// Whole-week planning review is read-only and reflects CURRENT preview exercises,
+// not a stale generated baseline. Intentional narrow splits receive *choices*, not edits.
+const fullLibrary=w.allExercises();
+const choose=(predicate,label)=>{
+ const ex=fullLibrary.find(predicate);
+ assert(ex,'Missing sample exercise: '+label);return ex.id;
+};
+const arm=choose(x=>w.exerciseMuscleMetadata(x).primary.includes('biceps'),'biceps');
+const row=choose(x=>x.pattern==='horizontal_pull','horizontal pull');
+const squatDay=choose(x=>x.pattern==='squat','squat');
+const press=choose(x=>w.exerciseMuscleMetadata(x).primary.includes('chest')&&x.pattern==='horizontal_press','chest press');
+const posterior=choose(x=>x.pattern==='hinge','hinge');
+const fakeDay=(key,ids)=>({
+ key,label:w.COACH_TARGET_GROUPS?.[key]?.label||key,
+ selectedIds:[...ids],brainSetCounts:{},
+ request:{targetRegions:[]},defaults:w.coachProgrammingDefaults('hypertrophy',60)
+});
+const samplePlan={
+ intent:{frequency:3,split:'custom',customSlots:['arms','back','legs']},
+ request:{programFocusRegions:[]},
+ days:[fakeDay('arms',[arm]),fakeDay('back',[row]),fakeDay('legs',[squatDay,posterior])]
+};
+const historyBefore=w.eval('JSON.stringify(state.sessions)');
+const unbalanced=w.coachBrainProgramWeekReview(samplePlan);
+assert.equal(unbalanced.roles.press,0);
+assert(unbalanced.notes.some(n=>n.key==='movement_coverage'),JSON.stringify(unbalanced.notes));
+assert(unbalanced.notes.some(n=>n.key==='chest_direct'));
+assert.match(w.coachBrainProgramWeekReviewHtml(samplePlan),/no primary chest exercise/i);
+const initialSlots=JSON.stringify(samplePlan.intent.customSlots);
+samplePlan.days[0].selectedIds.push(press);
+const afterAdded=w.coachBrainProgramWeekReview(samplePlan);
+assert(afterAdded.roles.press>0,'manual preview change affects week audit immediately');
+assert(!afterAdded.notes.some(n=>n.key==='chest_direct'));
+assert(!afterAdded.notes.some(n=>n.key==='movement_coverage'&&n.text.includes('pressing')));
+assert.equal(JSON.stringify(samplePlan.intent.customSlots),initialSlots,'audit never changes chosen split');
+assert.equal(w.eval('JSON.stringify(state.sessions)'),historyBefore,'audit must not touch past workouts');
+samplePlan.request.programFocusRegions=['calves'];
+const focusGap=w.coachBrainProgramWeekReview(samplePlan);
+assert(focusGap.notes.some(n=>n.key==='focus_gap'),'state absence is explained, not silently filled');
+assert.equal(w.eval('JSON.stringify(state.sessions)'),historyBefore);
+const regularPlan={
+ intent:{frequency:3,split:'ppl'},
+ request:{programFocusRegions:[]},
+ days:[fakeDay('push',[press]),fakeDay('pull',[row]),fakeDay('legs',[squatDay,posterior])]
+};
+assert.equal(w.coachBrainProgramWeekReview(regularPlan).notes.length,0,'adequate major roles should not invent a warning');
+startProgram('3-day push pull legs Monday Wednesday Friday 60 minutes at a full gym for muscle growth track only');
+assert.match(modal,/WHOLE-WEEK REVIEW/,'rendered preview includes live whole-week analysis');
+
 console.log('Brain duration + multi-turn + interactive program intake PASS',
  JSON.stringify({sampleMinutes:t1.estimateMinutes,programDays:3,historyUntouched:true,sourceExerciseCount:trio.length}));
 dom.window.close();
