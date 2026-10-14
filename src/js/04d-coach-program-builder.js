@@ -43,7 +43,7 @@ function coachGenerateProgram(request,intent,previous=null){
  const frequency=Math.max(2,Math.min(6,Number(intent.frequency)||0));if(!frequency)return null;
  const split=intent.split||coachDefaultProgramSplit(frequency),slots=coachProgramSlots(frequency,split,intent.customSlots);
  if(slots.length!==frequency)return null;
- const req=coachCloneRequest({...request,duration:request.duration||45});
+ const req=coachCloneRequest({...request,duration:request.duration|| (coachProgramAllDaysHaveTime(intent)?0:45)});
  req.programFocusRegions=[...new Set(intent.focusRegions||request.programFocusRegions||[])];
  req.programFocusLabels=[...new Set(intent.focusLabels||request.programFocusLabels||[])];
  const usage={},muscleUsage={},hingeHistory=[],dayOverrides=previous?.dayOverrides||[];
