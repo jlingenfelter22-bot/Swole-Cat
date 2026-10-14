@@ -369,7 +369,7 @@ function coachRefineProgramText(text){
      intent.weekdayPlans[weekday]={...(intent.weekdayPlans[weekday]||{}),...settings};
    changed=true;
  }
- if(program.preferredDays.length){
+ if(program.preferredDays.length&&!(scoped.length&&intent.preferredDays?.length===intent.frequency&&program.preferredDays.length<intent.frequency)){
    if(program.preferredDays.length!==intent.frequency){
      return {ok:false,message:'You named '+program.preferredDays.length+' weekdays for a '+intent.frequency+'-day program. Add missing weekdays, explicitly change the days-per-week frequency, or choose a flexible schedule. Coach will not silently change your program.'};
    }
@@ -495,7 +495,7 @@ function coachSubmitProgramAnswer(){
    intent.weekdayPlans[day]={...(intent.weekdayPlans[day]||{}),...setting};
   changed=true;
  }
- if(parsed.preferredDays.length){
+ if(parsed.preferredDays.length&&!(scoped.length&&intent.preferredDays?.length===intent.frequency&&parsed.preferredDays.length<intent.frequency)){
   intent.preferredDays=[...parsed.preferredDays];
   a.scheduleAnswered=parsed.preferredDays.length===intent.frequency;changed=true;
  }
