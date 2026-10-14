@@ -417,6 +417,18 @@ w.document.getElementById=originalGetter;
 assert.equal(JSON.stringify(program().days.map(d=>({ids:d.selectedIds,duration:d.request.duration}))),beforeInvalid);
 assert.equal(JSON.stringify(program().intent.dayPlans),beforePrefs);
 
+// Weekday-only equipment must never be reset to unrestricted shared gear.
+w.coachEditProgramDay(0);
+assert.doesNotMatch(modal,/Use shared program equipment/);
+const beforeInherited=JSON.stringify(program().days.map(d=>d.selectedIds));
+w.document.getElementById=id=>({
+ coachDayMinutes:{value:'75'},coachDayEquipment:{value:'inherit'},
+ coachDayCustomEquipment:{value:''},coachDayFocus:{value:'none'}
+}[id]||originalGetter(id));
+assert.equal(w.coachSaveProgramDaySettings(0),false,'inheriting a nonexistent shared equipment list is unsafe');
+w.document.getElementById=originalGetter;
+assert.equal(JSON.stringify(program().days.map(d=>d.selectedIds)),beforeInherited);
+
 // A day-specific priority outside its actual split must be clarified, not ignored.
 const conflictPrompt='3-day push pull legs at a full gym, Monday 30 minutes, Wednesday 45 minutes, Friday 75 minutes more shoulders, for muscle growth, track only';
 w.document.getElementById=id=>id==='coachPrompt'?{value:conflictPrompt}:originalGetter;
