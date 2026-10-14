@@ -1,5 +1,13 @@
 # Swole Cat - Next Chat Handoff
 
+## OWNER DIRECTION: Cloud Coach Memory deferred; continue Coach quality (October 14, 2026)
+
+- Explicit owner request: document **Cloud Coach Memory** in canonical future roadmap and **continue existing Coach engineering first**. Logged as **deferred** in `docs/ROADMAP.md` → Phase 12. Proposed optional Lifetime Pro value: private account-owned preferences, compact workout-history context and cross-device memory; preserve free/offline local Coach. No schema migrations, Supabase mutations, entitlements, new AI vendor, unlimited inference promise or added subscription.
+- Continued qualitative review of v0.92's real generated 30/45/75-minute mixed-equipment week. Friday gym Legs originally included Back Squat + Sumo Deadlift even though a less demanding posterior-chain alternative exists. A narrowly scoped candidate-score heuristic now discourages this **for auto-generated hypertrophy/general programs up to 90 minutes**, without banning the combination or affecting strength plans/user-pinned exercises. Time budget is a cap, not an instruction to fill every minute. Added explicit scenario and user-override regression to `scripts/coach-brain-duration-program-stress.mjs`.
+- Exact approval gate remains unchanged: all stacked PRs #66/#67/#68 development-only, latest signed Testing v0.89.0, Beta untouched. New reviewer/CI pass required on latest v0.92 HEAD; no physical Android acceptance or release has occurred.
+
+---
+
 ## ACTIVE DEVELOPMENT CHECKPOINT: Per-Day Coach Planning v0.92 (October 13, 2026)
 
 - User explicitly authorized proceeding to the next Coach quality pass after v0.91 (follow-up in same Swole Cat conversation). **Development only.** No APK publication authorization; signed Testing remains v0.89.0 (code 134), Beta remains v0.73.1. Do not touch Supabase or recovery history.
