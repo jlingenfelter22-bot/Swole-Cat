@@ -205,7 +205,7 @@ function coachProgramRoutineFromDay(day,draft=coachProgramBuildDraft,id=uid()){
  const supersetMap=typeof coachTimeCompressionPlan==='function'?coachTimeCompressionPlan(day.selectedIds.map(exById).filter(Boolean),day.request):{};
  return {
    id,name:`${coachProgramName(r,draft.intent)} · ${day.label}`,
-   description:`Generated locally by Coach Swolecat as part of a ${draft.intent.frequency}-day ${coachProgramSplitLabel(draft.intent.split)} program. Evidence rules: ACSM 2026 resistance-training position stand + NSCA program-design framework.`,
+   description:`Generated locally by Coach Swolecat as part of a ${draft.intent.frequency}-day ${coachProgramSplitLabel(draft.intent.split)} program. Planned session: ${day.request.duration} min, ${day.request.brainEquipment?.label||'equipment not specified'}. Evidence rules: ACSM 2026 resistance-training position stand + NSCA program-design framework.`,
    trainingMode:d.trainingMode,
    exercises:day.selectedIds.map(exerciseId=>{
      const ex=exById(exerciseId),p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,day.request,d):d;
@@ -222,19 +222,20 @@ function coachProgramRoutineFromDay(day,draft=coachProgramBuildDraft,id=uid()){
 function renderCoachProgramPreview(){
  const draft=coachProgramBuildDraft;if(!draft)return;
  const req=draft.request,intent=draft.intent,coverage=coachProgramCoverageText(draft);
+ const varied= draft.days.some((day,di)=>day.request.duration!==draft.days[0]?.request.duration||day.request.brainEquipment?.choice!==draft.days[0]?.request.brainEquipment?.choice);
  const equipment=coachBrainResolveEquipment(req)?.label||(req.allowedEquipment.length?req.allowedEquipment.join(', '):'Equipment not specified');
  openModal('Coach Swolecat',`
   <div class="coach-builder">
    <div class="coach-console">
     <div class="eyebrow">PROGRAM BUILD // LOCAL ENGINE</div>
-    <div class="coach-preview-head"><div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(coachProgramName(req,intent))}</div><div class="mini" style="margin-top:5px">${intent.frequency} workouts · ${esc(coachProgramScheduleText(draft))} · each workout targets about ${req.duration} minutes</div></div><span class="tag">${esc(coachProgramSplitLabel(intent.split))}</span></div>
+    <div class="coach-preview-head"><div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(coachProgramName(req,intent))}</div><div class="mini" style="margin-top:5px">${intent.frequency} workouts · ${esc(coachProgramScheduleText(draft))} · ${varied?'session settings vary by day':`each workout targets about ${draft.days[0]?.request.duration||req.duration} minutes`}</div></div><span class="tag">${esc(coachProgramSplitLabel(intent.split))}</span></div>
     ${draft.lastRefinement?`<div class="mini" style="margin-top:8px"><b>Last change:</b> ${esc(draft.lastRefinement)}</div>`:''}
     <div class="coach-preview-meta"><span class="tag">${esc(coachGoalLabel(req.goal))}</span><span class="tag">${esc(equipment)}</span><span class="tag">${intent.frequency}×/week</span><span class="tag">${esc(programTrainingModeLabel(intent.trainingMode||'inherit'))}</span></div>
      ${intent.trainingMode==='guided'?`<div class="mini" style="margin-top:9px">Deloads: ${intent.deload?.enabled?`every ${intent.deload.intervalWeeks}th training week, subject to your confirmation`:'not scheduled (you can add these later)'}</div>`:''}
    </div>
    <div class="coach-exercise-list">
     ${draft.days.map((day,di)=>`<div class="card" style="margin:0">
-      <div class="row"><div><div class="eyebrow">DAY ${di+1}</div><div class="exercise-name" style="margin-top:4px">${esc(day.label)}</div><div class="mini">${day.selectedIds.length} exercises · ${day.brainTime?`about ${day.brainTime.estimateMinutes} min (range ${day.brainTime.lowerMinutes}–${day.brainTime.upperMinutes})`:`${day.defaults.sets} sets each`} · ${day.defaults.minReps}–${day.defaults.maxReps} reps</div></div>${intent.preferredDays?.[di]!=null?`<span class="tag">${PROGRAM_DAYS[intent.preferredDays[di]]}</span>`:''}</div>
+      <div class="row"><div><div class="eyebrow">DAY ${di+1}</div><div class="exercise-name" style="margin-top:4px">${esc(day.label)}</div><div class="mini">${day.selectedIds.length} exercises · ${day.brainTime?`about ${day.brainTime.estimateMinutes} min (range ${day.brainTime.lowerMinutes}–${day.brainTime.upperMinutes})`:`${day.defaults.sets} sets each`} · ${day.defaults.minReps}–${day.defaults.maxReps} reps</div><button class="btn small secondary" style="margin-top:7px" onclick="coachEditProgramDay(${di})" aria-label="Adjust ${esc(day.label)} time equipment and focus">Adjust day</button>${coachProgramDayPlanSummary(day)?`<div class="mini" style="margin-top:5px">${esc(coachProgramDayPlanSummary(day))}</div>`:''}</div>${intent.preferredDays?.[di]!=null?`<span class="tag">${PROGRAM_DAYS[intent.preferredDays[di]]}</span>`:''}</div>
       <div style="margin-top:9px">${day.selectedIds.map((id,ei)=>{const ex=exById(id);return `<div class="list-item"><div class="grow"><div class="exercise-name">${esc(ex?.name||'Exercise')} ${preferenceBadgeHtml(id)}</div><div class="mini">${esc(coachExerciseReason(ex,day.request))} · ${day.brainSetCounts?.[id]?.sets||coachExercisePrescription(ex,day.request,day.defaults).sets} working sets</div></div><div class="actions" style="margin:0"><button class="btn small secondary" onclick="coachProgramSwapExercise(${di},${ei})">Swap</button><button class="btn small secondary" onclick="coachProgramRemoveExercise(${di},${ei})">Remove</button></div></div>`}).join('')}</div>
     </div>`).join('')}
    </div>
@@ -349,6 +350,12 @@ function coachPersistGeneratedProgram(draft=coachProgramBuildDraft){
  const p={
    id:uid(),name:coachProgramName(draft.request,draft.intent),routineIds:routines.map(r=>r.id),
    frequency:draft.intent.frequency,preferredDays:[...(draft.intent.preferredDays||[])],
+   coachPlannedDays:draft.days.map((day,i)=>({
+     label:day.label,weekday:draft.intent.preferredDays?.[i]??null,
+     durationMinutes:day.request.duration,
+     equipmentLabel:day.request.brainEquipment?.label||'Equipment not specified',
+     focusKey:day.dayPlan?.focusKey||null
+   })),
    trainingMode:['guided','strength','track','inherit'].includes(draft.intent.trainingMode)?draft.intent.trainingMode:'inherit',
    deload:programDeloadConfig(draft.intent.trainingMode==='guided'?draft.intent.deload:{enabled:false}),nextIndex:0
  };
