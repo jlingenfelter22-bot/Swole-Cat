@@ -14,6 +14,7 @@ A real training week can differ by day: *Monday has 30 minutes at a gym; Wednesd
 - If all weekdays have explicit equipment choices, Coach may build without asking a global equipment question. If only some are specified and no shared choice was given, ask for remaining workouts; never assume one gym mention grants access every day.
 - **Incompatible focus clarification:** When a weekday-specific muscle priority cannot fit that day's split (e.g. Friday **more shoulders** but Friday is **Legs** in PPL), Coach pauses and asks whether to change the split or remove that extra emphasis. It must not quietly ignore the request, relocate it, or promote it to a whole-week preference.
 - Each day gets independent exercise selection, time trimming, equipment checks, rest/prescription defaults, and emphasis within its already selected muscle group. Respect the weekly plan's chosen split.
+- **Duration budget, not an exercise quota:** a 75-minute allowance does not force 75 minutes of work. For auto-generated general/hypertrophy programming, penalize pairing a heavy conventional/sumo deadlift with a squat where another posterior-chain hinge is available. This is a modest scheduling/complexity product heuristic, **not** a scientific claim that the pairing is inherently unsafe. Strength-focused plans and explicit chosen exercises are exempt. Check actual generated exercise names and the time range before release.
 - Preview shows **Adjust day** on each day card. The accessible editor exposes duration 15–120 minutes, shared/gym/dumbbell/bodyweight/custom equipment, and optional additional focus limited to that day. Failed validation keeps prior draft intact.
 - Preview shows honest day-specific time ranges; generated routine descriptions and an optional `coachPlannedDays` Program metadata field retain planning context, without changing existing session histories or workout load semantics.
 - Single-weekday refinements `Wednesday 55 minutes` must not reduce a three-day program to one-day or turn 55 minutes into the entire week's default. Explicit shared changes and explicit different splits still follow previous v0.90/v0.91 rules.
@@ -31,8 +32,9 @@ Training modes, optional Guided deloads, user sets/reps and bodyweight/assisted 
 3. Day-specific gym/dumbbell/gym equipment is honored and every generated exercise is available in that day's verified equipment context.
 4. The narrow modal editor permits valid one-day changes and rejects invalid equipment without mutation; rest of the week, user's calendar and previous sessions remain unchanged.
 5. Natural-language day emphasis outside the chosen muscle group triggers a helpful clarification without rewriting the split or spreading that priority across other days.
-6. Preview, estimated day times, saved routines and `coachPlannedDays` must agree.
-7. CI plus qualitative generated-session review and actual Android small-screen review before any signed Testing promotion. No Beta/cloud account changes.
+6. A 75-minute hypertrophy Legs budget does not force extra exercises or a heavy squat-plus-sumo-deadlift pairing; preserve explicit exercise selections and strength requests.
+7. Preview, estimated day times, saved routines and `coachPlannedDays` must agree.
+8. CI plus qualitative generated-session review and actual Android small-screen review before any signed Testing promotion. No Beta/cloud account changes.
 
 ### Deferred
 
