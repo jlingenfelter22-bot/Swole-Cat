@@ -375,6 +375,23 @@ assert.deepEqual(Array.from(program().days.map(d=>d.request.brainEquipment?.choi
 assert.deepEqual(Array.from(program().days.map(d=>d.request.duration)),[30,45,75]);
 assert(program().days[1].selectedIds.every(id=>w.coachBrainExerciseService().evaluateAvailability(id,w.coachBrainEquipmentConstraints(program().days[1].request)).status==='available'));
 assert(program().days.every(d=>d.brainTime?.targetMinutes===d.request.duration),'each day needs its own correct time target');
+// A 75-minute budget is an upper limit, not a request for two competing heavy
+// lifts or volume padding. The generated hypertrophy Legs day should be sound.
+const fridayEx=program().days[2].selectedIds.map(id=>w.exById(id)).filter(Boolean);
+const fridayNames=fridayEx.map(ex=>ex.name);
+assert(fridayEx.some(ex=>['squat','lunge','knee_extension'].includes(ex.pattern)),'Legs needs a knee-dominant option');
+assert(fridayEx.some(ex=>['hinge','knee_flexion','hip_extension'].includes(ex.pattern)),'Legs needs posterior coverage');
+assert(!(['Back Squat','Sumo Deadlift'].every(name=>fridayNames.includes(name))),
+ 'Generic 75-minute muscle-growth leg programming must not stack max-demand squat and sumo deadlift just to fill time');
+assert(program().days[2].brainTime.estimateMinutes<=75,'budget is a cap, not a forced target');
+// Explicitly requested heavy hinge remains eligible; quality heuristics are
+// *preferences*, not prohibitions applied to a user-authored exercise choice.
+const namedHeavy=w.allExercises().find(ex=>ex.name==='Sumo Deadlift');
+assert(namedHeavy);
+const legReq=program().days[2].request;
+const scoredAuto=w.coachDynamicCandidateScore(namedHeavy,legReq,{}, {squat:1}, {}, {},7);
+const scoredPinned=w.coachDynamicCandidateScore(namedHeavy,{...legReq,requiredExerciseIds:[namedHeavy.id]}, {}, {squat:1}, {}, {},7);
+assert(scoredPinned>scoredAuto+150,'explicit deadlift request must bypass the generated-plan workload penalty');
 console.log('COACH_V092_MIXED '+JSON.stringify({days:program().days.map(d=>({
  label:d.label,time:d.request.duration,estimate:d.brainTime?.estimateMinutes,
  range:[d.brainTime?.lowerMinutes,d.brainTime?.upperMinutes],
