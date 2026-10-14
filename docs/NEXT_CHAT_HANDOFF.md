@@ -1,5 +1,17 @@
 # Swole Cat - Next Chat Handoff
 
+## ACTIVE DEVELOPMENT CHECKPOINT: Whole-Week Coach Review + Split Guidance v0.91 (October 13, 2026)
+
+- Owner approved starting the next intent-first Coach improvements after v0.90. This is **development-only** and does not authorize publishing an APK. Signed Testing stays v0.89.0 build 134; Beta unchanged v0.73.1. Do not touch accounts, recovery, Supabase data, or workout history.
+- Draft PR [#67](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/67) on `feature/coach-v091-whole-week-review`, stacked conceptually over v0.90 guided program-intake [PR #66](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/66). Its base may temporarily point to `main` to run required GitHub Actions CI. **Retarget to #66's feature branch after a green full run.**
+- Program setup "Help me choose" and text "recommend something" now ask for the goal if missing and give **explicit opt-in split explanations**, without choosing Full Body or any other split automatically.
+- Current generated Program preview displays **read-only whole-week review**, recalculated from selected exercise IDs on render. Checks presence of press, pull, knee and posterior movement families; choice-based notices for custom-split primary chest omission, requested priority-region gaps, or days with no primary involvement in named focus. Never overrides user selections or diagnoses fatigue/injury.
+- New tests in `scripts/coach-brain-duration-program-stress.mjs`: vague split recommendation consent, focused Arms/Back/Legs weekly role flags, manual addition updates the review, no manufactured flags for represented roles, missing priority-region visibility and no session-history writes.
+- Full design and scientific caveats: `docs/coach-brain/WHOLE_WEEK_REVIEW_V091.md`; owner-approved north star `docs/coach-brain/COACH_INTENT_CONTRACT.md`.
+- **Next:** full CI on latest PR #67 SHA, inspect actual program output for false warnings, refine copy/decision thresholds if needed, then physical Android acceptance before any signed Testing release approval. No Beta promotion.
+
+---
+
 ## ACTIVE DEVELOPMENT CHECKPOINT: Guided Coach Program Intake v0.90 (October 13, 2026)
 
 - **Owner-confirmed north star** documented in [Coach Intent Contract](coach-brain/COACH_INTENT_CONTRACT.md): understand intent, separate knowns/unknowns, ask consequential questions only, evaluate week-long program quality, negotiate incompatible constraints, explain decisions, respect exact user choices and learn from consented real-world feedback. Priority after v0.90: intent confidence/clarification → full-program audit → per-day constraint negotiation → feedback/personalization. These are design principles and proposed follow-ups, not claims of already-shipped functionality. This agreement does not authorize a new Testing or Beta APK.
