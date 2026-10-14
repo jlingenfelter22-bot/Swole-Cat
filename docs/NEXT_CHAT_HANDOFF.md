@@ -1,5 +1,15 @@
 # Swole Cat - Next Chat Handoff
 
+## ACTIVE: Physical Android v0.93.1 Coach floating-bar feedback, v0.93.2 development-only correction (Oct 14, 2026)
+
+- User's ~44-second real phone capture of Testing v0.93.1: floating Coach composer is a positive direction but looks disconnected from upper modal region; day exercise text peeks **above** the dock at the top, and opening/closing the Android software keyboard repositions the long workout content/jumps around. Keep floating experience, fix scroll/IME layout deliberately without visual patch animations.
+- Current development branch `feature/coach-v0932-keyboard-dock-stability`: Coach preview only now uses a bottom-aligned, safe-top-aware single-`100dvh`-sized flex sheet with fixed normal-flow modal header and a **separately scrolling `#modalBody`**. Coach input remains sticky at the top of this inner scrollport, directly below modal header, no exposed overlay gap. Removed `@media(max-height:540px)` composer demotion that flipped sticky to relative when Gboard reduced viewport height; continue existing Android `resize:native` without JS scroll hacks. Saved-program editor and other modal modes untouched.
+- `scripts/coach-mobile-program-acceptance.mjs` expanded to enforce viewport/header/body/sticky rules. Field analysis + follow-up hardware test: `docs/coach-brain/ANDROID_FLOATING_COMPOSER_FIELD_REVIEW_V0932.md`. **Real Android keyboard smoothness still requires a second owner recording**, not guaranteed by CSS contract or JSDOM.
+- **No release permission inferred:** signed Testing remains v0.93.1 build 136, Beta v0.73.1 unchanged. Do not merge/publish APK without explicit owner go-ahead, CI pass and new signing/checksum verification. Full-program Coach conversation still postponed until on-device interaction accepted.
+
+---
+
+
 ## CURRENT SIGNED TESTING — v0.93.1 / Android build 136 (Oct 14, 2026)
 
 - Owner requested **physical Android validation first**, ahead of broader full-program conversational editing. This is a **Testing-only** release authorization. Release PR [#76](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/76) squash-merged into `main` as `8f4649824f6f11c5104e59ae4e39a0a69dddfa62`. Code is consolidated from development [PR #75](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/75), including parent #72/#73 and the safe top-of-list Coach refinement UI from #74. It uses #73's full guarded contextual saved-program draft editor, not #74's narrower routine picker.
