@@ -16,6 +16,8 @@ const COACH_BRAIN_EQUIPMENT_CAPABILITIES=Object.freeze({
 });
 function coachBrainExerciseService(){return SwoleCatRuntime.getService('brainKnowledge')}
 function coachBrainExplicitEquipment(request){
+ // Weekday-scoped equipment in a multi-day plan is not proof of gym access every day.
+ if(request?.scopedEquipmentOnly&&!request?.brainEquipment&&!request?.allowedEquipment?.length)return null;
  const raw=String(request?.prompt||'');
  if(/\b(?:full|commercial|standard|well[- ]equipped)\s+gym\b/i.test(raw))
    return {choice:'gym',context:{equipment:{preset:'standard_gym',complete:false}},allowed:['barbell','dumbbell','cable','machine','bodyweight'],label:'Gym (common equipment)',assumption:true};
