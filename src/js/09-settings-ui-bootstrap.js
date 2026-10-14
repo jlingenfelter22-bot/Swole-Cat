@@ -342,7 +342,12 @@ function openModal(title,body,modeClass=''){
  document.getElementById('modalTitle').innerHTML=title;
  document.getElementById('modalBody').innerHTML=body;
  modal.classList.add('open');
- enhanceAppSelects(document.getElementById('modalBody'));
+ // Reused sheets may retain the previous dialog's scroll position.
+ const sheet=modal.querySelector('.sheet');
+ if(sheet)sheet.scrollTop=0;
+ const modalBody=document.getElementById('modalBody');
+ if(modalBody)modalBody.scrollTop=0;
+ enhanceAppSelects(modalBody);
 }
 function closeModal(){
  closeAppSelect();
