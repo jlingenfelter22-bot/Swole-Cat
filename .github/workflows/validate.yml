@@ -132,6 +132,9 @@ jobs:
       - name: Stress test Coach Swolecat language resilience
         run: node scripts/coach-language-fuzz.mjs
 
+      - name: Verify Coach program fast-path preserves explicit exercise parsing
+        run: node scripts/coach-program-parse-fastpath-stress.mjs
+
       - name: Stress test v0.59 Coach training intelligence
         run: node scripts/coach-intelligence-stress.mjs
 
