@@ -95,7 +95,7 @@ try {
       w.renderHistory();
       assert.equal(doc.getElementById('historyList').querySelectorAll('.history-entry').length,count);
     },3);
-    if(count<=150)measure(count,'progress_render',()=>{
+    if(count<=300)measure(count,'progress_render',()=>{
       w.renderAnalytics();
       assert(doc.getElementById('analyticsArea').textContent.trim().length>30);
       assert(!doc.getElementById('analyticsArea').textContent.includes('Progress could not display'),'Progress must not degrade to error fallback');
@@ -113,6 +113,15 @@ try {
     measure(count,'state_save',()=>{
       assert.equal(w.save({syncRelevant:false}),true);
       assert(w.localStorage.getItem('overload_v3')?.length>0);
+    },3);
+    if(count===30||count===300)measure(count,'coach_program_generate',()=>{
+      const body=doc.getElementById('modalBody');
+      body.innerHTML='<textarea id="coachPrompt"></textarea>';
+      doc.getElementById('coachPrompt').value=
+        '3-day push pull legs Monday 30 minutes at the gym, Wednesday 45 minutes with dumbbells only, Friday 75 minutes at the gym, muscle growth, track only';
+      w.coachSubmitPrompt();
+      assert.equal(body.querySelectorAll('.coach-program-day-card').length,3,
+        'Coach generated a three-day program against the synthetic history');
     },3);
   }
   // Separate longer-history serialization/index test; avoids 1,000-history-card DOM explosion.
