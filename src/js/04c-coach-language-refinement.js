@@ -212,7 +212,13 @@ function coachExerciseChunkText(value){
    .replace(/\b(?:for|at|targeting|aiming for|to)\s*\d+(?:\s*(?:-|to)\s*\d+)?\s*(?:reps?)?\b/gi,' ')
    .replace(/\b(?:a|an|one)\s+sets?\s+(?:of\s+)?/gi,' '));
 }
-function coachAnalyzeExerciseMentions(text){
+// Fast path for general multi-day planning: exact aliases/exclusions remain
+// recognized, but a full fuzzy catalog search is reserved for requests which
+// explicitly ask for named movements, exercise lists or set prescriptions.
+function coachProgramNeedsFuzzyExerciseScan(text){
+ return /\b(?:include|including|add|exercise|exercises|movement|movements|lift|lifts|specifically|sets?|reps?|prescribe|swap|replace)\b|\b\d+\s*x\s*\d+\b/i.test(String(text||''));
+}
+function coachAnalyzeExerciseMentions(text,{allowFuzzy=true}={}){
  const raw=coachNormalizeGymText(coachNumbersToDigits(text)),mentions=[],occupied=[],ambiguities=[];
  coachExerciseMentionCandidates().forEach(({phrase,ex})=>{
    const pattern=new RegExp('(?:^|\\s)'+coachRegexEscape(phrase)+'s?(?=\\s|$)','g');let m;
@@ -224,6 +230,7 @@ function coachAnalyzeExerciseMentions(text){
    }
  });
  let cursor=0;
+ if(allowFuzzy){
  const chunks=raw.split(/\s*(?:,|;|\band\b|\bthen\b)\s*/).filter(Boolean);
  chunks.forEach(chunk=>{
    const start=raw.indexOf(chunk,cursor);cursor=Math.max(cursor,start+chunk.length);
@@ -238,6 +245,7 @@ function coachAnalyzeExerciseMentions(text){
      ambiguities.push({phrase:cleaned,segmentText:chunk,start:Math.max(0,start),end:Math.max(0,end),alternatives:understood.alternatives});
    }
  });
+ }
  const deduped=[];const seenIds=new Set();
  mentions.sort((a,b)=>a.start-b.start).forEach(m=>{if(!seenIds.has(m.exerciseId)){seenIds.add(m.exerciseId);deduped.push(m)}});
  return {mentions:deduped,ambiguities};
@@ -282,8 +290,8 @@ function coachPrescriptionNumbersAround(text,mention,index,mentions,goal,globalR
    explicitSets:!!sets,explicitReps:!!minReps||!!globalRep
  };
 }
-function coachParseExplicitWorkout(text,goal=coachPromptGoal){
- const normalized=coachNumbersToDigits(text),lower=normalized.toLowerCase(),normalizedWords=coachNormalizeGymText(normalized),analysis=coachAnalyzeExerciseMentions(normalized);
+function coachParseExplicitWorkout(text,goal=coachPromptGoal,{allowFuzzy=true}={}){
+ const normalized=coachNumbersToDigits(text),lower=normalized.toLowerCase(),normalizedWords=coachNormalizeGymText(normalized),analysis=coachAnalyzeExerciseMentions(normalized,{allowFuzzy});
  const excludedExerciseIds=coachParseExerciseExclusions(normalized,analysis),excludedSet=new Set(excludedExerciseIds);
  const mentions=analysis.mentions.filter(mention=>!excludedSet.has(mention.exerciseId)),items=[],seen=new Set();
  let globalRep=null;
