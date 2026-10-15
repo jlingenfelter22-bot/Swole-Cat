@@ -1,5 +1,16 @@
 # Swole Cat - Next Chat Handoff
 
+## LATEST: Testing v0.93.3 SIGNED PUBLISHED — Android phone performance acceptance next (October 15, 2026)
+
+- Owner approved next checkpoint for on-device acceptance of Coach and History optimizations; [PR #79](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/79) **merged** after exact-head [96/96 full CI](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38759510312) and [synthetic benchmark](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38759510281) both passed.
+- Android signed workflow [38759979718](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38759979718) completed **SUCCESS**. [Published Testing v0.93.3 GitHub prerelease](https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.93.3) signed APK: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.93.3/swole-cat-testing-v0.93.3-signed.apk . Android **versionCode 138**, package `com.jlingenfelter.swolecat.testing`, expected original signer SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`. APK's GitHub asset SHA-256 `5d94aa6e36d1b85a39b6fa563f0af6dfcff2380650bebb1e004791a66cd4453b` matches live `updates/testing.json` URL/version/code/cert/digest. Check all passed. APK size 5,206,278 bytes; **non-forced update**. In-place update from v0.93.2 should preserve Testing local data. Do not uninstall/clear storage.
+- Included nonvisual changes: eliminate needless Coach whole-program fuzzy catalog scanning (synthetic generation ~1.16 s → ~52–62 ms previously), and first History paint with 24 original cards and additional batches as user scrolls (~460 ms for 300 cards → ~26–28 ms first 24 cards in jsdom). Existing styling/cards, recaps, edits, programs, cloud account semantics unchanged. **Real Android performance not yet accepted; jsdom is not an FPS trace.**
+- Beta app/branch remains independent at v0.73.1, branch `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, untouched; no cloud/account/data migration.
+- **NEXT:** User installs Testing v0.93.3 and tests: same detailed 3-day Coach prompt, compare response to 0.93.2, open History, scroll through boundaries at sessions 24/48/72, open old workout recap, Edit/Manage, back navigation, ensure scrolling doesn't jump or stall, and confirm stored history unchanged. No visual redesign. If History scroll batching janks, profile on Android and adjust scheduling/size without changing appearance. Next broader phase: further library/Progress performance and optimized Android build comparison, ONLY after owner feedback.
+
+---
+
+
 ## SIGNED TESTING v0.93.3 RELEASE AUTHORIZED (October 15, 2026)
 
 - After validating Coach parser and History progressive render benchmarks and all 96 prior tests on draft PR #79, owner explicitly agreed to the next checkpoint: **publish an in-place signed Testing Android build for device acceptance**. Testing version bumped **0.93.2 → 0.93.3**, Android **versionCode 137 → 138** in `package.json` on PR #79. User specifically does NOT want visual UI/UX changes.
