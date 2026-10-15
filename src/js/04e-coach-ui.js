@@ -277,7 +277,13 @@ function coachSubmitPrompt(){
  if(taught.handled){showToast(taught.message);return}
  if(typeof coachTryProgramAuditQuestion==='function'&&coachTryProgramAuditQuestion(prompt,{render:true}))return;
  if(typeof coachTryHistoryQuestion==='function'&&coachTryHistoryQuestion(prompt,{render:true}))return;
- const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt),explicit=coachParseExplicitWorkout(prompt,request.goal);
+ const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt);
+ // Whole-program briefs should not pay for approximate matching against the
+ // complete exercise catalog unless the user requested explicit movements.
+ // Keep exact-name, alias and exclusion matching for every program request.
+ const explicit=coachParseExplicitWorkout(prompt,request.goal,{
+   allowFuzzy:!programIntent.isProgram||coachProgramNeedsFuzzyExerciseScan(prompt)
+ });
  request.excludedExerciseIds=[...new Set([...(request.excludedExerciseIds||[]),...(explicit.excludedExerciseIds||[])])];
  if(explicit.signal&&explicit.ambiguities?.length){coachBeginExerciseClarification({prompt,request,programIntent,explicit});return}
  if(explicit.signal&&explicit.items.length){
@@ -329,7 +335,13 @@ function homeCoachBuildPrompt(){
  if(taught.handled){showToast(taught.message);return}
  if(typeof coachTryProgramAuditQuestion==='function'&&coachTryProgramAuditQuestion(prompt,{render:true}))return;
  if(typeof coachTryHistoryQuestion==='function'&&coachTryHistoryQuestion(prompt,{render:true}))return;
- const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt),explicit=coachParseExplicitWorkout(prompt,request.goal);
+ const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt);
+ // Whole-program briefs should not pay for approximate matching against the
+ // complete exercise catalog unless the user requested explicit movements.
+ // Keep exact-name, alias and exclusion matching for every program request.
+ const explicit=coachParseExplicitWorkout(prompt,request.goal,{
+   allowFuzzy:!programIntent.isProgram||coachProgramNeedsFuzzyExerciseScan(prompt)
+ });
  request.excludedExerciseIds=[...new Set([...(request.excludedExerciseIds||[]),...(explicit.excludedExerciseIds||[])])];
  if(explicit.signal&&explicit.ambiguities?.length){coachBeginExerciseClarification({prompt,request,programIntent,explicit});return}
  if(explicit.signal&&explicit.items.length){
