@@ -32,6 +32,31 @@
 - Workflows have runner noise, so first measurements are **observational, not thresholded pass/fail**. Use repeated comparisons with the same runner/setup and a meaningful sample count before adding threshold gates.
 - **Limitation:** jsdom measures JavaScript and constructed DOM operations; **not** physical layout, paint, GPU load, frame pacing, Gboard, or low-end Android behavior. DOM fixture success is not device acceptance.
 
+## Initial measured results (PR #79, GitHub Actions run 38692152281)
+
+Baseline: [Synthetic Performance Baseline CI](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38692152281), Node 22 + jsdom 24 on a GitHub-hosted Linux runner, **three-repetition medians**. Measurements vary across runners and runs; do **not** read these numbers as Android touch response, frame time, FPS, or verified production performance.
+
+| Synthetic history size | History DOM render | Progress DOM render | Cold history indexing | Whole-state save |
+|---:|---:|---:|---:|---:|
+| 30 sessions | 106.6 ms | 39.7 ms | 1.6 ms | 0.7 ms |
+| 150 sessions | 228.4 ms | 71.2 ms | 7.2 ms | 1.9 ms |
+| 300 sessions | 439.8 ms | 105.6 ms | 9.3 ms | 4.7 ms |
+| 1,000 sessions | Not rendered | Not rendered | 35.8 ms | 11.4 ms |
+
+Further reference figures (same CI): exercise catalog full render **198.2 ms** (30-history scenario) and **181.2 ms** (300-history scenario); focused workout canvas **7.2 / 4.8 ms**. Full 3-day Coach prompt handling plus generation **1,203.7 / 1,144.1 ms**, whereas **rerendering the already-computed Coach preview** was only **9.3 / 8.8 ms** respectively. These times are CPU and jsdom operations and do **not** include a real phone's compositor. Synthetic 1,000-session storage snapshot was **3,952,952 bytes**; built JS **1,122,166 bytes**, CSS **229,723 bytes**.
+
+**High-value leads, not proven production root causes:**
+
+1. **Coach planning computation (priority A).** Preview DOM rerender is a tiny fraction of end-to-end three-day generation on this synthetic test. Instrument planner sub-phases and rule/selection loops; measure on Android before changing algorithms or correctness.
+2. **History full-list DOM render (priority A).** Roughly scales with completed-session count; rendering 300 cards took hundreds of milliseconds in jsdom. Isolate metric computation versus markup creation / DOM parse; compare Android long-history traces. Optimize without altering accepted card design.
+3. **Full exercise catalog rebuild (priority B).** Generating the 308-item library is a measurable one-shot operation. Analyze repeat-search and filter changes, reuse/scheduling or smaller updates only if real navigation is janky.
+4. **Progress analytics (priority B).** The 300-session scenario took ~106 ms in synthetic DOM; prioritize sub-computations and on-device data before changing behavior.
+5. **Local storage / history indexes (monitor).** An entire synthetic 1,000-session save was ~11 ms in jsdom and indexes ~36 ms; currently a less compelling *initial* bottleneck than Coach generation and full-list rendering. Still important as data grows, especially slower devices and storage behavior.
+
+The audit currently reports *baseline observations* rather than absolute perf regressions. We need repeatability on a stable CI runner, and a separate actual Android frame trace, before setting strict frame-time, memory, startup or jank release gates.
+
+---
+
 ## Phase C: real Android acceptance and baseline capture (not yet performed)
 
 Use an explicit owner-approved **testing-only, safely backed-up** workflow. Capture app version/build SHA, Android device and OS, display refresh setting, WebView and keyboard versions, device power/thermal state and background sync state. No app storage reset.
@@ -54,4 +79,4 @@ Use an explicit owner-approved **testing-only, safely backed-up** workflow. Capt
 4. Platform gate: benchmark current Capacitor WebView first, then compare a controlled **optimized Android build** that preserves installed-app signing, storage and update expectations. Consider native Compose/Svelte work only if specific bottlenecks persist despite focused optimization.
 5. Owner's explicit approval gates any new Testing APK, Beta promotion, cloud migration, visual redesign, or major Coach feature expansion.
 
-**Audit status:** Phase A code inspection complete; Phase B instrumentation proposed in draft PR pending CI runtime data; Phase C *not yet run*. No claim of measured Android FPS or fully completed audit.
+**Audit status:** Phase A repository code inspection and Phase B baseline instrumentation **complete in draft PR #79**, including successful synthetic CPU/DOM benchmark CI. The exact-head full regression run is an independent requirement. **Phase C real Android profiling has not yet run**. This is a measurement-first initial audit, not completed production performance acceptance or a claim of measured Android FPS.
