@@ -1,5 +1,17 @@
 # Swole Cat - Next Chat Handoff
 
+## ACTIVE AUDIT PHASE: Swole Cat functionality/performance architecture (October 15, 2026)
+
+- v0.93.2 signed Testing (code 137) real-device Coach keyboard and preview **functionality accepted**; visuals **frozen** by explicit owner instruction. Do not interpret pending visual taste as functional regression or start a redesign. User explicitly authorized moving to comprehensive performance/reliability audit *before* advanced Coach expansion.
+- Open **draft** [PR #79](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/79) on `audit/functionality-performance-baseline-v0932`, containing ONLY `scripts/performance-audit-baseline.mjs`, `.github/workflows/performance-baseline.yml`, `docs/PERFORMANCE_AUDIT_CHECKPOINT.md`, and this handoff. These create a reproducible, zero-network synthetic 30/150/300/1000 completed-session benchmark using the real app DOM and local storage, and clear source-backed risk inventory and physical Android profiling acceptance plan. No actual UI code, cloud/account data, Android package, Beta or signing changes.
+- Audit scripts executed successfully in [baseline CI #38692442211](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38692442211) and generated artifact `synthetic-performance-baseline`. Observational GitHub Node/jsdom measurements: 300-session History DOM ~350–440ms depending on run, exercise-library DOM ~139–181ms, Progress ~73–106ms, focused workout canvas ~4–5ms. Full three-day Coach input+generation ~746–1204ms; existing-preview DOM rerender only ~5–9ms, one-day standalone exercise selection ~5–9ms and duration trim ~0.1ms; root cause of bulk end-to-end delay needs deeper instrumentation. With 1000 synthetic sessions: full local state ~3.95MB and whole-state save ~8–11ms on CI. Built combined JS 1,122,166 bytes and CSS 229,723 bytes. **NONE are Android FPS or proof of user-device performance.**
+- High-priority code-backed concerns: full session list `innerHTML` regeneration in History; Coach submit/generation main-thread computation; exercise library full-list rerender; Progress recomputation; growing monolithic local WebView state. Existing derived-session caching and deferred saves are real wins. `.github/workflows/android.yml` signs an `assembleDebug` APK for users; carefully compare a test-isolated optimized variant **with correct persistent signing** and backups before changing any release workflow.
+- **Do not merge PR #79 yet**: `.github/workflows/android.yml` publishes Testing from `main` changes under `scripts/**` and could overwrite same-version v0.93.2 APK when a benchmark script merges. No APK publication/version change currently authorized. Audit is ongoing; follow-up is deeper Coach sub-stage CPU analysis plus real-device Perfetto/Android Studio frame, heap, startup and keyboard trace on owner-approved isolated Testing setup. Full regression CI must stay green before any production action.
+- Reference complete audit and prioritized measurement gates: `docs/PERFORMANCE_AUDIT_CHECKPOINT.md`. Beta remains independently signed v0.73.1, unchanged.
+
+---
+
+
 ## CURRENT PRIORITY: Freeze visual design, audit functionality + performance (October 15, 2026)
 
 - **User's real-device acceptance on signed Testing v0.93.2 (build 137): Coach floating input and Android keyboard functionality now work correctly.** Their qualifier "not perfect" refers **only to visual design/UI aesthetics**, not functional or keyboard failures. **Do not start another keyboard/UI polish pass based on that qualifier.**
