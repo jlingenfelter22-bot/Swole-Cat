@@ -114,15 +114,21 @@ try {
       assert.equal(w.save({syncRelevant:false}),true);
       assert(w.localStorage.getItem('overload_v3')?.length>0);
     },3);
-    if(count===30||count===300)measure(count,'coach_program_generate',()=>{
-      const body=doc.getElementById('modalBody');
-      body.innerHTML='<textarea id="coachPrompt"></textarea>';
-      doc.getElementById('coachPrompt').value=
-        '3-day push pull legs Monday 30 minutes at the gym, Wednesday 45 minutes with dumbbells only, Friday 75 minutes at the gym, muscle growth, track only';
-      w.coachSubmitPrompt();
-      assert.equal(body.querySelectorAll('.coach-program-day-card').length,3,
-        'Coach generated a three-day program against the synthetic history');
-    },3);
+    if(count===30||count===300){
+      measure(count,'coach_program_generate',()=>{
+        const body=doc.getElementById('modalBody');
+        body.innerHTML='<textarea id="coachPrompt"></textarea>';
+        doc.getElementById('coachPrompt').value=
+          '3-day push pull legs Monday 30 minutes at the gym, Wednesday 45 minutes with dumbbells only, Friday 75 minutes at the gym, muscle growth, track only';
+        w.coachSubmitPrompt();
+        assert.equal(body.querySelectorAll('.coach-program-day-card').length,3,
+          'Coach generated a three-day program against the synthetic history');
+      },3);
+      measure(count,'coach_preview_rerender',()=>{
+        w.renderCoachProgramPreview();
+        assert.equal(doc.getElementById('modalBody').querySelectorAll('.coach-program-day-card').length,3);
+      },3);
+    }
   }
   // Separate longer-history serialization/index test; avoids 1,000-history-card DOM explosion.
   install(1000);
