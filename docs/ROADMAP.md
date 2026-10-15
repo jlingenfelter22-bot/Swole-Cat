@@ -1,5 +1,14 @@
 # Swole Cat Product Roadmap
 
+## Parked future expansion — Swole Cat for Trainers (idea logged October 15, 2026)
+
+**Not in active development.** The owner proposed, after discussing workflows with his father (a personal trainer), a future linked **trainer/client platform**. A trainer would see a roster of distinct client profiles; manage each client's routines, programs, workout history and progress; and publish updates to each client's connected Swole Cat experience. The client logs workouts on their own phone; the trainer can review permitted progress and adjust future plans. A distinct trainer-branded app versus a role-specific interface remains undecided. Priority is AFTER current personal app functionality, Android v0.93.3 performance acceptance, sync/data safety and Coach are stabilized. No change to the existing app, accounts, data model or release plan is authorized by this note.
+
+**[Full captured idea, candidate MVP, alternatives, competition and security principles](FUTURE_TRAINER_PLATFORM_CONCEPT.md)**. Do not merge clients' workout data, expose private logs without consent or overwrite completed workouts; future architecture must enforce per-client workspace isolation. Owner can revisit this as an entirely separate product/discovery initiative.
+
+---
+
+
 This document is the canonical product roadmap for Swole Cat. Features listed as **Locked** are intended product direction unless a later technical or product decision explicitly replaces them.
 
 ## Product Principles
