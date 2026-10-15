@@ -59,6 +59,20 @@ The audit currently reports *baseline observations* rather than absolute perf re
 
 ---
 
+## First nonvisual performance optimization: Coach program parsing (draft, not released)
+
+**Profiling evidence:** [pre-change CI run 38696266821](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38696266821) measured `coachParseExplicitWorkout()` **~1,136–1,150 ms** inclusive for a natural-language, three-day PPL brief with weekday-specific times and equipment. By comparison, actual three-day `coachGenerateProgram()` took **46–61 ms**, and preview DOM render **~11–12 ms**. The expensive parser searched the entire fuzzy exercise-name catalog for day/time/equipment chunks despite a program-wide request.
+
+**Nonvisual fix in draft PR #79:** preserve exact matching, aliases, explicitly negated exercise IDs and all standalone exercise prescriptions; skip the fuzzy-approximate fallback specifically when `programIntent.isProgram` and the prompt **doesn't** contain indicators of an explicit movement/prescription list (`include`, `add`, `exercises`, `sets`, `reps`, etc.). Apply equally to main modal `coachSubmitPrompt()` and Home `homeCoachBuildPrompt()`. Exercise lists within program requests and non-program prompts continue to use fuzzy matching, including typo clarification. Existing program selection, durations, week review, schedule, progression and cloud flows are unchanged. New test `scripts/coach-program-parse-fastpath-stress.mjs` checks the boundary and no saved-data mutation.
+
+**After change:** [post-change CI 38696932123](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38696932123) with the same synthetic prompt recorded `coachParseExplicitWorkout()` **17–21 ms**, and end-to-end Coach program **~52–62 ms median**. Compare with earlier `coach_program_generate` **~1.16–1.18 seconds** on pre-change CI run 38696266821. This is an **order-of-magnitude improvement in synthetic JS/DOM processing**, but CI runner variation, JavaScript warm-up and lack of real Android tracing prohibit claiming a guaranteed phone-level speedup. Check hardware after safe release approval.
+
+**History root-cause isolation:** on pre-change CI 38696266821 at 300 sessions, full `renderHistory` was ~460 ms, **markup construction ~80 ms** and **DOM parsing ~388 ms**. This justifies evaluating windowing/incremental update approaches in a *separate* opt-in performance pass, **without changing card design or existing interactions**. No History production changes were made in the first optimization.
+
+**Release boundary:** this branch remains draft/unmerged until the exact-head full functionality regression and a version-safe Testing publication plan are reviewed. No Beta change, cloud data write, APK publication, UI redesign or live data performance test has occurred.
+
+---
+
 ## Phase C: real Android acceptance and baseline capture (not yet performed)
 
 Use an explicit owner-approved **testing-only, safely backed-up** workflow. Capture app version/build SHA, Android device and OS, display refresh setting, WebView and keyboard versions, device power/thermal state and background sync state. No app storage reset.
