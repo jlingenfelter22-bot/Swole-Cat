@@ -55,7 +55,7 @@ try{
    assert(banned.excludedExerciseIds.length>0,'exact exercise exclusions survive the program fast route');
    assert(!banned.items.length,'excluded rows must not be treated as positive exercises');
    const before=fuzzyCalls;
-   w.coachParseExplicitWorkout('bench preas and dumbbell curls','hypertrophy',{allowFuzzy:true});
+   w.coachParseExplicitWorkout('barbl bech pres','hypertrophy',{allowFuzzy:true});
    assert(fuzzyCalls>before,'fuzzy parsing must remain available when explicitly requested');
    const listPrompt='3-day split, include bench preas and sqauts';
    routing=[];
