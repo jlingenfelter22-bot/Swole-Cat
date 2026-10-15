@@ -1,5 +1,16 @@
 # Swole Cat - Next Chat Handoff
 
+## HISTORY RENDERING OPTIMIZATION, DEVELOPMENT-ONLY (October 15, 2026)
+
+- User requested advancing next highest priority after Coach parser fix: optimize **History rendering** while honoring hard visual UI/UX freeze and no production/cloud/Beta changes.
+- Draft [PR #79](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/79) now includes `src/js/07-history-editor.js` performance change (and existing Coach parser optimization): render newest **24 History cards** on opening (unchanged HTML/controls/sequence numbering), append next 24 when scrolled near bottom. Preserve visible depth across save/edit/delete, no observer-based visible UI, no new buttons/stylesheet. Passive window scroll handler with animation-frame coalescing; does no work when History view is inactive.
+- Existing 300-session first History render ~460 ms in synthetic Node+jsdom [old CI #38696266821](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38696266821), now **~26 ms initial 24 cards** [benchmark #38757877040](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38757877040). Full append of remaining 276 cards still has cost (~246ms cumulatively), just spread across scroll; not a claim of phone FPS or total work elimination. New regression `scripts/history-progressive-render-stress.mjs` verifies 75 sessions accessible, sequence numbers, actions, scroll append, preservation of already rendered nodes/depth, empty view and synthetic deletion. Initial CI assertion bugs were test-side (30-card expectation after new 24-item window and ID-prefix false match) and have been fixed.
+- Full validation CI must pass on the final HEAD before release action; **PR still draft/unmerged**, owner hasn't authorized a new Testing APK, and merging to `main` could spuriously republish unchanged v0.93.2 APK because Android workflow watches `scripts/**`. Beta v0.73.1 remains unchanged, Testing published v0.93.2 (build 137), cloud/account/history data untouched.
+- Detailed report in `docs/PERFORMANCE_AUDIT_CHECKPOINT.md`. Next is final exact-HEAD CI, then safe release strategy and real Android scroll/frame validation only when owner approves. Longer-term large-history windowing can be explored if first batches still cause jank, without visual redesigns.
+
+---
+
+
 ## PRIORITY PERFORMANCE FIX PREPARED (draft PR #79; October 15, 2026)
 
 - Owner approved proceeding from v0.93.2 accepted Coach keyboard functionality to nonvisual performance/reliability improvements. **No UI/UX design changes.**
