@@ -1,5 +1,16 @@
 # Swole Cat - Next Chat Handoff
 
+## PARKED FUTURE IDEA: Swole Cat for Trainers (captured Oct 15, 2026)
+
+- Owner installed signed Testing **v0.93.3 (Android build 138)** and expects to test Coach/History speed shortly. **Immediate engineering focus remains real-device performance/functional acceptance, no UI redesign.** Beta unchanged.
+- While speaking with his father, a working personal trainer, owner identified a **future trainer-focused branch or app**: a trainer can manage many **independent client profiles**, each with their own workouts, routines, programs, progress and history; a client links their own Swole Cat experience to that trainer and receives trainer-published future program changes, while sending permitted workout logs/results back. Support in-person switching of selected client as well as remote programs.
+- Captured full vision, candidate phased MVP, professional product alternatives (Trainerize, TrueCoach, Everfit), unsolved separate app vs role design, sync authorization, client ownership, invitation/unlink safety, offline conflicts, privacy and permission boundaries in **[`docs/FUTURE_TRAINER_PLATFORM_CONCEPT.md`](FUTURE_TRAINER_PLATFORM_CONCEPT.md)**. Cross-linked in **`docs/ROADMAP.md`**.
+- **Parked/not approved to build:** no new trainer architecture or Supabase schema changes, no separate Android APK, no UI/UX changes and no trainer development until personal app stability and owner explicitly prioritizes it. Preserve personal free-core model; trainer pricing is TBD.
+- Files are documentation only; should **not trigger an Android Testing release**. Continue receiving owner feedback on installed v0.93.3.
+
+---
+
+
 ## LATEST: Testing v0.93.3 SIGNED PUBLISHED — Android phone performance acceptance next (October 15, 2026)
 
 - Owner approved next checkpoint for on-device acceptance of Coach and History optimizations; [PR #79](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/79) **merged** after exact-head [96/96 full CI](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38759510312) and [synthetic benchmark](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38759510281) both passed.
