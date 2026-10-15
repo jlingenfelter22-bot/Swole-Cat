@@ -73,7 +73,7 @@ try{
  w.renderHistory();
  assert.equal(count(),74,'refresh preserves opened older pages after deletion');
  assert.notStrictEqual(firstCard(),preserved,'refresh still updates all card summaries correctly');
- assert(!ids().some(x=>x.includes('perf_history_2')),'deleted workout must be absent');
+ assert(!ids().some(x=>x.includes("'perf_history_2'")),'deleted workout must be absent without rejecting ID 20/21/etc');
  // Reset the view to an initial 24-card window, and exercise the actual scroll listener.
  w.eval('historyRenderedCount=0');
  w.renderHistory();
