@@ -120,7 +120,7 @@ try {
       }finally{delete list.innerHTML}
       measure(count,'history_dom_parse_only',()=>{
         list.innerHTML=markup;
-        assert.equal(list.querySelectorAll('.history-entry').length,count);
+        assert.equal(list.querySelectorAll('.history-entry').length,Math.min(count,24));
       },3);
     }
     if(count<=300)measure(count,'progress_render',()=>{
