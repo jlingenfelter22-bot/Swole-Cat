@@ -1,5 +1,16 @@
 # Swole Cat - Next Chat Handoff
 
+## CURRENT PRIORITY: Freeze visual design, audit functionality + performance (October 15, 2026)
+
+- **User's real-device acceptance on signed Testing v0.93.2 (build 137): Coach floating input and Android keyboard functionality now work correctly.** Their qualifier "not perfect" refers **only to visual design/UI aesthetics**, not functional or keyboard failures. **Do not start another keyboard/UI polish pass based on that qualifier.**
+- **Explicit visual-design freeze:** no changes to current UI appearance, layout, colors, animations, or UX styling until user requests them. Do not suggest cosmetic polish as the next task.
+- **Next engineering phase:** comprehensive, measurement-driven **functionality + performance + architecture audit** before expanding Coach or adding major features. First gather a reproducible Android baseline and assess startup, screen navigation, 60Hz scrolling/jank, keyboard responsiveness, active workout/set entry, Coach generation, long history and Progress, memory and local storage size, background/cloud sync overhead, JavaScript main-thread stalls and unnecessary render work, and debug-vs-optimized build comparison. Record baselines, prioritize bottlenecks, implement nonvisual fixes only with performance regression checks and data integrity safeguards.
+- **Release/data boundaries:** keep separate Testing and Beta applications; Beta remains v0.73.1 until owner explicitly approves promotion. No account switching, clearing storage, cloud data edits, migrations or history modifications to run benchmarks. Prefer synthetic/test fixtures or a safe test-only workspace. Do not change the signed release/update flow without authorization.
+- **Status:** Phone UI functionality accepted by owner; **whole-app performance has not yet been measured or certified**. Audit is next, not already complete. Do not conflate 94 green correctness checks with Android frame-time/memory profiling.
+
+---
+
+
 ## LATEST RELEASE: Signed Testing v0.93.2, Android code 137 (October 14, 2026)
 
 - **Owner explicitly authorized Testing-only publication to verify floating Coach composer alignment and native Android Gboard smoothness.** [Release PR #78](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/78) merged using squash into `main` as `40e7b31a8f8c266e2ac19228e5b3f39cadbff8d3`. Contains validated dev PR #77's scoped Coach preview keyboard/scroll structure, title and prompt polish, and package version bump to 0.93.2 / code 137.
