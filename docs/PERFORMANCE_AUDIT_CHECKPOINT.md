@@ -73,6 +73,20 @@ The audit currently reports *baseline observations* rather than absolute perf re
 
 ---
 
+## Second nonvisual performance optimization: History progressive DOM rendering (draft, not released)
+
+**Source-backed root cause:** before change, `src/js/07-history-editor.js:renderHistory()` concatenated the HTML for every session card, then assigned it to `historyList.innerHTML` in a single synchronous DOM operation. Synthetic CI run [38696266821](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38696266821) measured ~**460 ms** for an initial 300-session History render (~80 ms markup computation; ~388 ms DOM parsing).
+
+**Change:** preserve the **exact existing History card HTML and inline actions**, but render only the **newest 24 sessions** initially. Older workouts append in **24-card batches** when the window scroll nears the bottom of History. No extra visible controls, loading placeholders, changed CSS, or card redesigns. Keep original descending session order and overall lifetime sequence numbers (latest of 300 remains 300, oldest remains 01). Appends don't replace already-visible DOM, which prevents focus and scroll position resets. `renderHistory()` preserves the number of previously revealed cards on edit/delete refreshes. When history is empty, retain original empty-state copy. The scroll listener is passive and coalesced to one animation frame; it does nothing when History is inactive. Data source remains the same `derivedSessionData().sessionsDesc`, without storage, backup, cloud or account changes.
+
+**Benchmark evidence:** after change, [CI run 38757877040](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38757877040) measured **~26.3 ms** median for initial 24 History cards when **300 sessions** exist, versus ~460 ms previously to paint all 300: approximately **94% less initial DOM CPU time** in jsdom. *Not apples-to-apples for total work*: if you scroll all the way through older workouts, additional card batches still need to be appended (the synthetic test measured **~246 ms** combined to append the remaining 276). The improvement is lower **time-to-first-visible-history**, not elimination of the work of displaying all sessions. 30-session initial History measured ~36 ms, and jsdom timings vary between runner jobs. No Android frame-time measurements have been made.
+
+**Regression coverage:** new `scripts/history-progressive-render-stress.mjs` checks initial 24 cards, all 75 historical sessions accessible via append, unchanged recap/edit/manage/metrics, correct sequence numbers and card DOM preservation, scroll-triggered append, no background append when History is inactive, preservation of loaded depth after a synthetic deleted session, and original empty state after clearing all. Existing `scripts/history-density-stress.mjs` continues to protect visual structure. Full code + baseline workflows must pass at final PR HEAD; no release/merge yet.
+
+**Remaining physical-device proof:** repeat History navigation and scroll near 24-card boundaries on Android, including loading hundreds of sessions, leaving/returning to History, opening older-session recaps, and edit-refresh at depth. Verify that scroll position and existing visuals remain unchanged with the device compositor, and measure frame jank/p95 to ensure appending 24 cards does not itself cause noticeable scroll hitches. If observed, tune batch size or use an idle budget without changing UI.
+
+---
+
 ## Phase C: real Android acceptance and baseline capture (not yet performed)
 
 Use an explicit owner-approved **testing-only, safely backed-up** workflow. Capture app version/build SHA, Android device and OS, display refresh setting, WebView and keyboard versions, device power/thermal state and background sync state. No app storage reset.
