@@ -62,8 +62,9 @@ try {
     for(let i=0;i<repetitions;i++){
       const start=performance.now();fn();times.push(Number((performance.now()-start).toFixed(3)));
     }
-    const sorted=times.slice().sort((a,b)=>a-b);
-    return {runs:repetitions,medianMs:sorted[Math.floor(sorted.length/2)],maxMs:sorted.at(-1),samplesMs:times};
+    const sorted=times.slice().sort((a,b)=>a-b),mid=Math.floor(sorted.length/2);
+    const median=sorted.length%2?sorted[mid]:(sorted[mid-1]+sorted[mid])/2;
+    return {runs:repetitions,medianMs:Number(median.toFixed(3)),maxMs:sorted.at(-1),samplesMs:times};
   };
   const metrics=[];
   function measure(sessions,operation,fn,runs){
@@ -93,12 +94,22 @@ try {
     measure(count,'history_render',()=>{
       w.renderHistory();
       assert.equal(doc.getElementById('historyList').querySelectorAll('.history-entry').length,count);
-    },2);
+    },3);
     if(count<=150)measure(count,'progress_render',()=>{
       w.renderAnalytics();
       assert(doc.getElementById('analyticsArea').textContent.trim().length>30);
       assert(!doc.getElementById('analyticsArea').textContent.includes('Progress could not display'),'Progress must not degrade to error fallback');
-    },2);
+    },3);
+    if(count===30||count===300){
+      measure(count,'workout_render',()=>{
+        w.renderWorkout();
+        assert(doc.getElementById('workoutArea').querySelector('.focus-session-strip'),'live workout canvas must render');
+      },3);
+      measure(count,'exercise_render',()=>{
+        w.renderExercises();
+        assert(doc.getElementById('exerciseList').querySelectorAll('.list-item').length>=200,'exercise catalog must render');
+      },3);
+    }
     measure(count,'state_save',()=>{
       assert.equal(w.save({syncRelevant:false}),true);
       assert(w.localStorage.getItem('overload_v3')?.length>0);
