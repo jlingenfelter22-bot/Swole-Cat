@@ -95,6 +95,24 @@ try {
       w.renderHistory();
       assert.equal(doc.getElementById('historyList').querySelectorAll('.history-entry').length,count);
     },3);
+    if(count===30||count===300){
+      // Split the existing History implementation into CPU markup construction
+      // and DOM parsing. The monkeypatch exists only inside this disposable jsdom.
+      const list=doc.getElementById('historyList');
+      let markup='';
+      Object.defineProperty(list,'innerHTML',{configurable:true,
+        get(){return markup},set(value){markup=String(value)}});
+      try{
+        measure(count,'history_markup_only',()=>{
+          w.renderHistory();
+          assert(markup.includes('history-entry'),'existing History markup is generated');
+        },3);
+      }finally{delete list.innerHTML}
+      measure(count,'history_dom_parse_only',()=>{
+        list.innerHTML=markup;
+        assert.equal(list.querySelectorAll('.history-entry').length,count);
+      },3);
+    }
     if(count<=300)measure(count,'progress_render',()=>{
       w.renderAnalytics();
       assert(doc.getElementById('analyticsArea').textContent.trim().length>30);
@@ -115,6 +133,40 @@ try {
       assert(w.localStorage.getItem('overload_v3')?.length>0);
     },3);
     if(count===30||count===300){
+      const watched=[
+        'coachSubmitPrompt','coachTryTeachAlias','coachTryProgramAuditQuestion',
+        'coachTryHistoryQuestion','coachParsePrompt','coachParseProgramIntent',
+        'coachParseExplicitWorkout','coachContinueProgramRequest',
+        'coachGenerateProgram','coachSelectExercises','coachBrainTrimToTime',
+        'renderCoachProgramPreview','coachCandidateBaseScore',
+        'coachHistoryAwareCandidateAdjustment'
+      ];
+      const originals=new Map(),profile={};
+      for(const name of watched){
+        if(typeof w[name]!=='function')continue;
+        const original=w[name];originals.set(name,original);
+        w[name]=function(...args){
+          const start=performance.now();
+          try{return original.apply(this,args)}finally{
+            const stat=profile[name]||(profile[name]={calls:0,inclusiveMs:0});
+            stat.calls++;
+            stat.inclusiveMs+=performance.now()-start;
+          }
+        };
+      }
+      try{
+        const body=doc.getElementById('modalBody');
+        body.innerHTML='<textarea id="coachPrompt"></textarea>';
+        doc.getElementById('coachPrompt').value=
+          '3-day push pull legs Monday 30 minutes at the gym, Wednesday 45 minutes with dumbbells only, Friday 75 minutes at the gym, muscle growth, track only';
+        w.coachSubmitPrompt();
+        assert.equal(body.querySelectorAll('.coach-program-day-card').length,3);
+      }finally{
+        for(const [name,original] of originals)w[name]=original;
+      }
+      console.log('COACH_STAGE_PROFILE '+JSON.stringify({sessions:count,stages:Object.fromEntries(
+        Object.entries(profile).map(([key,v])=>[key,{calls:v.calls,inclusiveMs:Number(v.inclusiveMs.toFixed(2))}])
+      )}));
       measure(count,'coach_program_generate',()=>{
         const body=doc.getElementById('modalBody');
         body.innerHTML='<textarea id="coachPrompt"></textarea>';
