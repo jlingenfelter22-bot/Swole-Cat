@@ -1,5 +1,15 @@
 # Swole Cat - Next Chat Handoff
 
+## SIGNED TESTING v0.93.3 RELEASE AUTHORIZED (October 15, 2026)
+
+- After validating Coach parser and History progressive render benchmarks and all 96 prior tests on draft PR #79, owner explicitly agreed to the next checkpoint: **publish an in-place signed Testing Android build for device acceptance**. Testing version bumped **0.93.2 → 0.93.3**, Android **versionCode 137 → 138** in `package.json` on PR #79. User specifically does NOT want visual UI/UX changes.
+- This release includes **only nonvisual Coach program language-parse fast path, History 24-card progressive on-scroll DOM rendering, synthetic non-production CPU/DOM profiling and regression tests**, plus version metadata and reports. No app UI CSS redesign or new Coach features.
+- Require exact-head Validate + synthetic performance workflow **both successful before merge**; then run Android `.github/workflows/android.yml`, requiring original persistent Testing signer `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`, package `com.jlingenfelter.swolecat.testing`, v0.93.3/code 138, prerelease asset `swole-cat-testing-v0.93.3-signed.apk`, digest in `updates/testing.json` equal to actual release asset. Never clobber a prior version APK, delete accounts, uninstall or reset local storage. Beta remains unchanged.
+- **Device acceptance pending**: after installing over existing Testing v0.93.2, create 3-day Coach plan and gauge responsiveness, open History with accumulated sessions, scroll through multiple 24-card boundaries, tap older Recap/Edit/Manage, ensure scroll/focus/visuals remain stable and original data preserved. Real Android compositor/FPS cannot be declared validated by jsdom. If phone feedback reports jank, adjust only nonvisual scroll batching.
+
+---
+
+
 ## HISTORY RENDERING OPTIMIZATION, DEVELOPMENT-ONLY (October 15, 2026)
 
 - User requested advancing next highest priority after Coach parser fix: optimize **History rendering** while honoring hard visual UI/UX freeze and no production/cloud/Beta changes.
