@@ -47,11 +47,42 @@ function openHistoryOptions(){
    </div>
  `);
 }
+// History cards keep exactly the same markup and interactions, but older cards
+// are appended near the scroll edge instead of parsing years of logs at once.
+const HISTORY_RENDER_BATCH_SIZE=24;
+let historyRenderSnapshot=[],historyRenderedCount=0,historyScrollBound=false,historyScrollFrame=0;
+function historyRenderNextBatch(){
+ const el=document.getElementById('historyList'),sessions=historyRenderSnapshot;
+ if(!el||historyRenderedCount>=sessions.length)return false;
+ const from=historyRenderedCount,to=Math.min(sessions.length,from+HISTORY_RENDER_BATCH_SIZE);
+ el.insertAdjacentHTML('beforeend',sessions.slice(from,to).map((s,i)=>historySessionCardHtml(s,from+i,sessions.length)).join(''));
+ historyRenderedCount=to;
+ return true;
+}
+function historyScrollMaybeAppend(){
+ if(historyScrollFrame)return;
+ historyScrollFrame=requestAnimationFrame(()=>{
+  historyScrollFrame=0;
+  const section=document.getElementById('history'),list=document.getElementById('historyList');
+  if(!section?.classList.contains('active')||!list||historyRenderedCount>=historyRenderSnapshot.length)return;
+  if(list.getBoundingClientRect().bottom<=window.innerHeight+Math.min(600,window.innerHeight))historyRenderNextBatch();
+ });
+}
 function renderHistory(){
- const el=document.getElementById('historyList');
+ const el=document.getElementById('historyList');if(!el)return;
  const sessions=derivedSessionData().sessionsDesc;
+ // Keep already-loaded older entries when an edit/delete refreshes the page.
+ const desired=Math.min(sessions.length,Math.max(HISTORY_RENDER_BATCH_SIZE,historyRenderedCount));
+ historyRenderSnapshot=sessions;historyRenderedCount=desired;
  if(!sessions.length){el.innerHTML='<div class="empty"><div class="empty-illustration"><span class="empty-glyph empty-glyph-history" aria-hidden="true"></span></div><strong>No workout history yet</strong>Finish your first session and it will be saved here.</div>';return;}
- el.innerHTML=sessions.map((s,sessionIndex)=>{
+ el.innerHTML=sessions.slice(0,desired).map((s,i)=>historySessionCardHtml(s,i,sessions.length)).join('');
+ if(!historyScrollBound){
+  window.addEventListener('scroll',historyScrollMaybeAppend,{passive:true});
+  window.addEventListener('resize',historyScrollMaybeAppend,{passive:true});
+  historyScrollBound=true;
+ }
+}
+function historySessionCardHtml(s,sessionIndex,total){
    const when=historySessionDateParts(s);
    const workingSets=sessionSetCount(s),allSets=sessionAllSetCount(s),volume=Math.round(sessionVolume(s)),prs=sessionPRCount(s);
    const exercises=sessionCompletedExerciseCount(s),totalReps=sessionTotalReps(s);
@@ -59,7 +90,7 @@ function renderHistory(){
    const totalDistance=(s.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='distance'?completedSets(e).reduce((a,set)=>a+(Number(set.distanceMeters)||0),0):0),0);
    const measureSummary=[totalReps?totalReps+' total reps':'',totalTime?compactMetricNumber(totalTime)+' hold seconds':'',totalDistance?compactMetricNumber(distanceFromMeters(totalDistance))+' '+distanceUnitLabel()+' traveled':''].filter(Boolean).join(' · ')||'No measured sets';
    return `<article class="card history-entry">
-     <div class="history-sequence"><small>SESSION</small><span>${String(sessions.length-sessionIndex).padStart(2,'0')}</span></div>
+     <div class="history-sequence"><small>SESSION</small><span>${String(total-sessionIndex).padStart(2,'0')}</span></div>
      <div class="history-entry-body">
        <div class="history-entry-head">
          <div class="history-entry-heading">
@@ -87,8 +118,8 @@ function renderHistory(){
        </div>
      </div>
    </article>`;
- }).join('');
 }
+
 function calculateHistoricalPR(prior,set,exerciseId=null,config=null){
  return loadAwarePR(prior,set,exerciseId,config);
 }
