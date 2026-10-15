@@ -90,11 +90,20 @@ try {
     measure(count,'history_index_warm',()=>{
       assert.equal(w.derivedSessionData().sessionsDesc.length,count);
     },4);
-    // Render actual History and Progress implementations and exercise real DOM allocation.
+    // First-paint cost, then cumulative append cost; physical scrolling still needs Android.
     measure(count,'history_render',()=>{
+      w.eval('historyRenderedCount=0');
       w.renderHistory();
-      assert.equal(doc.getElementById('historyList').querySelectorAll('.history-entry').length,count);
+      assert.equal(doc.getElementById('historyList').querySelectorAll('.history-entry').length,Math.min(count,24),
+        'first History render should be bounded to preserve navigation responsiveness');
     },3);
+    if(count===300){
+      w.eval('historyRenderedCount=0');w.renderHistory();
+      measure(count,'history_append_to_all',()=>{
+        while(w.historyRenderNextBatch()){}
+        assert.equal(doc.getElementById('historyList').querySelectorAll('.history-entry').length,count);
+      },1);
+    }
     if(count===30||count===300){
       // Split the existing History implementation into CPU markup construction
       // and DOM parsing. The monkeypatch exists only inside this disposable jsdom.
@@ -104,6 +113,7 @@ try {
         get(){return markup},set(value){markup=String(value)}});
       try{
         measure(count,'history_markup_only',()=>{
+          w.eval('historyRenderedCount=0');
           w.renderHistory();
           assert(markup.includes('history-entry'),'existing History markup is generated');
         },3);
