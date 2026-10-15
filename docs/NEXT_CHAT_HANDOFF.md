@@ -1,5 +1,17 @@
 # Swole Cat - Next Chat Handoff
 
+## PRIORITY PERFORMANCE FIX PREPARED (draft PR #79; October 15, 2026)
+
+- Owner approved proceeding from v0.93.2 accepted Coach keyboard functionality to nonvisual performance/reliability improvements. **No UI/UX design changes.**
+- Deep synthetic code profiling isolated a dominant multi-day Coach delay: `coachParseExplicitWorkout()` fuzzy scanned the exercise catalog for general weekday/time/equipment text, costing **~1.14–1.15 seconds** for a PPL request before actual program generation (~46–61 ms). History 300-session DOM insert (~388 ms) dominated HTML construction (~80 ms). See [pre-change CI 38696266821](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38696266821).
+- In draft [PR #79](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/79) on `audit/functionality-performance-baseline-v0932`, optimized Coach `src/js/04c-coach-language-refinement.js` and `04e-coach-ui.js`: skip *fuzzy* matching when program-wide request is general (no explicitly named movement list), retaining exact matches/aliases, negative exclusions, and full fuzzy handling for standalone or explicitly requested exercise prescriptions. Both main and Home Coach entrypoints covered. Added targeted `scripts/coach-program-parse-fastpath-stress.mjs` to standard Validate workflow. Note an initial test mistakenly used a phrase with an exact alias and asserted fuzzy work; corrected to a truly typo-only phrase for meaningful coverage. Full tests on corrected HEAD still require green before any merge.
+- [Post-change synthetic CI 38696932123](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38696932123) **PASS**, same program brief `coachParseExplicitWorkout` ~17–21 ms, full generated program median ~52–62 ms, down from previous median ~1.16–1.18s (runner-dependent, **not actual Android FPS/latency**). Use real Android evaluation after a safely versioned Testing release.
+- The audit instrumentation now splits History HTML computation vs DOM parsing and profiles Coach stages; `docs/PERFORMANCE_AUDIT_CHECKPOINT.md` records evidence and limitations. Do not modify History UI/layout/interaction until separate profiling and owner approval.
+- **Safety:** PR #79 remains **draft/unmerged**, no new APK, Testing stays v0.93.2 build 137, Beta v0.73.1 unchanged, cloud data/accounts untouched. CAUTION: `.github/workflows/android.yml` triggers signed Testing release on any `scripts/**` merge to main and can overwrite the *same version* APK if release version not bumped. Protect permanent Testing signing and in-place update integrity. Next: ensure final exact-head 94+ regression checks pass; then choose safe release gating/version bump if user authorizes, and continue Android profiling + History nonvisual efficiency work.
+
+---
+
+
 ## ACTIVE AUDIT PHASE: Swole Cat functionality/performance architecture (October 15, 2026)
 
 - v0.93.2 signed Testing (code 137) real-device Coach keyboard and preview **functionality accepted**; visuals **frozen** by explicit owner instruction. Do not interpret pending visual taste as functional regression or start a redesign. User explicitly authorized moving to comprehensive performance/reliability audit *before* advanced Coach expansion.
