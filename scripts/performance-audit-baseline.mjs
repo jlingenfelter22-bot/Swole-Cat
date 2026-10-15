@@ -128,6 +128,18 @@ try {
         w.renderCoachProgramPreview();
         assert.equal(doc.getElementById('modalBody').querySelectorAll('.coach-program-day-card').length,3);
       },3);
+      const draft=w.eval('coachProgramBuildDraft');
+      assert(draft?.days?.length===3,'Three-day Coach draft expected for isolated planner timings');
+      const day=draft.days[0];
+      measure(count,'coach_select_one_day',()=>{
+        const list=w.coachSelectExercises(day.request,day.defaults.exerciseCount);
+        assert(list.length>0,'one-day candidate selection must remain feasible');
+      },3);
+      const seed=w.coachSelectExercises(day.request,day.defaults.exerciseCount);
+      measure(count,'coach_duration_one_day',()=>{
+        const result=w.coachBrainTrimToTime(seed,day.request,day.defaults);
+        assert(result?.exercises?.length>0,'one-day time budgeting retains a feasible workout');
+      },3);
     }
   }
   // Separate longer-history serialization/index test; avoids 1,000-history-card DOM explosion.
