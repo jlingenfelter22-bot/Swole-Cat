@@ -87,6 +87,22 @@ The audit currently reports *baseline observations* rather than absolute perf re
 
 ---
 
+## Third nonvisual optimization: Exercise Library bounded initial DOM (draft PR #80, October 18, 2026)
+
+**Scope:** A separate draft branch based on published Testing v0.93.3. The owner asked to resume core performance engineering after parking the future trainer/client concept. The installed v0.93.3 physical-phone acceptance report is still pending; do not claim it passed. Visual appearance and library behavior remain frozen.
+
+**Finding:** The Exercises screen previously rebuilt every `.list-item` for the full exercise catalog in a single `innerHTML` assignment, including schematic thumbnails and inline actions, on first open and on search/filter/favorite changes. Recent earlier synthetic Node+jsdom 30/300-history test runs measured whole-library renders around **120–140 ms** (separate runner runs show ~180–200 ms). This is not physical WebView FPS.
+
+**Change (draft only):** the first render processes **32 matching exercise cards**. Additional rows append in 32-item chunks as window scrolling reaches the list's end. The full filtered/sorted collection is still retained in memory, so every result is accessible by scrolling; changing search or filters resets the rendered slice. Subsequent refreshes with identical filter parameters keep already-visible depth. Scroll work is passive, one-per-animation-frame and disabled when the Exercises view isn't active. **Row markup is identical** (thumbnail, labels, favorite/preference badge, edit/detail handlers) and there are no CSS, copy, graphics or layout changes.
+
+**Preliminary measurement:** [draft benchmark CI #39151448359](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39151448359) passed. At 30 synthetic sessions, first library render was **27.2 ms**; at 300 sessions it was **19.5 ms**, vs previous whole-catalog ~120–140 ms. Rendering the *rest* of the catalog still has cumulative cost: **~133–144 ms** for appended rows, spread over scroll activity. Different CI runs/runners vary; these are indicative CPU/DOM timings and cannot certify phone-level smoothness. A physical Android test must check scroll-batch hitching and search/filter responsiveness.
+
+**Reliability checks:** `scripts/exercise-library-progressive-render-stress.mjs` validates initial 32 cards, full catalog reachability, unchanged sorted IDs/actions, append preserving DOM nodes, search result exhaustiveness, favorite/hidden filters, reset on query/filter changes, scroll only when active, empty state and unchanged training records. Added to the existing full validation workflow. Exact-branch-head CI completion required before considering any Testing release.
+
+**Release discipline:** No version bump, no PR merge, no signed Android package, no Beta or cloud/account changes in this draft. Keep the future trainer/client proposal parked in `docs/FUTURE_TRAINER_PLATFORM_CONCEPT.md`. Benchmark the optimized Android build variant separately with controlled signing and migration considerations; do not flip the released debug build mode during this change.
+
+---
+
 ## Phase C: real Android acceptance and baseline capture (not yet performed)
 
 Use an explicit owner-approved **testing-only, safely backed-up** workflow. Capture app version/build SHA, Android device and OS, display refresh setting, WebView and keyboard versions, device power/thermal state and background sync state. No app storage reset.
