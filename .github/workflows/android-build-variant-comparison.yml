@@ -1,0 +1,131 @@
+name: Android Build Variant Comparison (Lab Only)
+
+# This workflow is a non-shipping build experiment. It has read-only repository
+# permissions, no production signing secrets, and uploads ONLY JSON measurements.
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/android-build-variant-comparison.yml"
+      - "docs/ANDROID_BUILD_VARIANT_AUDIT.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare-generated-builds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install Android API 36
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort | tail -n 1)"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+      - name: Prepare identical Capacitor WebView assets and unsigned experiment
+        env:
+          SWOLE_CAT_ENABLE_SIGNING: "0"
+        run: |
+          npm run android:prepare
+          test -f android/app/build.gradle
+          grep -F 'applicationId "com.jlingenfelter.swolecat.testing"' android/app/build.gradle
+          mkdir -p /tmp/swole-cat-variant-lab
+      - name: Compile existing debug and non-minified release variants
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug assembleRelease --stacktrace
+          cp app/build/outputs/apk/debug/app-debug.apk /tmp/swole-cat-variant-lab/debug.apk
+          cp app/build/outputs/apk/release/app-release-unsigned.apk /tmp/swole-cat-variant-lab/release-unminified.apk
+      - name: Enable release R8 in generated files ONLY, never in repo
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          p=pathlib.Path('android/app/build.gradle')
+          s=p.read_text()
+          assert s.count('minifyEnabled false')==1, 'Unexpected Gradle shrinker config; review manually'
+          s=s.replace('minifyEnabled false','minifyEnabled true',1)
+          assert 'minifyEnabled true' in s
+          p.write_text(s)
+          print('Experimental generated-only R8 release flag enabled')
+          PY
+      - name: Compile optimized release variant in isolated CI workspace
+        working-directory: android
+        run: |
+          ./gradlew assembleRelease --stacktrace
+          cp app/build/outputs/apk/release/app-release-unsigned.apk /tmp/swole-cat-variant-lab/release-r8.apk
+      - name: Compare package sizes, WebView bundle and safety properties
+        env:
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import json,zipfile,hashlib,os,pathlib
+          basedir=pathlib.Path('/tmp/swole-cat-variant-lab')
+          variants={
+            'debug':basedir/'debug.apk',
+            'releaseNoR8':basedir/'release-unminified.apk',
+            'releaseR8':basedir/'release-r8.apk'
+          }
+          def inspect(path):
+            with zipfile.ZipFile(path) as z:
+              members=z.infolist()
+              web=[i for i in members if i.filename.startswith('assets/public/')]
+              dex=[i for i in members if i.filename.endswith('.dex')]
+              binary=[i for i in members if i.filename.endswith('.so')]
+              appjs=[i for i in members if i.filename.endswith('/app.js')]
+              appcss=[i for i in members if i.filename.endswith('/app.css')]
+              return {
+                'apkBytes':path.stat().st_size,
+                'zipEntries':len(members),
+                'dexBytesUncompressed':sum(i.file_size for i in dex),
+                'dexFiles':len(dex),
+                'nativeLibrariesBytesUncompressed':sum(i.file_size for i in binary),
+                'webAssetsBytesUncompressed':sum(i.file_size for i in web),
+                'appJsSha256':hashlib.sha256(z.read(appjs[0])).hexdigest() if appjs else None,
+                'appCssSha256':hashlib.sha256(z.read(appcss[0])).hexdigest() if appcss else None
+              }
+          results={k:inspect(v) for k,v in variants.items()}
+          assert all(v['appJsSha256'] and v['appCssSha256'] for v in results.values()),'Expected bundled WebView JS/CSS'
+          assert len({v['appJsSha256'] for v in results.values()})==1,'WebView JS changed across builds'
+          assert len({v['appCssSha256'] for v in results.values()})==1,'WebView CSS changed across builds'
+          result={
+            'status':'experimental_unshipped',
+            'gitSha':os.environ['GIT_SHA'],
+            'benchmarkType':'APK package size and asset checks, NOT performance or device frame metrics',
+            'variantSigning':'debug uses CI default ephemeral key; release APKs unsigned; NONE install/update approved',
+            'androidFpsMeasured':False,
+            'dataOrCloudTouched':False,
+            'javaR8EnabledOnlyForOptimizedVariant':True,
+            'variants':results
+          }
+          pathlib.Path('android-build-variants.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps(result,indent=2))
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as h:
+            h.write('\n## CI-only Android variant comparison (NOT device performance)\n\n')
+            h.write('| Variant | APK size KiB | DEX uncompressed KiB | Web assets uncompressed KiB |\n|---|---:|---:|---:|\n')
+            for name,v in results.items():
+              h.write(f"| {name} | {v['apkBytes']/1024:.1f} | {v['dexBytesUncompressed']/1024:.1f} | {v['webAssetsBytesUncompressed']/1024:.1f} |\n")
+            h.write('\nAll WebView JS and CSS SHA-256 digests match across variants. This run contains no real Android frame or touch timings.\n')
+          PY
+      - name: Publish JSON-only lab report (never APK)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-variant-json-only
+          path: android-build-variants.json
+          if-no-files-found: warn
+          retention-days: 30
