@@ -1,5 +1,16 @@
 # Swole Cat - Next Chat Handoff
 
+## ACTIVE PERFORMANCE WORK (October 18, 2026) — next steps while owner tests signed v0.93.3
+
+- Owner requested that engineering proceed while he checks real-device **Testing v0.93.3 / code 138**. Personal trainer/client future concept remains parked and documented separately; **do not touch it for the active development phase**. Current visual UI/UX freeze remains.
+- **Draft PR #80** https://github.com/jlingenfelter22-bot/Swole-Cat/pull/80: nonvisual Exercise Library initial 32-card rendering + automatic 32-card append on scroll; unchanged row HTML, search, filter, favorites. Both [full 97-step validation](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39151646810) and [synthetic performance baseline](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39151646858) PASSED on PR exact HEAD. Initial library rendering ~20–27 ms, compared with ~120–140 ms before (not physical Android FPS). **Do not merge/publish/republish same-version v0.93.3 by accident.**
+- **Draft PR #81** https://github.com/jlingenfelter22-bot/Swole-Cat/pull/81: isolated, **read-only CI Android variant lab** completed successfully [run #39152331866](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39152331866). From identical v0.93.3 JavaScript/CSS, built ephemeral debug / unsigned release-no-R8 / unsigned release-R8 wrappers without real signing secrets, release tags, APK uploads, manifest writes or private data access. Size bytes respectively **5,206,278 / 3,717,901 / 1,688,225**. DEX uncompressed bytes **9,364,024 / 7,582,320 / 1,450,012**. **R8 package ~67.6% smaller, but NOT proven 67.6% faster or any runtime speedup.** All web assets have identical SHA-256. Native plugin behavior, updater, secure storage and actual WebView jank must be tested before changing shipped build configuration. **Keep PR #81 draft/unmerged** and never install ephemeral/unsigned experiment APK over existing Testing installation. Report in `docs/ANDROID_BUILD_VARIANT_AUDIT.md` (draft branch) and PR body.
+- Next priorities: obtain user's physical v0.93.3 results (Coach three-day response, History 24/48 scrolling, older recaps/edit and responsiveness), decide if any regression needs an urgent fix. After acceptance, consider **safely versioned signed Testing** candidate for PR #80 Exercise Library only if user approves; separately research R8/Capacitor native plugin keep rules, secure-storage/updater runtime validation and actual Android startup/frame traces before any build-mode change. Current Beta remains v0.73.1 untouched.
+- **No current app release changed by PR #80 or PR #81**; published Testing still v0.93.3 and update feed unchanged. Nothing about trainer-client roadmap authorizes development today.
+
+---
+
+
 ## PARKED FUTURE IDEA: Swole Cat for Trainers (captured Oct 15, 2026)
 
 - Owner installed signed Testing **v0.93.3 (Android build 138)** and expects to test Coach/History speed shortly. **Immediate engineering focus remains real-device performance/functional acceptance, no UI redesign.** Beta unchanged.
