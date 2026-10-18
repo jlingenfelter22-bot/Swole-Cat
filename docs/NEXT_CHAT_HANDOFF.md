@@ -1,5 +1,18 @@
 # Swole Cat - Next Chat Handoff
 
+## CURRENT NEXT CHECKPOINT: Exercise Library responsiveness (October 18, 2026; draft only)
+
+- Trainer/client product future branch has already been **documented and parked** in `docs/FUTURE_TRAINER_PLATFORM_CONCEPT.md` and canonical `docs/ROADMAP.md`. Don't implement trainer tooling until owner explicitly directs. The owner asked to resume **current core app performance engineering**.
+- Owner installed signed **Testing v0.93.3/code 138** but has **not yet reported complete real-device Coach/History acceptance**. Never claim physical Android smoothness proven. Beta v0.73.1 is untouched; UI/UX cosmetic freeze remains in effect.
+- Open draft [PR #80](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/80), branch `perf/exercise-library-bounded-render-v0933` from current main, includes `src/js/05-exercises-routines.js` change: initial Exercise Library displays first **32 matching rows** with unchanged markup; additional rows append 32 at a time on scroll (passive listener + rAF) while Exercises view active. Search/filter changes reset slice; same-filter refresh retains depth; all names/results/order/favorites/hidden/custom controls remain accessible.
+- New `scripts/exercise-library-progressive-render-stress.mjs` tests full catalog, dynamic search/filters, complete scroll access, no real user/cloud data mutation; hooked into `.github/workflows/validate.yml`. Existing `scripts/performance-audit-baseline.mjs` now separately measures first Exercise Library render and cumulative append (synthetic only).
+- [Initial synthetic benchmark CI #39151448359](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39151448359) **passed**, first library render ~**20–27 ms** vs prior typical ~**120–140 ms** on CI; complete appending rows ~**133–144 ms** total. No Android FPS claim. Full regression workflow must be green on the **final PR HEAD** before considering next Testing release.
+- **DO NOT MERGE OR PUBLISH** PR #80 without deliberate Testing version bump and owner-approved release. Main Android workflow publishes on `src/**` and `scripts/**` changes, and republishing an unchanged Testing version risks asset clobber. No Android secrets, accounts, saved workouts, cloud DB or Beta changes.
+- Next after validation: request owner's actual Testing v0.93.3 Android performance feedback (Coach 3-day program speed, History past 24/48 sessions and recap/edit). Separately compare release-like Android build efficiency without altering update signature or existing installation; only propose a next Testing APK after approved acceptance.
+
+---
+
+
 ## PARKED FUTURE IDEA: Swole Cat for Trainers (captured Oct 15, 2026)
 
 - Owner installed signed Testing **v0.93.3 (Android build 138)** and expects to test Coach/History speed shortly. **Immediate engineering focus remains real-device performance/functional acceptance, no UI redesign.** Beta unchanged.
