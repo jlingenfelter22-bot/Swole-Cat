@@ -198,6 +198,9 @@ jobs:
       - name: Verify bounded History rendering and scroll-on-demand with old actions intact
         run: node scripts/history-progressive-render-stress.mjs
 
+      - name: Verify bounded Exercise Library rendering, filters and complete scroll access
+        run: node scripts/exercise-library-progressive-render-stress.mjs
+
       - name: Stress test v0.78.0 Routines hierarchy refinement
         run: node scripts/routines-hierarchy-stress.mjs
 
