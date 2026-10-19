@@ -1,5 +1,17 @@
 # Swole Cat - Next Chat Handoff
 
+## REAL-DEVICE TESTING FEEDBACK: v0.93.3 smoother; no odd behavior noticed (October 19, 2026)
+
+- **Owner directly reported from using signed Android Testing v0.93.3 (code 138): "Yeah, it is smoother. I don't find something weird or off."** This is a **positive real-device subjective smoke-test signal** for the combined Coach general-program parsing and progressively loaded History release. No reported visual, functional or stability defect as of this feedback.
+- **Do not misrepresent this as instrumented FPS, startup/jank measurements or exhaustive validation** of every History 24/48/72 batch boundary, recap/edit workflow or specific phone model. More rigorous on-device profiling remains optional if a hitch is noticed.
+- The prior Testing release v0.93.3 is now **provisionally accepted for perceived responsiveness/no observed regressions**. No bugfix or UI redraw needed based on feedback. Respect the existing **UI/UX visual freeze**.
+- **Next release candidate for owner approval** is the already green, draft **PR #80** (Exercise Library initial 32-item rendering + progressive scroll loading, full validation and synthetic benchmark passed). Advance only with a **new version and incremented Android versionCode**, the original persistent Testing keystore, and in-place update safeguards. **Do not merge into main or publish automatically merely from this feedback**. Physical performance of that new optimization will need its own device acceptance.
+- Keep separate draft **PR #81** as R8/Android variant research only; size improvement is measured, native plugin reliability and phone performance not established. Do **not** change Android build mode or Beta as part of the next routine Testing release.
+- Trainer/client platform idea remains parked in `docs/FUTURE_TRAINER_PLATFORM_CONCEPT.md`, no active implementation. No changes to cloud accounts, Supabase, workout data or Beta were requested.
+
+---
+
+
 ## ACTIVE PERFORMANCE WORK (October 18, 2026) — next steps while owner tests signed v0.93.3
 
 - Owner requested that engineering proceed while he checks real-device **Testing v0.93.3 / code 138**. Personal trainer/client future concept remains parked and documented separately; **do not touch it for the active development phase**. Current visual UI/UX freeze remains.
