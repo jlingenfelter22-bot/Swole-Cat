@@ -1,5 +1,17 @@
 # Swole Cat - Next Chat Handoff
 
+## LATEST: TESTING v0.93.4 SIGNED/PUBLISHED — Exercise Library performance (October 19, 2026)
+
+- Owner affirmed continuing to next Testing checkpoint following favorable real-device v0.93.3 feedback. Released **Swole Cat Testing v0.93.4 (Android build 139)** containing validated, nonvisual Exercise Library progressive DOM rendering: first 32 exercise cards immediately, next 32 per scroll batch. No CSS or card-layout redesign; preserve search, filters, favorites, hidden/custom movements and full results.
+- Original draft PR #80 conflicted with current main handoff. Created fresh release branch from latest main, ported the exact validated code and checks, safely bumped `package.json` **0.93.3/code 138 → 0.93.4/code 139**, merged [PR #82](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/82) as commit `bb17a555ffcdcafbf8b90884f840b3621cef0255` only after exact-head [97-step validation #39338674929](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39338674929) and [synthetic benchmark #39338674936](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39338674936) **both PASSED**. Closed superseded stale draft PR #80; future changes must use current main, not its old branch.
+- [Signed Android workflow #39338953839](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39338953839) completed **SUCCESS**. Verified installed app identity `com.jlingenfelter.swolecat.testing`, persistent Testing signer SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`. The GitHub release's APK SHA-256 `544dc920bf2dee86b877b46880fb63e51103519dff9c419945dade990e6e2ded` **matches published `updates/testing.json`** alongside version, code and download URL. Signed release asset: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.93.4/swole-cat-testing-v0.93.4-signed.apk . In-app updater supports standard in-place Android update; **never uninstall or clear storage**.
+- **Next:** owner installs/tests v0.93.4 Exercise Library scrolling at 32/64/96 boundary, search/filter/favorite/hidden exercise operations and regular sessions. User's previous v0.93.3 "smoother / nothing weird" is positive subjective feedback, NOT instrumented FPS. Real-device v0.93.4 acceptance is still pending.
+- **Beta untouched:** v0.73.1 and separate permanent signer. No real user account, workout/cloud data, Supabase, visual UX changes or migration performed.
+- [Draft PR #81](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/81) remains separate **CI-only Android debug/release/R8 comparison** (experimental APK 67.6% smaller, not proven faster); DO NOT merge or change shipping Android build mode based on size alone until native plugin security/updater/secure-storage and on-device regression validations. Trainer-client app concept remains parked in `docs/FUTURE_TRAINER_PLATFORM_CONCEPT.md` until core app is dialed in.
+ 
+---
+
+
 ## REAL-DEVICE TESTING FEEDBACK: v0.93.3 smoother; no odd behavior noticed (October 19, 2026)
 
 - **Owner directly reported from using signed Android Testing v0.93.3 (code 138): "Yeah, it is smoother. I don't find something weird or off."** This is a **positive real-device subjective smoke-test signal** for the combined Coach general-program parsing and progressively loaded History release. No reported visual, functional or stability defect as of this feedback.
