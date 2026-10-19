@@ -134,9 +134,15 @@ try {
         assert(doc.getElementById('workoutArea').querySelector('.focus-session-strip'),'live workout canvas must render');
       },3);
       measure(count,'exercise_render',()=>{
+        w.eval('exerciseLibraryRenderedCount=0');
         w.renderExercises();
-        assert(doc.getElementById('exerciseList').querySelectorAll('.list-item').length>=200,'exercise catalog must render');
+        const rendered=doc.getElementById('exerciseList').querySelectorAll('.list-item').length;
+        assert.equal(rendered,Math.min(w.allExercises().length,32),'first exercise catalog DOM render should be bounded');
       },3);
+      measure(count,'exercise_catalog_append_all',()=>{
+        while(w.exerciseLibraryAppendNextBatch()){}
+        assert.equal(doc.getElementById('exerciseList').querySelectorAll('.list-item').length,w.allExercises().length);
+      },1);
     }
     measure(count,'state_save',()=>{
       assert.equal(w.save({syncRelevant:false}),true);
