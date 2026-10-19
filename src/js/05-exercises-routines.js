@@ -11,6 +11,38 @@ function populateMuscles(force=false){
  exerciseFilterOptionsKey=key;
 }
 let exerciseHistoryFilter='all',exerciseRenderFrame=null;
+// Bounded DOM creation for the library. All matching exercises remain in the
+// source list, with more existing rows appended on scroll (no visual changes).
+const EXERCISE_LIBRARY_RENDER_BATCH=32;
+let exerciseLibraryMatches=[],exerciseLibraryRenderedCount=0,exerciseLibraryFilterKey=null;
+let exerciseLibraryScrollBound=false,exerciseLibraryScrollFrame=0;
+function exerciseLibraryRowHtml(x){
+ return `
+   <div class="list-item">
+     <div class="iconbox schematic-exercise-thumb">${catExerciseThumbnail(x)}</div>
+     <div class="grow exercise-link" onclick="openExerciseProgress('${x.id}')"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini" style="margin:4px 0">${muscleChip(x.muscle)}</div><div class="mini">${esc(x.equipment)} · ${esc(patternLabel(x.pattern))}</div></div>
+     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
+     ${x.custom?`<button class="btn small secondary" onclick="editExercise('${x.id}')">Edit</button>`:''}
+   </div>`;
+}
+function exerciseLibraryAppendNextBatch(){
+ const el=document.getElementById('exerciseList');
+ if(!el||exerciseLibraryRenderedCount>=exerciseLibraryMatches.length)return false;
+ const end=Math.min(exerciseLibraryMatches.length,exerciseLibraryRenderedCount+EXERCISE_LIBRARY_RENDER_BATCH);
+ el.insertAdjacentHTML('beforeend',exerciseLibraryMatches.slice(exerciseLibraryRenderedCount,end).map(exerciseLibraryRowHtml).join(''));
+ exerciseLibraryRenderedCount=end;
+ return true;
+}
+function exerciseLibraryScrollMaybeAppend(){
+ if(exerciseLibraryScrollFrame)return;
+ exerciseLibraryScrollFrame=requestAnimationFrame(()=>{
+  exerciseLibraryScrollFrame=0;
+  const view=document.getElementById('exercises'),list=document.getElementById('exerciseList');
+  if(!view?.classList.contains('active')||!list||exerciseLibraryRenderedCount>=exerciseLibraryMatches.length)return;
+  if(list.getBoundingClientRect().bottom<=window.innerHeight+Math.min(600,window.innerHeight))
+   exerciseLibraryAppendNextBatch();
+ });
+}
 function scheduleExerciseRender(){
  if(exerciseRenderFrame)cancelAnimationFrame(exerciseRenderFrame);
  exerciseRenderFrame=requestAnimationFrame(()=>{exerciseRenderFrame=null;renderExercises()});
@@ -73,13 +105,18 @@ function renderExercises(){
          :exerciseHistoryFilter==='hidden'
            ?'No hidden exercises match these filters.'
            :'Nothing matched that search.';
- document.getElementById('exerciseList').innerHTML=list.length?list.map(x=>`
-   <div class="list-item">
-     <div class="iconbox schematic-exercise-thumb">${catExerciseThumbnail(x)}</div>
-     <div class="grow exercise-link" onclick="openExerciseProgress('${x.id}')"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini" style="margin:4px 0">${muscleChip(x.muscle)}</div><div class="mini">${esc(x.equipment)} · ${esc(patternLabel(x.pattern))}</div></div>
-     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
-     ${x.custom?`<button class="btn small secondary" onclick="editExercise('${x.id}')">Edit</button>`:''}
-   </div>`).join(''):`<div class="empty">${emptyMessage}</div>`;
+ const host=document.getElementById('exerciseList');if(!host)return;
+ const filterKey=[q,m,eq,exerciseHistoryFilter].join('\\u001f');
+ if(filterKey!==exerciseLibraryFilterKey)exerciseLibraryRenderedCount=0;
+ exerciseLibraryFilterKey=filterKey;
+ exerciseLibraryMatches=list;
+ exerciseLibraryRenderedCount=Math.min(list.length,Math.max(EXERCISE_LIBRARY_RENDER_BATCH,exerciseLibraryRenderedCount));
+ host.innerHTML=list.length?list.slice(0,exerciseLibraryRenderedCount).map(exerciseLibraryRowHtml).join(''):`<div class="empty">${emptyMessage}</div>`;
+ if(!exerciseLibraryScrollBound){
+  window.addEventListener('scroll',exerciseLibraryScrollMaybeAppend,{passive:true});
+  window.addEventListener('resize',exerciseLibraryScrollMaybeAppend,{passive:true});
+  exerciseLibraryScrollBound=true;
+ }
 }
 function patternLabel(p){return String(p||'other').replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())}
 
