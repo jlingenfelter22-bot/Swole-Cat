@@ -78,8 +78,16 @@ try{
  results.push(inspect(duplicate,'duplicate_squat_missing_knee_flexion',{expectChange:true}));
  console.log('COACH_PHASE3_ADVERSARIAL_DUPLICATE '+JSON.stringify(results.at(-1)));
  assert(results.at(-1).changes.some(c=>c.removedName==='Goblet Squat'&&
+  ['vertical_pull','knee_flexion'].includes(w.exById(c.addedId)?.pattern)),
+  'Replace a later redundant squat with meaningful complementary work, keeping the leading squat');
+ const hamstringFocus=equip('60 minute full body workout','gym');
+ hamstringFocus.excludedMovementPatterns=['vertical_pull','calf_raise'];
+ const hamstringWeek=makeWeek(makeDay('full body',
+  ['Back Squat','Goblet Squat','Romanian Deadlift','Barbell Bench Press','Barbell Row'],hamstringFocus));
+ results.push(inspect(hamstringWeek,'isolated_feasible_knee_flexion_gap',{expectChange:true}));
+ assert(results.at(-1).changes.some(c=>c.removedName==='Goblet Squat'&&
   w.exById(c.addedId)?.pattern==='knee_flexion'),
-  'Replace redundant squat, not the required multi-pattern foundation');
+  'With vertical pulling excluded, replace the duplicate squat with feasible knee-flexion work');
 
  const push=equip('60 minute push workout','gym');
  const pushDay=makeDay('push',['Barbell Bench Press','Incline Dumbbell Press','Cable Fly',
