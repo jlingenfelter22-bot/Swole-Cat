@@ -114,6 +114,54 @@ jobs:
       - name: Capture realistic Coach-generated workouts for human review
         run: node scripts/coach-brain-human-review-matrix.mjs
 
+      - name: Audit Phase 1 full catalog roles, muscles and actual equipment capabilities
+        run: node scripts/coach-phase1-catalog-audit.mjs
+
+      - name: Capture deterministic Phase 1 whole-week baseline twice
+        run: |
+          node scripts/coach-phase1-weekly-baseline.mjs
+          cp /tmp/swole-cat-coach-phase1/weekly-baseline-frozen.json /tmp/swole-cat-phase1-first.json
+          node scripts/coach-phase1-weekly-baseline.mjs
+          cmp /tmp/swole-cat-phase1-first.json /tmp/swole-cat-coach-phase1/weekly-baseline-frozen.json
+
+      - name: Retain Phase 1 catalog and human-review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-phase1-quality-evidence
+          path: /tmp/swole-cat-coach-phase1/
+          retention-days: 30
+      
+      - name: Audit Phase 2 projected weekly coverage against locked baseline
+        run: node scripts/coach-phase2-weekly-audit-stress.mjs
+
+      - name: Retain Phase 2 projected-week quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-phase2-weekly-diagnostics
+          path: /tmp/swole-cat-coach-phase2/
+          retention-days: 30
+
+
+
+      - name: Validate Phase 3 shadow swap-first weekly repairs against frozen baseline
+        run: node scripts/coach-phase3-bounded-repair-stress.mjs
+
+      - name: Validate Phase 3 optional preview accept, decline and saved-program parity
+        run: node scripts/coach-phase3-recommendation-preview-stress.mjs
+
+      - name: Validate Coach phone-width recommendation usability constraints
+        run: node scripts/coach-phase3-mobile-usability-stress.mjs
+
+      - name: Retain Phase 3 before-after swap quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-phase3-swap-repair-proposals
+          path: /tmp/swole-cat-coach-phase3/
+          retention-days: 30
+
       - name: Stress test v0.84.0 exercise intelligence and timed/distance measurement
         run: node scripts/exercise-intelligence-stress.mjs
 

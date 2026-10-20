@@ -114,17 +114,29 @@ function coachGenerateProgram(request,intent,previous=null){
    const initial=coachSelectExercises(dayReq,defaults.exerciseCount);
    const durationPlan=coachBrainTrimToTime(initial,dayReq,defaults);
    const selected=durationPlan.exercises;
+   // A person accepting a two-set accessory may later refine the draft.
+   // Retain that exact prescription if the regenerated day still contains it.
+   const acceptedCounts=Object.entries(override.acceptedSetCounts||{}).filter(
+     ([id,n])=>selected.some(ex=>ex.id===id)&&Number.isInteger(n)&&n>0);
+   const selectedSetCounts=Object.fromEntries(Object.entries(durationPlan.setCounts||{}).map(
+     ([id,c])=>[id,{...c}]));
+   for(const [id,sets] of acceptedCounts)selectedSetCounts[id]={
+      ...selectedSetCounts[id],sets
+   };
+   const selectedTime=acceptedCounts.length
+     ?coachBrainSessionTimeEstimate(selected,dayReq,defaults,{explicitConfigById:selectedSetCounts})
+     :durationPlan.time;
    selected.filter(ex=>ex.pattern==='hinge').forEach(ex=>hingeHistory.push(ex.id));
    selected.forEach(ex=>{
      usage[ex.id]=(usage[ex.id]||0)+1;
      const prescription=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,dayReq,defaults):defaults;
-     const sets=Number(durationPlan.setCounts?.[ex.id]?.sets||prescription.sets||defaults.sets)||0,meta=exerciseMuscleMetadata(ex);
+     const sets=Number(selectedSetCounts?.[ex.id]?.sets||prescription.sets||defaults.sets)||0,meta=exerciseMuscleMetadata(ex);
      meta.primary.forEach(region=>muscleUsage[region]=(muscleUsage[region]||0)+sets);
      meta.secondary.forEach(region=>muscleUsage[region]=(muscleUsage[region]||0)+sets*.5);
    });
    return {
      key,label:coachProgramDayDisplayLabel(key,index,slots),dayPlan:{...plan},request:dayReq,
-     defaults:{...defaults},selectedIds:selected.map(ex=>ex.id),brainTime:durationPlan.time,brainTimeRemoved:durationPlan.removed,brainSetCounts:durationPlan.setCounts,brainFeasible:durationPlan.feasible
+     defaults:{...defaults},selectedIds:selected.map(ex=>ex.id),brainTime:selectedTime,brainTimeRemoved:durationPlan.removed,brainSetCounts:selectedSetCounts,brainFeasible:durationPlan.feasible
    };
  });
  if(days.some(day=>!day.selectedIds.length||day.brainFeasible===false))return null;
@@ -145,8 +157,11 @@ function coachGenerateProgram(request,intent,previous=null){
   intake:{...(previous?.intake||{})},
    slots,days,dayOverrides:slots.map((_,i)=>({
      excludedExerciseIds:[...(dayOverrides[i]?.excludedExerciseIds||[])],
-     requiredExerciseIds:[...(dayOverrides[i]?.requiredExerciseIds||[])]
+     requiredExerciseIds:[...(dayOverrides[i]?.requiredExerciseIds||[])],
+     recommendationsDeclined:!!dayOverrides[i]?.recommendationsDeclined,
+     acceptedSetCounts:{...(dayOverrides[i]?.acceptedSetCounts||{})}
    })),
+   coachRecommendationsVisible:!!previous?.coachRecommendationsVisible,
    interactiveBrainFlow:!!previous?.interactiveBrainFlow,
    createdAt:previous?.createdAt||new Date().toISOString(),
    lastRefinement:previous?.lastRefinement||''
@@ -170,6 +185,555 @@ function coachProgramCoverageText(draft=coachProgramBuildDraft){
  if(!rows.length)return '';
  return rows.map(([region,sets])=>`${MUSCLE_REGION_LABELS[region]||region} ${Number(sets.toFixed(1))}`).join(' · ');
 }
+// Phase 2: independent, read-only whole-week quality auditor. This diagnoses
+// existing selections, never chooses/replaces exercises or modifies training.
+// Muscle set-equivalents are planning heuristics, not biological measurements.
+const COACH_PROJECTED_WEEK_ROLES={
+ press:{label:'Pressing',patterns:['horizontal_press','incline_press','vertical_press','dip_press'],days:['full body','upper body','push','chest','shoulders'],priority:'core'},
+ horizontal_pull:{label:'Horizontal pulling',patterns:['horizontal_pull'],days:['full body','upper body','pull','back','upper back','lats'],priority:'core'},
+ vertical_pull:{label:'Vertical pulling',patterns:['vertical_pull'],days:['full body','upper body','pull','back','lats'],priority:'variety'},
+ knee:{label:'Knee-dominant legs',patterns:['squat','lunge','knee_extension'],days:['full body','lower body','legs','quads','glutes'],priority:'core'},
+ posterior:{label:'Posterior-chain legs',patterns:['hinge','knee_flexion','hip_extension','back_extension'],days:['full body','lower body','legs','hamstrings','glutes','posterior chain','lower back'],priority:'core'},
+ knee_flexion:{label:'Hamstring knee flexion',patterns:['knee_flexion'],days:['full body','lower body','legs','hamstrings','posterior chain'],priority:'variety'},
+ calves:{label:'Calf-focused work',patterns:['calf_raise'],days:['full body','lower body','legs','calves'],priority:'variety'},
+ core:{label:'Core-focused work',patterns:['spinal_flexion','anti_extension','anti_rotation','rotation','lateral_flexion','hip_flexion_core'],days:['full body','core','abs','obliques'],priority:'variety'}
+};
+function coachProjectedWeekDayKey(day){
+ return String(day?.key||'').trim().toLowerCase().replaceAll('_',' ');
+}
+function coachProjectedWeekRoleFitsDay(role,day){
+ return !!COACH_PROJECTED_WEEK_ROLES[role]?.days.includes(coachProjectedWeekDayKey(day));
+}
+function coachProjectedWeekFeasible(day,match,{maxExamples=3}={}){
+ const request=day?.request;
+ if(!request?.brainEquipment)return {status:'unverified',examples:[]};
+ const service=coachBrainExerciseService(),context=coachBrainEquipmentConstraints(request);
+ if(!service||!context)return {status:'unverified',examples:[]};
+ const examples=[];
+ for(const ex of LIBRARY){
+  if(!match(ex)||!coachExerciseAllowedByConstraints(ex,request))continue;
+  if(service.evaluateAvailability(ex.id,context).status!=='available')continue;
+  examples.push({id:ex.id,name:ex.name,day:day.label||coachProjectedWeekDayKey(day)});
+  if(examples.length>=maxExamples)break;
+ }
+ return {status:examples.length?'feasible':'not_feasible',examples};
+}
+function coachProjectedWeekFocusSpecific(ex,region){
+ const p=ex?.pattern;
+ // A press-like push-up or dip can train triceps directly, but does not by
+ // itself meet a requested isolation-style triceps priority when the week
+ // already has pressing. Prefer a deliberate elbow-extension accessory.
+ if(region==='triceps'&&/\b(?:push[ -]?up|dip|bench press|jm press|tate press)\b/i.test(ex?.name||''))return false;
+ const matched={
+  glutes:['hip_extension','hip_abduction','hinge'],
+  hamstrings:['knee_flexion','hinge'],
+  quads:['squat','lunge','knee_extension'],
+  side_delts:['lateral_raise'],
+  rear_delts:['rear_delt'],
+  front_delts:['vertical_press','front_raise'],
+  triceps:['elbow_extension'],
+  biceps:['elbow_flexion'],
+  lower_back:['back_extension'],
+  lats:['vertical_pull','shoulder_extension','pullover'],
+  upper_back:['horizontal_pull'],
+  chest:['horizontal_press','incline_press','chest_fly'],
+  calves:['calf_raise'],
+  core:['anti_extension','spinal_flexion','anti_rotation','hip_flexion_core'],
+  obliques:['anti_rotation','rotation','lateral_flexion'],
+  adductors:['hip_adduction']
+ }[region];
+ return !matched||matched.includes(p);
+}
+function coachProjectedWeekAudit(draft=coachProgramBuildDraft){
+ if(!draft?.days?.length)return {version:'phase2-read-only',ready:false,reason:'no_generated_week',findings:[],regions:{},roles:{},days:[]};
+ const regions={},roles={},dayRows=[],findings=[],roleFeasibility={};
+ const globalPriorities=[...new Set([...(draft.request?.programFocusRegions||[]),...(draft.intent?.focusRegions||[])])].filter(Boolean);
+ const addRegion=(muscle,kind,sets,id)=>{
+  const r=regions[muscle]||(regions[muscle]={primary:0,secondary:0,exerciseIds:[]});
+  r[kind]+=sets;
+  if(!r.exerciseIds.includes(id))r.exerciseIds.push(id);
+ };
+ const append=(type,severity,title,detail,extra={})=>{
+  findings.push({type,severity,title,detail,...extra});
+ };
+ for(const [index,day] of draft.days.entries()){
+  const byFamily={},exercises=[],required=new Set(day.request?.requiredExerciseIds||[]);
+  const selected=new Set(day.selectedIds||[]);
+  for(const id of selected){
+   const ex=exById(id);if(!ex){
+    append('unknown_exercise','constraint','Unknown planned exercise','The generated day references an exercise that is no longer in the library.',{dayIndex:index,exerciseId:id});
+    continue;
+   }
+   const p=coachExercisePrescription(ex,day.request,day.defaults);
+   const sets=Number(day.brainSetCounts?.[id]?.sets||p.sets)||0;
+   const family=coachMovementFamily(ex),meta=exerciseMuscleMetadata(ex);
+   const row={id,name:ex.name,pattern:ex.pattern,family,sets,
+    primary:[...meta.primary],secondary:[...meta.secondary],required:required.has(id)};
+   exercises.push(row);
+   (byFamily[family]||(byFamily[family]=[])).push(row);
+   for(const region of meta.primary)addRegion(region,'primary',sets,id);
+   for(const region of meta.secondary)addRegion(region,'secondary',sets*.5,id);
+   for(const [role,spec] of Object.entries(COACH_PROJECTED_WEEK_ROLES)){
+    if(!spec.patterns.includes(ex.pattern))continue;
+    const r=roles[role]||(roles[role]={label:spec.label,count:0,days:[]});
+    r.count++;if(!r.days.includes(index))r.days.push(index);
+   }
+   if(day.request?.brainEquipment){
+    const service=coachBrainExerciseService(),context=coachBrainEquipmentConstraints(day.request);
+    const available=service?.evaluateAvailability(id,context).status;
+    if(!coachExerciseAllowedByConstraints(ex,day.request)||available==='unavailable'){
+     append('equipment_violation','constraint',ex.name+' conflicts with available equipment',
+      'Check the equipment or explicit exclusions for '+(day.label||'day '+(index+1))+'.',
+      {dayIndex:index,exerciseId:id});
+    }else if(available!=='available'){
+     append('equipment_unconfirmed','review',ex.name+' needs equipment confirmation',
+      'Its equipment requirements are not confirmed for '+(day.label||'day '+(index+1))+'.',
+      {dayIndex:index,exerciseId:id});
+    }
+   }
+  }
+  for(const id of required)if(!selected.has(id)){
+   append('required_exercise_absent','constraint','A required exercise is missing',
+    'A specifically requested exercise was not selected for '+(day.label||'day '+(index+1))+'.',
+    {dayIndex:index,exerciseId:id});
+  }
+  for(const [family,items] of Object.entries(byFamily)){
+   if(items.length<2)continue;
+   if(items.every(row=>row.required))continue;
+   // This is a *review opportunity* rather than an automatic duplication ban:
+   // paired lifts of the same family can be an intentional strength strategy.
+   append('same_day_family_overlap','review','Similar '+family.replaceAll('_',' ')+' movements on one day',
+    (day.label||'Day '+(index+1))+' includes '+items.map(x=>x.name).join(' and ')+
+      '. Review whether both serve different purposes before replacing one.',
+    {dayIndex:index,family,exerciseIds:items.map(x=>x.id)});
+  }
+  dayRows.push({index,label:day.label||'Day '+(index+1),key:coachProjectedWeekDayKey(day),
+   exercises,requiredIds:[...required]});
+ }
+ // An explicitly chosen narrow split never inherits an imaginary full-body
+ // obligation. Judge only roles belonging to one or more actual day scopes.
+ for(const [role,spec] of Object.entries(COACH_PROJECTED_WEEK_ROLES)){
+  const eligibleDays=draft.days.filter(day=>coachProjectedWeekRoleFitsDay(role,day));
+  if(!eligibleDays.length)continue;
+  const existing=roles[role]?.count||0;
+  if(existing)continue;
+  let examples=[],unknown=false;
+  for(const day of eligibleDays){
+   const result=coachProjectedWeekFeasible(day,ex=>spec.patterns.includes(ex.pattern));
+   if(result.status==='unverified')unknown=true;
+   examples.push(...result.examples);
+  }
+  const status=examples.length?'feasible':unknown?'unverified':'not_feasible';
+  roleFeasibility[role]={status,examples:examples.slice(0,3),eligibleDayCount:eligibleDays.length};
+  if(status!=='feasible')continue;
+  const isCore=spec.priority==='core';
+  append('missing_weekly_role',isCore?'review':'opportunity',
+   spec.label+' is absent from this planned week',
+   'There is an equipment-compatible '+spec.label.toLowerCase()+' exercise available on a matching day, '+
+   'but none was selected. '+(isCore?'Review whether the week needs this major movement role.':
+   'This is an optional variety/coverage consideration, not mandatory for every plan.'),
+   {role,examples:examples.slice(0,3),priority:isCore?'core':'optional'});
+ }
+ // Major-region absence is evaluated only for regions that belong to the
+ // chosen day/split and are supported by the confirmed available catalog.
+ // This complements, rather than replaces, movement roles. A vertical shoulder
+ // press is "pressing" but does not automatically cover the chest.
+ const majorRegions=['chest','lats','upper_back','quads','hamstrings','glutes'];
+ const regionFeasibility={};
+ for(const region of majorRegions){
+  const dayOptions=draft.days.filter(day=>{
+   const allowed=day.request?.targetRegions||COACH_TARGET_GROUPS[coachProjectedWeekDayKey(day)]?.regions||[];
+   return allowed.includes(region);
+  });
+  if(!dayOptions.length)continue;
+  const row=regions[region];
+  if((Number(row?.primary)||0)+(Number(row?.secondary)||0)>0)continue;
+  const examples=[];let unverified=false;
+  for(const day of dayOptions){
+   const possible=coachProjectedWeekFeasible(day,ex=>exerciseMuscleMetadata(ex).primary.includes(region));
+   if(possible.status==='unverified')unverified=true;
+   examples.push(...possible.examples);
+  }
+  const status=examples.length?'feasible':unverified?'unverified':'not_feasible';
+  regionFeasibility[region]={status,examples:examples.slice(0,3)};
+  if(status!=='feasible')continue;
+  append('missing_major_muscle','review',
+   (MUSCLE_REGION_LABELS[region]||region)+' has no planned set contribution',
+   'This muscle group belongs to the chosen weekly split and has a compatible primary-target exercise, '+
+   'but no planned primary or secondary exposure. Review whether to represent it without losing the requested priorities.',
+   {region,examples:examples.slice(0,3)});
+ }
+
+ // The explicit target is distinct from broad muscle involvement. Squats
+ // legitimately involve glutes, but may not satisfy a request to emphasize
+ // glutes if there is no deliberate hip-extension/hinge option anywhere.
+ const priorityAudit=[];
+ const priorityRequests=[...new Set([...globalPriorities,...draft.days.flatMap(day=>day.request?.priorityRegions||[])])];
+ for(const region of priorityRequests){
+  const global=globalPriorities.includes(region);
+  const applicable=draft.days.filter(day=>global
+   ?(COACH_TARGET_GROUPS[coachProjectedWeekDayKey(day)]?.regions||[]).includes(region)
+   :(day.request?.priorityRegions||[]).includes(region));
+  const relevant=applicable.length?applicable:global?draft.days:[];
+  const rows=relevant.flatMap(day=>dayRows[draft.days.indexOf(day)]?.exercises||[]);
+  const direct=rows.filter(row=>row.primary.includes(region));
+  const secondary=rows.filter(row=>row.secondary.includes(region));
+  const specific=direct.filter(row=>coachProjectedWeekFocusSpecific(exById(row.id),region));
+  const label=MUSCLE_REGION_LABELS[region]||region.replaceAll('_',' ');
+  const examples=[];
+  let unverified=false;
+  for(const day of relevant){
+   const r=coachProjectedWeekFeasible(day,ex=>
+    exerciseMuscleMetadata(ex).primary.includes(region)&&coachProjectedWeekFocusSpecific(ex,region));
+   if(r.status==='unverified')unverified=true;
+   examples.push(...r.examples);
+  }
+  const availability=examples.length?'feasible':unverified?'unverified':'not_feasible';
+  const status=specific.length?'specific_direct':direct.length?'broad_primary':secondary.length?'secondary_only':'absent';
+  priorityAudit.push({region,label,status,primarySets:direct.reduce((n,x)=>n+x.sets,0),
+   secondaryEquivalent:secondary.reduce((n,x)=>n+x.sets*.5,0),
+   specificSets:specific.reduce((n,x)=>n+x.sets,0),availability,examples:examples.slice(0,3)});
+  if(status==='specific_direct')continue;
+  const suffix=availability==='feasible'?' A compatible focus-specific option exists.':
+   availability==='not_feasible'?' A compatible focus-specific option was not confirmed with this equipment.':
+   ' Available focus-specific equipment cannot be verified.';
+  append('priority_'+status,availability==='feasible'?'review':'constraint',
+   'Requested '+label+' emphasis is '+(status==='absent'?'absent':status==='secondary_only'?'indirect only':'broad rather than specifically targeted'),
+   'The user explicitly prioritized '+label.toLowerCase()+', but this week does not contain focus-specific direct exercise selection.'+suffix,
+   {region,status,availability,examples:examples.slice(0,3)});
+ }
+ const totals=Object.fromEntries(Object.entries(regions).map(([key,r])=>[key,{
+  ...r,totalEstimate:r.primary+r.secondary
+ }]));
+ return {version:'phase2-read-only',ready:true,split:draft.intent?.split||null,
+  days:dayRows,regions:totals,roles,roleFeasibility,regionFeasibility,priorities:priorityAudit,
+  findings,summary:{
+   constraintFindings:findings.filter(f=>f.severity==='constraint').length,
+   reviewFindings:findings.filter(f=>f.severity==='review').length,
+   optionalFindings:findings.filter(f=>f.severity==='opportunity').length
+  },methodology:'Completed plans are estimates; primary=1 set, secondary=0.5 set-equivalents. No compulsory regional quotas, diagnosis or automatic exercise changes.'};
+}
+
+
+// Phase 3 shadow evaluator: propose bounded, evidence-scored, swap-first repairs.
+// Deliberately NOT wired into live generation until before/after human review.
+// Every candidate is audited in a cloned provisional week; saved user data and
+// the caller's draft are immutable. A failed search is a valid no-op.
+function coachProjectedRepairFindingKey(f){
+ return [f.type,f.role||'',f.region||'',f.dayIndex??'',f.family||''].join(':');
+}
+function coachProjectedRepairDebt(audit){
+ const weights={missing_major_muscle:18,missing_weekly_role:0,
+  priority_absent:26,priority_secondary_only:23,priority_broad_primary:12,
+  same_day_family_overlap:5};
+ return (audit?.findings||[]).reduce((score,f)=>{
+  if(f.type==='missing_weekly_role')return score+(f.priority==='core'?17:8);
+  if(f.type.startsWith('priority_')&&f.availability!=='feasible')return score;
+  return score+(weights[f.type]||0);
+ },0);
+}
+function coachProjectedRepairDeficits(audit){
+ return (audit?.findings||[]).filter(f=>
+  (f.type==='missing_weekly_role'&&f.examples?.length)||
+  (f.type==='missing_major_muscle'&&f.examples?.length)||
+  (['priority_absent','priority_secondary_only','priority_broad_primary'].includes(f.type)
+    &&f.availability==='feasible'&&f.examples?.length)||
+  (f.type==='same_day_family_overlap'&&Number.isInteger(f.dayIndex))
+ ).sort((a,b)=>{
+  const rank=f=>f.type==='priority_absent'?0:f.type==='priority_secondary_only'?1:
+   f.type==='missing_major_muscle'?2:f.type==='missing_weekly_role'&&f.priority==='core'?3:
+   f.type==='priority_broad_primary'?4:5;
+  return rank(a)-rank(b)||coachProjectedRepairFindingKey(a).localeCompare(coachProjectedRepairFindingKey(b));
+ });
+}
+function coachProjectedRepairProtected(ex,day,index){
+ if(!ex)return true;
+ if((day.request?.requiredExerciseIds||[]).includes(ex.id))return true;
+ // User preference and successfully advancing history trump a marginal score.
+ if(typeof preferenceRank==='function'&&preferenceRank(ex.id)>0)return true;
+ if(typeof coachExerciseHistoryProfile==='function'&&coachExerciseHistoryProfile(ex.id)?.trend==='up')return true;
+ if(day.request?.goal==='strength'&&index===0)return true;
+ return false;
+}
+// A vertical shoulder press is valuable, but three near-identical full-body days
+// need not repeat it when a verified vertical pull is entirely absent that week.
+// Retain shoulder pressing on days before AND after the proposal and retain this
+// day's chest press. User focus, explicit replacements and strength always win.
+function coachProjectedRepairCrossDayOverlap(draft,finding,dayIndex,removed){
+ const day=draft?.days?.[dayIndex],days=draft?.days||[];
+ if(finding.type!=='missing_weekly_role'||finding.role!=='vertical_pull'||
+    removed?.pattern!=='vertical_press'||days.length<3||
+    dayIndex===0||dayIndex===days.length-1||
+    coachProjectedWeekDayKey(day)!=='full body'||
+    day.request?.goal==='strength'||day.request?.allowCoachExerciseSwaps===false)return false;
+ const focus=[...(day.request?.priorityRegions||[]),
+  ...(draft.request?.programFocusRegions||[]),...(draft.intent?.focusRegions||[])];
+ if(focus.some(r=>['front_delts','side_delts','rear_delts','shoulders'].includes(r)))return false;
+ if(!day.selectedIds.some(id=>['horizontal_press','incline_press'].includes(exById(id)?.pattern)))return false;
+ const hasPress=entry=>entry.selectedIds.some(id=>exById(id)?.pattern==='vertical_press');
+ return days.slice(0,dayIndex).some(hasPress)&&days.slice(dayIndex+1).some(hasPress);
+}
+
+function coachProjectedRepairClone(draft){
+ return {...draft,days:draft.days.map(day=>({...day,
+  selectedIds:[...(day.selectedIds||[])],
+  brainSetCounts:Object.fromEntries(Object.entries(day.brainSetCounts||{}).map(([id,config])=>[id,{...config}]))
+ }))};
+}
+function coachProjectedRepairPreservesDay(original,trial){
+ const old=original.selectedIds.map(exById).filter(Boolean);
+ const next=trial.selectedIds.map(exById).filter(Boolean);
+ if(old.length!==next.length||new Set(trial.selectedIds).size!==next.length)return false;
+ if(!(original.request?.requiredExerciseIds||[]).every(id=>trial.selectedIds.includes(id)))return false;
+ const core=coachCoveragePlan(original.request,old.length).core;
+ if(core.some(slot=>old.some(slot.match)&&!next.some(slot.match)))return false;
+ // A new exercise must contribute to this specific day, not an unrelated body
+ // part merely because it improves a coarse week-wide numeric score.
+ const targets=new Set(original.request?.targetRegions||[]);
+ const replacement=next.find(ex=>!original.selectedIds.includes(ex.id));
+ if(!replacement||!exerciseMuscleMetadata(replacement).primary.some(r=>targets.has(r)))return false;
+ if(!original.brainTime)return true;
+ const oldEstimate=Number(original.brainTime.estimateMinutes)||0;
+ const newEstimate=Number(trial.brainTime?.estimateMinutes)||0;
+ const planned=Number(original.request?.duration)||0;
+ // Approximate planning range, not a strict one-minute clock. Do not
+ // materially inflate an already full session to fix an optional gap.
+ return !!newEstimate&&newEstimate<=Math.max(oldEstimate+4,planned+Math.max(8,Math.ceil(planned*.2)));
+}
+function coachProjectedRepairRegresses(before,after){
+ if((after?.summary?.constraintFindings||0)>(before?.summary?.constraintFindings||0))return true;
+ const original=new Set((before.findings||[]).map(coachProjectedRepairFindingKey));
+ if((after.findings||[]).some(f=>
+  ((f.type==='missing_weekly_role'&&f.priority==='core')||
+   f.type==='missing_major_muscle'||f.type==='equipment_violation'||
+   f.type==='required_exercise_absent')&&!original.has(coachProjectedRepairFindingKey(f))))return true;
+ const priorityRank={specific_direct:3,broad_primary:2,secondary_only:1,absent:0};
+ for(const prior of before.priorities||[]){
+  const next=(after.priorities||[]).find(p=>p.region===prior.region);
+  if(!next||(priorityRank[next.status]??0)<(priorityRank[prior.status]??0))return true;
+ }
+ return false;
+}
+
+// Optional follow-up only after a complete swap search finds no safe improvement.
+// This does not authorize arbitrary exercise additions or exact-clock trimming.
+function coachProjectedRepairTrySmallAddition(draft,audit,repairedDays,trialBudget){
+ if(draft.days.length<3||trialBudget<=0)return {best:null,trials:0};
+ const service=typeof coachBrainExerciseService==='function'?coachBrainExerciseService():null;
+ if(!service)return {best:null,trials:0};
+ const allowed=new Set(['vertical_pull','knee_flexion','calf_raise','lateral_raise',
+  'rear_delt','elbow_extension','elbow_flexion','anti_extension','anti_rotation',
+  'rotation','spinal_flexion','hip_extension','hip_abduction','chest_fly']);
+ let best=null,trials=0;
+ for(const finding of coachProjectedRepairDeficits(audit)){
+  for(let dayIndex=0;dayIndex<draft.days.length;dayIndex++){
+   const day=draft.days[dayIndex],req=day.request;
+   if(repairedDays.has(dayIndex)||!req?.brainEquipment||req.goal==='strength'||
+      draft.dayOverrides?.[dayIndex]?.recommendationsDeclined||
+      draft.dayOverrides?.[dayIndex]?.excludedExerciseIds?.length||
+      draft.dayOverrides?.[dayIndex]?.requiredExerciseIds?.length||
+      req.experienceLevel==='beginner'||day.selectedIds.length>=7||
+      !Number(req.duration)||!day.brainTime||
+      /\b\d{1,2}\s*(?:working\s*)?sets?\b/i.test(String(req.prompt||''))||
+      /\b(?:exactly|only|no more than|max(?:imum)?)\s+\d+\s+exercises?\b/i.test(String(req.prompt||'')))continue;
+   if(finding.type==='missing_weekly_role'&&!coachProjectedWeekRoleFitsDay(finding.role,day))continue;
+   if(finding.type==='missing_major_muscle'&&!(req.targetRegions||[]).includes(finding.region))continue;
+   if(finding.type.startsWith('priority_')&&!(req.priorityRegions||[]).includes(finding.region)
+      &&!(draft.request?.programFocusRegions||[]).includes(finding.region)
+      &&!(draft.intent?.focusRegions||[]).includes(finding.region))continue;
+   const context=coachBrainEquipmentConstraints(req);
+   if(!context)continue;
+   const patternFits=ex=>{
+    if(!allowed.has(ex.pattern))return false;
+    if(finding.type==='missing_weekly_role')
+     return COACH_PROJECTED_WEEK_ROLES[finding.role]?.patterns.includes(ex.pattern);
+    if(!exerciseMuscleMetadata(ex).primary.includes(finding.region))return false;
+    return finding.type==='missing_major_muscle'||coachProjectedWeekFocusSpecific(ex,finding.region);
+   };
+   const targets=new Set(req.targetRegions||[]);
+   const removedFamilies=new Set((day.brainTimeRemoved||[]).map(id=>coachMovementFamily(exById(id))));
+   const existingFamilies=new Set(day.selectedIds.map(id=>coachMovementFamily(exById(id))));
+   const possibilities=LIBRARY.filter(ex=>patternFits(ex)&&!day.selectedIds.includes(ex.id)
+       &&exerciseMuscleMetadata(ex).primary.some(region=>targets.has(region))
+       &&coachExerciseAllowedByConstraints(ex,req)
+       &&!existingFamilies.has(coachMovementFamily(ex))
+       &&!removedFamilies.has(coachMovementFamily(ex))
+       &&service.evaluateAvailability(ex.id,context).status==='available'
+       &&Number.isFinite(coachCandidateBaseScore(ex,req)))
+    .sort((a,b)=>coachCandidateBaseScore(b,req)-coachCandidateBaseScore(a,req)
+       ||a.name.localeCompare(b.name)||String(a.id).localeCompare(String(b.id))).slice(0,5);
+   for(const ex of possibilities){
+    if(trials>=trialBudget)break;
+    trials++;
+    const trial=coachProjectedRepairClone(draft),next=trial.days[dayIndex];
+    next.selectedIds.push(ex.id);
+    next.brainSetCounts[ex.id]={sets:2}; // modest *new* accessory, no alteration to existing sets
+    next.brainTime=coachBrainSessionTimeEstimate(next.selectedIds,next.request,next.defaults,
+      {explicitConfigById:next.brainSetCounts});
+    const timeBefore=Number(day.brainTime.estimateMinutes)||0,timeAfter=Number(next.brainTime.estimateMinutes)||0;
+    const target=Number(req.duration),margin=Math.max(6,Math.ceil(target*.15));
+    if(!timeAfter||timeAfter>target+margin||timeAfter>timeBefore+7)continue;
+    const nextAudit=coachProjectedWeekAudit(trial);
+    if(coachProjectedRepairRegresses(audit,nextAudit))continue;
+    const improvement=coachProjectedRepairDebt(audit)-coachProjectedRepairDebt(nextAudit);
+    const resolved=!nextAudit.findings.some(f=>coachProjectedRepairFindingKey(f)===
+      coachProjectedRepairFindingKey(finding));
+    if(!resolved||improvement<8)continue;
+    const candidate={kind:'add',trial,audit:nextAudit,dayIndex,replacement:ex,
+       removed:null,finding,improvement,score:improvement,
+       exerciseRank:coachCandidateBaseScore(ex,req),timeBefore,timeAfter};
+    if(!best||candidate.score>best.score||
+      (candidate.score===best.score&&candidate.exerciseRank>best.exerciseRank)||
+      (candidate.score===best.score&&candidate.exerciseRank===best.exerciseRank&&
+       [candidate.dayIndex,candidate.replacement.id].join(':').localeCompare(
+       [best.dayIndex,best.replacement.id].join(':'))<0))best=candidate;
+   }
+   if(trials>=trialBudget)break;
+  }
+  if(trials>=trialBudget)break;
+ }
+ return {best,trials};
+}
+
+function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=2,maxTrials=120}={}){
+ const before=coachProjectedWeekAudit(draft);
+ const response={version:'phase3-shadow-swap-first',applied:false,changes:[],
+  recommendationOnly:true,requiresUserAcceptance:true,accepted:false,
+  before,after:before,draft,reason:'no_meaningful_safe_swap'};
+ if(!before.ready||!draft?.days?.length)return {...response,reason:'no_generated_week'};
+ if(draft.recommendationsDisabled===true||draft.request?.recommendationsDisabled===true)
+  return {...response,reason:'user_declined_recommendations'};
+ // Never autonomously "repair" hard conflicts or unknown equipment.
+ if(before.findings.some(f=>f.severity==='constraint'&&
+   ['equipment_violation','required_exercise_absent','unknown_exercise'].includes(f.type)))
+  return {...response,reason:'hard_constraint_requires_user'};
+ const limit=Math.max(0,Math.min(2,Math.floor(Number(maxSwaps)||0)));
+ const trialLimit=Math.max(0,Math.min(150,Math.floor(Number(maxTrials)||0)));
+ if(!limit||!trialLimit)return {...response,reason:'disabled_by_budget'};
+ let working=coachProjectedRepairClone(draft),audit=before,trialCount=0;
+ const repairedDays=new Set(),changes=[];
+ const service=typeof coachBrainExerciseService==='function'?coachBrainExerciseService():null;
+ for(let pass=0;pass<limit;pass++){
+  let best=null;
+  for(const finding of coachProjectedRepairDeficits(audit)){
+   for(let dayIndex=0;dayIndex<working.days.length;dayIndex++){
+    if(repairedDays.has(dayIndex))continue;
+    // Do not re-suggest an edit the person declined, accepted or made manually.
+    const override=working.dayOverrides?.[dayIndex];
+    if(override?.recommendationsDeclined||override?.excludedExerciseIds?.length||
+       override?.requiredExerciseIds?.length)continue;
+    const day=working.days[dayIndex];
+    if(day.request?.allowCoachExerciseSwaps===false)continue;
+    if(finding.type==='missing_weekly_role'&&!coachProjectedWeekRoleFitsDay(finding.role,day))continue;
+    if(finding.type==='same_day_family_overlap'&&finding.dayIndex!==dayIndex)continue;
+    if(finding.type==='missing_major_muscle'&&!(day.request?.targetRegions||[]).includes(finding.region))continue;
+    if(finding.type.startsWith('priority_')&&!(day.request?.priorityRegions||[]).includes(finding.region)
+       &&!(working.request?.programFocusRegions||[]).includes(finding.region)
+       &&!(working.intent?.focusRegions||[]).includes(finding.region))continue;
+    if(!day.request?.brainEquipment||!service)continue;
+    const context=coachBrainEquipmentConstraints(day.request);
+    if(!context)continue;
+    const matches=ex=>{
+     if(finding.type==='missing_weekly_role')
+      return COACH_PROJECTED_WEEK_ROLES[finding.role]?.patterns.includes(ex.pattern);
+     if(finding.type==='same_day_family_overlap'){
+      if(day.request?.goal==='strength')return false;
+      const priority=new Set([...(day.request?.priorityRegions||[]),
+        ...(working.request?.programFocusRegions||[]),...(working.intent?.focusRegions||[])]);
+      const accessoryPatterns=new Set(['hip_abduction','knee_flexion','calf_raise','back_extension',
+        'lateral_raise','rear_delt','elbow_extension','elbow_flexion','anti_extension','hip_adduction']);
+      return accessoryPatterns.has(ex.pattern)&&exerciseMuscleMetadata(ex).primary.some(region=>
+       priority.has(region)&&coachProjectedWeekFocusSpecific(ex,region));
+     }
+     const primary=exerciseMuscleMetadata(ex).primary.includes(finding.region);
+     return primary&&(finding.type==='missing_major_muscle'||
+      coachProjectedWeekFocusSpecific(ex,finding.region));
+    };
+    const replacements=LIBRARY.filter(ex=>matches(ex)&&!day.selectedIds.includes(ex.id)
+     &&coachExerciseAllowedByConstraints(ex,day.request)
+     &&service.evaluateAvailability(ex.id,context).status==='available'
+     &&Number.isFinite(coachCandidateBaseScore(ex,day.request)))
+     .sort((a,b)=>coachCandidateBaseScore(b,day.request)-coachCandidateBaseScore(a,day.request)
+        ||a.name.localeCompare(b.name)||String(a.id).localeCompare(String(b.id))).slice(0,6);
+    const families=day.selectedIds.map(id=>coachMovementFamily(exById(id)));
+    for(let removedIndex=day.selectedIds.length-1;removedIndex>=0;removedIndex--){
+     const removed=exById(day.selectedIds[removedIndex]);
+     if(coachProjectedRepairProtected(removed,day,removedIndex))continue;
+     const sameFamily=families.filter(f=>f===coachMovementFamily(removed)).length>1;
+     const compound=COACH_COMPOUND_PATTERNS.has(removed.pattern);
+     // Retain the first foundational movement when a family is repeated.
+     if(sameFamily&&families.indexOf(coachMovementFamily(removed))===removedIndex)continue;
+     // Unique foundational compounds stay. A narrow exception exists for a
+     // *cross-day* repeated optional shoulder press in full-body programming:
+     // preserve that day's chest press and presses on both surrounding days.
+     const crossDay=coachProjectedRepairCrossDayOverlap(working,finding,dayIndex,removed);
+     if(compound&&!sameFamily&&!crossDay)continue;
+     for(const replacement of replacements){
+      if(trialCount>=trialLimit)break;
+      if(coachMovementFamily(replacement)===coachMovementFamily(removed))continue;
+      if(day.selectedIds.some(id=>id!==removed.id&&
+         coachMovementFamily(exById(id))===coachMovementFamily(replacement)))continue;
+      trialCount++;
+      const trial=coachProjectedRepairClone(working);
+      const next=trial.days[dayIndex];
+      next.selectedIds[removedIndex]=replacement.id;
+      delete next.brainSetCounts[removed.id];
+      if(day.brainTime)next.brainTime=coachBrainSessionTimeEstimate(
+       next.selectedIds,next.request,next.defaults,{explicitConfigById:next.brainSetCounts});
+      if(!coachProjectedRepairPreservesDay(day,next))continue;
+      const nextAudit=coachProjectedWeekAudit(trial);
+      if(coachProjectedRepairRegresses(audit,nextAudit))continue;
+      const improvement=coachProjectedRepairDebt(audit)-coachProjectedRepairDebt(nextAudit);
+      const resolved=!nextAudit.findings.some(f=>coachProjectedRepairFindingKey(f)===
+       coachProjectedRepairFindingKey(finding));
+      // No speculative churn: actually resolve the finding we targeted and
+      // improve the whole-week score by a meaningful amount.
+      if(!resolved||improvement<(finding.type==='same_day_family_overlap'?5:6))continue;
+      const candidate={trial,audit:nextAudit,dayIndex,removed,replacement,
+       finding,improvement,score:improvement+(sameFamily?2:0)-(compound&&!crossDay?2:0),
+       crossDayOverlap:crossDay,
+       exerciseRank:coachCandidateBaseScore(replacement,day.request),
+       timeBefore:day.brainTime?.estimateMinutes??null,timeAfter:next.brainTime?.estimateMinutes??null};
+      // First prefer actual weekly debt reduction; when tied choose the
+      // existing Coach selector's more appropriate exercise, not lowest ID.
+      if(!best||candidate.score>best.score||
+       (candidate.score===best.score&&candidate.exerciseRank>best.exerciseRank)||
+       (candidate.score===best.score&&candidate.exerciseRank===best.exerciseRank&&
+        [candidate.dayIndex,candidate.removed.id,candidate.replacement.id].join(':')
+          .localeCompare([best.dayIndex,best.removed.id,best.replacement.id].join(':'))<0))best=candidate;
+     }
+     if(trialCount>=trialLimit)break;
+    }
+    if(trialCount>=trialLimit)break;
+   }
+   if(trialCount>=trialLimit)break;
+  }
+  // Swap-first: only consider a modest two-set accessory after exhausting swaps.
+  if(!best&&trialCount<trialLimit){
+   const added=coachProjectedRepairTrySmallAddition(working,audit,repairedDays,trialLimit-trialCount);
+   trialCount+=added.trials;
+   if(added.best)best=added.best;
+  }
+  if(!best)break;
+  working=best.trial;audit=best.audit;
+  repairedDays.add(best.dayIndex);
+  changes.push({kind:best.kind||'swap',dayIndex:best.dayIndex,day:working.days[best.dayIndex].label,
+   removedId:best.removed?.id||null,removedName:best.removed?.name||null,
+   addedId:best.replacement.id,addedName:best.replacement.name,
+   finding:best.finding.type,role:best.finding.role||null,region:best.finding.region||null,
+   improvement:best.improvement,estimateBefore:best.timeBefore,estimateAfter:best.timeAfter,
+   reason:best.crossDayOverlap
+    ?'Optional weekly-balance suggestion: trade one repeated shoulder press for vertical pulling. Keep the original or swap this exercise as you prefer.'
+    :(best.kind==='add'?'Optional two-set accessory suggestion to address ':'Optional exercise swap to address ')+
+      best.finding.title.toLowerCase(),
+   optional:true,editable:true,requiresUserAcceptance:true});
+  if(trialCount>=trialLimit)break;
+ }
+ return {...response,applied:changes.length>0,changes,after:audit,
+  draft:changes.length?working:draft,reason:changes.length?'proposed_for_human_review':
+   trialCount>=trialLimit?'trial_budget_exhausted':'no_meaningful_safe_swap',trials:trialCount};
+}
+
 // Planning-only quality review of the *current* generated preview.
 // No automatic plan changes, physiological "readiness" claims, or storage writes.
 function coachBrainProgramWeekReview(draft=coachProgramBuildDraft){
@@ -260,6 +824,132 @@ function coachProgramRoutineFromDay(day,draft=coachProgramBuildDraft,id=uid()){
    })
  };
 }
+// Recommendations remain opt-in even when the whole-week audit sees an
+// improvement. Computing/viewing a proposal must never change the unsaved day.
+function coachProgramRecommendationsHtml(draft){
+ if(!draft.coachRecommendationsVisible)return '<div class="coach-console coach-program-suggestions">'+
+  '<div class="eyebrow">COACH RECOMMENDS // ALWAYS OPTIONAL</div>'+
+  '<div class="mini" style="margin:7px 0">Want a second opinion on this week? Review possible exercise swaps. Your existing plan stays unchanged unless you choose a suggestion.</div>'+
+  '<button class="btn small secondary" onclick="coachProgramShowRecommendations()">Review suggestions</button></div>';
+ const proposed=coachProposeProjectedWeekRepair(draft);
+ const rows=proposed.changes.map((change,index)=>{
+  const day=draft.days[change.dayIndex];
+  const original=change.removedName||'Keep current exercises';
+  const proposedName=change.addedName;
+  return '<div class="card coach-program-suggestion" style="margin:8px 0;padding:12px">'+
+   '<div class="eyebrow">'+esc(day.label)+' // OPTIONAL</div>'+
+   '<div class="exercise-name" style="margin:6px 0">'+
+    esc(change.kind==='add'?'Consider adding '+proposedName:original+' → '+proposedName)+'</div>'+
+   '<div class="mini">'+esc(change.reason)+' '+
+    (change.kind==='add'?'Only 2 planned working sets. ':'')+
+    'Estimated day: about '+(change.estimateBefore??'?')+' → '+(change.estimateAfter??'?')+
+    ' minutes. You decide whether to change it.</div>'+
+   '<div class="actions" style="margin-top:9px;flex-wrap:wrap">'+
+    '<button class="btn small" onclick="coachProgramUseRecommendation('+index+')">Use Recommendation</button>'+
+    '<button class="btn small secondary" onclick="coachProgramKeepRecommendation('+index+')">Keep Original</button>'+
+    (change.kind==='swap'
+      ?'<button class="btn small secondary" onclick="coachProgramSwapRecommendation('+index+')">Try Another Swap</button>'
+      :'<button class="btn small secondary" onclick="coachEditProgramDay('+change.dayIndex+')">Adjust Day</button>')+
+   '</div></div>';
+ }).join('');
+ return '<div class="coach-console coach-program-suggestions">'+
+  '<div class="eyebrow">COACH RECOMMENDS // YOUR CHOICE</div>'+
+  '<div class="mini" style="margin:7px 0">These are suggestions, not rules. Save the plan as-is, choose individual recommendations, or swap exercises yourself. Declining will not delete or modify your work.</div>'+
+  (rows||'<div class="mini" style="margin:8px 0">No further verified changes to recommend for this draft. Keep the plan you chose.</div>')+
+  '<button class="btn small secondary" onclick="coachProgramHideRecommendations()">Hide recommendations</button></div>';
+}
+function coachProgramShowRecommendations(){
+ if(!coachProgramBuildDraft)return false;
+ coachProgramBuildDraft.coachRecommendationsVisible=true;
+ renderCoachProgramPreview();
+ return true;
+}
+function coachProgramHideRecommendations(){
+ if(!coachProgramBuildDraft)return false;
+ coachProgramBuildDraft.coachRecommendationsVisible=false;
+ renderCoachProgramPreview();
+ return true;
+}
+function coachProgramRecommendationChoice(index){
+ const draft=coachProgramBuildDraft;
+ if(!draft||!draft.coachRecommendationsVisible)return null;
+ const change=coachProposeProjectedWeekRepair(draft).changes?.[index];
+ const day=draft.days?.[change?.dayIndex];
+ if(!day||!change||!exById(change.addedId)||day.selectedIds.includes(change.addedId))return null;
+ if(change.kind==='swap'&&!day.selectedIds.includes(change.removedId))return null;
+ if(change.kind!=='add'&&change.kind!=='swap')return null;
+ return {draft,day,change};
+}
+function coachProgramKeepRecommendation(index){
+ const choice=coachProgramRecommendationChoice(index);
+ if(!choice){showToast('That suggestion changed. Review the updated plan.');renderCoachProgramPreview();return false}
+ const {draft,day,change}=choice;
+ const override=draft.dayOverrides[change.dayIndex]||{excludedExerciseIds:[],requiredExerciseIds:[]};
+ // Keep the original day completely intact; stop re-recommending on this day.
+ override.recommendationsDeclined=true;
+ draft.dayOverrides[change.dayIndex]=override;
+ draft.lastRefinement='Kept the original exercises on '+day.label;
+ renderCoachProgramPreview();
+ return true;
+}
+function coachProgramUseRecommendation(index){
+ const choice=coachProgramRecommendationChoice(index);
+ if(!choice){showToast('That suggestion changed. Review the updated plan.');renderCoachProgramPreview();return false}
+ const {draft,day,change}=choice,added=exById(change.addedId);
+ const nextIds=[...day.selectedIds],nextSetCounts=Object.fromEntries(
+  Object.entries(day.brainSetCounts||{}).map(([id,c])=>[id,{...c}]));
+ if(change.kind==='swap'){
+  const position=nextIds.indexOf(change.removedId);
+  if(position<0)return false;
+  nextIds[position]=change.addedId;
+  delete nextSetCounts[change.removedId];
+ }else{
+  nextIds.push(change.addedId);
+  nextSetCounts[change.addedId]={sets:2};
+ }
+ const nextTime=coachBrainSessionTimeEstimate(nextIds,day.request,day.defaults,
+   {explicitConfigById:nextSetCounts});
+ if(!nextTime||!Number.isFinite(Number(nextTime.estimateMinutes))||
+    !coachExerciseAllowedByConstraints(added,day.request)||
+    coachBrainExerciseService()?.evaluateAvailability(change.addedId,
+      coachBrainEquipmentConstraints(day.request)).status!=='available'){
+  showToast('This suggestion no longer fits the workout.');renderCoachProgramPreview();return false;
+ }
+ const override=draft.dayOverrides[change.dayIndex]||{excludedExerciseIds:[],requiredExerciseIds:[]};
+ override.excludedExerciseIds=[...new Set([...(override.excludedExerciseIds||[]),
+   ...(change.removedId?[change.removedId]:[])])];
+ override.requiredExerciseIds=[...new Set([...(override.requiredExerciseIds||[]),change.addedId])];
+ override.acceptedSetCounts={...(override.acceptedSetCounts||{}),
+   ...(change.kind==='add'?{[change.addedId]:2}:{})};
+ override.recommendationsDeclined=true;
+ draft.dayOverrides[change.dayIndex]=override;
+ day.selectedIds=nextIds;
+ day.brainSetCounts=nextSetCounts;
+ day.brainTime=nextTime;
+ // Preserve the accepted replacement in the in-memory unsaved request so
+ // the weekly review and any future refiner see the person's choice.
+ day.request={...day.request,
+   excludedExerciseIds:[...new Set([...(day.request.excludedExerciseIds||[]),
+     ...(change.removedId?[change.removedId]:[])])],
+   requiredExerciseIds:[...new Set([...(day.request.requiredExerciseIds||[]),change.addedId])]};
+ draft.lastRefinement=(change.kind==='add'?'Accepted optional '+added.name:
+    'Chose '+added.name+' instead of '+change.removedName)+' on '+day.label;
+ renderCoachProgramPreview();
+ return true;
+}
+function coachProgramSwapRecommendation(index){
+ const choice=coachProgramRecommendationChoice(index);
+ if(!choice){showToast('That suggestion changed. Review the updated plan.');renderCoachProgramPreview();return false}
+ const {day,change}=choice;
+ if(change.kind!=='swap')return coachEditProgramDay(change.dayIndex);
+ const position=day.selectedIds.indexOf(change.removedId);
+ if(position<0)return false;
+ // Existing manual Swap flow can choose a different eligible replacement.
+ // Never accept Coach's recommendation as a side effect.
+ coachProgramSwapExercise(change.dayIndex,position);
+ return true;
+}
+
 function renderCoachProgramPreview(){
  const draft=coachProgramBuildDraft;if(!draft)return;
  const req=draft.request,intent=draft.intent,coverage=coachProgramCoverageText(draft);
@@ -275,6 +965,7 @@ function renderCoachProgramPreview(){
      ${intent.trainingMode==='guided'?`<div class="mini" style="margin-top:9px">Deloads: ${intent.deload?.enabled?`every ${intent.deload.intervalWeeks}th training week, subject to your confirmation`:'not scheduled (you can add these later)'}</div>`:''}
    </div>
    <div class="coach-console coach-program-composer"><div class="eyebrow">ASK COACH // REFINE THIS PLAN</div><details class="coach-program-prompt-tips"><summary>Ideas for changes</summary><div class="mini" style="margin:5px 0 9px">Try “4 days, upper/lower and 35 minutes,” “dumbbells only,” “no squats, more glutes,” or “Monday Tuesday Thursday Saturday.”</div></details><div class="home-coach-row"><div class="coach-voice-field"><input id="coachProgramRefinePrompt" aria-label="Describe changes to this Coach program" placeholder="Tell Coach what to change" onkeydown="if(event.key==='Enter')coachApplyProgramRefinement()">${coachVoiceButtonHtml('coachProgramRefinePrompt')}</div><button class="btn" onclick="coachApplyProgramRefinement()">Update</button></div></div>
+   ${coachProgramRecommendationsHtml(draft)}
    <div class="coach-exercise-list">
     ${draft.days.map((day,di)=>`<div class="card coach-program-day-card" style="margin:0">
       <div class="row coach-program-day-head"><div class="coach-program-day-summary"><div class="eyebrow">DAY ${di+1}</div><div class="exercise-name" style="margin-top:4px">${esc(day.label)}</div><div class="mini">${day.selectedIds.length} exercises · ${day.brainTime?`about ${day.brainTime.estimateMinutes} min (range ${day.brainTime.lowerMinutes}–${day.brainTime.upperMinutes})`:`${day.defaults.sets} sets each`} · ${day.defaults.minReps}–${day.defaults.maxReps} reps</div><button class="btn small secondary" style="margin-top:7px" onclick="coachEditProgramDay(${di})" aria-label="Adjust ${esc(day.label)} time equipment and focus">Adjust day</button>${coachProgramDayPlanSummary(day)?`<div class="mini" style="margin-top:5px">${esc(coachProgramDayPlanSummary(day))}</div>`:''}</div>${intent.preferredDays?.[di]!=null?`<span class="tag">${PROGRAM_DAYS[intent.preferredDays[di]]}</span>`:''}</div>
@@ -364,7 +1055,8 @@ function coachSaveProgramDaySettings(index){
 }
 function coachProgramRegenerateWithOverrides(){
  const draft=coachProgramBuildDraft;if(!draft)return false;
- const previous={...draft,lastRefinement:draft.lastRefinement,dayOverrides:draft.dayOverrides};
+ const previous={...draft,lastRefinement:draft.lastRefinement,dayOverrides:draft.dayOverrides,
+  coachRecommendationsVisible:!!draft.coachRecommendationsVisible};
  return !!coachGenerateProgram(draft.request,draft.intent,previous);
 }
 function coachProgramRemoveExercise(dayIndex,exerciseIndex){
@@ -373,6 +1065,8 @@ function coachProgramRemoveExercise(dayIndex,exerciseIndex){
  const override=draft.dayOverrides[dayIndex]||(draft.dayOverrides[dayIndex]={excludedExerciseIds:[],requiredExerciseIds:[]});
  override.excludedExerciseIds=[...new Set([...(override.excludedExerciseIds||[]),id])];
  override.requiredExerciseIds=(override.requiredExerciseIds||[]).filter(x=>x!==id);
+ if(override.acceptedSetCounts)delete override.acceptedSetCounts[id];
+ override.recommendationsDeclined=true;
  draft.lastRefinement=`Removed ${exById(id)?.name||'exercise'} from ${day.label}`;
  coachProgramRegenerateWithOverrides();renderCoachProgramPreview();
 }
@@ -381,6 +1075,8 @@ function coachProgramSwapExercise(dayIndex,exerciseIndex){
  const override=draft.dayOverrides[dayIndex]||(draft.dayOverrides[dayIndex]={excludedExerciseIds:[],requiredExerciseIds:[]});
  override.excludedExerciseIds=[...new Set([...(override.excludedExerciseIds||[]),id])];
  override.requiredExerciseIds=(override.requiredExerciseIds||[]).filter(x=>x!==id);
+ if(override.acceptedSetCounts)delete override.acceptedSetCounts[id];
+ override.recommendationsDeclined=true;
  draft.lastRefinement=`Swapped ${exById(id)?.name||'exercise'} in ${day.label}`;
  coachProgramRegenerateWithOverrides();renderCoachProgramPreview();
 }
