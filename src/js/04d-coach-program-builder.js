@@ -205,6 +205,10 @@ function coachProjectedWeekFeasible(day,match,{maxExamples=3}={}){
 }
 function coachProjectedWeekFocusSpecific(ex,region){
  const p=ex?.pattern;
+ // A press-like push-up or dip can train triceps directly, but does not by
+ // itself meet a requested isolation-style triceps priority when the week
+ // already has pressing. Prefer a deliberate elbow-extension accessory.
+ if(region==='triceps'&&/\b(?:push[ -]?up|dip|bench press|jm press|tate press)\b/i.test(ex?.name||''))return false;
  const matched={
   glutes:['hip_extension','hip_abduction','hinge'],
   hamstrings:['knee_flexion','hinge'],
