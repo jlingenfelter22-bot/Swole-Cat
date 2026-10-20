@@ -36,8 +36,8 @@ try{
   c.addedName==='Seated Leg Curl');
  const initial=newProgram(),initialJson=JSON.stringify(initial);
  w.renderCoachProgramPreview();
- assert(w.document.body.innerHTML.includes('Review suggestions'),'opt-in is visible');
- assert(!w.document.body.innerHTML.includes('Use Recommendation'),
+ assert((w.document.querySelector('.coach-program-suggestions')?.innerHTML||'').includes('Review suggestions'),'opt-in is visible');
+ assert(!(w.document.querySelector('.coach-program-suggestions')?.innerHTML||'').includes('Use Recommendation'),
   'Proposals should not be expanded/auto-applied by default');
  assert.equal(JSON.stringify(initial),initialJson,'simply opening preview changed data');
  assert.equal(state(),unchanged,'simply opening preview wrote saved state');
@@ -45,9 +45,9 @@ try{
  assert.equal(JSON.stringify(initial.days.map(d=>d.selectedIds)),
   JSON.stringify(JSON.parse(initialJson).days.map(d=>d.selectedIds)),
   'reviewing recommendations changed exercise IDs');
- assert(w.document.body.innerHTML.includes('Keep Original'),'decline action absent');
- assert(w.document.body.innerHTML.includes('Try Another Swap'),'manual alternative absent');
- assert(w.document.body.innerHTML.includes('Use Recommendation'),'accept action absent');
+ assert((w.document.querySelector('.coach-program-suggestions')?.innerHTML||'').includes('Keep Original'),'decline action absent');
+ assert((w.document.querySelector('.coach-program-suggestions')?.innerHTML||'').includes('Try Another Swap'),'manual alternative absent');
+ assert((w.document.querySelector('.coach-program-suggestions')?.innerHTML||'').includes('Use Recommendation'),'accept action absent');
  assert(swapIndex()>=0&&curlIndex()>=0,'real week should show both distinct recommendations');
  const declineIndex=swapIndex();
  assert(w.coachProgramKeepRecommendation(declineIndex),'keep original failed');
@@ -107,8 +107,8 @@ try{
  for(let i=0;i<3;i++){
   const saved=w.eval('state.routines').find(r=>r.id===program.routineIds[i]);
   assert(saved,'saved routine missing');
-  assert.deepEqual(saved.exercises.map(x=>x.exerciseId),snapshot[i].ids,'saved exercise IDs diverged');
-  assert.deepEqual(saved.exercises.map(x=>x.sets),snapshot[i].sets,'saved sets diverged');
+  assert.deepEqual(JSON.parse(JSON.stringify(saved.exercises.map(x=>x.exerciseId))),snapshot[i].ids,'saved exercise IDs diverged');
+  assert.deepEqual(JSON.parse(JSON.stringify(saved.exercises.map(x=>x.sets))),snapshot[i].sets,'saved sets diverged');
  }
  assert.equal(w.eval('state.sessions.length'),JSON.parse(unchanged).sessions.length,
   'saving program touched training history');
