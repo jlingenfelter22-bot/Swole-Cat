@@ -45,6 +45,7 @@ try{
   '3day_full_gym_75','3day_ppl_dumbbells_60','4day_upper_lower_glutes',
   '4day_upper_lower_no_machines','6day_ppl_strength']);
  const humanReview=[];
+ const reviewFlags=[]; // Editorial screeners, NOT hard programming failures.
  const cases=[
   ['2day_full_gym_30','2 day full body program 30 minutes','gym'],
   ['2day_full_gym_45','2 day full body program 45 minutes','gym'],
@@ -135,6 +136,28 @@ try{
   const second=generate(prompt,choice,goal||'hypertrophy',opts||{});
   if(second.draft)assert.deepEqual(plain(second.draft.days.map(d=>d.selectedIds)),
      plain(draft.days.map(d=>d.selectedIds)),name+' repeat generator drift');
+  // Surface potential human-quality concerns even when the hard constraint
+  // and whole-week role checks are green. Do NOT overfit them into auto-edits.
+  if(draft.intent.split==='ppl'||/push pull legs/i.test(prompt)){
+   const work=draft.days.map(day=>day.selectedIds.reduce((total,id)=>
+     total+(day.brainSetCounts?.[id]?.sets||
+       w.coachExercisePrescription(ex(id),day.request,day.defaults).sets),0));
+   if(work.length>=3&&Math.max(...work)>=1.6*Math.min(...work)){
+    reviewFlags.push({id:name,type:'ppl_session_workload_imbalance_human_review',
+     workingSetsByDay:work,reason:'Large raw working-set difference; this is NOT a direct muscle-volume equivalence'});
+   }
+  }
+  for(const day of draft.days){
+   if(/lower body|legs/i.test(day.label)){
+    const heavyHinges=day.selectedIds.map(ex).filter(move=>
+      /(?:romanian deadlift|sumo deadlift|conventional deadlift)/i.test(move?.name||''));
+    if(heavyHinges.length>=2){
+     reviewFlags.push({id:name,day:day.label,type:'multiple_demanding_hinges_human_review',
+      names:heavyHinges.map(ex=>ex.name),
+      reason:'Manual judgment of fatigue, back loading and exercise ordering is warranted'});
+    }
+   }
+  }
   const unresolved=before.after?.findings?.filter(f=>f.type==='missing_weekly_role').map(f=>f.role)||[];
   const longDay=draft.days.filter(d=>d.brainTime.estimateMinutes>d.request.duration+Math.max(8,Math.ceil(d.request.duration*.2))).map(d=>d.label);
   if(longDay.length)anomalies.push({id:name,type:'estimated_time_over_20_percent_tolerance',days:longDay});
@@ -185,12 +208,13 @@ try{
  fs.writeFileSync('/tmp/swole-cat-coach-edge-case/weekly-edge-case-matrix.json',
   JSON.stringify({version:'0.93.5',scenarioCount:cases.length,generated,
    rows:evidence,anomalies,allOriginalStateUnchanged:true,
-   humanReview},null,2)+'\n');
+   humanReview,reviewFlags},null,2)+'\n');
  console.log('COACH_EDGE_CASE_MATRIX '+JSON.stringify(evidence));
  console.log('COACH_EDGE_CASE_ANOMALIES '+JSON.stringify(anomalies));
  console.log('COACH_EDGE_CASE_HUMAN_REVIEW '+JSON.stringify(humanReview));
+ console.log('COACH_EDGE_CASE_EDITORIAL_FLAGS '+JSON.stringify(reviewFlags));
  console.log('COACH_EDGE_CASE_PASS '+JSON.stringify({
   scenarios:cases.length,generated,unchangedUserState:true,deterministic:true,
   explicitConstraints:true,optionalOnly:true,protectedUserChoices:true,
-  durationAnomalyCount:anomalies.length}));
+  durationAnomalyCount:anomalies.length,editorialFlags:reviewFlags.length}));
 }finally{dom.window.close()}
