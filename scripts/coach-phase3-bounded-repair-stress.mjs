@@ -41,6 +41,11 @@ try{
   assert.equal(JSON.stringify(draft),snapshot,label+' mutated original');
   assert(result.changes.length<=2,label+' exceeded budget');
   assert.equal(result.applied,result.changes.length>0);
+  assert.equal(result.recommendationOnly,true,'Coach proposals must not be silently accepted');
+  assert.equal(result.requiresUserAcceptance,true,'Human acceptance is required');
+  assert.equal(result.accepted,false,'No fixture may accept changes on a user\'s behalf');
+  assert(result.changes.every(c=>c.optional===true&&c.editable===true&&
+   c.requiresUserAcceptance===true),'Every suggestion must be optional and editable');
   if(expectChange)assert(result.applied,label+' should find a safe improvement');
   if(result.applied){
    assert.notEqual(result.draft,draft,label+' must return cloned draft');
@@ -195,9 +200,47 @@ try{
      draft.days[i].request.requiredExerciseIds);
    }
    if(scenario.id==='3day_full_gym'){
+    const pressSwap=report.changes.find(c=>c.kind==='swap'&&c.dayIndex===1&&
+      c.removedName==='Overhead Press'&&w.exById(c.addedId)?.pattern==='vertical_pull');
+    assert(pressSwap,'Day B must replace a repeated shoulder press with a real vertical pull');
     assert(report.changes.some(c=>c.kind==='add'&&
-     ['vertical_pull','knee_flexion'].includes(w.exById(c.addedId)?.pattern)),
-     'A real three-day full-body gym week should safely complete a compatible missing movement role');
+      w.exById(c.addedId)?.pattern==='knee_flexion'),
+      'Remaining hamstring curl deficit should receive a modest two-set complement');
+    assert.equal(report.changes.filter(c=>c.kind==='add').length,1,
+      'Do not add a vertical pull when a safe cross-day press swap is available');
+    const proposal=w.coachProposeProjectedWeekRepair(draft);
+    const middle=proposal.draft.days[1];
+    assert.equal(middle.selectedIds.length,draft.days[1].selectedIds.length,
+      'Cross-day balance must not inflate Day B');
+    assert.equal(proposal.draft.days[0].selectedIds.includes(byName('Dumbbell Shoulder Press').id),true,
+      'Day A shoulder work must remain intact');
+    assert.equal(proposal.draft.days[2].selectedIds.includes(byName('Arnold Press').id),true,
+      'Day C shoulder work must remain intact');
+    assert(middle.selectedIds.includes(byName('Decline Barbell Bench Press').id),
+      'Day B must retain core chest pressing');
+    const optedOut={...draft,recommendationsDisabled:true};
+    assert.equal(w.coachProposeProjectedWeekRepair(optedOut).applied,false,
+      'A user must be able to decline Coach\'s nonbinding suggestions');
+    const edited=w.coachProjectedRepairClone(draft);
+    edited.dayOverrides=edited.days.map((_,index)=>index===1
+      ?{requiredExerciseIds:[byName('Overhead Press').id],excludedExerciseIds:[]}
+      :{requiredExerciseIds:[],excludedExerciseIds:[]});
+    edited.days[1].request={...edited.days[1].request,
+      requiredExerciseIds:[byName('Overhead Press').id]};
+    assert(!w.coachProposeProjectedWeekRepair(edited).changes.some(c=>
+      c.dayIndex===1&&c.removedName==='Overhead Press'),
+      'A user-specified overhead press must not be silently replaced');
+    const swappedBack=w.coachProjectedRepairClone(draft);
+    swappedBack.dayOverrides=swappedBack.days.map((_,index)=>index===1
+      ?{excludedExerciseIds:[byName('Overhead Press').id],requiredExerciseIds:[]}
+      :{excludedExerciseIds:[],requiredExerciseIds:[]});
+    assert(!w.coachProposeProjectedWeekRepair(swappedBack).changes.some(c=>c.dayIndex===1),
+      'Once a user manually swaps a day, Coach must not overwrite that day');
+    const shoulderFocus=w.coachProjectedRepairClone(draft);
+    shoulderFocus.request={...shoulderFocus.request,programFocusRegions:['side_delts']};
+    shoulderFocus.intent={...shoulderFocus.intent,focusRegions:['side_delts']};
+    assert(!w.coachProposeProjectedWeekRepair(shoulderFocus).changes.some(c=>
+      c.removedName==='Overhead Press'),'Explicit shoulder specialization cannot lose shoulder pressing');
     const capped=w.coachProjectedRepairClone(draft);
     capped.days.forEach(day=>day.request={...day.request,prompt:day.request.prompt+' exactly 5 exercises'});
     assert(!w.coachProposeProjectedWeekRepair(capped).changes.some(c=>c.kind==='add'),
