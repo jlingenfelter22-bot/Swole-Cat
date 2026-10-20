@@ -1,5 +1,20 @@
 # Swole Cat Product Roadmap
 
+## Coach time estimates and live-session flexibility — product principle (October 20, 2026)
+
+**Owner-confirmed direction:** Swole Cat provides a **rough planning time frame**, not a promise of exactly how many minutes a person will take. Typical/low/high estimates may include working sets, rest, warm-ups and equipment transitions; they cannot predict breaks, phone calls, texting, crowded equipment, slower individual pace or other interruptions. Upper-end “time creep” is expected variability, **not itself a Coach quality defect**. Avoid calibrating to false stopwatch precision or treating every estimate slightly above the requested midpoint as a reason to cut useful training.
+
+**Programming intent:** The requested session duration is a planning preference. Preserve meaningful movement coverage, the user's training goals, and their expressly chosen sets/reps before aggressively shrinking plans to an exact clock number. Coach may disclose a realistic time range and offer sensible shorter-session options; an explicitly hard stop requires a distinct, honest feasibility decision rather than silently promising that all planned work will fit. Do not confuse the ordinary broad planning time frame with a guaranteed deadline.
+
+**Control belongs to the lifter in the actual session:** When running late, the user should be able to skip the remaining set(s), skip an exercise, reduce that day's working sets, substitute equipment, defer unfinished work, or finish the session early. Incomplete/skipped work must not be falsely logged as done or automatically rewrite the saved program. Changes should be today-only unless the user deliberately chooses to save them to their routine. The user chooses what to do, not an automated time police.
+
+**Current functionality (source-inspected):** Focus Mode already supports **Skip exercise today**, **Remove set** via advanced set options, **Next Exercise** as a defer-not-skip action, and **Finish Anyway** with an unfinished-work review. **Dedicated “Skip Set” is a future UX/behavior audit item**: verify whether intentional set skipping should be tracked distinctly from removing a planned set and whether that action can be made easy to reach without disrupting the established Focus Mode. Do not claim a dedicated Skip Set control already exists or make an unapproved visual redesign.
+
+**Engineering impact:** Review the open draft Coach quality PR #83's sets-first trimming gate against this principle *before releasing*. It should prioritize program quality and avoid unnecessary edits for trivial estimated differences. Preserve transparent midpoint and lower/upper ranges instead of overfitting to an exact minute. Keep v0.93.4 accepted performance, original UI, cloud data and Beta unchanged. This is a product-direction record, not permission to merge or publish a new APK.
+
+---
+
+
 ## Parked future expansion — Swole Cat for Trainers (idea logged October 15, 2026)
 
 **Not in active development.** The owner proposed, after discussing workflows with his father (a personal trainer), a future linked **trainer/client platform**. A trainer would see a roster of distinct client profiles; manage each client's routines, programs, workout history and progress; and publish updates to each client's connected Swole Cat experience. The client logs workouts on their own phone; the trainer can review permitted progress and adjust future plans. A distinct trainer-branded app versus a role-specific interface remains undecided. Priority is AFTER current personal app functionality, Android v0.93.3 performance acceptance, sync/data safety and Coach are stabilized. No change to the existing app, accounts, data model or release plan is authorized by this note.
