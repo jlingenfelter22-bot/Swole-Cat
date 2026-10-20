@@ -66,7 +66,7 @@ function coachBrainTrimToTime(exercises,request,defaults,{retainMinimum=2}={}){
  // per eligible exercise per pass so time savings do not fall on one movement.
  // Never silently change named/required lifts, explicit set instructions, or
  // top/backoff prescriptions.
- const hasExplicitSets=/\b\d{1,2}\s*(?:working\s*)?sets?\b/i.test(String(request.prompt||''));
+ const hasExplicitSets=/\b(?:\d{1,2}\s*(?:working\s*)?sets?|\d{1,2}\s*[x×]\s*\d{1,2})\b/i.test(String(request.prompt||''));
  if(!hasExplicitSets){
    let changed=true;
    while(time.estimateMinutes>request.duration&&changed){
