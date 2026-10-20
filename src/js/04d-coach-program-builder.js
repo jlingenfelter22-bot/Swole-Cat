@@ -440,6 +440,25 @@ function coachProjectedRepairProtected(ex,day,index){
  if(day.request?.goal==='strength'&&index===0)return true;
  return false;
 }
+// A vertical shoulder press is valuable, but three near-identical full-body days
+// need not repeat it when a verified vertical pull is entirely absent that week.
+// Retain shoulder pressing on days before AND after the proposal and retain this
+// day's chest press. User focus, explicit replacements and strength always win.
+function coachProjectedRepairCrossDayOverlap(draft,finding,dayIndex,removed){
+ const day=draft?.days?.[dayIndex],days=draft?.days||[];
+ if(finding.type!=='missing_weekly_role'||finding.role!=='vertical_pull'||
+    removed?.pattern!=='vertical_press'||days.length<3||
+    dayIndex===0||dayIndex===days.length-1||
+    coachProjectedWeekDayKey(day)!=='full body'||
+    day.request?.goal==='strength'||day.request?.allowCoachExerciseSwaps===false)return false;
+ const focus=[...(day.request?.priorityRegions||[]),
+  ...(draft.request?.programFocusRegions||[]),...(draft.intent?.focusRegions||[])];
+ if(focus.some(r=>['front_delts','side_delts','rear_delts','shoulders'].includes(r)))return false;
+ if(!day.selectedIds.some(id=>['horizontal_press','incline_press'].includes(exById(id)?.pattern)))return false;
+ const hasPress=entry=>entry.selectedIds.some(id=>exById(id)?.pattern==='vertical_press');
+ return days.slice(0,dayIndex).some(hasPress)&&days.slice(dayIndex+1).some(hasPress);
+}
+
 function coachProjectedRepairClone(draft){
  return {...draft,days:draft.days.map(day=>({...day,
   selectedIds:[...(day.selectedIds||[])],
@@ -495,6 +514,8 @@ function coachProjectedRepairTrySmallAddition(draft,audit,repairedDays,trialBudg
   for(let dayIndex=0;dayIndex<draft.days.length;dayIndex++){
    const day=draft.days[dayIndex],req=day.request;
    if(repairedDays.has(dayIndex)||!req?.brainEquipment||req.goal==='strength'||
+      draft.dayOverrides?.[dayIndex]?.excludedExerciseIds?.length||
+      draft.dayOverrides?.[dayIndex]?.requiredExerciseIds?.length||
       req.experienceLevel==='beginner'||day.selectedIds.length>=7||
       !Number(req.duration)||!day.brainTime||
       /\b\d{1,2}\s*(?:working\s*)?sets?\b/i.test(String(req.prompt||''))||
@@ -561,8 +582,11 @@ function coachProjectedRepairTrySmallAddition(draft,audit,repairedDays,trialBudg
 function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=2,maxTrials=120}={}){
  const before=coachProjectedWeekAudit(draft);
  const response={version:'phase3-shadow-swap-first',applied:false,changes:[],
+  recommendationOnly:true,requiresUserAcceptance:true,accepted:false,
   before,after:before,draft,reason:'no_meaningful_safe_swap'};
  if(!before.ready||!draft?.days?.length)return {...response,reason:'no_generated_week'};
+ if(draft.recommendationsDisabled===true||draft.request?.recommendationsDisabled===true)
+  return {...response,reason:'user_declined_recommendations'};
  // Never autonomously "repair" hard conflicts or unknown equipment.
  if(before.findings.some(f=>f.severity==='constraint'&&
    ['equipment_violation','required_exercise_absent','unknown_exercise'].includes(f.type)))
@@ -578,7 +602,11 @@ function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=
   for(const finding of coachProjectedRepairDeficits(audit)){
    for(let dayIndex=0;dayIndex<working.days.length;dayIndex++){
     if(repairedDays.has(dayIndex))continue;
+    // Do not silently revisit a day the person has already changed manually.
+    const override=working.dayOverrides?.[dayIndex];
+    if(override?.excludedExerciseIds?.length||override?.requiredExerciseIds?.length)continue;
     const day=working.days[dayIndex];
+    if(day.request?.allowCoachExerciseSwaps===false)continue;
     if(finding.type==='missing_weekly_role'&&!coachProjectedWeekRoleFitsDay(finding.role,day))continue;
     if(finding.type==='same_day_family_overlap'&&finding.dayIndex!==dayIndex)continue;
     if(finding.type==='missing_major_muscle'&&!(day.request?.targetRegions||[]).includes(finding.region))continue;
@@ -618,9 +646,11 @@ function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=
      const compound=COACH_COMPOUND_PATTERNS.has(removed.pattern);
      // Retain the first foundational movement when a family is repeated.
      if(sameFamily&&families.indexOf(coachMovementFamily(removed))===removedIndex)continue;
-     // Keep unique compound anchors, and require an actual redundant family or
-     // accessory slot to fund a useful replacement.
-     if(compound&&!sameFamily)continue;
+     // Unique foundational compounds stay. A narrow exception exists for a
+     // *cross-day* repeated optional shoulder press in full-body programming:
+     // preserve that day's chest press and presses on both surrounding days.
+     const crossDay=coachProjectedRepairCrossDayOverlap(working,finding,dayIndex,removed);
+     if(compound&&!sameFamily&&!crossDay)continue;
      for(const replacement of replacements){
       if(trialCount>=trialLimit)break;
       if(coachMovementFamily(replacement)===coachMovementFamily(removed))continue;
@@ -643,7 +673,8 @@ function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=
       // improve the whole-week score by a meaningful amount.
       if(!resolved||improvement<(finding.type==='same_day_family_overlap'?5:6))continue;
       const candidate={trial,audit:nextAudit,dayIndex,removed,replacement,
-       finding,improvement,score:improvement+(sameFamily?2:0)-(compound?2:0),
+       finding,improvement,score:improvement+(sameFamily?2:0)-(compound&&!crossDay?2:0),
+       crossDayOverlap:crossDay,
        exerciseRank:coachCandidateBaseScore(replacement,day.request),
        timeBefore:day.brainTime?.estimateMinutes??null,timeAfter:next.brainTime?.estimateMinutes??null};
       // First prefer actual weekly debt reduction; when tied choose the
@@ -674,8 +705,11 @@ function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=
    addedId:best.replacement.id,addedName:best.replacement.name,
    finding:best.finding.type,role:best.finding.role||null,region:best.finding.region||null,
    improvement:best.improvement,estimateBefore:best.timeBefore,estimateAfter:best.timeAfter,
-   reason:(best.kind==='add'?'Add two modest accessory sets to address ':'Replace an optional or redundant movement to resolve ')+
-      best.finding.title.toLowerCase()});
+   reason:best.crossDayOverlap
+    ?'Optional weekly-balance suggestion: trade one repeated shoulder press for vertical pulling. Keep the original or swap this exercise as you prefer.'
+    :(best.kind==='add'?'Optional two-set accessory suggestion to address ':'Optional exercise swap to address ')+
+      best.finding.title.toLowerCase(),
+   optional:true,editable:true,requiresUserAcceptance:true});
   if(trialCount>=trialLimit)break;
  }
  return {...response,applied:changes.length>0,changes,after:audit,
