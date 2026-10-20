@@ -1,5 +1,18 @@
 # Swole Cat - Next Chat Handoff
 
+## RESEARCH COMPLETE -> WHOLE-WEEK QUALITY ENGINE DESIGN DRAFT (October 20, 2026)
+
+- Owner asked what to implement next after in-depth research on exercise science, full-week muscle coverage, exercise combinations, equipment, training history and human-friendly program design.
+- **Draft design [PR #85](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/85)**: read `docs/COACH_WHOLE_WEEK_QUALITY_ENGINE_PLAN.md` on `design/coach-whole-week-quality-engine` for full implementation architecture, prioritized evidence and specific test matrix. **Docs only; zero app/UI/cloud/account/APK changes.**
+- Central move: **build weekly intent -> generate existing day candidates -> audit the full projected week -> swap out redundant or lower-value exercises to repair actual coverage gaps -> re-audit + recompute time/prescriptions**. Prefer swapping to adding exercises and preserve personally valued/progressing anchors. Requested split, equipment, mandatory/excluded movements and explicit focus stay hard constraints. Time is an approximate range, not an exact stopwatch.
+- **First engineering gate**: audit all catalog metadata and capture deterministic unmodified baseline outputs of 2–6-day program scenarios for human-review comparison. Second gate: *pure/read-only* weekly intent and audit. Third gate: bounded deterministic swap-first repair. Fourth: careful multiweek historical adaptation. Signed Testing only after owner-approved version-safe merge and proven regressions. Retain 1.0 primary/0.5 secondary set-equivalent as a practical heuristic, **not an exact biological measurement**, with soft goal/split-sensitive coverage categories (no 10 sets for every tiny muscle).
+- Relevant current code: `src/js/04d-coach-program-builder.js` selects days sequentially then runs `coachBrainProgramWeekReview`, while `src/js/04b-coach-programming.js` already has robust per-day family/constraints and `04b2-coach-intelligence.js` already tracks history/continuity. Reuse, don't rewrite. Tests on exercise order, weekly coverage, indirect vs direct training, constraints, saved preview parity, bounded performance.
+- **Other unmerged drafts**: [PR #84](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/84) history-region gap and secondary-only priority insights (97/97 checks + benchmark passed), separate integration decision; [PR #83](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/83) sets-first strict-time compression, **must be reconsidered** against owner's express approximate-time requirement (also currently conflicting). Draft R8 experiment #81 untouched. Signed Testing v0.93.4/code 139 remains stable and Beta frozen.
+- Sources include [ACSM 2026 position stand](https://pubmed.ncbi.nlm.nih.gov/41843416/), [Pelland 2026 dose-response review](https://pubmed.ncbi.nlm.nih.gov/41343037/), [split vs full-body 2024 review](https://pubmed.ncbi.nlm.nih.gov/38595233/) and [systematic exercise variation 2022](https://pubmed.ncbi.nlm.nih.gov/35438660/). Good research does NOT justify perfect scores, absolute regional set quotas or automatic changes to old routines.
+
+---
+
+
 ## OWNER CLARIFICATION: time is an estimate, not a guaranteed workout deadline (October 20, 2026)
 
 - Owner strongly clarified Coach Swole Cat's product philosophy: planned 20/30/45/60-minute sessions are **rough typical time frames**, NOT a promise of exact minute completion. Actual timing varies with the individual, warmup, crowded equipment, phone calls, texting and life; a lower/typical/upper estimate is useful, but over-range creep does **not by itself** count as a failure of Coach.
