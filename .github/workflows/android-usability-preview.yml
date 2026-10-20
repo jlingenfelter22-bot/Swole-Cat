@@ -34,9 +34,26 @@ jobs:
           p.swoleCat.androidVersionCode=140;
           fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
           NODE
-      - name: Build WebView bundle and mobile recommendation checks
+      - name: Build WebView bundle
+        run: npm run build:web
+      - name: Install DOM smoke-test dependency
+        run: npm install --no-save --package-lock=false jsdom@24
+
+      - name: Prepare bundled DOM smoke-test fixture
         run: |
-          npm run build:web
+          node <<'JS'
+          const fs=require('fs');
+          let html=fs.readFileSync('www/index.html','utf8');
+          const css=fs.readFileSync('www/app.css','utf8').replace(/<\/style/gi,'<\\/style');
+          const js=fs.readFileSync('www/app.js','utf8').replace(/<\/script/gi,'<\\/script');
+          const testRuntime=fs.readFileSync('scripts/test-runtime-fixture.js','utf8').replace(/<\/script/gi,'<\\/script');
+          html=html.replace('<link rel="stylesheet" href="./app.css">',()=>`<style>${css}</style>`);
+          html=html.replace('<script src="./app.js"></script>',()=>`<script>${js}</script><script>${testRuntime}</script>`);
+          fs.writeFileSync('/tmp/swole-cat-test.html',html);
+          JS
+
+      - name: Run Coach mobile preview interaction checks
+        run: |
           node --check www/app.js
           node scripts/coach-phase3-recommendation-preview-stress.mjs
           node scripts/coach-phase3-mobile-usability-stress.mjs
