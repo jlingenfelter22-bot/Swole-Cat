@@ -1,5 +1,16 @@
 # Swole Cat - Next Chat Handoff
 
+## OWNER CLARIFICATION: time is an estimate, not a guaranteed workout deadline (October 20, 2026)
+
+- Owner strongly clarified Coach Swole Cat's product philosophy: planned 20/30/45/60-minute sessions are **rough typical time frames**, NOT a promise of exact minute completion. Actual timing varies with the individual, warmup, crowded equipment, phone calls, texting and life; a lower/typical/upper estimate is useful, but over-range creep does **not by itself** count as a failure of Coach.
+- Focus on useful programming and full-body/weekly movement coverage; avoid cutting exercises or sets just to hit an overly precise engineering midpoint. If a user expressly states a strict hard stop, handle that separately and transparently (never misleadingly guarantee an infeasible workout).
+- Make in-session autonomy central. User wants the ability to say "I need to skip this set" / "skip this exercise", shorten the day, adjust to time remaining, and stop early without false completion or accidentally rewriting the routine. **Existing implementation already supports skip-exercise-today, advanced Remove Set, deferred Next Exercise, and unfinished-session Finish Anyway.** Distinct one-tap **Skip Set** is a **future UX/behavior opportunity**, not confirmed as currently implemented; needs separate design/recording semantics review, with no UI-redesign authorization today.
+- **Open [draft PR #83](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/83)** includes sets-first time compression and passed full regression as of its documented head; before merge, REASSESS whether strict `estimateMinutes > requestedMinutes` trimming is overly precise given this explicit user preference. Retain estimate ranges and preserve training quality over arbitrary one-minute conformity. User's comment is **not** approval to merge, bump versions or publish a new Testing APK.
+- Canonical design principle recorded in `docs/ROADMAP.md` under "Coach time estimates and live-session flexibility". Testing signed **v0.93.4** and Beta/cloud records untouched; trainer-client idea still parked.
+
+---
+
+
 ## DEVICE ACCEPTANCE: Testing v0.93.4 "running like butter" (October 20, 2026)
 
 - Owner installed Swole Cat **Testing v0.93.4 / Android build 139** and reported **"everything is running like butter"**. Treat as strong *subjective real-device performance acceptance*: no issue raised with current installed build, including the Exercise Library optimization. Prior v0.93.3 feedback similarly reported smoother operation and nothing strange.
