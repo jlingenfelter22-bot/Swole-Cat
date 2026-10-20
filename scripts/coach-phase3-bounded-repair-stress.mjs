@@ -76,6 +76,7 @@ try{
  assert(pre.findings.some(f=>f.type==='missing_weekly_role'&&f.role==='knee_flexion'));
  assert(pre.findings.some(f=>f.type==='same_day_family_overlap'&&f.family==='squat'));
  results.push(inspect(duplicate,'duplicate_squat_missing_knee_flexion',{expectChange:true}));
+ console.log('COACH_PHASE3_ADVERSARIAL_DUPLICATE '+JSON.stringify(results.at(-1)));
  assert(results.at(-1).changes.some(c=>c.removedName==='Goblet Squat'&&
   w.exById(c.addedId)?.pattern==='knee_flexion'),
   'Replace redundant squat, not the required multi-pattern foundation');
