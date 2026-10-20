@@ -80,7 +80,7 @@ try{
   'Glute Bridge and hip hinge fulfill the specific glute focus despite squat redundancy');
  assert(!missing(glute,'knee_flexion'),
   'Do not flag absent machine-based knee flexion for a dumbbell-only week without feasible gear');
- assert.equal(glute.roleFeasibility.knee_flexion?.status,'not_feasible');
+ assert.equal(glute.feasibility.knee_flexion?.status,'not_feasible');
  const shoulders=get('4day_shoulder_priority_gym');
  for(const region of ['side_delts','rear_delts'])
   assert.equal(shoulders.focus.find(x=>x.region===region)?.status,'specific_direct',
@@ -93,7 +93,7 @@ try{
  const dumbbell=get('3day_full_dumbbells');
  assert(!missing(dumbbell,'vertical_pull'),
   'Lacking equipment must not be represented as a feasible missing vertical pull');
- assert.equal(dumbbell.roleFeasibility.vertical_pull?.status,'not_feasible');
+ assert.equal(dumbbell.feasibility.vertical_pull?.status,'not_feasible');
  assert(!get('3day_full_bodyweight_limit').generated,'No fictional floor-only full body plan');
 
  // Construct small, controlled adversarial weeks without changing the user's
