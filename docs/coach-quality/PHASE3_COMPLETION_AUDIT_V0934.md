@@ -34,9 +34,19 @@ The owner approved *complementary exercise redistribution before adding exercise
 
 The separate missing knee-flexion role still receives a modest **optional** two-set seated leg curl addition on Day A, changing the approximate estimate from 44 to 48 minutes (planner range 42–59). The owner may keep the initial exercises, dismiss a recommendation, swap the recommended exercise again, or manually edit the week. Coach suggestions must be labeled clearly and require affirmative user acceptance before any future production preview/save integration.
 
-The shadow response now marks `recommendationOnly: true`, `requiresUserAcceptance: true`, `accepted: false`, and each candidate carries `optional: true` and `editable: true`. A request-level `recommendationsDisabled` opt-out returns the original week. A day with manual overrides is excluded from automatic repair proposals. Named required lifts, positively progressing or preferred choices and explicit shoulder-specialization priorities remain protected. These APIs are **not yet live UI controls** and do not constitute a shipped acceptance workflow.
+The shadow response now marks `recommendationOnly: true`, `requiresUserAcceptance: true`, `accepted: false`, and each candidate carries `optional: true` and `editable: true`. A request-level `recommendationsDisabled` opt-out returns the original week. A day with manual overrides is excluded from automatic repair proposals. Named required lifts, positively progressing or preferred choices and explicit shoulder-specialization priorities remain protected. These proposal APIs now have opt-in **program-preview controls on this unmerged development branch**; the controls do **not** constitute a shipped feature. The installed Testing/Beta apps are unchanged.
 
 Test evidence: [full validation run #39468922057](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39468922057) and [synthetic performance run #39468922056](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39468922056) passed on source/test commit `5cb61afae8f72370ad2f1a86a83837cbfe753695`. The exact `human-review-queue.json` artifact records original/proposed daily sets and time ranges, the changed exercises, and remaining optional calf/core roles.
+
+## Next quality gate: opt-in recommendation preview (draft PR #88 only)
+
+An independent program-preview integration now exposes **Review suggestions** rather than applying any recommendation when the preview opens. After opting in, every actionable suggestion displays the specific movement change, explanation and approximate day-duration effect, with **Use Recommendation**, **Keep Original**, and a manual **Try Another Swap** (or **Adjust Day** for a suggested addition). The initial program is always a valid save choice without opening or accepting suggestions.
+
+On explicit acceptance, only the **unsaved** exercise list and time estimate for that day are updated. The app records an ephemeral day-level preference so Coach does not automatically redo an accepted, declined or manually edited day. A selected movement is pinned through the existing day override mechanism; a specifically accepted two-set accessory can retain those two sets if the draft regenerates. Regular exercise Swap/Remove clears stale accepted-set metadata.
+
+The new CI gate, `scripts/coach-phase3-recommendation-preview-stress.mjs`, verifies that merely opening the preview or reviewing suggestions does not persist data; accepting, declining and using another swap are distinct; declines survive draft regeneration; accepted selections and set counts survive permitted regeneration; and only an explicit Save path produces matching persisted routine IDs and prescriptions. Tests use synthetic jsdom state and reject all network requests.
+
+**These are local branch UI changes, not deployed mobile functionality.** Mobile usability review, all-workflow validation on the final PR head, potential time/infeasibility regressions after complex refiner edits, and release approval are still mandatory before any Testing APK. Do not merge or move to Beta as part of this audit.
 
 ## Adversarial programming tests
 
