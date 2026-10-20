@@ -60,6 +60,32 @@ function coachBrainTrimToTime(exercises,request,defaults,{retainMinimum=2}={}){
    return slots.every(slot=>!original.some(slot.match)||arr.some(slot.match));
  };
  let time=coachBrainSessionTimeEstimate(selected,request,defaults,{explicitConfigById:setCounts});
+ // Keep useful movement coverage before deleting exercises. A shorter number
+ // of automatically prescribed sets is a smaller plan change than losing the
+ // posterior, pulling or pressing movement altogether. Make one set reduction
+ // per eligible exercise per pass so time savings do not fall on one movement.
+ // Never silently change named/required lifts, explicit set instructions, or
+ // top/backoff prescriptions.
+ const hasExplicitSets=/\b\d{1,2}\s*(?:working\s*)?sets?\b/i.test(String(request.prompt||''));
+ if(!hasExplicitSets){
+   let changed=true;
+   while(time.estimateMinutes>request.duration&&changed){
+     changed=false;
+     for(const ex of [...selected].reverse()){
+       if(time.estimateMinutes<=request.duration)break;
+       if(mandatory.has(ex.id))continue;
+       const p=coachExercisePrescription(ex,request,defaults);
+       if(p?.setStructure?.type==='top_backoff')continue;
+       const current=setCounts[ex.id]?.sets||p.sets||3;
+       if(current<=2)continue;
+       setCounts[ex.id]={sets:current-1};
+       time=coachBrainSessionTimeEstimate(selected,request,defaults,{explicitConfigById:setCounts});
+       changed=true;
+     }
+   }
+ }
+ // If even the smaller honest session misses the requested time, remove only
+ // non-required movements that leave the original core coverage represented.
  while(time.estimateMinutes>request.duration&&selected.length>retainMinimum){
    let removable=-1;
    for(let i=selected.length-1;i>=0;i--){
@@ -67,24 +93,10 @@ function coachBrainTrimToTime(exercises,request,defaults,{retainMinimum=2}={}){
      if(coveredCore(selected.filter((_,j)=>i!==j))){removable=i;break}
    }
    if(removable<0)break;
-   removed.push(selected.splice(removable,1)[0].id);
+   const removedExercise=selected.splice(removable,1)[0];
+   removed.push(removedExercise.id);
+   delete setCounts[removedExercise.id];
    time=coachBrainSessionTimeEstimate(selected,request,defaults,{explicitConfigById:setCounts});
- }
- // Only automatically generated set counts may be reduced. Never silently
- // override an explicit requested exercise, user-authored set count, or top/backoff structure.
- const hasExplicitSets=/\b\d{1,2}\s*(?:working\s*)?sets?\b/i.test(String(request.prompt||''));
- if(time.estimateMinutes>request.duration&&!hasExplicitSets){
-   for(const ex of [...selected].reverse()){
-     if(time.estimateMinutes<=request.duration)break;
-     if(mandatory.has(ex.id))continue;
-     const p=coachExercisePrescription(ex,request,defaults);
-     if(p?.setStructure?.type==='top_backoff')continue;
-     const current=setCounts[ex.id]?.sets||p.sets||3;
-     if(current>2){
-       setCounts[ex.id]={sets:2};
-       time=coachBrainSessionTimeEstimate(selected,request,defaults,{explicitConfigById:setCounts});
-     }
-   }
  }
  return {exercises:selected,removed,time,setCounts,feasible:time.estimateMinutes<=request.duration};
 }
