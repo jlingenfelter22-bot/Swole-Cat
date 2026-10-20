@@ -102,6 +102,10 @@ try{
     'An off-target per-day muscle emphasis must be flagged as incompatible');
    assert(!first.draft,'A contradictory day focus must not be silently accepted');
   }
+  if(name==='4day_upper_lower_one_short_day'){
+   assert(first.draft,'Meaningful 25-minute upper-body work should be feasible');
+   assert(first.draft.days[0].brainTime.estimateMinutes<=25);
+  }
   if(!first.draft){
    evidence.push({id:name,generated:false,reason:'infeasible_or_ambiguous_request'});
    continue;
@@ -139,6 +143,16 @@ try{
    const savedRoutine=w.coachProgramRoutineFromDay(day,draft,'synthetic');
    assert.deepEqual(plain(savedRoutine.exercises.map(x=>x.exerciseId)),plain(day.selectedIds),name+' draft-to-routine mismatch');
    assert.equal(savedRoutine.exercises.length,day.selectedIds.length);
+  }
+  if(name==='4day_upper_lower_no_machines'){
+   for(const d of draft.days.filter(d=>d.key==='lower body'))
+     assert(d.selectedIds.filter(id=>ex(id).pattern==='hinge').length<=1,
+       'Non-strength program day stacks multiple heavy hinges: '+d.label);
+  }
+  if(name==='3day_ppl_dumbbells_60'){
+   const pull=draft.days.find(d=>d.key==='pull');assert(pull);
+   assert(pull.selectedIds.length>=5,'Constrained Pull deserves a meaningful complementary option');
+   assert(pull.brainTime.estimateMinutes<60,'Do not invent time filler');
   }
   if(opts?.excludedPatterns){
    assert(!before.changes.some(c=>opts.excludedPatterns.includes(ex(c.addedId)?.pattern)),name+' proposed excluded pattern');
