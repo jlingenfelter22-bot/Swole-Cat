@@ -78,11 +78,30 @@ try{
   ['3day_full_gym_explicit_sets','3 day full body program 45 minutes 3 working sets','gym'],
   ['3day_full_early_late','3 day full body program 45 minutes','gym','hypertrophy',{preferredDays:[1,3,5]}],
   ['3day_full_mixed_equipment','3 day full body program 60 minutes','gym','hypertrophy',{
-    dayPlans:[{equipmentKey:'dumbbells'},{equipmentKey:'gym'},{equipmentKey:'bodyweight'}]}]
+    dayPlans:[{equipmentKey:'dumbbells'},{equipmentKey:'gym'},{equipmentKey:'bodyweight'}]}],
+  ['3day_custom_shoulder_arms_legs','3 day custom program 60 minutes','gym','hypertrophy',{
+    customSlots:['shoulders','arms','legs']}],
+  ['4day_custom_chest_back_legs_arms','4 day custom program 55 minutes','gym','hypertrophy',{
+    customSlots:['chest','back','legs','arms']}],
+  ['3day_custom_shoulder_back_legs_dumbbells','3 day custom program 50 minutes','dumbbells','hypertrophy',{
+    customSlots:['shoulders','back','legs']}],
+  ['3day_custom_arms_arms_legs','3 day custom program 45 minutes','gym','hypertrophy',{
+    customSlots:['arms','arms','legs']}],
+  ['3day_ppl_conflicting_day_focus','3 day push pull legs program 60 minutes','gym','hypertrophy',{
+    dayPlans:[{focusKey:'calves'},{},{}]}],
+  ['3day_full_equip_gym_dumbbell_gym','3 day full body program 60 minutes','gym','hypertrophy',{
+    dayPlans:[{equipmentKey:'gym'},{equipmentKey:'dumbbells'},{equipmentKey:'gym'}]}],
+  ['4day_upper_lower_one_short_day','4 day upper lower program 60 minutes','gym','hypertrophy',{
+    dayPlans:[{duration:25},{duration:45},{duration:60},{duration:60}]}]
  ];
  let generated=0;
  for(const [name,prompt,choice,goal,opts] of cases){
   const first=generate(prompt,choice,goal||'hypertrophy',opts||{});
+  if(name==='3day_ppl_conflicting_day_focus'){
+   assert(w.coachProgramConflictingFocus(first.intent),
+    'An off-target per-day muscle emphasis must be flagged as incompatible');
+   assert(!first.draft,'A contradictory day focus must not be silently accepted');
+  }
   if(!first.draft){
    evidence.push({id:name,generated:false,reason:'infeasible_or_ambiguous_request'});
    continue;
@@ -182,7 +201,7 @@ try{
     unresolvedRoles:unresolved,
     maxDayEstimatedMinutes:Math.max(...draft.days.map(d=>d.brainTime.estimateMinutes))});
  }
- assert(generated>=22,'Insufficient feasible programs for quality coverage: '+generated);
+ assert(generated>=25,'Insufficient feasible programs for quality coverage: '+generated);
  // Negative constraints and protected manual choices.
  const baseline=generate('3 day full body program 45 minutes','gym').draft;
  assert(baseline);
