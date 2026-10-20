@@ -145,6 +145,7 @@ try{
   '3day_full_dumbbells':['3 day full body program 45 minutes','dumbbells']
  };
  let generated=0;
+ const humanReview=[];
  for(const scenario of baseline.scenarios){
   const [prompt,choice,goal,focus]=scenarioSpecs[scenario.id];assert(prompt);
   const request=equip(prompt,choice,goal||'hypertrophy');
@@ -157,6 +158,26 @@ try{
   assert.deepEqual(JSON.parse(JSON.stringify(draft.days.map(d=>d.selectedIds))),
    scenario.days.map(d=>d.exercises.map(ex=>ex.id)),'Phase 1 original output changed: '+scenario.id);
   const report=inspect(draft,scenario.id);
+  // Review evidence is intentionally emitted separately from test assertions:
+  // exact before/after exercise lists, set counts, and planner minutes.
+  const preview=w.coachProposeProjectedWeekRepair(draft);
+  const dayRows=week=>week.days.map((day,dayIndex)=>({
+   dayIndex,label:day.label,requestedMinutes:day.request.duration,
+   estimateMinutes:day.brainTime?.estimateMinutes??null,
+   lowerMinutes:day.brainTime?.lowerMinutes??null,
+   upperMinutes:day.brainTime?.upperMinutes??null,
+   exercises:day.selectedIds.map(id=>{
+    const ex=w.exById(id),meta=w.exerciseMuscleMetadata(ex);
+    return {id,name:ex.name,pattern:ex.pattern,
+     sets:day.brainSetCounts?.[id]?.sets||w.coachExercisePrescription(ex,day.request,day.defaults).sets,
+     primary:[...meta.primary],secondary:[...meta.secondary]};
+   })
+  }));
+  humanReview.push({id:scenario.id,original:dayRows(draft),
+   proposed:dayRows(preview.draft),changes:preview.changes,
+   beforeFindings:preview.before.findings.map(f=>({type:f.type,role:f.role||null,region:f.region||null,title:f.title})),
+   afterFindings:preview.after.findings.map(f=>({type:f.type,role:f.role||null,region:f.region||null,title:f.title})),
+   verdict:'HUMAN_REVIEW_PENDING'});
   if(scenario.id==='4day_glute_priority_dumbbells'){
    const gluteSwaps=report.changes.filter(c=>c.kind==='swap'&&
     c.removedName==='Bodyweight Squat'&&w.exById(c.addedId)?.pattern==='hip_abduction');
@@ -204,6 +225,12 @@ try{
   scenarioCount:12,changes:results.reduce((n,x)=>n+(x.changes?.length||0),0),results};
  fs.writeFileSync('/tmp/swole-cat-coach-phase3/repair-before-after.json',
   JSON.stringify(report,null,2)+'\n');
+ fs.writeFileSync('/tmp/swole-cat-coach-phase3/human-review-queue.json',
+  JSON.stringify({version:'phase3-human-review-queue',scenarioCount:humanReview.length,
+   scenarios:humanReview},null,2)+'\n');
+ const sample=humanReview.find(x=>x.id==='3day_full_gym');
+ assert(sample&&sample.proposed.length===3,'Must export full exact 3-day human review');
+ console.log('COACH_PHASE3_HUMAN_REVIEW_THREEDAY '+JSON.stringify(sample));
  console.log('COACH_PHASE3_MATRIX '+JSON.stringify(results.map(x=>({
   id:x.label,proposed:x.applied,changes:x.changes?.map(c=>
    c.kind==='add'?'2 sets '+c.addedName:(c.removedName+' -> '+c.addedName))||[],
