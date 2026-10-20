@@ -114,6 +114,25 @@ jobs:
       - name: Capture realistic Coach-generated workouts for human review
         run: node scripts/coach-brain-human-review-matrix.mjs
 
+      - name: Audit Phase 1 full catalog roles, muscles and actual equipment capabilities
+        run: node scripts/coach-phase1-catalog-audit.mjs
+
+      - name: Capture deterministic Phase 1 whole-week baseline twice
+        run: |
+          node scripts/coach-phase1-weekly-baseline.mjs
+          cp /tmp/swole-cat-coach-phase1/weekly-baseline-frozen.json /tmp/swole-cat-phase1-first.json
+          node scripts/coach-phase1-weekly-baseline.mjs
+          cmp /tmp/swole-cat-phase1-first.json /tmp/swole-cat-coach-phase1/weekly-baseline-frozen.json
+
+      - name: Retain Phase 1 catalog and human-review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-phase1-quality-evidence
+          path: /tmp/swole-cat-coach-phase1/
+          retention-days: 30
+
+
       - name: Stress test v0.84.0 exercise intelligence and timed/distance measurement
         run: node scripts/exercise-intelligence-stress.mjs
 
