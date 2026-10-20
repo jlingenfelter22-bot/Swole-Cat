@@ -78,5 +78,51 @@ insight=w.coachDeepHistoryInsight();
 assert(insight);assert.equal(insight.type,'plateau');assert.equal(insight.exerciseId,squat.id);
 assert.match(w.coachDeepInsightHtml(),/Review Routine|Open Progress/);
 
+
+// Region-level history: 2+ active weeks and prior primary work, not a
+// universal requirement to hit every listed muscle. All data is synthetic.
+const regional=[
+ {id:'older_squat1',routineId:'legs_r',routineName:'Leg Day',status:'finished',date:isoDaysAgo(37),exercises:[{exerciseId:squat.id,sets:work(225,5),notes:''}]},
+ {id:'older_squat2',routineId:'legs_r',routineName:'Leg Day',status:'finished',date:isoDaysAgo(24),exercises:[{exerciseId:squat.id,sets:work(225,5),notes:''}]},
+ ...[12,7,2].map((day,i)=>({id:'recent_push_'+i,routineId:'push_r',routineName:'Push Day',status:'finished',date:isoDaysAgo(day),exercises:[{exerciseId:bench.id,sets:work(180,7),notes:''},{exerciseId:row.id,sets:work(140,8),notes:''}]}))
+];
+w.eval('state.sessions='+JSON.stringify(regional)+';save()');
+const regionalSnapshot=w.eval('JSON.stringify(state.sessions)');
+const muscleReport=w.coachMultiWeekRegionCoverage(now);
+assert(muscleReport.ready);
+assert(muscleReport.gaps.some(x=>x.region==='glutes'),'glutes disappeared from completed log contribution across weeks');
+answer=w.coachHistoryAnswer('which muscles have I neglected in recent weeks?');
+assert.equal(answer.type,'muscle_coverage');
+assert.match(answer.answer,/glutes/i);
+answer=w.coachHistoryAnswer('have I neglected glutes lately?');
+assert.equal(answer.type,'muscle_coverage');
+assert.match(answer.answer,/Glutes: no primary or secondary contribution/i);
+answer=w.coachHistoryAnswer('have I neglected triceps lately?');
+assert.match(answer.answer,/Triceps: secondary involvement only/i,
+  'bench press triceps contribution is not mistaken for complete absence');
+assert(!muscleReport.gaps.some(x=>x.region==='triceps'),
+  'a secondary-worked region is not reported as completely neglected');
+assert.equal(w.eval('JSON.stringify(state.sessions)'),regionalSnapshot,'Coach Q&A cannot mutate logged history');
+// Logging an actual recent squat clears the glute gap; avoid claiming no work.
+const recentSquat={id:'recent_squat',routineId:'legs_r',routineName:'Leg Day',status:'finished',date:isoDaysAgo(1),exercises:[{exerciseId:squat.id,sets:work(205,6)}]};
+w.eval('state.sessions='+JSON.stringify([...regional,recentSquat])+';save()');
+const corrected=w.coachMultiWeekRegionCoverage(now);
+assert(!corrected.gaps.some(x=>x.region==='glutes'));
+answer=w.coachHistoryAnswer('have I neglected glutes lately?');
+assert.match(answer.answer,/Glutes: 3 direct set-equivalents/i);
+// Unfinished warm-up sets never count as training; skipped exercises never count.
+const incomplete=[...regional,{
+ id:'unused_workout',routineId:'legs_r',routineName:'Not completed',status:'finished',date:isoDaysAgo(1),
+ exercises:[{exerciseId:squat.id,skipped:true,sets:work(205,6)},{exerciseId:squat.id,sets:[{weight:100,reps:5,type:'warmup',done:true}]}]
+}];
+w.eval('state.sessions='+JSON.stringify(incomplete)+';save()');
+assert(w.coachMultiWeekRegionCoverage(now).gaps.some(x=>x.region==='glutes'),
+  'skipped and warm-up-only squat rows cannot erase a glute gap');
+w.eval('state.sessions='+JSON.stringify(regional.slice(-2))+';save()');
+answer=w.coachHistoryAnswer('which muscles have I neglected in recent weeks?');
+assert.match(answer.answer,/needs more history/i,'no false gap alert with inadequate history');
+// Restore the existing fixture and keep every synthetic workout unchanged.
+w.eval('state.sessions='+JSON.stringify(sessions)+';save()');
+
 console.log('Coach Swolecat v0.62 history intelligence PASS: Q&A routing, exact logs, PRs, progression, stalls, consistency, recency, neglected coverage, ranked insights, and safe handoffs');
 dom.window.close();
