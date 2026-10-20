@@ -479,6 +479,84 @@ function coachProjectedRepairRegresses(before,after){
  }
  return false;
 }
+
+// Optional follow-up only after a complete swap search finds no safe improvement.
+// This does not authorize arbitrary exercise additions or exact-clock trimming.
+function coachProjectedRepairTrySmallAddition(draft,audit,repairedDays,trialBudget){
+ if(draft.days.length<3||trialBudget<=0)return {best:null,trials:0};
+ const service=typeof coachBrainExerciseService==='function'?coachBrainExerciseService():null;
+ if(!service)return {best:null,trials:0};
+ const allowed=new Set(['vertical_pull','knee_flexion','calf_raise','lateral_raise',
+  'rear_delt','elbow_extension','elbow_flexion','anti_extension','anti_rotation',
+  'rotation','spinal_flexion','hip_extension','hip_abduction','chest_fly']);
+ let best=null,trials=0;
+ for(const finding of coachProjectedRepairDeficits(audit)){
+  for(let dayIndex=0;dayIndex<draft.days.length;dayIndex++){
+   const day=draft.days[dayIndex],req=day.request;
+   if(repairedDays.has(dayIndex)||!req?.brainEquipment||req.goal==='strength'||
+      req.experienceLevel==='beginner'||day.selectedIds.length>=7||
+      !Number(req.duration)||!day.brainTime||
+      /\b\d{1,2}\s*(?:working\s*)?sets?\b/i.test(String(req.prompt||''))||
+      /\b(?:exactly|only|no more than|max(?:imum)?)\s+\d+\s+exercises?\b/i.test(String(req.prompt||'')))continue;
+   if(finding.type==='missing_weekly_role'&&!coachProjectedWeekRoleFitsDay(finding.role,day))continue;
+   if(finding.type==='missing_major_muscle'&&!(req.targetRegions||[]).includes(finding.region))continue;
+   if(finding.type.startsWith('priority_')&&!(req.priorityRegions||[]).includes(finding.region)
+      &&!(draft.request?.programFocusRegions||[]).includes(finding.region)
+      &&!(draft.intent?.focusRegions||[]).includes(finding.region))continue;
+   const context=coachBrainEquipmentConstraints(req);
+   if(!context)continue;
+   const patternFits=ex=>{
+    if(!allowed.has(ex.pattern))return false;
+    if(finding.type==='missing_weekly_role')
+     return COACH_PROJECTED_WEEK_ROLES[finding.role]?.patterns.includes(ex.pattern);
+    if(!exerciseMuscleMetadata(ex).primary.includes(finding.region))return false;
+    return finding.type==='missing_major_muscle'||coachProjectedWeekFocusSpecific(ex,finding.region);
+   };
+   const targets=new Set(req.targetRegions||[]);
+   const removedFamilies=new Set((day.brainTimeRemoved||[]).map(id=>coachMovementFamily(exById(id))));
+   const existingFamilies=new Set(day.selectedIds.map(id=>coachMovementFamily(exById(id))));
+   const possibilities=LIBRARY.filter(ex=>patternFits(ex)&&!day.selectedIds.includes(ex.id)
+       &&exerciseMuscleMetadata(ex).primary.some(region=>targets.has(region))
+       &&coachExerciseAllowedByConstraints(ex,req)
+       &&!existingFamilies.has(coachMovementFamily(ex))
+       &&!removedFamilies.has(coachMovementFamily(ex))
+       &&service.evaluateAvailability(ex.id,context).status==='available'
+       &&Number.isFinite(coachCandidateBaseScore(ex,req)))
+    .sort((a,b)=>coachCandidateBaseScore(b,req)-coachCandidateBaseScore(a,req)
+       ||a.name.localeCompare(b.name)||String(a.id).localeCompare(String(b.id))).slice(0,5);
+   for(const ex of possibilities){
+    if(trials>=trialBudget)break;
+    trials++;
+    const trial=coachProjectedRepairClone(draft),next=trial.days[dayIndex];
+    next.selectedIds.push(ex.id);
+    next.brainSetCounts[ex.id]={sets:2}; // modest *new* accessory, no alteration to existing sets
+    next.brainTime=coachBrainSessionTimeEstimate(next.selectedIds,next.request,next.defaults,
+      {explicitConfigById:next.brainSetCounts});
+    const timeBefore=Number(day.brainTime.estimateMinutes)||0,timeAfter=Number(next.brainTime.estimateMinutes)||0;
+    const target=Number(req.duration),margin=Math.max(6,Math.ceil(target*.15));
+    if(!timeAfter||timeAfter>target+margin||timeAfter>timeBefore+7)continue;
+    const nextAudit=coachProjectedWeekAudit(trial);
+    if(coachProjectedRepairRegresses(audit,nextAudit))continue;
+    const improvement=coachProjectedRepairDebt(audit)-coachProjectedRepairDebt(nextAudit);
+    const resolved=!nextAudit.findings.some(f=>coachProjectedRepairFindingKey(f)===
+      coachProjectedRepairFindingKey(finding));
+    if(!resolved||improvement<8)continue;
+    const candidate={kind:'add',trial,audit:nextAudit,dayIndex,replacement:ex,
+       removed:null,finding,improvement,score:improvement,
+       exerciseRank:coachCandidateBaseScore(ex,req),timeBefore,timeAfter};
+    if(!best||candidate.score>best.score||
+      (candidate.score===best.score&&candidate.exerciseRank>best.exerciseRank)||
+      (candidate.score===best.score&&candidate.exerciseRank===best.exerciseRank&&
+       [candidate.dayIndex,candidate.replacement.id].join(':').localeCompare(
+       [best.dayIndex,best.replacement.id].join(':'))<0))best=candidate;
+   }
+   if(trials>=trialBudget)break;
+  }
+  if(trials>=trialBudget)break;
+ }
+ return {best,trials};
+}
+
 function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=2,maxTrials=120}={}){
  const before=coachProjectedWeekAudit(draft);
  const response={version:'phase3-shadow-swap-first',applied:false,changes:[],
@@ -571,15 +649,22 @@ function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=
    }
    if(trialCount>=trialLimit)break;
   }
+  // Swap-first: only consider a modest two-set accessory after exhausting swaps.
+  if(!best&&trialCount<trialLimit){
+   const added=coachProjectedRepairTrySmallAddition(working,audit,repairedDays,trialLimit-trialCount);
+   trialCount+=added.trials;
+   if(added.best)best=added.best;
+  }
   if(!best)break;
   working=best.trial;audit=best.audit;
   repairedDays.add(best.dayIndex);
-  changes.push({dayIndex:best.dayIndex,day:working.days[best.dayIndex].label,
-   removedId:best.removed.id,removedName:best.removed.name,
+  changes.push({kind:best.kind||'swap',dayIndex:best.dayIndex,day:working.days[best.dayIndex].label,
+   removedId:best.removed?.id||null,removedName:best.removed?.name||null,
    addedId:best.replacement.id,addedName:best.replacement.name,
    finding:best.finding.type,role:best.finding.role||null,region:best.finding.region||null,
    improvement:best.improvement,estimateBefore:best.timeBefore,estimateAfter:best.timeAfter,
-   reason:'Replace an optional or redundant movement to resolve '+best.finding.title.toLowerCase()});
+   reason:(best.kind==='add'?'Add two modest accessory sets to address ':'Replace an optional or redundant movement to resolve ')+
+      best.finding.title.toLowerCase()});
   if(trialCount>=trialLimit)break;
  }
  return {...response,applied:changes.length>0,changes,after:audit,
