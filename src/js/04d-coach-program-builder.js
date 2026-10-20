@@ -551,9 +551,13 @@ function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=
       if(!resolved||improvement<6)continue;
       const candidate={trial,audit:nextAudit,dayIndex,removed,replacement,
        finding,improvement,score:improvement+(sameFamily?2:0)-(compound?2:0),
+       exerciseRank:coachCandidateBaseScore(replacement,day.request),
        timeBefore:day.brainTime?.estimateMinutes??null,timeAfter:next.brainTime?.estimateMinutes??null};
+      // First prefer actual weekly debt reduction; when tied choose the
+      // existing Coach selector's more appropriate exercise, not lowest ID.
       if(!best||candidate.score>best.score||
-       (candidate.score===best.score&&
+       (candidate.score===best.score&&candidate.exerciseRank>best.exerciseRank)||
+       (candidate.score===best.score&&candidate.exerciseRank===best.exerciseRank&&
         [candidate.dayIndex,candidate.removed.id,candidate.replacement.id].join(':')
           .localeCompare([best.dayIndex,best.removed.id,best.replacement.id].join(':'))<0))best=candidate;
      }
