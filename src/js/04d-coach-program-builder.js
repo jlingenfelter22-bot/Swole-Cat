@@ -170,6 +170,201 @@ function coachProgramCoverageText(draft=coachProgramBuildDraft){
  if(!rows.length)return '';
  return rows.map(([region,sets])=>`${MUSCLE_REGION_LABELS[region]||region} ${Number(sets.toFixed(1))}`).join(' · ');
 }
+// Phase 2: independent, read-only whole-week quality auditor. This diagnoses
+// existing selections, never chooses/replaces exercises or modifies training.
+// Muscle set-equivalents are planning heuristics, not biological measurements.
+const COACH_PROJECTED_WEEK_ROLES={
+ press:{label:'Pressing',patterns:['horizontal_press','incline_press','vertical_press','dip_press'],days:['full body','upper body','push','chest','shoulders'],priority:'core'},
+ horizontal_pull:{label:'Horizontal pulling',patterns:['horizontal_pull'],days:['full body','upper body','pull','back','upper back','lats'],priority:'core'},
+ vertical_pull:{label:'Vertical pulling',patterns:['vertical_pull'],days:['full body','upper body','pull','back','lats'],priority:'variety'},
+ knee:{label:'Knee-dominant legs',patterns:['squat','lunge','knee_extension'],days:['full body','lower body','legs','quads','glutes'],priority:'core'},
+ posterior:{label:'Posterior-chain legs',patterns:['hinge','knee_flexion','hip_extension','back_extension'],days:['full body','lower body','legs','hamstrings','glutes','posterior chain','lower back'],priority:'core'},
+ knee_flexion:{label:'Hamstring knee flexion',patterns:['knee_flexion'],days:['full body','lower body','legs','hamstrings','posterior chain'],priority:'variety'},
+ calves:{label:'Calf-focused work',patterns:['calf_raise'],days:['full body','lower body','legs','calves'],priority:'variety'},
+ core:{label:'Core-focused work',patterns:['spinal_flexion','anti_extension','anti_rotation','rotation','lateral_flexion','hip_flexion_core'],days:['full body','core','abs','obliques'],priority:'variety'}
+};
+function coachProjectedWeekDayKey(day){
+ return String(day?.key||'').trim().toLowerCase().replaceAll('_',' ');
+}
+function coachProjectedWeekRoleFitsDay(role,day){
+ return !!COACH_PROJECTED_WEEK_ROLES[role]?.days.includes(coachProjectedWeekDayKey(day));
+}
+function coachProjectedWeekFeasible(day,match,{maxExamples=3}={}){
+ const request=day?.request;
+ if(!request?.brainEquipment)return {status:'unverified',examples:[]};
+ const service=coachBrainExerciseService(),context=coachBrainEquipmentConstraints(request);
+ if(!service||!context)return {status:'unverified',examples:[]};
+ const examples=[];
+ for(const ex of LIBRARY){
+  if(!match(ex)||!coachExerciseAllowedByConstraints(ex,request))continue;
+  if(service.evaluateAvailability(ex.id,context).status!=='available')continue;
+  examples.push({id:ex.id,name:ex.name,day:day.label||coachProjectedWeekDayKey(day)});
+  if(examples.length>=maxExamples)break;
+ }
+ return {status:examples.length?'feasible':'not_feasible',examples};
+}
+function coachProjectedWeekFocusSpecific(ex,region){
+ const p=ex?.pattern;
+ const matched={
+  glutes:['hip_extension','hip_abduction','hinge'],
+  hamstrings:['knee_flexion','hinge'],
+  quads:['squat','lunge','knee_extension'],
+  side_delts:['lateral_raise'],
+  rear_delts:['rear_delt'],
+  front_delts:['vertical_press','front_raise'],
+  triceps:['elbow_extension'],
+  biceps:['elbow_flexion'],
+  lower_back:['back_extension'],
+  lats:['vertical_pull','shoulder_extension','pullover'],
+  upper_back:['horizontal_pull'],
+  chest:['horizontal_press','incline_press','chest_fly'],
+  calves:['calf_raise'],
+  core:['anti_extension','spinal_flexion','anti_rotation','hip_flexion_core'],
+  obliques:['anti_rotation','rotation','lateral_flexion'],
+  adductors:['hip_adduction']
+ }[region];
+ return !matched||matched.includes(p);
+}
+function coachProjectedWeekAudit(draft=coachProgramBuildDraft){
+ if(!draft?.days?.length)return {version:'phase2-read-only',ready:false,reason:'no_generated_week',findings:[],regions:{},roles:{},days:[]};
+ const regions={},roles={},dayRows=[],findings=[],roleFeasibility={};
+ const globalPriorities=[...new Set([...(draft.request?.programFocusRegions||[]),...(draft.intent?.focusRegions||[])])].filter(Boolean);
+ const addRegion=(muscle,kind,sets,id)=>{
+  const r=regions[muscle]||(regions[muscle]={primary:0,secondary:0,exerciseIds:[]});
+  r[kind]+=sets;
+  if(!r.exerciseIds.includes(id))r.exerciseIds.push(id);
+ };
+ const append=(type,severity,title,detail,extra={})=>{
+  findings.push({type,severity,title,detail,...extra});
+ };
+ for(const [index,day] of draft.days.entries()){
+  const byFamily={},exercises=[],required=new Set(day.request?.requiredExerciseIds||[]);
+  const selected=new Set(day.selectedIds||[]);
+  for(const id of selected){
+   const ex=exById(id);if(!ex){
+    append('unknown_exercise','constraint','Unknown planned exercise','The generated day references an exercise that is no longer in the library.',{dayIndex:index,exerciseId:id});
+    continue;
+   }
+   const p=coachExercisePrescription(ex,day.request,day.defaults);
+   const sets=Number(day.brainSetCounts?.[id]?.sets||p.sets)||0;
+   const family=coachMovementFamily(ex),meta=exerciseMuscleMetadata(ex);
+   const row={id,name:ex.name,pattern:ex.pattern,family,sets,
+    primary:[...meta.primary],secondary:[...meta.secondary],required:required.has(id)};
+   exercises.push(row);
+   (byFamily[family]||(byFamily[family]=[])).push(row);
+   for(const region of meta.primary)addRegion(region,'primary',sets,id);
+   for(const region of meta.secondary)addRegion(region,'secondary',sets*.5,id);
+   for(const [role,spec] of Object.entries(COACH_PROJECTED_WEEK_ROLES)){
+    if(!spec.patterns.includes(ex.pattern))continue;
+    const r=roles[role]||(roles[role]={label:spec.label,count:0,days:[]});
+    r.count++;if(!r.days.includes(index))r.days.push(index);
+   }
+   if(day.request?.brainEquipment){
+    const service=coachBrainExerciseService(),context=coachBrainEquipmentConstraints(day.request);
+    const available=service?.evaluateAvailability(id,context).status;
+    if(!coachExerciseAllowedByConstraints(ex,day.request)||available==='unavailable'){
+     append('equipment_violation','constraint',ex.name+' conflicts with available equipment',
+      'Check the equipment or explicit exclusions for '+(day.label||'day '+(index+1))+'.',
+      {dayIndex:index,exerciseId:id});
+    }else if(available!=='available'){
+     append('equipment_unconfirmed','review',ex.name+' needs equipment confirmation',
+      'Its equipment requirements are not confirmed for '+(day.label||'day '+(index+1))+'.',
+      {dayIndex:index,exerciseId:id});
+    }
+   }
+  }
+  for(const id of required)if(!selected.has(id)){
+   append('required_exercise_absent','constraint','A required exercise is missing',
+    'A specifically requested exercise was not selected for '+(day.label||'day '+(index+1))+'.',
+    {dayIndex:index,exerciseId:id});
+  }
+  for(const [family,items] of Object.entries(byFamily)){
+   if(items.length<2)continue;
+   if(items.every(row=>row.required))continue;
+   // This is a *review opportunity* rather than an automatic duplication ban:
+   // paired lifts of the same family can be an intentional strength strategy.
+   append('same_day_family_overlap','review','Similar '+family.replaceAll('_',' ')+' movements on one day',
+    (day.label||'Day '+(index+1))+' includes '+items.map(x=>x.name).join(' and ')+
+      '. Review whether both serve different purposes before replacing one.',
+    {dayIndex:index,family,exerciseIds:items.map(x=>x.id)});
+  }
+  dayRows.push({index,label:day.label||'Day '+(index+1),key:coachProjectedWeekDayKey(day),
+   exercises,requiredIds:[...required]});
+ }
+ // An explicitly chosen narrow split never inherits an imaginary full-body
+ // obligation. Judge only roles belonging to one or more actual day scopes.
+ for(const [role,spec] of Object.entries(COACH_PROJECTED_WEEK_ROLES)){
+  const eligibleDays=draft.days.filter(day=>coachProjectedWeekRoleFitsDay(role,day));
+  if(!eligibleDays.length)continue;
+  const existing=roles[role]?.count||0;
+  if(existing)continue;
+  let examples=[],unknown=false;
+  for(const day of eligibleDays){
+   const result=coachProjectedWeekFeasible(day,ex=>spec.patterns.includes(ex.pattern));
+   if(result.status==='unverified')unknown=true;
+   examples.push(...result.examples);
+  }
+  const status=examples.length?'feasible':unknown?'unverified':'not_feasible';
+  roleFeasibility[role]={status,examples:examples.slice(0,3),eligibleDayCount:eligibleDays.length};
+  if(status!=='feasible')continue;
+  const isCore=spec.priority==='core';
+  append('missing_weekly_role',isCore?'review':'opportunity',
+   spec.label+' is absent from this planned week',
+   'There is an equipment-compatible '+spec.label.toLowerCase()+' exercise available on a matching day, '+
+   'but none was selected. '+(isCore?'Review whether the week needs this major movement role.':
+   'This is an optional variety/coverage consideration, not mandatory for every plan.'),
+   {role,examples:examples.slice(0,3),priority:isCore?'core':'optional'});
+ }
+ // The explicit target is distinct from broad muscle involvement. Squats
+ // legitimately involve glutes, but may not satisfy a request to emphasize
+ // glutes if there is no deliberate hip-extension/hinge option anywhere.
+ const priorityAudit=[];
+ const priorityRequests=[...new Set([...globalPriorities,...draft.days.flatMap(day=>day.request?.priorityRegions||[])])];
+ for(const region of priorityRequests){
+  const global=globalPriorities.includes(region);
+  const applicable=draft.days.filter(day=>global
+   ?(COACH_TARGET_GROUPS[coachProjectedWeekDayKey(day)]?.regions||[]).includes(region)
+   :(day.request?.priorityRegions||[]).includes(region));
+  const relevant=applicable.length?applicable:global?draft.days:[];
+  const rows=relevant.flatMap(day=>dayRows[draft.days.indexOf(day)]?.exercises||[]);
+  const direct=rows.filter(row=>row.primary.includes(region));
+  const secondary=rows.filter(row=>row.secondary.includes(region));
+  const specific=direct.filter(row=>coachProjectedWeekFocusSpecific(exById(row.id),region));
+  const label=MUSCLE_REGION_LABELS[region]||region.replaceAll('_',' ');
+  const examples=[];
+  let unverified=false;
+  for(const day of relevant){
+   const r=coachProjectedWeekFeasible(day,ex=>
+    exerciseMuscleMetadata(ex).primary.includes(region)&&coachProjectedWeekFocusSpecific(ex,region));
+   if(r.status==='unverified')unverified=true;
+   examples.push(...r.examples);
+  }
+  const availability=examples.length?'feasible':unverified?'unverified':'not_feasible';
+  const status=specific.length?'specific_direct':direct.length?'broad_primary':secondary.length?'secondary_only':'absent';
+  priorityAudit.push({region,label,status,primarySets:direct.reduce((n,x)=>n+x.sets,0),
+   secondaryEquivalent:secondary.reduce((n,x)=>n+x.sets*.5,0),
+   specificSets:specific.reduce((n,x)=>n+x.sets,0),availability,examples:examples.slice(0,3)});
+  if(status==='specific_direct')continue;
+  const suffix=availability==='feasible'?' A compatible focus-specific option exists.':
+   availability==='not_feasible'?' A compatible focus-specific option was not confirmed with this equipment.':
+   ' Available focus-specific equipment cannot be verified.';
+  append('priority_'+status,availability==='feasible'?'review':'constraint',
+   'Requested '+label+' emphasis is '+(status==='absent'?'absent':status==='secondary_only'?'indirect only':'broad rather than specifically targeted'),
+   'The user explicitly prioritized '+label.toLowerCase()+', but this week does not contain focus-specific direct exercise selection.'+suffix,
+   {region,status,availability,examples:examples.slice(0,3)});
+ }
+ const totals=Object.fromEntries(Object.entries(regions).map(([key,r])=>[key,{
+  ...r,totalEstimate:r.primary+r.secondary
+ }]));
+ return {version:'phase2-read-only',ready:true,split:draft.intent?.split||null,
+  days:dayRows,regions:totals,roles,roleFeasibility,priorities:priorityAudit,
+  findings,summary:{
+   constraintFindings:findings.filter(f=>f.severity==='constraint').length,
+   reviewFindings:findings.filter(f=>f.severity==='review').length,
+   optionalFindings:findings.filter(f=>f.severity==='opportunity').length
+  },methodology:'Completed plans are estimates; primary=1 set, secondary=0.5 set-equivalents. No compulsory regional quotas, diagnosis or automatic exercise changes.'};
+}
+
 // Planning-only quality review of the *current* generated preview.
 // No automatic plan changes, physiological "readiness" claims, or storage writes.
 function coachBrainProgramWeekReview(draft=coachProgramBuildDraft){
