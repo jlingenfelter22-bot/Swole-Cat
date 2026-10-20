@@ -118,9 +118,21 @@ try{
   'Squat contributes glutes, but alone does not prove focused glute exercise selection');
  assert(r.findings.some(x=>x.type==='priority_broad_primary'));
 
+ r=inspect('full body',['Back Squat','Romanian Deadlift','Dumbbell Shoulder Press','Barbell Row'],
+  equipment('45 minute full body workout','gym'));
+ assert(r.roles.press?.count>0,'Overhead press fulfills broad pressing role');
+ assert(r.findings.some(x=>x.type==='missing_major_muscle'&&x.region==='chest'),
+  'Shoulder pressing must not falsely certify chest-specific week coverage');
+ assert.equal(r.regionFeasibility.chest?.status,'feasible');
+ assert(!r.findings.some(x=>x.type==='missing_major_muscle'&&x.region==='lats'),
+  'Rows legitimately cover lats in the current muscle metadata');
+
  r=inspect('arms',['Barbell Curl','Triceps Pushdown'],equipment('45 minute arm workout','gym'));
  assert(!r.findings.some(x=>x.type==='missing_weekly_role'&&['knee','posterior','press','horizontal_pull','vertical_pull'].includes(x.role)),
   'Arms-only specialization must not be treated as a defective full-body week');
+ assert(!r.findings.some(x=>x.type==='missing_major_muscle'),
+  'Arms specialization must not receive an unrelated major-muscle absence finding');
+
 
  const floor=equipment('45 minute lower body workout','bodyweight');
  r=inspect('lower body',['Bodyweight Squat','Glute Bridge'],floor);
