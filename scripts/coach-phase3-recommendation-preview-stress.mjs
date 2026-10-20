@@ -97,11 +97,11 @@ try{
  assert.equal(state(),unchanged,'regeneration mutated saved state');
 
  // Preview exact accepted draft, then save only after explicit test action.
- const snapshot=regenerated.days.map(day=>({
+ const snapshot=JSON.parse(JSON.stringify(regenerated.days.map(day=>({
   label:day.label,ids:[...day.selectedIds],
   sets:day.selectedIds.map(id=>day.brainSetCounts?.[id]?.sets||
     w.coachExercisePrescription(w.exById(id),day.request,day.defaults).sets)
- }));
+ }))));
  const program=w.coachPersistGeneratedProgram(regenerated);
  assert(program?.routineIds?.length===3);
  for(let i=0;i<3;i++){
