@@ -83,7 +83,21 @@ function coachFamilyCap(family,request,count){
    if(keys.length>1&&(keys.includes('triceps')||keys.includes('arms'))&&count>=6)return 2;
    return 1;
  }
- if(family==='squat')return (single==='legs'||single==='lower body'||single==='quads')&&count>=7?2:1;
+ if(family==='squat'){
+   // A general multi-day Upper/Lower day already includes one primary
+   // bilateral squat plus a lunge/split-squat slot. Do not automatically
+   // add another squat simply because six or seven exercises fit.
+   // Preserve *deliberate* quad/glute specialization and strength work:
+   // specialized lower days may benefit from distinct squat choices.
+   // Required/user-selected movements are registered ahead of these
+   // automatic family caps and remain authoritative.
+   const lowerProgram=single==='lower body'&&request.brainEquipment&&request.programExerciseUsage;
+   const regionalPriority=new Set([...(request.priorityRegions||[]),
+     ...(request.programFocusRegions||[])]);
+   if(lowerProgram&&request.goal!=='strength'&&
+     !['quads','glutes'].some(region=>regionalPriority.has(region)))return 1;
+   return (single==='legs'||single==='lower body'||single==='quads')&&count>=7?2:1;
+ }
  if(family==='hinge'){
    // Programmed hypertrophy/general lower-body days need one foundational
    // hip hinge, not an automatically stacked RDL + sumo deadlift. Explicit
