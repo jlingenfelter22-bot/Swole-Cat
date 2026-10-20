@@ -111,6 +111,9 @@ jobs:
       - name: Test v0.89 Brain quality remediation acceptance gates
         run: node scripts/coach-brain-quality-remediation-stress.mjs
 
+      - name: Coach preserves movement coverage before trimming generated exercises
+        run: node scripts/coach-time-coverage-priority-stress.mjs
+
       - name: Capture realistic Coach-generated workouts for human review
         run: node scripts/coach-brain-human-review-matrix.mjs
 
