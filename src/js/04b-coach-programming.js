@@ -68,6 +68,10 @@ function coachFamilyCap(family,request,count){
  if(family==='row')return request.brainEquipment&&request.programExerciseUsage?1:(['back','upper back','pull'].includes(single))&&count>=5?2:1;
  if(family==='vertical_pull')return request.brainEquipment&&request.programExerciseUsage?1:(['back','lats','pull'].includes(single))&&count>=6?2:1;
  if(family==='biceps_curl'){
+   // When a Pull day has no feasible vertical pull (e.g. dumbbells only),
+   // a second *different-grip* elbow-flexor movement is a legitimate
+   // accessory option, not a demand to consume the entire time allowance.
+   if(single==='pull'&&request.programPullNoVertical&&request.goal!=='strength'&&count>=5)return 2;
    if(single==='biceps'&&count>=2)return 2;
    if(single==='arms'&&count>=4)return 2;
    if(keys.length>1&&(keys.includes('biceps')||keys.includes('arms'))&&count>=6)return 2;
@@ -80,7 +84,13 @@ function coachFamilyCap(family,request,count){
    return 1;
  }
  if(family==='squat')return (single==='legs'||single==='lower body'||single==='quads')&&count>=7?2:1;
- if(family==='hinge')return (single==='legs'||single==='lower body'||single==='hamstrings'||single==='glutes')&&count>=7?2:1;
+ if(family==='hinge'){
+   // Programmed hypertrophy/general lower-body days need one foundational
+   // hip hinge, not an automatically stacked RDL + sumo deadlift. Explicit
+   // required movements bypass family caps during initial registration.
+   if(request.brainEquipment&&request.programExerciseUsage&&request.goal!=='strength')return 1;
+   return (single==='legs'||single==='lower body'||single==='hamstrings'||single==='glutes')&&count>=7?2:1;
+ }
  return 1;
 }
 function coachGenericExerciseBias(ex,request){
@@ -352,7 +362,16 @@ function coachCoveragePlan(request,count){
    add(core,'full_pull','Upper-body pull',ex=>backRow(ex)||backVertical(ex));
    add(optional,'full_shoulders','Shoulders',shoulderPress);
  }else if(keys.includes('upper body')&&keys.length===1){
-   addChest();addUpperBackPull();addShoulders();
+   addChest();addUpperBackPull();
+   // For a specifically short programmed upper-body day, chest pressing and
+   // back pulling remain foundational. Shoulder isolation/pressing can move
+   // to its longer companion day instead of rejecting a viable 25-minute
+   // appointment because five core slots cannot fit.
+   if(request.brainEquipment&&request.programExerciseUsage&&Number(request.duration)<=30){
+     add(optional,'short_upper_shoulder_press','Shoulder press',shoulderPress);
+     add(optional,'short_upper_side_delt','Side delts',shoulderLateral);
+     add(optional,'short_upper_rear_delt','Rear delts',shoulderRear);
+   }else addShoulders();
    add(optional,'upper_biceps','Direct biceps',bicepsDirect);add(optional,'upper_triceps','Direct triceps',tricepsDirect);
  }else if(keys.includes('lower body')&&keys.length===1){
    addLegs();
@@ -360,8 +379,11 @@ function coachCoveragePlan(request,count){
    add(core,'push_chest','Chest press',chestPress);add(core,'push_shoulders','Shoulder press',shoulderPress);add(core,'push_triceps','Direct triceps',tricepsDirect);
    add(optional,'push_chest_iso','Chest isolation',chestFly);add(optional,'push_side_delts','Side delts',ex=>ex.pattern==='lateral_raise');
  }else if(keys.includes('pull')&&keys.length===1){
-   add(core,'pull_row','Horizontal pull',backRow);add(core,'pull_vertical','Vertical pull',backVertical);add(core,'pull_biceps','Direct biceps',bicepsDirect);
+   add(core,'pull_row','Horizontal pull',backRow);add(core,'pull_vertical','Vertical pull',backVertical);
+   add(core,'pull_biceps','Direct biceps',request.programPullNoVertical?bicepsSupinated:bicepsDirect);
    add(optional,'pull_lats','Lat isolation',latIsolation);add(optional,'pull_rear_delts','Rear delts',ex=>ex.pattern==='rear_delt');
+   if(request.programPullNoVertical&&request.goal!=='strength'&&count>=5)
+     add(optional,'pull_biceps_neutral','Alternative neutral-grip elbow flexion',bicepsNeutral);
  }else{
    keys.forEach(key=>{
      if(key==='chest')addChest();
