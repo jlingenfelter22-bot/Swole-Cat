@@ -151,6 +151,9 @@ jobs:
       - name: Validate Phase 3 optional preview accept, decline and saved-program parity
         run: node scripts/coach-phase3-recommendation-preview-stress.mjs
 
+      - name: Validate Coach phone-width recommendation usability constraints
+        run: node scripts/coach-phase3-mobile-usability-stress.mjs
+
       - name: Retain Phase 3 before-after swap quality evidence
         if: always()
         uses: actions/upload-artifact@v4
