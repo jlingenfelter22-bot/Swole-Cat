@@ -98,6 +98,8 @@ try{
  results.push(inspect(pushing,'indirect_only_triceps_priority',{expectChange:true}));
  assert(results.at(-1).changes.some(c=>w.exerciseMuscleMetadata(w.exById(c.addedId)).primary.includes('triceps')),
   'Direct triceps priority must truly be direct');
+ assert(results.at(-1).changes.every(c=>!/push[ -]?up|dip|bench press/i.test(c.addedName)),
+  'On a pressing-heavy day a triceps priority should use deliberate elbow-extension work');
 
  const required=equip('60 minute full body workout','gym');
  required.requiredExerciseIds=[byName('Goblet Squat').id];
