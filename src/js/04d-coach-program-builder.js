@@ -523,6 +523,8 @@ function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=
      if(coachProjectedRepairProtected(removed,day,removedIndex))continue;
      const sameFamily=families.filter(f=>f===coachMovementFamily(removed)).length>1;
      const compound=COACH_COMPOUND_PATTERNS.has(removed.pattern);
+     // Retain the first foundational movement when a family is repeated.
+     if(sameFamily&&families.indexOf(coachMovementFamily(removed))===removedIndex)continue;
      // Keep unique compound anchors, and require an actual redundant family or
      // accessory slot to fund a useful replacement.
      if(compound&&!sameFamily)continue;
