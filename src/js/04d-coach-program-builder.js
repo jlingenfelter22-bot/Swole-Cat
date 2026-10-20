@@ -395,6 +395,188 @@ function coachProjectedWeekAudit(draft=coachProgramBuildDraft){
   },methodology:'Completed plans are estimates; primary=1 set, secondary=0.5 set-equivalents. No compulsory regional quotas, diagnosis or automatic exercise changes.'};
 }
 
+
+// Phase 3 shadow evaluator: propose bounded, evidence-scored, swap-first repairs.
+// Deliberately NOT wired into live generation until before/after human review.
+// Every candidate is audited in a cloned provisional week; saved user data and
+// the caller's draft are immutable. A failed search is a valid no-op.
+function coachProjectedRepairFindingKey(f){
+ return [f.type,f.role||'',f.region||'',f.dayIndex??'',f.family||''].join(':');
+}
+function coachProjectedRepairDebt(audit){
+ const weights={missing_major_muscle:18,missing_weekly_role:0,
+  priority_absent:26,priority_secondary_only:23,priority_broad_primary:12,
+  same_day_family_overlap:5};
+ return (audit?.findings||[]).reduce((score,f)=>{
+  if(f.type==='missing_weekly_role')return score+(f.priority==='core'?17:8);
+  if(f.type.startsWith('priority_')&&f.availability!=='feasible')return score;
+  return score+(weights[f.type]||0);
+ },0);
+}
+function coachProjectedRepairDeficits(audit){
+ return (audit?.findings||[]).filter(f=>
+  (f.type==='missing_weekly_role'&&f.examples?.length)||
+  (f.type==='missing_major_muscle'&&f.examples?.length)||
+  (['priority_absent','priority_secondary_only','priority_broad_primary'].includes(f.type)
+    &&f.availability==='feasible'&&f.examples?.length)
+ ).sort((a,b)=>{
+  const rank=f=>f.type==='priority_absent'?0:f.type==='priority_secondary_only'?1:
+   f.type==='missing_major_muscle'?2:f.type==='missing_weekly_role'&&f.priority==='core'?3:
+   f.type==='priority_broad_primary'?4:5;
+  return rank(a)-rank(b)||coachProjectedRepairFindingKey(a).localeCompare(coachProjectedRepairFindingKey(b));
+ });
+}
+function coachProjectedRepairProtected(ex,day,index){
+ if(!ex)return true;
+ if((day.request?.requiredExerciseIds||[]).includes(ex.id))return true;
+ // User preference and successfully advancing history trump a marginal score.
+ if(typeof preferenceRank==='function'&&preferenceRank(ex.id)>0)return true;
+ if(typeof coachExerciseHistoryProfile==='function'&&coachExerciseHistoryProfile(ex.id)?.trend==='up')return true;
+ if(day.request?.goal==='strength'&&index===0)return true;
+ return false;
+}
+function coachProjectedRepairClone(draft){
+ return {...draft,days:draft.days.map(day=>({...day,
+  selectedIds:[...(day.selectedIds||[])],
+  brainSetCounts:Object.fromEntries(Object.entries(day.brainSetCounts||{}).map(([id,config])=>[id,{...config}]))
+ }))};
+}
+function coachProjectedRepairPreservesDay(original,trial){
+ const old=original.selectedIds.map(exById).filter(Boolean);
+ const next=trial.selectedIds.map(exById).filter(Boolean);
+ if(old.length!==next.length||new Set(trial.selectedIds).size!==next.length)return false;
+ if(!(original.request?.requiredExerciseIds||[]).every(id=>trial.selectedIds.includes(id)))return false;
+ const core=coachCoveragePlan(original.request,old.length).core;
+ if(core.some(slot=>old.some(slot.match)&&!next.some(slot.match)))return false;
+ // A new exercise must contribute to this specific day, not an unrelated body
+ // part merely because it improves a coarse week-wide numeric score.
+ const targets=new Set(original.request?.targetRegions||[]);
+ const replacement=next.find(ex=>!original.selectedIds.includes(ex.id));
+ if(!replacement||!exerciseMuscleMetadata(replacement).primary.some(r=>targets.has(r)))return false;
+ if(!original.brainTime)return true;
+ const oldEstimate=Number(original.brainTime.estimateMinutes)||0;
+ const newEstimate=Number(trial.brainTime?.estimateMinutes)||0;
+ const planned=Number(original.request?.duration)||0;
+ // Approximate planning range, not a strict one-minute clock. Do not
+ // materially inflate an already full session to fix an optional gap.
+ return !!newEstimate&&newEstimate<=Math.max(oldEstimate+4,planned+Math.max(8,Math.ceil(planned*.2)));
+}
+function coachProjectedRepairRegresses(before,after){
+ if((after?.summary?.constraintFindings||0)>(before?.summary?.constraintFindings||0))return true;
+ const original=new Set((before.findings||[]).map(coachProjectedRepairFindingKey));
+ if((after.findings||[]).some(f=>
+  ((f.type==='missing_weekly_role'&&f.priority==='core')||
+   f.type==='missing_major_muscle'||f.type==='equipment_violation'||
+   f.type==='required_exercise_absent')&&!original.has(coachProjectedRepairFindingKey(f))))return true;
+ const priorityRank={specific_direct:3,broad_primary:2,secondary_only:1,absent:0};
+ for(const prior of before.priorities||[]){
+  const next=(after.priorities||[]).find(p=>p.region===prior.region);
+  if(!next||(priorityRank[next.status]??0)<(priorityRank[prior.status]??0))return true;
+ }
+ return false;
+}
+function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=2,maxTrials=120}={}){
+ const before=coachProjectedWeekAudit(draft);
+ const response={version:'phase3-shadow-swap-first',applied:false,changes:[],
+  before,after:before,draft,reason:'no_meaningful_safe_swap'};
+ if(!before.ready||!draft?.days?.length)return {...response,reason:'no_generated_week'};
+ // Never autonomously "repair" hard conflicts or unknown equipment.
+ if(before.findings.some(f=>f.severity==='constraint'&&
+   ['equipment_violation','required_exercise_absent','unknown_exercise'].includes(f.type)))
+  return {...response,reason:'hard_constraint_requires_user'};
+ const limit=Math.max(0,Math.min(2,Math.floor(Number(maxSwaps)||0)));
+ const trialLimit=Math.max(0,Math.min(150,Math.floor(Number(maxTrials)||0)));
+ if(!limit||!trialLimit)return {...response,reason:'disabled_by_budget'};
+ let working=coachProjectedRepairClone(draft),audit=before,trialCount=0;
+ const repairedDays=new Set(),changes=[];
+ const service=typeof coachBrainExerciseService==='function'?coachBrainExerciseService():null;
+ for(let pass=0;pass<limit;pass++){
+  let best=null;
+  for(const finding of coachProjectedRepairDeficits(audit)){
+   for(let dayIndex=0;dayIndex<working.days.length;dayIndex++){
+    if(repairedDays.has(dayIndex))continue;
+    const day=working.days[dayIndex];
+    if(finding.type==='missing_weekly_role'&&!coachProjectedWeekRoleFitsDay(finding.role,day))continue;
+    if(finding.type==='missing_major_muscle'&&!(day.request?.targetRegions||[]).includes(finding.region))continue;
+    if(finding.type.startsWith('priority_')&&!(day.request?.priorityRegions||[]).includes(finding.region)
+       &&!(working.request?.programFocusRegions||[]).includes(finding.region)
+       &&!(working.intent?.focusRegions||[]).includes(finding.region))continue;
+    if(!day.request?.brainEquipment||!service)continue;
+    const context=coachBrainEquipmentConstraints(day.request);
+    if(!context)continue;
+    const matches=ex=>{
+     if(finding.type==='missing_weekly_role')
+      return COACH_PROJECTED_WEEK_ROLES[finding.role]?.patterns.includes(ex.pattern);
+     const primary=exerciseMuscleMetadata(ex).primary.includes(finding.region);
+     return primary&&(finding.type==='missing_major_muscle'||
+      coachProjectedWeekFocusSpecific(ex,finding.region));
+    };
+    const replacements=LIBRARY.filter(ex=>matches(ex)&&!day.selectedIds.includes(ex.id)
+     &&coachExerciseAllowedByConstraints(ex,day.request)
+     &&service.evaluateAvailability(ex.id,context).status==='available'
+     &&Number.isFinite(coachCandidateBaseScore(ex,day.request)))
+     .sort((a,b)=>coachCandidateBaseScore(b,day.request)-coachCandidateBaseScore(a,day.request)
+        ||a.name.localeCompare(b.name)||String(a.id).localeCompare(String(b.id))).slice(0,6);
+    const families=day.selectedIds.map(id=>coachMovementFamily(exById(id)));
+    for(let removedIndex=day.selectedIds.length-1;removedIndex>=0;removedIndex--){
+     const removed=exById(day.selectedIds[removedIndex]);
+     if(coachProjectedRepairProtected(removed,day,removedIndex))continue;
+     const sameFamily=families.filter(f=>f===coachMovementFamily(removed)).length>1;
+     const compound=COACH_COMPOUND_PATTERNS.has(removed.pattern);
+     // Keep unique compound anchors, and require an actual redundant family or
+     // accessory slot to fund a useful replacement.
+     if(compound&&!sameFamily)continue;
+     for(const replacement of replacements){
+      if(trialCount>=trialLimit)break;
+      if(coachMovementFamily(replacement)===coachMovementFamily(removed))continue;
+      if(day.selectedIds.some(id=>id!==removed.id&&
+         coachMovementFamily(exById(id))===coachMovementFamily(replacement)))continue;
+      trialCount++;
+      const trial=coachProjectedRepairClone(working);
+      const next=trial.days[dayIndex];
+      next.selectedIds[removedIndex]=replacement.id;
+      delete next.brainSetCounts[removed.id];
+      if(day.brainTime)next.brainTime=coachBrainSessionTimeEstimate(
+       next.selectedIds,next.request,next.defaults,{explicitConfigById:next.brainSetCounts});
+      if(!coachProjectedRepairPreservesDay(day,next))continue;
+      const nextAudit=coachProjectedWeekAudit(trial);
+      if(coachProjectedRepairRegresses(audit,nextAudit))continue;
+      const improvement=coachProjectedRepairDebt(audit)-coachProjectedRepairDebt(nextAudit);
+      const resolved=!nextAudit.findings.some(f=>coachProjectedRepairFindingKey(f)===
+       coachProjectedRepairFindingKey(finding));
+      // No speculative churn: actually resolve the finding we targeted and
+      // improve the whole-week score by a meaningful amount.
+      if(!resolved||improvement<6)continue;
+      const candidate={trial,audit:nextAudit,dayIndex,removed,replacement,
+       finding,improvement,score:improvement+(sameFamily?2:0)-(compound?2:0),
+       timeBefore:day.brainTime?.estimateMinutes??null,timeAfter:next.brainTime?.estimateMinutes??null};
+      if(!best||candidate.score>best.score||
+       (candidate.score===best.score&&
+        [candidate.dayIndex,candidate.removed.id,candidate.replacement.id].join(':')
+          .localeCompare([best.dayIndex,best.removed.id,best.replacement.id].join(':'))<0))best=candidate;
+     }
+     if(trialCount>=trialLimit)break;
+    }
+    if(trialCount>=trialLimit)break;
+   }
+   if(trialCount>=trialLimit)break;
+  }
+  if(!best)break;
+  working=best.trial;audit=best.audit;
+  repairedDays.add(best.dayIndex);
+  changes.push({dayIndex:best.dayIndex,day:working.days[best.dayIndex].label,
+   removedId:best.removed.id,removedName:best.removed.name,
+   addedId:best.replacement.id,addedName:best.replacement.name,
+   finding:best.finding.type,role:best.finding.role||null,region:best.finding.region||null,
+   improvement:best.improvement,estimateBefore:best.timeBefore,estimateAfter:best.timeAfter,
+   reason:'Replace an optional or redundant movement to resolve '+best.finding.title.toLowerCase()});
+  if(trialCount>=trialLimit)break;
+ }
+ return {...response,applied:changes.length>0,changes,after:audit,
+  draft:changes.length?working:draft,reason:changes.length?'proposed_for_human_review':
+   trialCount>=trialLimit?'trial_budget_exhausted':'no_meaningful_safe_swap',trials:trialCount};
+}
+
 // Planning-only quality review of the *current* generated preview.
 // No automatic plan changes, physiological "readiness" claims, or storage writes.
 function coachBrainProgramWeekReview(draft=coachProgramBuildDraft){
