@@ -62,6 +62,11 @@ try{
  const authored=w.coachBrainTrimToTime(selected,explicit,defaults);
  assert.equal(Object.keys(authored.setCounts).length,0,'user-specified sets never silently shortened');
  assert(authored.removed.length||!authored.feasible,'overbudget explicit sets remain transparent rather than auto-cut');
+ const shorthand={...shortened,prompt:'Leg day: barbell squat 5x5 and hamstring work'};
+ const namedStructure=w.coachBrainTrimToTime(selected,shorthand,defaults);
+ assert.equal(Object.keys(namedStructure.setCounts).length,0,
+   '5x5 shorthand is a user-authored set structure: never auto-shorten it');
+
 
  // Intentionally infeasible plans must not be fabricated as meeting a clock deadline.
  const impossible={...request,duration:1,requiredExerciseIds:selected.map(ex=>ex.id)};
