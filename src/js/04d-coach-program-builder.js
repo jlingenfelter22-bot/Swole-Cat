@@ -114,17 +114,29 @@ function coachGenerateProgram(request,intent,previous=null){
    const initial=coachSelectExercises(dayReq,defaults.exerciseCount);
    const durationPlan=coachBrainTrimToTime(initial,dayReq,defaults);
    const selected=durationPlan.exercises;
+   // A person accepting a two-set accessory may later refine the draft.
+   // Retain that exact prescription if the regenerated day still contains it.
+   const acceptedCounts=Object.entries(override.acceptedSetCounts||{}).filter(
+     ([id,n])=>selected.some(ex=>ex.id===id)&&Number.isInteger(n)&&n>0);
+   const selectedSetCounts=Object.fromEntries(Object.entries(durationPlan.setCounts||{}).map(
+     ([id,c])=>[id,{...c}]));
+   for(const [id,sets] of acceptedCounts)selectedSetCounts[id]={
+      ...selectedSetCounts[id],sets
+   };
+   const selectedTime=acceptedCounts.length
+     ?coachBrainSessionTimeEstimate(selected,dayReq,defaults,{explicitConfigById:selectedSetCounts})
+     :durationPlan.time;
    selected.filter(ex=>ex.pattern==='hinge').forEach(ex=>hingeHistory.push(ex.id));
    selected.forEach(ex=>{
      usage[ex.id]=(usage[ex.id]||0)+1;
      const prescription=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,dayReq,defaults):defaults;
-     const sets=Number(durationPlan.setCounts?.[ex.id]?.sets||prescription.sets||defaults.sets)||0,meta=exerciseMuscleMetadata(ex);
+     const sets=Number(selectedSetCounts?.[ex.id]?.sets||prescription.sets||defaults.sets)||0,meta=exerciseMuscleMetadata(ex);
      meta.primary.forEach(region=>muscleUsage[region]=(muscleUsage[region]||0)+sets);
      meta.secondary.forEach(region=>muscleUsage[region]=(muscleUsage[region]||0)+sets*.5);
    });
    return {
      key,label:coachProgramDayDisplayLabel(key,index,slots),dayPlan:{...plan},request:dayReq,
-     defaults:{...defaults},selectedIds:selected.map(ex=>ex.id),brainTime:durationPlan.time,brainTimeRemoved:durationPlan.removed,brainSetCounts:durationPlan.setCounts,brainFeasible:durationPlan.feasible
+     defaults:{...defaults},selectedIds:selected.map(ex=>ex.id),brainTime:selectedTime,brainTimeRemoved:durationPlan.removed,brainSetCounts:selectedSetCounts,brainFeasible:durationPlan.feasible
    };
  });
  if(days.some(day=>!day.selectedIds.length||day.brainFeasible===false))return null;
@@ -145,8 +157,11 @@ function coachGenerateProgram(request,intent,previous=null){
   intake:{...(previous?.intake||{})},
    slots,days,dayOverrides:slots.map((_,i)=>({
      excludedExerciseIds:[...(dayOverrides[i]?.excludedExerciseIds||[])],
-     requiredExerciseIds:[...(dayOverrides[i]?.requiredExerciseIds||[])]
+     requiredExerciseIds:[...(dayOverrides[i]?.requiredExerciseIds||[])],
+     recommendationsDeclined:!!dayOverrides[i]?.recommendationsDeclined,
+     acceptedSetCounts:{...(dayOverrides[i]?.acceptedSetCounts||{})}
    })),
+   coachRecommendationsVisible:!!previous?.coachRecommendationsVisible,
    interactiveBrainFlow:!!previous?.interactiveBrainFlow,
    createdAt:previous?.createdAt||new Date().toISOString(),
    lastRefinement:previous?.lastRefinement||''
@@ -514,6 +529,7 @@ function coachProjectedRepairTrySmallAddition(draft,audit,repairedDays,trialBudg
   for(let dayIndex=0;dayIndex<draft.days.length;dayIndex++){
    const day=draft.days[dayIndex],req=day.request;
    if(repairedDays.has(dayIndex)||!req?.brainEquipment||req.goal==='strength'||
+      draft.dayOverrides?.[dayIndex]?.recommendationsDeclined||
       draft.dayOverrides?.[dayIndex]?.excludedExerciseIds?.length||
       draft.dayOverrides?.[dayIndex]?.requiredExerciseIds?.length||
       req.experienceLevel==='beginner'||day.selectedIds.length>=7||
@@ -602,9 +618,10 @@ function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=
   for(const finding of coachProjectedRepairDeficits(audit)){
    for(let dayIndex=0;dayIndex<working.days.length;dayIndex++){
     if(repairedDays.has(dayIndex))continue;
-    // Do not silently revisit a day the person has already changed manually.
+    // Do not re-suggest an edit the person declined, accepted or made manually.
     const override=working.dayOverrides?.[dayIndex];
-    if(override?.excludedExerciseIds?.length||override?.requiredExerciseIds?.length)continue;
+    if(override?.recommendationsDeclined||override?.excludedExerciseIds?.length||
+       override?.requiredExerciseIds?.length)continue;
     const day=working.days[dayIndex];
     if(day.request?.allowCoachExerciseSwaps===false)continue;
     if(finding.type==='missing_weekly_role'&&!coachProjectedWeekRoleFitsDay(finding.role,day))continue;
@@ -911,7 +928,8 @@ function coachSaveProgramDaySettings(index){
 }
 function coachProgramRegenerateWithOverrides(){
  const draft=coachProgramBuildDraft;if(!draft)return false;
- const previous={...draft,lastRefinement:draft.lastRefinement,dayOverrides:draft.dayOverrides};
+ const previous={...draft,lastRefinement:draft.lastRefinement,dayOverrides:draft.dayOverrides,
+  coachRecommendationsVisible:!!draft.coachRecommendationsVisible};
  return !!coachGenerateProgram(draft.request,draft.intent,previous);
 }
 function coachProgramRemoveExercise(dayIndex,exerciseIndex){
@@ -920,6 +938,8 @@ function coachProgramRemoveExercise(dayIndex,exerciseIndex){
  const override=draft.dayOverrides[dayIndex]||(draft.dayOverrides[dayIndex]={excludedExerciseIds:[],requiredExerciseIds:[]});
  override.excludedExerciseIds=[...new Set([...(override.excludedExerciseIds||[]),id])];
  override.requiredExerciseIds=(override.requiredExerciseIds||[]).filter(x=>x!==id);
+ if(override.acceptedSetCounts)delete override.acceptedSetCounts[id];
+ override.recommendationsDeclined=true;
  draft.lastRefinement=`Removed ${exById(id)?.name||'exercise'} from ${day.label}`;
  coachProgramRegenerateWithOverrides();renderCoachProgramPreview();
 }
@@ -928,6 +948,8 @@ function coachProgramSwapExercise(dayIndex,exerciseIndex){
  const override=draft.dayOverrides[dayIndex]||(draft.dayOverrides[dayIndex]={excludedExerciseIds:[],requiredExerciseIds:[]});
  override.excludedExerciseIds=[...new Set([...(override.excludedExerciseIds||[]),id])];
  override.requiredExerciseIds=(override.requiredExerciseIds||[]).filter(x=>x!==id);
+ if(override.acceptedSetCounts)delete override.acceptedSetCounts[id];
+ override.recommendationsDeclined=true;
  draft.lastRefinement=`Swapped ${exById(id)?.name||'exercise'} in ${day.label}`;
  coachProgramRegenerateWithOverrides();renderCoachProgramPreview();
 }
