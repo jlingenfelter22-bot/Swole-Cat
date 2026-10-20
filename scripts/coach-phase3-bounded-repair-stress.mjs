@@ -50,8 +50,19 @@ try{
     label+' introduced a new critical gap');
    for(const change of result.changes){
     const beforeDay=draft.days[change.dayIndex],afterDay=result.draft.days[change.dayIndex];
-    assert.equal(afterDay.selectedIds.length,beforeDay.selectedIds.length,label+' changed volume of exercises');
-    assert(!afterDay.selectedIds.includes(change.removedId)&&afterDay.selectedIds.includes(change.addedId));
+    if(change.kind==='add'){
+     assert.equal(afterDay.selectedIds.length,beforeDay.selectedIds.length+1,label+' addition size');
+     assert.deepEqual(afterDay.selectedIds.slice(0,-1),beforeDay.selectedIds,label+' shifted existing lifts');
+     assert.equal(afterDay.brainSetCounts[change.addedId]?.sets,2,label+' added more than two sets');
+     assert.equal(change.removedId,null,label+' removed an existing lift during addition');
+     assert(afterDay.brainTime.estimateMinutes<=beforeDay.request.duration+
+      Math.max(6,Math.ceil(beforeDay.request.duration*.15)),label+' exceeded loose duration tolerance');
+    }else{
+     assert.equal(change.kind,'swap');
+     assert.equal(afterDay.selectedIds.length,beforeDay.selectedIds.length,label+' changed exercise count');
+     assert(!afterDay.selectedIds.includes(change.removedId),label+' failed to remove swapped lift');
+    }
+    assert(afterDay.selectedIds.includes(change.addedId),label+' missing replacement');
     assert(w.coachExerciseAllowedByConstraints(w.exById(change.addedId),afterDay.request));
     assert.equal(w.coachBrainExerciseService().evaluateAvailability(change.addedId,
      w.coachBrainEquipmentConstraints(afterDay.request)).status,'available');
@@ -156,6 +167,9 @@ try{
     assert.deepEqual(suggested.draft.days[i].request.requiredExerciseIds,
      draft.days[i].request.requiredExerciseIds);
    }
+   if(scenario.id==='3day_full_gym')assert(report.changes.some(c=>c.kind==='add'&&
+    ['vertical_pull','knee_flexion'].includes(w.exById(c.addedId)?.pattern)),
+    'A real three-day full-body gym week should safely complete a compatible missing movement role');
    assert(!w.coachProjectedRepairRegresses(original,suggested.after));
   }
   results.push(report);
@@ -169,7 +183,8 @@ try{
  fs.writeFileSync('/tmp/swole-cat-coach-phase3/repair-before-after.json',
   JSON.stringify(report,null,2)+'\n');
  console.log('COACH_PHASE3_MATRIX '+JSON.stringify(results.map(x=>({
-  id:x.label,proposed:x.applied,changes:x.changes?.map(c=>c.removedName+' -> '+c.addedName)||[],
+  id:x.label,proposed:x.applied,changes:x.changes?.map(c=>
+   c.kind==='add'?'2 sets '+c.addedName:(c.removedName+' -> '+c.addedName))||[],
   debtBefore:x.debtBefore,debtAfter:x.debtAfter,reason:x.reason}))));
  console.log('COACH_PHASE3_PASS '+JSON.stringify({scenarios:12,generated,
   immutable:true,bounded:true,repairProposals:report.changes}));
