@@ -157,6 +157,12 @@ try{
   assert.deepEqual(JSON.parse(JSON.stringify(draft.days.map(d=>d.selectedIds))),
    scenario.days.map(d=>d.exercises.map(ex=>ex.id)),'Phase 1 original output changed: '+scenario.id);
   const report=inspect(draft,scenario.id);
+  if(scenario.id==='4day_glute_priority_dumbbells'){
+   const gluteSwaps=report.changes.filter(c=>c.kind==='swap'&&
+    c.removedName==='Bodyweight Squat'&&w.exById(c.addedId)?.pattern==='hip_abduction');
+   assert(gluteSwaps.length>=1,'Glute-priority dumbbell plan should replace a redundant squat with complementary abduction work when feasible');
+   assert(report.debtAfter<report.debtBefore,'Actual glute-priority plan quality did not improve');
+  }
   if(report.applied){
    const original=w.coachProjectedWeekAudit(draft);
    const suggested=w.coachProposeProjectedWeekRepair(draft);
