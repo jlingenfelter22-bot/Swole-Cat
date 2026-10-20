@@ -1,5 +1,18 @@
 # Swole Cat - Next Chat Handoff
 
+## PHASE 2 BUILT — READ-ONLY WHOLE-WEEK QUALITY AUDIT (October 20, 2026)
+
+- Owner approved starting **Phase 2** after Phase 1's real 310-exercise / 12-scenario, 44-day locked baseline. New **draft [PR #87](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/87)** branch `quality/coach-phase2-projected-week-audit-v0934` is based on **unmerged Phase 1 PR #86** (stacked). PR targets `main` so the existing CI runs, but must NOT be merged/published without owner-approved version-safe Testing process.
+- Implemented `coachProjectedWeekAudit(draft)` in existing `src/js/04d-coach-program-builder.js`, as a **pure read-only diagnostic function not invoked in existing generator or UI**. It checks in-scope *split-specific* weekly roles (press, horizontal pull, knee, posterior; complementary vertical pull, knee flexion, calves, core), reports only **confirmed equipment-feasible** missing roles on days where they belong, and doesn't call excluded equipment/movements feasible. Distinguishes planned muscles as primary + already half-weighted secondary sets (heuristic), user-requested priorities as `specific_direct`, `broad_primary`, `secondary_only`, `absent`, same-day family redundancies, explicit required exercise omissions, and confirmed equipment violations.
+- Non-goals: no workout selection changes, new UI/copy, history writes, data migrations, Supabase/cloud, APK/Testing/Beta releases. Time remains an approximate range, and no universal per-muscle sets quota is imposed. Deliberate specialist splits must not be accused of missing unrelated body areas.
+- Added `scripts/coach-phase2-weekly-audit-stress.mjs` testing **identical Phase 1 golden output** across 11 supported programs/44 days (one impossible floor-only full body), repeat audit determinism, snapshot immutability, real gym full-body vertical pull/knee curl/calf opportunities, two same-family squat overlaps in glute-priority dumbbell legs, preserved direct shoulder and PPL coverage, honest limited equipment, custom arms split, explicit exclusion/required exercise, bench secondary-only triceps and squat's broad glute role. `.github/workflows/validate.yml` runs new test and archives diagnostic artifact.
+- Canonical doc `docs/coach-quality/phase2-read-only-weekly-audit.md` records full intent, classification meanings, acceptance and Phase 3 plan. Phase 1 golden remains frozen in `docs/coach-quality/phase1-baseline-v0934.json`.
+- The first Phase 2 CI failed because **test output called the field `feasibility` but asserted `roleFeasibility`**. Corrected test-only name. Need latest exact-head CI green, plus synthetic performance validation before delivery. No production changes to Coach selection.
+- Next after Phase 2 validation: meaningful human review of flagged weeks, then bounded, deterministic **swap-first** repair (Phase 3), preserving anchors and user/equipment hard constraints. Keep signed Testing **v0.93.4 / code 139** and Beta/cloud data safe. Existing [PR #84](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/84) is separate multiweek history gap work; [PR #83](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/83) strict time compression remains incompatible with the user's approximate-time philosophy unless revised.
+
+---
+
+
 ## PHASE 1 BUILT: Coach 310-exercise catalog audit + frozen 44-workout-day baseline (October 20, 2026)
 
 - Owner explicitly approved entering **Phase 1** of research-informed Whole-Week Quality Engine. Active **draft [PR #86](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/86)** on `quality/coach-phase1-catalog-baseline-v0934`. No production selection rule, UI, time trimming, Beta, Supabase, personal workout data, version or APK changed.
