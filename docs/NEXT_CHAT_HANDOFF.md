@@ -1,5 +1,17 @@
 # Swole Cat - Next Chat Handoff
 
+## DEVICE ACCEPTANCE: Testing v0.93.4 "running like butter" (October 20, 2026)
+
+- Owner installed Swole Cat **Testing v0.93.4 / Android build 139** and reported **"everything is running like butter"**. Treat as strong *subjective real-device performance acceptance*: no issue raised with current installed build, including the Exercise Library optimization. Prior v0.93.3 feedback similarly reported smoother operation and nothing strange.
+- **Do not claim** instrumented frame rate, memory, battery, startup latency, full exhaustive functionality testing, or verified behavior for every edge case; the user's statement is general.
+- Current signed Testing baseline **v0.93.4** is accepted for perceived smoothness. There is **no need for an immediate performance hotfix or UI redesign** based on the current feedback.
+- Prior [PR #82](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/82) successfully shipped nonvisual 32-item bounded Exercise Library DOM rendering after 97/97 regression checks and signed package/update manifest verification. Legacy PR #80 superseded/closed.
+- **Next development choice:** return to highest-value functionality and Coach plan-quality work (accurate time budgets, full-week muscle distribution/priority, ability/equipment handling, realistic multi-day program generation and human-review quality checks) while preserving the accepted snappy UI; separately monitor Progress/analytics costs only where measured. Future trainer-client concept remains parked.
+- Keep draft [PR #81](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/81) **unmerged**: experimental release/R8 APK reduction is package-size evidence, not runtime gain, and native secure-storage/updater plugin compatibility is unproven. No new Testing APK/build variant change without approval, no Beta changes, no data/account/Supabase operations, and retain current visual UI freeze.
+
+---
+
+
 ## LATEST: TESTING v0.93.4 SIGNED/PUBLISHED — Exercise Library performance (October 19, 2026)
 
 - Owner affirmed continuing to next Testing checkpoint following favorable real-device v0.93.3 feedback. Released **Swole Cat Testing v0.93.4 (Android build 139)** containing validated, nonvisual Exercise Library progressive DOM rendering: first 32 exercise cards immediately, next 32 per scroll batch. No CSS or card-layout redesign; preserve search, filters, favorites, hidden/custom movements and full results.
