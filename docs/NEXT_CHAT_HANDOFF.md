@@ -1,5 +1,16 @@
 # Swole Cat - Next Chat Handoff
 
+## RESUMED COACH INTELLIGENCE QUALITY — October 20, 2026
+
+- After positive Android Testing v0.93.4 acceptance ("running like butter"), owner explicitly approved returning to **Coach Swole Cat intelligence and workout quality**, while retaining performance wins and the frozen visual interface.
+- **Active draft [PR #83](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/83)** on `quality/coach-time-coverage-v0934`: `coachBrainTrimToTime()` now shortens only automatically prescribed work sets (one set at a time, minimum 2) **before** deleting optional exercises under a time budget. This protects movement variety and key weekly muscle coverage when a set cut suffices. Never auto-reduce required exercises, named explicit set instructions including shorthand `5x5`, or top/backoff prescriptions. Preserve old core-coverage-aware deletion if necessary and report honest infeasibility when mandatory work can't fit.
+- New synthetic `scripts/coach-time-coverage-priority-stress.mjs` validates 4-movement knee/posterior gym legs at an intermediate time limit, explicit and required work, infeasible workloads, feasible full-body / upper-lower / PPL programs, exact preview-vs-save sets and no workout data writes. Hooked into full CI. **Don't merge until final-head full regression and synthetic benchmark both pass.**
+- Detailed phased priorities and acceptance criteria in **`docs/COACH_QUALITY_RESUMPTION_CHECKPOINT.md`**. Next priorities: whole-week distribution/explicit muscle focus, day-specific time and equipment instructions, human review of actual generated sessions, then additional Coach contextual instruction quality. Changes should be evidence-backed and measured with representative synthetic human-review scenarios, never a superficial random exercise swap.
+- No APK published, no v0.93.4 installed-app change, no cloud/Supabase or Beta touch. Separate R8 [PR #81](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/81) still draft. The professional trainer/client expansion remains parked.
+
+---
+
+
 ## DEVICE ACCEPTANCE: Testing v0.93.4 "running like butter" (October 20, 2026)
 
 - Owner installed Swole Cat **Testing v0.93.4 / Android build 139** and reported **"everything is running like butter"**. Treat as strong *subjective real-device performance acceptance*: no issue raised with current installed build, including the Exercise Library optimization. Prior v0.93.3 feedback similarly reported smoother operation and nothing strange.
