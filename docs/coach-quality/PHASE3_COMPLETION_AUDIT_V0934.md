@@ -19,7 +19,7 @@ All 12 frozen Phase 1 scenarios execute without any change to actual generated I
 
 | Frozen scenario | Shadow proposal | Heuristic findings debt |
 | --- | --- | --- |
-| 3-day full-body, gym, about 45 min/day | Add 2 sets of lat pulldown on one compatible day and 2 sets of seated leg curl on another. Core compound choices remain. | 32 -> 16 |
+| 3-day full-body, gym, about 45 min/day | **Human-approved balance policy:** suggest swapping Full Body B's **Overhead Press -> Lat Pulldown** (41 -> 41 estimated minutes), preserving A/C shoulder presses. Optionally add **2 sets Seated Leg Curl** to Full Body A (44 -> 48 estimated minutes) to address a separate missing hamstring role. No default program or saved workout is altered. | 32 -> 16 |
 | 4-day upper/lower, gym | Add 2 sets of lat pulldown on an upper day with equipment and approximate duration tolerance. | 8 -> 0 |
 | 4-day glute-priority upper/lower, dumbbells | Replace the later **Bodyweight Squat** on each lower day with **Side-Lying Hip Abduction**. Retain goblet squat and remaining lower-body work. | 10 -> 0 |
 | 3-day full-body, dumbbells | Add 2 sets of crunches to one day, retaining every existing selected movement. | 16 -> 8 |
@@ -27,6 +27,16 @@ All 12 frozen Phase 1 scenarios execute without any change to actual generated I
 Other feasible frozen programs intentionally remain unchanged. In particular, the two-day full-body program still has some optional whole-week gaps, but no safe bounded change met the current criteria. The bodyweight-only three-day case remains infeasible, rather than inventing equipment access.
 
 These debt values are **internal prioritization heuristics**, not validated scientific fitness scores. A lower value means fewer algorithmic findings, not guaranteed better hypertrophy, recovery, safety or adherence.
+
+## October 20 human-review decision: recommendations, never forced edits
+
+The owner approved *complementary exercise redistribution before adding exercises merely to fill time*. The approved 3-day full-body review proposes this specific Day B substitution: **Overhead Press -> Lat Pulldown**, with 3 existing planned working sets, 5 total exercises, 41 minutes estimated midpoint before/after. Day A keeps Dumbbell Shoulder Press; Day C keeps Arnold Press. The independent audit no longer marks vertical pulling absent. This swap is favored over adding yet another back exercise.
+
+The separate missing knee-flexion role still receives a modest **optional** two-set seated leg curl addition on Day A, changing the approximate estimate from 44 to 48 minutes (planner range 42–59). The owner may keep the initial exercises, dismiss a recommendation, swap the recommended exercise again, or manually edit the week. Coach suggestions must be labeled clearly and require affirmative user acceptance before any future production preview/save integration.
+
+The shadow response now marks `recommendationOnly: true`, `requiresUserAcceptance: true`, `accepted: false`, and each candidate carries `optional: true` and `editable: true`. A request-level `recommendationsDisabled` opt-out returns the original week. A day with manual overrides is excluded from automatic repair proposals. Named required lifts, positively progressing or preferred choices and explicit shoulder-specialization priorities remain protected. These APIs are **not yet live UI controls** and do not constitute a shipped acceptance workflow.
+
+Test evidence: [full validation run #39468922057](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39468922057) and [synthetic performance run #39468922056](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39468922056) passed on source/test commit `5cb61afae8f72370ad2f1a86a83837cbfe753695`. The exact `human-review-queue.json` artifact records original/proposed daily sets and time ranges, the changed exercises, and remaining optional calf/core roles.
 
 ## Adversarial programming tests
 
@@ -57,7 +67,7 @@ These debt values are **internal prioritization heuristics**, not validated scie
 
 ## Human-review judgment
 
-The proposed repairs are **plausible, complementary improvements**, not proof of globally optimal programs. The gym full-body additions preserve the major press/pull/knee/posterior-chain structure while restoring otherwise absent weekly roles, without forcing full-body movement coverage in every session. The glute-dumbbell changes trade a redundant second squat for lateral hip work that supports the user-emphasized target. The triceps case uses actual elbow-extension work rather than a press-like substitution. No automatic program changes are currently enabled.
+The proposed repairs are **plausible, complementary improvements**, not proof of globally optimal programs. The gym full-body **swap-first recommendation** preserves the major press/pull/knee/posterior-chain structure while restoring vertical pulling in an existing 41-minute slot, and proposes a separate optional short hamstring accessory instead of forcing full-body movement coverage in every session. The glute-dumbbell changes trade a redundant second squat for lateral hip work that supports the user-emphasized target. The triceps case uses actual elbow-extension work rather than a press-like substitution. No automatic program changes are currently enabled.
 
 **Remaining limitations:**
 - Some optional roles intentionally remain absent when there is no compatible safe adjustment within the user's equipment/time/split context. This is not automatically a defective program.
