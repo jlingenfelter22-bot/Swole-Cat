@@ -131,6 +131,18 @@ jobs:
           name: coach-phase1-quality-evidence
           path: /tmp/swole-cat-coach-phase1/
           retention-days: 30
+      
+      - name: Audit Phase 2 projected weekly coverage against locked baseline
+        run: node scripts/coach-phase2-weekly-audit-stress.mjs
+
+      - name: Retain Phase 2 projected-week quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-phase2-weekly-diagnostics
+          path: /tmp/swole-cat-coach-phase2/
+          retention-days: 30
+
 
 
       - name: Stress test v0.84.0 exercise intelligence and timed/distance measurement
