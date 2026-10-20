@@ -41,6 +41,10 @@ try{
   if(opts.customSlots){intent.split='custom';intent.customSlots=[...opts.customSlots];}
   return {draft:w.coachGenerateProgram(req,intent,null),req,intent};
  }
+ const detailIds=new Set(['2day_full_gym_45','3day_full_gym_30',
+  '3day_full_gym_75','3day_ppl_dumbbells_60','4day_upper_lower_glutes',
+  '4day_upper_lower_no_machines','6day_ppl_strength']);
+ const humanReview=[];
  const cases=[
   ['2day_full_gym_30','2 day full body program 30 minutes','gym'],
   ['2day_full_gym_45','2 day full body program 45 minutes','gym'],
@@ -134,6 +138,20 @@ try{
   const unresolved=before.after?.findings?.filter(f=>f.type==='missing_weekly_role').map(f=>f.role)||[];
   const longDay=draft.days.filter(d=>d.brainTime.estimateMinutes>d.request.duration+Math.max(8,Math.ceil(d.request.duration*.2))).map(d=>d.label);
   if(longDay.length)anomalies.push({id:name,type:'estimated_time_over_20_percent_tolerance',days:longDay});
+  if(detailIds.has(name)){
+   humanReview.push({
+    id:name,focus:opts?.focus||[],equipment:choice,goal:goal||'hypertrophy',
+    original:draft.days.map(d=>({day:d.label,minutesTarget:d.request.duration,
+      minutesEstimated:d.brainTime?.estimateMinutes,minutesUpper:d.brainTime?.upperMinutes,
+      exercises:d.selectedIds.map(id=>({name:ex(id)?.name,pattern:ex(id)?.pattern,
+       workingSets:d.brainSetCounts?.[id]?.sets||w.coachExercisePrescription(ex(id),d.request,d.defaults).sets}))})),
+    suggestions:before.changes.map(c=>({day:c.day,dayIndex:c.dayIndex,
+      kind:c.kind,from:c.removedName,to:c.addedName,estimateBefore:c.estimateBefore,
+      estimateAfter:c.estimateAfter})),
+    unresolvedRoles:before.after?.findings?.filter(f=>f.type==='missing_weekly_role')
+      .map(f=>({role:f.role,priority:f.priority,title:f.title}))
+   });
+  }
   evidence.push({id:name,generated:true,days:count,changes:before.changes.map(c=>({
     kind:c.kind,day:c.dayIndex,from:c.removedName,to:c.addedName})),
     debtBefore:w.coachProjectedRepairDebt(before.before),
@@ -166,9 +184,11 @@ try{
  fs.mkdirSync('/tmp/swole-cat-coach-edge-case',{recursive:true});
  fs.writeFileSync('/tmp/swole-cat-coach-edge-case/weekly-edge-case-matrix.json',
   JSON.stringify({version:'0.93.5',scenarioCount:cases.length,generated,
-   rows:evidence,anomalies,allOriginalStateUnchanged:true},null,2)+'\n');
+   rows:evidence,anomalies,allOriginalStateUnchanged:true,
+   humanReview},null,2)+'\n');
  console.log('COACH_EDGE_CASE_MATRIX '+JSON.stringify(evidence));
  console.log('COACH_EDGE_CASE_ANOMALIES '+JSON.stringify(anomalies));
+ console.log('COACH_EDGE_CASE_HUMAN_REVIEW '+JSON.stringify(humanReview));
  console.log('COACH_EDGE_CASE_PASS '+JSON.stringify({
   scenarios:cases.length,generated,unchangedUserState:true,deterministic:true,
   explicitConstraints:true,optionalOnly:true,protectedUserChoices:true,
