@@ -117,7 +117,11 @@ try{
  const target='docs/coach-quality/phase1-baseline-v0934.json';
  if(fs.existsSync(target)){
   const original=JSON.parse(fs.readFileSync(target,'utf8'));
-  assert.deepEqual(frozen,original,'Production generator drifted from locked v0.93.4 pre-improvement baseline');
+  // Rehydrate through JSON: selected IDs and removed-set lists originate in
+  // the jsdom Window realm, whose Array prototypes are not Node's prototypes.
+  // Compare persisted VALUES, not cross-realm object identity/prototypes.
+  assert.deepEqual(JSON.parse(JSON.stringify(frozen)),original,
+   'Production generator drifted from locked v0.93.4 pre-improvement baseline');
  }
  console.log('COACH_PHASE1_MATRIX '+JSON.stringify(output.map(s=>({id:s.id,generated:s.generated,
   days:s.days.length,roles:s.weekly?.roleCounts,primaryFocus:s.weekly?.directFocus,
