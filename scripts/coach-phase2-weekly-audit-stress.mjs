@@ -110,7 +110,7 @@ try{
  let r=inspect('push',['Barbell Bench Press'],equipment('45 minute push workout','gym'),['triceps']);
  assert.equal(r.priorities.find(x=>x.region==='triceps').status,'secondary_only');
  assert(r.findings.some(x=>x.type==='priority_secondary_only'&&x.availability==='feasible'));
- assert.equal(r.regions.triceps.primary,undefined,'Secondary triceps must never be rewritten as primary');
+ assert.equal(r.regions.triceps.primary,0,'Secondary triceps must never be rewritten as primary');
  assert(r.regions.triceps.secondary>0,'Indirect bench contribution is captured');
 
  r=inspect('lower body',['Back Squat'],equipment('45 minute lower body workout','gym'),['glutes']);
