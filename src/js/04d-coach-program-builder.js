@@ -824,6 +824,132 @@ function coachProgramRoutineFromDay(day,draft=coachProgramBuildDraft,id=uid()){
    })
  };
 }
+// Recommendations remain opt-in even when the whole-week audit sees an
+// improvement. Computing/viewing a proposal must never change the unsaved day.
+function coachProgramRecommendationsHtml(draft){
+ if(!draft.coachRecommendationsVisible)return '<div class="coach-console coach-program-suggestions">'+
+  '<div class="eyebrow">COACH RECOMMENDS // ALWAYS OPTIONAL</div>'+
+  '<div class="mini" style="margin:7px 0">Want a second opinion on this week? Review possible exercise swaps. Your existing plan stays unchanged unless you choose a suggestion.</div>'+
+  '<button class="btn small secondary" onclick="coachProgramShowRecommendations()">Review suggestions</button></div>';
+ const proposed=coachProposeProjectedWeekRepair(draft);
+ const rows=proposed.changes.map((change,index)=>{
+  const day=draft.days[change.dayIndex];
+  const original=change.removedName||'Keep current exercises';
+  const proposedName=change.addedName;
+  return '<div class="card coach-program-suggestion" style="margin:8px 0;padding:12px">'+
+   '<div class="eyebrow">'+esc(day.label)+' // OPTIONAL</div>'+
+   '<div class="exercise-name" style="margin:6px 0">'+
+    esc(change.kind==='add'?'Consider adding '+proposedName:original+' → '+proposedName)+'</div>'+
+   '<div class="mini">'+esc(change.reason)+' '+
+    (change.kind==='add'?'Only 2 planned working sets. ':'')+
+    'Estimated day: about '+(change.estimateBefore??'?')+' → '+(change.estimateAfter??'?')+
+    ' minutes. You decide whether to change it.</div>'+
+   '<div class="actions" style="margin-top:9px;flex-wrap:wrap">'+
+    '<button class="btn small" onclick="coachProgramUseRecommendation('+index+')">Use Recommendation</button>'+
+    '<button class="btn small secondary" onclick="coachProgramKeepRecommendation('+index+')">Keep Original</button>'+
+    (change.kind==='swap'
+      ?'<button class="btn small secondary" onclick="coachProgramSwapRecommendation('+index+')">Try Another Swap</button>'
+      :'<button class="btn small secondary" onclick="coachEditProgramDay('+change.dayIndex+')">Adjust Day</button>')+
+   '</div></div>';
+ }).join('');
+ return '<div class="coach-console coach-program-suggestions">'+
+  '<div class="eyebrow">COACH RECOMMENDS // YOUR CHOICE</div>'+
+  '<div class="mini" style="margin:7px 0">These are suggestions, not rules. Save the plan as-is, choose individual recommendations, or swap exercises yourself. Declining will not delete or modify your work.</div>'+
+  (rows||'<div class="mini" style="margin:8px 0">No further verified changes to recommend for this draft. Keep the plan you chose.</div>')+
+  '<button class="btn small secondary" onclick="coachProgramHideRecommendations()">Hide recommendations</button></div>';
+}
+function coachProgramShowRecommendations(){
+ if(!coachProgramBuildDraft)return false;
+ coachProgramBuildDraft.coachRecommendationsVisible=true;
+ renderCoachProgramPreview();
+ return true;
+}
+function coachProgramHideRecommendations(){
+ if(!coachProgramBuildDraft)return false;
+ coachProgramBuildDraft.coachRecommendationsVisible=false;
+ renderCoachProgramPreview();
+ return true;
+}
+function coachProgramRecommendationChoice(index){
+ const draft=coachProgramBuildDraft;
+ if(!draft||!draft.coachRecommendationsVisible)return null;
+ const change=coachProposeProjectedWeekRepair(draft).changes?.[index];
+ const day=draft.days?.[change?.dayIndex];
+ if(!day||!change||!exById(change.addedId)||day.selectedIds.includes(change.addedId))return null;
+ if(change.kind==='swap'&&!day.selectedIds.includes(change.removedId))return null;
+ if(change.kind!=='add'&&change.kind!=='swap')return null;
+ return {draft,day,change};
+}
+function coachProgramKeepRecommendation(index){
+ const choice=coachProgramRecommendationChoice(index);
+ if(!choice){showToast('That suggestion changed. Review the updated plan.');renderCoachProgramPreview();return false}
+ const {draft,day,change}=choice;
+ const override=draft.dayOverrides[change.dayIndex]||{excludedExerciseIds:[],requiredExerciseIds:[]};
+ // Keep the original day completely intact; stop re-recommending on this day.
+ override.recommendationsDeclined=true;
+ draft.dayOverrides[change.dayIndex]=override;
+ draft.lastRefinement='Kept the original exercises on '+day.label;
+ renderCoachProgramPreview();
+ return true;
+}
+function coachProgramUseRecommendation(index){
+ const choice=coachProgramRecommendationChoice(index);
+ if(!choice){showToast('That suggestion changed. Review the updated plan.');renderCoachProgramPreview();return false}
+ const {draft,day,change}=choice,added=exById(change.addedId);
+ const nextIds=[...day.selectedIds],nextSetCounts=Object.fromEntries(
+  Object.entries(day.brainSetCounts||{}).map(([id,c])=>[id,{...c}]));
+ if(change.kind==='swap'){
+  const position=nextIds.indexOf(change.removedId);
+  if(position<0)return false;
+  nextIds[position]=change.addedId;
+  delete nextSetCounts[change.removedId];
+ }else{
+  nextIds.push(change.addedId);
+  nextSetCounts[change.addedId]={sets:2};
+ }
+ const nextTime=coachBrainSessionTimeEstimate(nextIds,day.request,day.defaults,
+   {explicitConfigById:nextSetCounts});
+ if(!nextTime||!Number.isFinite(Number(nextTime.estimateMinutes))||
+    !coachExerciseAllowedByConstraints(added,day.request)||
+    coachBrainExerciseService()?.evaluateAvailability(change.addedId,
+      coachBrainEquipmentConstraints(day.request)).status!=='available'){
+  showToast('This suggestion no longer fits the workout.');renderCoachProgramPreview();return false;
+ }
+ const override=draft.dayOverrides[change.dayIndex]||{excludedExerciseIds:[],requiredExerciseIds:[]};
+ override.excludedExerciseIds=[...new Set([...(override.excludedExerciseIds||[]),
+   ...(change.removedId?[change.removedId]:[])])];
+ override.requiredExerciseIds=[...new Set([...(override.requiredExerciseIds||[]),change.addedId])];
+ override.acceptedSetCounts={...(override.acceptedSetCounts||{}),
+   ...(change.kind==='add'?{[change.addedId]:2}:{})};
+ override.recommendationsDeclined=true;
+ draft.dayOverrides[change.dayIndex]=override;
+ day.selectedIds=nextIds;
+ day.brainSetCounts=nextSetCounts;
+ day.brainTime=nextTime;
+ // Preserve the accepted replacement in the in-memory unsaved request so
+ // the weekly review and any future refiner see the person's choice.
+ day.request={...day.request,
+   excludedExerciseIds:[...new Set([...(day.request.excludedExerciseIds||[]),
+     ...(change.removedId?[change.removedId]:[])])],
+   requiredExerciseIds:[...new Set([...(day.request.requiredExerciseIds||[]),change.addedId])]};
+ draft.lastRefinement=(change.kind==='add'?'Accepted optional '+added.name:
+    'Chose '+added.name+' instead of '+change.removedName)+' on '+day.label;
+ renderCoachProgramPreview();
+ return true;
+}
+function coachProgramSwapRecommendation(index){
+ const choice=coachProgramRecommendationChoice(index);
+ if(!choice){showToast('That suggestion changed. Review the updated plan.');renderCoachProgramPreview();return false}
+ const {day,change}=choice;
+ if(change.kind!=='swap')return coachEditProgramDay(change.dayIndex);
+ const position=day.selectedIds.indexOf(change.removedId);
+ if(position<0)return false;
+ // Existing manual Swap flow can choose a different eligible replacement.
+ // Never accept Coach's recommendation as a side effect.
+ coachProgramSwapExercise(change.dayIndex,position);
+ return true;
+}
+
 function renderCoachProgramPreview(){
  const draft=coachProgramBuildDraft;if(!draft)return;
  const req=draft.request,intent=draft.intent,coverage=coachProgramCoverageText(draft);
@@ -839,6 +965,7 @@ function renderCoachProgramPreview(){
      ${intent.trainingMode==='guided'?`<div class="mini" style="margin-top:9px">Deloads: ${intent.deload?.enabled?`every ${intent.deload.intervalWeeks}th training week, subject to your confirmation`:'not scheduled (you can add these later)'}</div>`:''}
    </div>
    <div class="coach-console coach-program-composer"><div class="eyebrow">ASK COACH // REFINE THIS PLAN</div><details class="coach-program-prompt-tips"><summary>Ideas for changes</summary><div class="mini" style="margin:5px 0 9px">Try “4 days, upper/lower and 35 minutes,” “dumbbells only,” “no squats, more glutes,” or “Monday Tuesday Thursday Saturday.”</div></details><div class="home-coach-row"><div class="coach-voice-field"><input id="coachProgramRefinePrompt" aria-label="Describe changes to this Coach program" placeholder="Tell Coach what to change" onkeydown="if(event.key==='Enter')coachApplyProgramRefinement()">${coachVoiceButtonHtml('coachProgramRefinePrompt')}</div><button class="btn" onclick="coachApplyProgramRefinement()">Update</button></div></div>
+   ${coachProgramRecommendationsHtml(draft)}
    <div class="coach-exercise-list">
     ${draft.days.map((day,di)=>`<div class="card coach-program-day-card" style="margin:0">
       <div class="row coach-program-day-head"><div class="coach-program-day-summary"><div class="eyebrow">DAY ${di+1}</div><div class="exercise-name" style="margin-top:4px">${esc(day.label)}</div><div class="mini">${day.selectedIds.length} exercises · ${day.brainTime?`about ${day.brainTime.estimateMinutes} min (range ${day.brainTime.lowerMinutes}–${day.brainTime.upperMinutes})`:`${day.defaults.sets} sets each`} · ${day.defaults.minReps}–${day.defaults.maxReps} reps</div><button class="btn small secondary" style="margin-top:7px" onclick="coachEditProgramDay(${di})" aria-label="Adjust ${esc(day.label)} time equipment and focus">Adjust day</button>${coachProgramDayPlanSummary(day)?`<div class="mini" style="margin-top:5px">${esc(coachProgramDayPlanSummary(day))}</div>`:''}</div>${intent.preferredDays?.[di]!=null?`<span class="tag">${PROGRAM_DAYS[intent.preferredDays[di]]}</span>`:''}</div>
