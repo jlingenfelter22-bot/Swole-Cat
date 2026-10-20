@@ -148,6 +148,9 @@ jobs:
       - name: Validate Phase 3 shadow swap-first weekly repairs against frozen baseline
         run: node scripts/coach-phase3-bounded-repair-stress.mjs
 
+      - name: Validate Phase 3 optional preview accept, decline and saved-program parity
+        run: node scripts/coach-phase3-recommendation-preview-stress.mjs
+
       - name: Retain Phase 3 before-after swap quality evidence
         if: always()
         uses: actions/upload-artifact@v4
