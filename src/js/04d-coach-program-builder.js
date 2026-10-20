@@ -180,7 +180,7 @@ function coachBrainProgramWeekReview(draft=coachProgramBuildDraft){
   knee:new Set(['squat','lunge','knee_extension']),
   posterior:new Set(['hinge','knee_flexion','hip_extension','back_extension'])
  };
- const roles={press:0,pull:0,knee:0,posterior:0},primary={},notes=[],dayRoles=[];
+ const roles={press:0,pull:0,knee:0,posterior:0},primary={},primarySets={},secondarySets={},notes=[],dayRoles=[];
  const scores=coachProgramWeeklyCoverage(draft);
  const focusRegions=[...new Set((draft.request?.programFocusRegions||draft.intent?.focusRegions||[]).filter(Boolean))];
  const focus=focusRegions.filter(m=>Number(scores[m]||0)>0).map(m=>({region:m,sets:Number((scores[m]||0).toFixed(1))}));
@@ -189,7 +189,12 @@ function coachBrainProgramWeekReview(draft=coachProgramBuildDraft){
   for(const id of day.selectedIds||[]){
    const ex=exById(id);if(!ex)continue;
    const meta=exerciseMuscleMetadata(ex);
-   for(const m of meta.primary){dayPrimary.add(m);primary[m]=(primary[m]||0)+1}
+   const prescribed=Math.max(0,Number(day.brainSetCounts?.[id]?.sets||coachExercisePrescription(ex,day.request,day.defaults).sets)||0);
+   for(const m of meta.primary){
+    dayPrimary.add(m);primary[m]=(primary[m]||0)+1;
+    primarySets[m]=(primarySets[m]||0)+prescribed;
+   }
+   for(const m of meta.secondary)secondarySets[m]=(secondarySets[m]||0)+prescribed*.5;
    dayPatterns.add(ex.pattern);
    for(const [role,patterns] of Object.entries(roleSpecs)){
     if(patterns.has(ex.pattern))roles[role]++;
@@ -217,13 +222,20 @@ function coachBrainProgramWeekReview(draft=coachProgramBuildDraft){
   notes.push({key:'chest_direct',kind:'choice',text:'Your custom split includes no primary chest exercise. If chest growth matters to you, consider adding direct chest work while keeping your preferred day structure.'});
  }
  if(focusRegions.length){
+  // A user's expressly prioritized muscle receiving only indirect work is a
+  // meaningful programming distinction, but not a reason to rewrite a split.
+  const secondaryOnly=focusRegions.filter(m=>(primarySets[m]||0)===0&&(secondarySets[m]||0)>0);
+  if(secondaryOnly.length){
+   const names=secondaryOnly.slice(0,3).map(m=>MUSCLE_REGION_LABELS[m]||m);
+   notes.push({key:'priority_indirect',kind:'review',text:'Your requested emphasis on '+names.join(', ')+' currently receives secondary involvement only, with no primary-target sets in this program. Consider whether to prioritize a direct movement.'});
+  }
   const unserved=focusRegions.filter(m=>(scores[m]||0)===0);
   if(unserved.length){
    const labels=unserved.slice(0,3).map(m=>MUSCLE_REGION_LABELS[m]||m);
    notes.push({key:'focus_gap',kind:'review',text:`Your requested emphasis includes ${labels.join(', ')}, but those regions have no planned set contribution. Consider an exercise change if that emphasis is important.`});
   }
  }
- return {notes:notes.slice(0,4),roles,primary,focus,dayRoles,scores};
+ return {notes:notes.slice(0,4),roles,primary,primarySets,secondarySets,focus,dayRoles,scores};
 }
 function coachBrainProgramWeekReviewHtml(draft=coachProgramBuildDraft){
  const review=coachBrainProgramWeekReview(draft);

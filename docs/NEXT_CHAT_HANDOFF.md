@@ -1,5 +1,16 @@
 # Swole Cat - Next Chat Handoff
 
+## CURRENT DRAFT: Multiweek muscle coverage and priority intelligence (October 20, 2026)
+
+- Owner directed Coach development toward **full-week muscle coverage, identifying missed regions across successive weeks, deliberately honoring priority muscles**, rather than narrowing estimated workout minutes. Prior signed Testing **v0.93.4/code 139** felt "like butter". Preserve that responsiveness and current UI; no Beta or real workout/cloud changes.
+- New draft branch `quality/coach-multiweek-region-coverage-v0934` (separate from strict-time sets-first PR #83) extends existing Coach History Q&A and saved Program Audit with **region-specific primary vs secondary completed-set exposure**. Sufficient history means at least four sessions with a span of 21 days, plus two workouts in past 14 days. Compare last 14 days to earlier evidence in 42-day lookback; only flag regions trained earlier or directly present in the saved Program. A squat counts glutes, bench counts triceps secondarily, skipped/unfinished/warmup-only work does not.
+- Requests "which muscles have I neglected in recent weeks" and "have I neglected glutes lately" provide cautious evidence-based observations, not universal volume mandates. Existing broad grouped-coverage queries remain. Saved Program audit gets up to 3 region-specific absence findings; generated weekly review now distinguishes **secondary-only vs primary-target sets** for explicitly prioritized areas (e.g., triceps).
+- Updated regression scripts `scripts/coach-history-insights-stress.mjs`, `scripts/coach-program-auditor-stress.mjs`. Product rules documented in `docs/COACH_MULTIWEEK_COVERAGE_CHECKPOINT.md` in this draft branch. **Full exact-head CI must pass and branch remain draft until validated.** Do not merge this work without a new version-safe Testing release plan and user's approval.
+- The earlier [PR #83](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/83) still remains a separate, validated draft, but owner's explicit statement that minutes are rough estimates requires recalibrating strict time compression BEFORE shipping it. Trainer-client business idea remains parked. Experimental Android R8 PR #81 remains draft.
+
+---
+
+
 ## OWNER CLARIFICATION: time is an estimate, not a guaranteed workout deadline (October 20, 2026)
 
 - Owner strongly clarified Coach Swole Cat's product philosophy: planned 20/30/45/60-minute sessions are **rough typical time frames**, NOT a promise of exact minute completion. Actual timing varies with the individual, warmup, crowded equipment, phone calls, texting and life; a lower/typical/upper estimate is useful, but over-range creep does **not by itself** count as a failure of Coach.

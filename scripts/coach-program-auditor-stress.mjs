@@ -38,6 +38,9 @@ assert(audit);assert.equal(audit.routines.length,3);
 assert(audit.coverageRows.find(x=>x.key==='lower body').plannedSets>0);
 assert.equal(audit.coverageRows.find(x=>x.key==='lower body').actualSets,0);
 for(const type of ['adherence','slot_gap','actual_coverage_gap','redundancy','distribution','plateau_high_effort','progressing'])assert(audit.findings.some(x=>x.type===type),'missing '+type);
+const specificGlute=audit.findings.find(x=>x.type==='muscle_region_gap'&&x.region==='glutes');
+assert(specificGlute,'saved squat plan plus multiweek skipped legs must flag missing glute contribution');
+assert.match(specificGlute.text,/no direct or secondary glutes contribution/i);
 const distribution=audit.findings.find(x=>x.type==='distribution'&&x.evidence==='actual_adjacent_sessions');
 assert(distribution,'distribution must be supported by actual adjacent completed Program sessions rather than positional preferred-day assumptions');
 assert.match(distribution.text,/completed Program days|on .* and .* on /i);
@@ -61,5 +64,37 @@ w.eval('coachRoutineSession=null');w.renderPrograms();
 assert.doesNotMatch(w.document.getElementById('programList').textContent,/Coach Audit/i,'Coach Audit should not clutter the primary program card');
 w.openProgramCardMenu('p');
 assert.match(w.document.getElementById('modalBody').textContent,/Coach Audit/i,'Coach Audit should remain available in Program Options');
+
+// A completed recent squat should clear the named glute gap, even if a saved
+// Program still has uneven overall adherence. Never infer direct glute
+// isolation is required where a compound squat already trains glutes.
+const recentLeg={id:'leg_recent',programId:'p',routineId:'c',routineName:'Leg Day',status:'finished',date:ago(1),
+ exercises:[{exerciseId:squat.id,sets:sets(195,6,2)}]};
+w.eval('state.sessions='+JSON.stringify([...sessions,recentLeg])+';save()');
+const balanced=w.coachProgramAudit('p');
+assert(!balanced.findings.some(x=>x.type==='muscle_region_gap'&&x.region==='glutes'),
+ 'completed squat direct glute work clears regional absence, regardless of no glute isolation exercise');
+w.eval('state.sessions='+JSON.stringify(sessions)+';save()');
+
+// Planned priority must distinguish incidental secondary contribution from
+// primary-target work in the generated week, with no arbitrary auto rewrite.
+const priorityRequest=w.coachParsePrompt('45 minute push workout with more triceps','hypertrophy');
+const priorityBench={key:'push',label:'Push',request:priorityRequest,
+ defaults:w.coachProgrammingDefaults('hypertrophy',45),selectedIds:[bench.id],brainSetCounts:{}};
+const priorityDraft={request:{programFocusRegions:['triceps']},intent:{split:'custom',focusRegions:['triceps']},days:[priorityBench]};
+let review=w.coachBrainProgramWeekReview(priorityDraft);
+assert(review.notes.some(n=>n.key==='priority_indirect'), 'requested triceps cannot be certified direct by bench secondary work');
+assert.equal(review.primarySets.triceps||0,0);
+assert((review.secondarySets.triceps||0)>0);
+const pushdown=get('Triceps Pushdown')||get('Rope Triceps Pushdown');
+assert(pushdown,'direct triceps exercise available');
+priorityBench.selectedIds.push(pushdown.id);
+review=w.coachBrainProgramWeekReview(priorityDraft);
+assert((review.primarySets.triceps||0)>0);
+assert(!review.notes.some(n=>n.key==='priority_indirect'),
+ 'adding a direct priority exercise removes only the appropriate primary-work warning');
+assert.equal(JSON.stringify({programs:read().programs,routines:read().routines,sessions:read().sessions}),before,
+ 'audit and Coach week-review probes must not change saved workouts');
+
 console.log('Coach Swolecat v0.63 Program auditor PASS');
 dom.window.close();

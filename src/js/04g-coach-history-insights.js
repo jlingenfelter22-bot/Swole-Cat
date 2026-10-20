@@ -48,6 +48,9 @@ function coachHistoryQuestionIntent(text){
 
  const resolved=coachHistoryResolveExercise(raw),hasExercise=!!resolved.exercise||resolved.ambiguous;
  const target=typeof coachParseTargets==='function'?coachParseTargets(raw):{keys:[],labels:[],regions:[]};
+ const detailedCoverage=/\b(?:muscles?|muscle groups?|body parts?|regions?)\b.{0,50}\b(?:missing|neglect(?:ed|ing)?|not (?:been )?train(?:ed|ing)|not (?:been )?work(?:ed|ing)|haven|coverage|skipp(?:ed|ing))\b|\b(?:missing|neglect(?:ed|ing)?)\b.{0,45}\b(?:muscles?|muscle groups?|body parts?|regions?)\b/i.test(lower);
+ const targetedGap=(target?.regions||[]).length>0&&/\b(?:neglect(?:ed|ing)?|haven(?:'|’|\s)?t(?:\s+i)?\s+trained|havent(?:\s+i)?\s+trained|not trained|skipp(?:ed|ing)?)\b/i.test(lower);
+ if(detailedCoverage||targetedGap)return {handled:true,type:'muscle_coverage',raw,lower,resolved,target};
  if(/\b(?:consistent|consistency|how many workouts|training frequency|how often)\b/i.test(lower))return {handled:true,type:'consistency',raw,lower,resolved,target};
  if(/\b(?:haven(?:'|’|\s)?t(?:\s+i)?\s+trained|havent(?:\s+i)?\s+trained|have(?:\s+i)?\s+not\s+trained|not trained lately|neglect(?:ed|ing)?|what.*not.*train)\b/i.test(lower))return {handled:true,type:'neglected',raw,lower,resolved,target};
  if(!hasExercise&&/\b(?:what|which).{0,25}\b(?:progressing|stalled|stalling|plateau|trending|going up|going down)\b/i.test(lower))return {handled:true,type:'global_progress',raw,lower,resolved,target};
@@ -144,6 +147,82 @@ function coachHistoryTargetRecencyAnswer(intent){
  return {handled:true,type:'target_recency',title:label+' recency',targetKey:intent.target.keys?.[0]||null,
   answer:'Your most recent logged '+label.toLowerCase()+' work was '+coachHistoryDateLabel(row.date)+(days===0?' (today)':days===1?' (1 day ago)':' ('+days+' days ago)')+' in '+(row.routineName||'a workout')+'.'};
 }
+// Region-level, actual COMPLETED-set history. Keep direct and secondary
+// contributions separate: a squat can train glutes without a glute isolation
+// exercise, and a row's indirect biceps work is not direct curls.
+// No population-wide 'required muscles' list or arbitrary weekly quota.
+function coachLoggedRegionExposure(sessions){
+ const primary={},secondary={},last={};
+ (sessions||[]).forEach(s=>{
+  const at=new Date(s?.date||0).getTime();
+  if(!Number.isFinite(at))return;
+  (s.exercises||[]).forEach(row=>{
+   if(row.skipped)return;
+   const ex=exById(row.exerciseId),sets=progressionSets(row).length;
+   if(!ex||!sets)return;
+   const meta=exerciseMuscleMetadata(ex);
+   meta.primary.forEach(region=>{
+    primary[region]=(primary[region]||0)+sets;
+    last[region]=Math.max(last[region]||0,at);
+   });
+   meta.secondary.forEach(region=>{
+    secondary[region]=(secondary[region]||0)+sets*.5;
+    last[region]=Math.max(last[region]||0,at);
+   });
+  });
+ });
+ return {primary,secondary,last};
+}
+function coachMultiWeekRegionCoverage(referenceMs=Date.now(),sessions=state.sessions,plannedPrimary={}){
+ const day=86400000,all=(sessions||[]).filter(s=>{
+  const at=new Date(s?.date||0).getTime();
+  return Number.isFinite(at)&&at<=referenceMs&&at>=referenceMs-42*day;
+ });
+ const recent=all.filter(s=>new Date(s.date).getTime()>referenceMs-14*day);
+ const earlier=all.filter(s=>new Date(s.date).getTime()<=referenceMs-14*day);
+ const recentExposure=coachLoggedRegionExposure(recent),earlierExposure=coachLoggedRegionExposure(earlier);
+ const oldest=all.length?Math.min(...all.map(s=>new Date(s.date).getTime())):referenceMs;
+ // Three weeks of history and two recent sessions are the minimum before
+ // interpreting absence as a *change* in logged training patterns.
+ const ready=recent.length>=2&&all.length>=4&&(referenceMs-oldest)>=21*day;
+ const regions=[...new Set([...Object.keys(earlierExposure.primary),...Object.keys(plannedPrimary||{})])];
+ const gaps=ready?regions.filter(region=>{
+  const expected=(earlierExposure.primary[region]||0)>0||(Number(plannedPrimary?.[region])||0)>0;
+  return expected&&!((recentExposure.primary[region]||0)+(recentExposure.secondary[region]||0)>0);
+ }).map(region=>({
+  region,label:MUSCLE_REGION_LABELS[region]||region,
+  earlierPrimary:Number(earlierExposure.primary[region]||0),
+  plannedPrimary:Number(plannedPrimary?.[region]||0),
+  lastDate:earlierExposure.last[region]?new Date(earlierExposure.last[region]).toISOString():null,
+  daysSince:earlierExposure.last[region]?coachHistoryDaysSince(earlierExposure.last[region],referenceMs):null
+ })).sort((a,b)=>b.plannedPrimary-a.plannedPrimary||b.earlierPrimary-a.earlierPrimary||a.label.localeCompare(b.label)):[];
+ return {ready,historyDays:Math.floor((referenceMs-oldest)/day),recentSessions:recent.length,
+  earlierSessions:earlier.length,recent:recentExposure,earlier:earlierExposure,gaps};
+}
+function coachHistoryMuscleCoverageAnswer(intent){
+ const targetRegions=intent?.target?.regions||[];
+ const report=coachMultiWeekRegionCoverage();
+ if(!report.recentSessions)return {handled:true,type:'muscle_coverage',title:'Muscle coverage',
+  answer:'There are no completed workouts in the past two weeks to assess. Once you log more sessions, Coach can compare muscle coverage across weeks.'};
+ if(targetRegions.length){
+  const lines=targetRegions.slice(0,4).map(region=>{
+   const direct=Number(report.recent.primary[region]||0),indirect=Number(report.recent.secondary[region]||0);
+   const name=MUSCLE_REGION_LABELS[region]||region;
+   if(direct>0)return name+': '+direct+' direct set-equivalents in the past two weeks'+(indirect>0?' and '+indirect+' secondary':'')+'.';
+   if(indirect>0)return name+': secondary involvement only ('+indirect+' set-equivalents), no primary-target work logged in the past two weeks.';
+   return name+': no primary or secondary contribution recorded in the past two weeks.';
+  });
+  return {handled:true,type:'muscle_coverage',title:'Muscle coverage',
+   answer:lines.join(' ')+' This describes completed logged sets, not whether you must train this area or how much you should do.'};
+ }
+ if(!report.ready)return {handled:true,type:'muscle_coverage',title:'Muscle coverage',
+  answer:'You logged '+report.recentSessions+' workout'+(report.recentSessions===1?'':'s')+' in the past two weeks, but Coach needs more history across several weeks before identifying meaningful changes in individual muscle coverage.'};
+ if(!report.gaps.length)return {handled:true,type:'muscle_coverage',title:'Muscle coverage',
+  answer:'I do not see a muscle disappearing from recent logs relative to your earlier trained areas. This does not mean every muscle has an ideal training volume.'};
+ const names=report.gaps.slice(0,5).map(g=>g.label+(g.daysSince!=null?' ('+g.daysSince+' days since logged)':''));
+ return {handled:true,type:'muscle_coverage',title:'Muscle coverage',gaps:report.gaps,
+  answer:'Compared with your earlier workouts, these muscles have no logged primary or secondary work in the past two weeks: '+names.join(', ')+'. This is a coverage observation, not a requirement to add all of them; your goals and chosen split determine priorities.'};
+}
 function coachHistoryNeglectedRows(referenceMs=Date.now()){
  const sessions=state.sessions.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
  if(sessions.length<3)return [];
@@ -181,6 +260,7 @@ function coachHistoryAnswer(text,forcedExerciseId=null,forcedType=null){
  if(intent.type==='global_progress')return coachHistoryGlobalProgressAnswer(intent.raw);
  if(intent.type==='consistency')return coachHistoryConsistencyAnswer(intent.raw);
  if(intent.type==='target_recency')return coachHistoryTargetRecencyAnswer(intent);
+ if(intent.type==='muscle_coverage')return coachHistoryMuscleCoverageAnswer(intent);
  if(intent.type==='neglected')return coachHistoryNeglectedAnswer();
  return {handled:false};
 }
@@ -222,6 +302,20 @@ function coachDeepInsightCandidates(){
   else if(profile.status==='performance_dip')candidates.push({type:'dip',priority:94,title:ex.name+' is below this block’s stronger sessions.',text:'The latest logged performance is meaningfully below the better exposures from this block. Coach does not assume why.',exerciseId:ex.id,routineId:routine?.id||null,status:profile.status});
  });
  coachHistoryNeglectedRows().slice(0,2).forEach((row,index)=>candidates.push({type:'neglected',priority:82-index,title:row.group.label+' hasn’t shown up lately.',text:'You’ve logged '+row.recentCount+' workouts in the last two weeks, but no '+row.group.label.toLowerCase()+' work in about '+row.days+' days.',targetKey:row.group.key,group:row.group,days:row.days}));
+ // Only surface a named muscle gap if previously trained or in the user's
+ // plan, and there is enough multi-week activity to support the observation.
+ const saved=activeProgram(),plannedPrimary={};
+ if(saved)coachProgramAuditRoutines(saved).forEach(row=>(row.routine.exercises||[]).forEach(re=>{
+  const meta=exerciseMuscleMetadata(exById(re.exerciseId)),sets=Math.max(0,Number(re.sets)||0);
+  meta.primary.forEach(region=>plannedPrimary[region]=(plannedPrimary[region]||0)+sets);
+ }));
+ const regional=coachMultiWeekRegionCoverage(Date.now(),state.sessions,plannedPrimary);
+ regional.gaps.slice(0,1).forEach(gap=>candidates.push({
+  type:'muscle_gap',priority:79,title:gap.label+' has not shown up in recent workouts.',
+  text:'No logged direct or secondary '+gap.label.toLowerCase()+' work in your last '+regional.recentSessions+' workouts over two weeks; this area appeared earlier'+(gap.plannedPrimary?' or is in a saved Program':'')+'. This may be intentional for your current split.',
+  region:gap.region,days:gap.daysSince
+ }));
+
  coachHistoryProfiles().filter(x=>x.profile.status==='progressing'&&x.profile.exposures>=3).sort((a,b)=>b.profile.changePct-a.profile.changePct).slice(0,2).forEach((row,index)=>candidates.push({type:'progressing',priority:64-index,title:row.ex.name+' is moving up.',text:'Multi-week logged performance is trending upward across '+row.profile.exposures+' recent exposures.',exerciseId:row.ex.id,status:row.profile.status}));
  const consistency=coachHistoryConsistencyAnswer('last 4 weeks');
  if(state.sessions.length>=4&&!/no completed/i.test(consistency.answer))candidates.push({type:'consistency',priority:40,title:'Your recent training rhythm.',text:consistency.answer});

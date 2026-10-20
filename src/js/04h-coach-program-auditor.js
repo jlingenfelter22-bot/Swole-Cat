@@ -101,6 +101,26 @@ function coachProgramAuditCoverageFindings(program,audit){
  });
  return f;
 }
+// Identify specific programmed muscle regions omitted across actual weeks,
+// rather than calling a broad "lower body" gap a glute diagnosis. No inferred
+// training obligation: saved plan or earlier completed direct work is evidence.
+function coachProgramAuditRegionalGaps(program,audit,referenceMs=Date.now()){
+ const plannedPrimary={};
+ coachProgramAuditRoutines(program).forEach(({routine})=>(routine.exercises||[]).forEach(row=>{
+  const meta=exerciseMuscleMetadata(exById(row.exerciseId)),sets=Math.max(0,Number(row.sets)||0);
+  meta.primary.forEach(region=>plannedPrimary[region]=(plannedPrimary[region]||0)+sets);
+ }));
+ const report=coachMultiWeekRegionCoverage(referenceMs,audit.actual.sessions,plannedPrimary);
+ audit.regionCoverage=report;
+ if(!report.ready)return [];
+ return report.gaps.slice(0,3).map((row,index)=>coachProgramAuditFinding(
+  'muscle_region_gap',79-index,row.label+' has no recent logged work.',
+  'Your saved Program'+(row.plannedPrimary?' includes direct '+row.label.toLowerCase()+' exercises, but':' previously logged '+row.label.toLowerCase()+' training, but')+
+  ' your last '+report.recentSessions+' completed Program sessions across two weeks show no direct or secondary '+row.label.toLowerCase()+
+  ' contribution. This may reflect a skipped rotation slot or an intentional training choice; review the actual sessions before changing your split.',
+  {action:'edit_program',programId:program.id,region:row.region,evidence:'completed_sets_vs_planned_or_prior_primary'}
+ ));
+}
 function coachProgramAuditRedundancy(program){
  const f=[],families=new Map();
  coachProgramAuditExerciseEntries(program).forEach(e=>{if(!e.family||e.family==='other')return;if(!families.has(e.family))families.set(e.family,[]);families.get(e.family).push(e)});
@@ -191,7 +211,7 @@ function coachProgramAuditProgression(program){
 function coachProgramAudit(programId,referenceMs=Date.now()){
  const program=programById(programId);if(!program)return null;
  const audit={version:COACH_PROGRAM_AUDIT_VERSION,program,programId,routines:coachProgramAuditRoutines(program),planned:coachProgramAuditPlanned(program),actual:coachProgramAuditActual(program,referenceMs),historyDays:coachProgramAuditHistoryDays(program,referenceMs),coverageRows:coachProgramAuditCoverageRows(program,referenceMs),findings:[]};
- audit.findings=[...coachProgramAuditAdherence(program,audit),...coachProgramAuditCoverageFindings(program,audit),...coachProgramAuditRedundancy(program),...coachProgramAuditDistribution(program,audit),...coachProgramAuditProgression(program)].sort((a,b)=>b.priority-a.priority||a.title.localeCompare(b.title));
+ audit.findings=[...coachProgramAuditAdherence(program,audit),...coachProgramAuditCoverageFindings(program,audit),...coachProgramAuditRegionalGaps(program,audit,referenceMs),...coachProgramAuditRedundancy(program),...coachProgramAuditDistribution(program,audit),...coachProgramAuditProgression(program)].sort((a,b)=>b.priority-a.priority||a.title.localeCompare(b.title));
  if(!audit.findings.length)audit.findings.push(coachProgramAuditFinding('clear',30,'No major Program-level conflict is showing up yet.','Coach did not find a strong adherence, rotation, coverage, redundancy, distribution, or progression conflict with the current evidence.',{action:'none'}));
  audit.issueCount=audit.findings.filter(x=>x.priority>=50).length;
  return audit;
