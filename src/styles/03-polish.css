@@ -3589,3 +3589,60 @@ nav .rest-dock-pocket::after{
  #restTimer.resttimer .rest-actions button{font-size:.63rem!important}
 }
 /* Existing reduced-motion behavior and keyboard avoidance remain authoritative. */
+
+
+/* Coach program recommendation mobile usability, isolated to preview.
+   One tap = one user choice; no side-by-side, truncated action labels. */
+.modal-mode-coach-program .coach-program-suggestions{
+  min-width:0;
+  overflow:visible;
+}
+.modal-mode-coach-program .coach-program-suggestions .coach-program-suggestion{
+  min-width:0;
+  overflow:visible;
+  border-color:rgba(34,211,238,.26);
+}
+.modal-mode-coach-program .coach-program-suggestion .exercise-name,
+.modal-mode-coach-program .coach-program-suggestion .mini{
+  overflow-wrap:anywhere;
+  white-space:normal;
+  line-height:1.5;
+}
+.modal-mode-coach-program .coach-program-suggestions .actions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  width:100%;
+}
+.modal-mode-coach-program .coach-program-suggestions .actions .btn{
+  min-height:48px;
+  min-width:0;
+  width:100%;
+  padding:11px 10px;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  text-align:center;
+  line-height:1.3;
+}
+.modal-mode-coach-program .coach-program-suggestions > .btn{
+  min-height:48px;
+  white-space:normal;
+  line-height:1.3;
+}
+.modal-mode-coach-program .coach-program-suggestions .btn:focus-visible{
+  outline:2px solid #67e8f9;
+  outline-offset:2px;
+}
+@media(max-width:430px){
+  .modal-mode-coach-program .coach-program-suggestions .actions{
+    grid-template-columns:minmax(0,1fr);
+  }
+  .modal-mode-coach-program .coach-program-suggestions .btn{
+    width:100%;
+    min-height:48px;
+  }
+  .modal-mode-coach-program .coach-program-suggestion .exercise-name{
+    font-size:1rem;
+    line-height:1.45;
+  }
+}
