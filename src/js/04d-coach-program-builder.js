@@ -111,6 +111,17 @@ function coachGenerateProgram(request,intent,previous=null){
    dayReq.programHingeHistory=[...hingeHistory];
    dayReq.programExerciseUsage=usage;
    dayReq.programMuscleUsage={...muscleUsage};
+   // Distinguish a deliberately constrained Pull session (no feasible
+   // vertical-pulling equipment) from a fully equipped one. The movement
+   // selector may then offer an additional *different-grip* direct biceps
+   // angle without changing the normal gym PPL selection or inventing a
+   // pull-up station. Never use this to bypass equipment exclusions.
+   if(key==='pull'&&dayReq.brainEquipment&&typeof coachBrainExerciseService==='function'){
+     const context=coachBrainEquipmentConstraints(dayReq),service=coachBrainExerciseService();
+     dayReq.programPullNoVertical=!visibleExercises().some(ex=>
+       ex.pattern==='vertical_pull'&&coachExerciseAllowedByConstraints(ex,dayReq)&&
+       service.evaluateAvailability(ex.id,context).status==='available');
+   }
    const initial=coachSelectExercises(dayReq,defaults.exerciseCount);
    const durationPlan=coachBrainTrimToTime(initial,dayReq,defaults);
    const selected=durationPlan.exercises;

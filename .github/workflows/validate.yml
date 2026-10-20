@@ -154,6 +154,28 @@ jobs:
       - name: Validate Coach phone-width recommendation usability constraints
         run: node scripts/coach-phase3-mobile-usability-stress.mjs
 
+      - name: Coach v0.93.5 final whole-week edge-case and override acceptance audit
+        run: node scripts/coach-v0935-edge-case-acceptance.mjs
+
+      - name: Validate Coach short-day, Pull workload and heavy-hinge selection quality
+        run: node scripts/coach-v0935-selection-quality-stress.mjs
+
+      - name: Retain targeted Coach selection-quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-v0935-selection-quality
+          path: /tmp/swole-cat-coach-selection/
+          retention-days: 30
+
+      - name: Retain Coach whole-week edge-case audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-v0935-edge-case-acceptance
+          path: /tmp/swole-cat-coach-edge-case/
+          retention-days: 30
+
       - name: Retain Phase 3 before-after swap quality evidence
         if: always()
         uses: actions/upload-artifact@v4
