@@ -422,7 +422,8 @@ function coachProjectedRepairDeficits(audit){
   (f.type==='missing_weekly_role'&&f.examples?.length)||
   (f.type==='missing_major_muscle'&&f.examples?.length)||
   (['priority_absent','priority_secondary_only','priority_broad_primary'].includes(f.type)
-    &&f.availability==='feasible'&&f.examples?.length)
+    &&f.availability==='feasible'&&f.examples?.length)||
+  (f.type==='same_day_family_overlap'&&Number.isInteger(f.dayIndex))
  ).sort((a,b)=>{
   const rank=f=>f.type==='priority_absent'?0:f.type==='priority_secondary_only'?1:
    f.type==='missing_major_muscle'?2:f.type==='missing_weekly_role'&&f.priority==='core'?3:
@@ -579,6 +580,7 @@ function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=
     if(repairedDays.has(dayIndex))continue;
     const day=working.days[dayIndex];
     if(finding.type==='missing_weekly_role'&&!coachProjectedWeekRoleFitsDay(finding.role,day))continue;
+    if(finding.type==='same_day_family_overlap'&&finding.dayIndex!==dayIndex)continue;
     if(finding.type==='missing_major_muscle'&&!(day.request?.targetRegions||[]).includes(finding.region))continue;
     if(finding.type.startsWith('priority_')&&!(day.request?.priorityRegions||[]).includes(finding.region)
        &&!(working.request?.programFocusRegions||[]).includes(finding.region)
@@ -589,6 +591,15 @@ function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=
     const matches=ex=>{
      if(finding.type==='missing_weekly_role')
       return COACH_PROJECTED_WEEK_ROLES[finding.role]?.patterns.includes(ex.pattern);
+     if(finding.type==='same_day_family_overlap'){
+      if(day.request?.goal==='strength')return false;
+      const priority=new Set([...(day.request?.priorityRegions||[]),
+        ...(working.request?.programFocusRegions||[]),...(working.intent?.focusRegions||[])]);
+      const accessoryPatterns=new Set(['hip_abduction','knee_flexion','calf_raise','back_extension',
+        'lateral_raise','rear_delt','elbow_extension','elbow_flexion','anti_extension','hip_adduction']);
+      return accessoryPatterns.has(ex.pattern)&&exerciseMuscleMetadata(ex).primary.some(region=>
+       priority.has(region)&&coachProjectedWeekFocusSpecific(ex,region));
+     }
      const primary=exerciseMuscleMetadata(ex).primary.includes(finding.region);
      return primary&&(finding.type==='missing_major_muscle'||
       coachProjectedWeekFocusSpecific(ex,finding.region));
@@ -630,7 +641,7 @@ function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=
        coachProjectedRepairFindingKey(finding));
       // No speculative churn: actually resolve the finding we targeted and
       // improve the whole-week score by a meaningful amount.
-      if(!resolved||improvement<6)continue;
+      if(!resolved||improvement<(finding.type==='same_day_family_overlap'?5:6))continue;
       const candidate={trial,audit:nextAudit,dayIndex,removed,replacement,
        finding,improvement,score:improvement+(sameFamily?2:0)-(compound?2:0),
        exerciseRank:coachCandidateBaseScore(replacement,day.request),
