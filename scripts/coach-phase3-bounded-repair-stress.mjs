@@ -167,9 +167,25 @@ try{
     assert.deepEqual(suggested.draft.days[i].request.requiredExerciseIds,
      draft.days[i].request.requiredExerciseIds);
    }
-   if(scenario.id==='3day_full_gym')assert(report.changes.some(c=>c.kind==='add'&&
-    ['vertical_pull','knee_flexion'].includes(w.exById(c.addedId)?.pattern)),
-    'A real three-day full-body gym week should safely complete a compatible missing movement role');
+   if(scenario.id==='3day_full_gym'){
+    assert(report.changes.some(c=>c.kind==='add'&&
+     ['vertical_pull','knee_flexion'].includes(w.exById(c.addedId)?.pattern)),
+     'A real three-day full-body gym week should safely complete a compatible missing movement role');
+    const capped=w.coachProjectedRepairClone(draft);
+    capped.days.forEach(day=>day.request={...day.request,prompt:day.request.prompt+' exactly 5 exercises'});
+    assert(!w.coachProposeProjectedWeekRepair(capped).changes.some(c=>c.kind==='add'),
+     'Explicit maximum exercise count must disable extra accessory exercises');
+    const explicitSets=w.coachProjectedRepairClone(draft);
+    explicitSets.days.forEach(day=>day.request={...day.request,prompt:day.request.prompt+' 3 working sets'});
+    assert(!w.coachProposeProjectedWeekRepair(explicitSets).changes.some(c=>c.kind==='add'),
+     'User-authored set prescriptions must not be overridden by automatic accessory volume');
+    const excluded=w.coachProjectedRepairClone(draft);
+    excluded.days.forEach(day=>day.request={...day.request,
+      excludedMovementPatterns:[...(day.request.excludedMovementPatterns||[]),'vertical_pull']});
+    assert(!w.coachProposeProjectedWeekRepair(excluded).changes.some(c=>
+      w.exById(c.addedId)?.pattern==='vertical_pull'),
+      'Explicit movement exclusions must survive repair');
+   }
    assert(!w.coachProjectedRepairRegresses(original,suggested.after));
   }
   results.push(report);
