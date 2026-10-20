@@ -55,6 +55,11 @@ try{
   'declining original press replacement changed selection');
  assert(!proposals().some(c=>c.dayIndex===1),
   'declined day must not receive another recommendation');
+ assert(w.coachProgramRegenerateWithOverrides(),'declined draft cannot regenerate');
+ assert(current().dayOverrides[1].recommendationsDeclined,
+  'declining was lost when the program was refined');
+ assert(!proposals().some(c=>c.dayIndex===1),
+  'declined day should not be re-prompted after regeneration');
  assert.equal(state(),unchanged,'declining should not save user data');
 
  newProgram();
@@ -112,9 +117,22 @@ try{
  }
  assert.equal(w.eval('state.sessions.length'),JSON.parse(unchanged).sessions.length,
   'saving program touched training history');
+ // Choosing "Try Another Swap" must invoke only the person's existing
+ // manual swap path, not silently accept Coach's proposed lat pulldown.
+ const savedState=state();
+ newProgram();
+ assert(w.coachProgramShowRecommendations());
+ const manualIndex=swapIndex();
+ assert(manualIndex>=0,'manual alternative requires visible swap');
+ assert(w.coachProgramSwapRecommendation(manualIndex),'manual alternate swap action failed');
+ assert(current().dayOverrides[1].excludedExerciseIds.includes(byName('Overhead Press').id),
+  'manual alternative did not update its own selected-day exclusions');
+ assert(!current().dayOverrides[1].requiredExerciseIds.includes(byName('Lat Pulldown').id),
+  'manual swap incorrectly forced the recommendation');
+ assert.equal(state(),savedState,'manual swap must not modify saved user data');
  console.log('COACH_RECOMMENDATION_PREVIEW_PASS '+JSON.stringify({
   reviewOptIn:true,keepOriginal:true,explicitAcceptance:true,
-  acceptanceIsDraftOnly:true,manualEditProtected:true,regenerationRetainsChoices:true,
+  acceptanceIsDraftOnly:true,manualEditProtected:true,manualAlternateSwap:true,declinesSurviveRefinement:true,regenerationRetainsChoices:true,
   previewSaveParity:true,generatedDays:3,
   acceptedDayB:'Overhead Press -> Lat Pulldown',
   acceptedDayA:'2 sets Seated Leg Curl',
