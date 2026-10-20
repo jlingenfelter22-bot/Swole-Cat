@@ -315,6 +315,36 @@ function coachProjectedWeekAudit(draft=coachProgramBuildDraft){
    'This is an optional variety/coverage consideration, not mandatory for every plan.'),
    {role,examples:examples.slice(0,3),priority:isCore?'core':'optional'});
  }
+ // Major-region absence is evaluated only for regions that belong to the
+ // chosen day/split and are supported by the confirmed available catalog.
+ // This complements, rather than replaces, movement roles. A vertical shoulder
+ // press is "pressing" but does not automatically cover the chest.
+ const majorRegions=['chest','lats','upper_back','quads','hamstrings','glutes'];
+ const regionFeasibility={};
+ for(const region of majorRegions){
+  const dayOptions=draft.days.filter(day=>{
+   const allowed=day.request?.targetRegions||COACH_TARGET_GROUPS[coachProjectedWeekDayKey(day)]?.regions||[];
+   return allowed.includes(region);
+  });
+  if(!dayOptions.length)continue;
+  const row=regions[region];
+  if((Number(row?.primary)||0)+(Number(row?.secondary)||0)>0)continue;
+  const examples=[];let unverified=false;
+  for(const day of dayOptions){
+   const possible=coachProjectedWeekFeasible(day,ex=>exerciseMuscleMetadata(ex).primary.includes(region));
+   if(possible.status==='unverified')unverified=true;
+   examples.push(...possible.examples);
+  }
+  const status=examples.length?'feasible':unverified?'unverified':'not_feasible';
+  regionFeasibility[region]={status,examples:examples.slice(0,3)};
+  if(status!=='feasible')continue;
+  append('missing_major_muscle','review',
+   (MUSCLE_REGION_LABELS[region]||region)+' has no planned set contribution',
+   'This muscle group belongs to the chosen weekly split and has a compatible primary-target exercise, '+
+   'but no planned primary or secondary exposure. Review whether to represent it without losing the requested priorities.',
+   {region,examples:examples.slice(0,3)});
+ }
+
  // The explicit target is distinct from broad muscle involvement. Squats
  // legitimately involve glutes, but may not satisfy a request to emphasize
  // glutes if there is no deliberate hip-extension/hinge option anywhere.
@@ -357,7 +387,7 @@ function coachProjectedWeekAudit(draft=coachProgramBuildDraft){
   ...r,totalEstimate:r.primary+r.secondary
  }]));
  return {version:'phase2-read-only',ready:true,split:draft.intent?.split||null,
-  days:dayRows,regions:totals,roles,roleFeasibility,priorities:priorityAudit,
+  days:dayRows,regions:totals,roles,roleFeasibility,regionFeasibility,priorities:priorityAudit,
   findings,summary:{
    constraintFindings:findings.filter(f=>f.severity==='constraint').length,
    reviewFindings:findings.filter(f=>f.severity==='review').length,
