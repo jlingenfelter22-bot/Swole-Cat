@@ -63,7 +63,7 @@ try{
  assert(schedule.candidates.some(x=>x.kind==='schedule_gap'),'Actual schedule gap must be distinguished from exercise choice');
  assert(!schedule.candidates.some(x=>x.kind==='rotation_gap'),'Balanced slots are not a rotation problem');
  assert(!schedule.candidates.some(x=>x.kind==='execution_gap'),'Completed all programmed movements');
- assert(schedule.candidates[0].detail.includes('not evidence that your exercise selection is wrong'));
+ assert(schedule.candidates[0].detail.includes('it does not mean your exercises are wrong'));
  findings.push({id:'true_schedule_gap',rate:schedule.actualPerWeek,first:schedule.candidates[0].kind});
  const frequent=[27,24,21,18,15,12,9,6].map((d,i)=>log(d,i===7?'b':'a'));
  inject(frequent,program);
@@ -80,7 +80,7 @@ try{
  assert(!execution.candidates.some(x=>x.kind==='schedule_gap'));
  assert(!execution.candidates.some(x=>x.kind==='rotation_gap'));
  assert(execution.candidates.some(x=>x.kind==='execution_gap'),'3/4 Upper A logs with explicit missing Row should support review');
- assert(execution.candidates.find(x=>x.kind==='execution_gap').detail.includes('Routine may have changed'));
+ assert(execution.candidates.find(x=>x.kind==='execution_gap').detail.includes('saved Routine may have changed'));
  findings.push({id:'completed_day_execution_gap',evidence:execution.candidates.find(x=>x.kind==='execution_gap').evidence});
  // Unfinished movement logs can be a neutral data-completeness issue.
  // They must NEVER be described as an explicitly skipped movement.
@@ -116,6 +116,13 @@ try{
  const body=w.document.getElementById('modalBody');
  assert.match(body.textContent,/COACH \/\/ TRAINING REVIEW/);
  assert.match(body.textContent,/Keep as is/);
+ assert.match(body.textContent,/Completed sessions by Routine/);
+ assert.match(body.textContent,/saved schedule|current plan|saved target|logging/i);
+ assert.equal(body.querySelectorAll('.coach-phase4-slot').length,2);
+ assert(body.querySelector('.coach-phase4-description'),'Evidence should not be squeezed into a small caption');
+ assert.match(body.textContent,/reopen the review|reopen the review|until you reopen/i);
+ assert(!/lazy|lack of motivation|overtrain|injury diagnosis/i.test(body.textContent),
+  'Coaching wording must not ascribe motive or diagnose recovery');
  const initial=report().candidates[0];
  assert(w.coachPhase4ProgramReviewDismiss('p',initial.id));
  assert(!body.querySelector('[data-coach-phase4-candidate="'+initial.id+'"]'),
