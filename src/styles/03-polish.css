@@ -3707,3 +3707,72 @@ nav .rest-dock-pocket::after{
   .coach-phase4-review .actions{grid-template-columns:minmax(0,1fr)}
   .coach-phase4-review .coach-phase4-description{font-size:.95rem;line-height:1.55}
 }
+
+
+/* Coach Program Audit quality review, v0.93.7 follow-up.
+   Keep the Phase 4 entrypoint above findings; don't overcrowd small phones. */
+.coach-audit-refresh .coach-audit-primary{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:9px;
+ padding:12px 13px;
+ margin-top:11px;
+ border:1px solid color-mix(in srgb,var(--signal-coach,#a78bfa) 36%,transparent);
+ border-radius:12px;
+ background:color-mix(in srgb,var(--signal-coach,#a78bfa) 7%,transparent);
+}
+.coach-audit-refresh .coach-audit-primary .btn{
+ width:100%;min-height:48px;line-height:1.35;
+ white-space:normal;overflow-wrap:anywhere;
+}
+.coach-audit-refresh .coach-audit-status{
+ margin-top:11px;padding:11px 13px;
+ border-left:3px solid rgba(148,163,184,.55);
+ background:rgba(148,163,184,.065);
+ border-radius:8px;
+}
+.coach-audit-refresh .coach-audit-status .mini{margin-top:4px;line-height:1.5}
+.coach-audit-refresh .coach-audit-disclosure{
+ min-width:0;width:100%;margin-top:10px;
+ border:1px solid rgba(148,163,184,.2);
+ border-radius:10px;padding:10px 11px;
+}
+.coach-audit-refresh .coach-audit-disclosure summary{
+ cursor:pointer;font-size:.92rem;font-weight:600;line-height:1.4;
+ overflow-wrap:anywhere;
+}
+.coach-audit-refresh .coach-audit-disclosure .mini{line-height:1.5;margin-top:8px;overflow-wrap:anywhere}
+.coach-audit-refresh .coach-audit-coverage-rows{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:12px;
+}
+.coach-audit-refresh .coach-audit-coverage-row{
+ display:flex;justify-content:space-between;gap:12px;
+ padding-bottom:7px;border-bottom:1px solid rgba(148,163,184,.13);
+ min-width:0;line-height:1.45;font-size:.88rem;
+}
+.coach-audit-refresh .coach-audit-coverage-row span{overflow-wrap:anywhere;min-width:0}
+.coach-audit-refresh .coach-audit-coverage-row span:last-child{text-align:right}
+.coach-audit-refresh .coach-audit-findings-label{margin-top:15px;font-weight:650}
+.coach-audit-refresh .coach-audit-finding{margin-top:9px;min-width:0}
+.coach-audit-refresh .coach-audit-finding .exercise-name{
+ overflow-wrap:anywhere;white-space:normal;text-overflow:clip;line-height:1.43;
+}
+.coach-audit-refresh .coach-audit-finding .actions{margin-top:11px}
+.coach-audit-refresh .coach-audit-finding .actions .btn{
+ min-height:48px;min-width:0;width:100%;padding:10px 14px;
+ overflow-wrap:anywhere;white-space:normal;
+}
+.coach-audit-refresh .coach-audit-finding .coach-audit-disclosure{
+ background:transparent;padding:8px 9px;
+}
+.coach-audit-refresh .coach-audit-footnote{margin-top:14px;line-height:1.5}
+.coach-audit-refresh .coach-audit-footer{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px;
+}
+.coach-audit-refresh .coach-audit-footer .btn{
+ min-height:48px;min-width:0;width:100%;white-space:normal;
+ overflow-wrap:anywhere;line-height:1.35;
+}
+@media(max-width:430px){
+ .coach-audit-refresh .coach-audit-footer{grid-template-columns:minmax(0,1fr)}
+ .coach-audit-refresh .coach-audit-coverage-row{flex-direction:column;gap:3px}
+ .coach-audit-refresh .coach-audit-coverage-row span:last-child{text-align:left}
+}

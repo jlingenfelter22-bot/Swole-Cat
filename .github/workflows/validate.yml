@@ -253,6 +253,17 @@ jobs:
       - name: Stress test v0.63 Program auditor and long-term planning
         run: node scripts/coach-program-auditor-stress.mjs
 
+      - name: Coach Audit v0.93.7 hierarchy, full-body repetition and insufficient-history fidelity
+        run: node scripts/coach-v0937-audit-hierarchy-fidelity-stress.mjs
+
+      - name: Retain Coach Audit mobile and evidence-fidelity review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-audit-v0937-quality
+          path: /tmp/swole-cat-coach-audit-polish/
+          retention-days: 30
+
       - name: Battle test v0.64 Coach longitudinal intelligence
         run: node scripts/coach-battle-hardening-stress.mjs
 
