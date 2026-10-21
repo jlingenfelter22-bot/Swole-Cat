@@ -306,6 +306,11 @@ function renderCoachProgramAudit(audit){
   '<button class="btn secondary" onclick="closeModal()">Done</button></div></div>');
  return true;
 }
+function openCoachProgramAudit(programId){
+ const audit=coachProgramAudit(programId);
+ if(!audit){showToast('Program not found');return false}
+ return renderCoachProgramAudit(audit);
+}
 function coachProgramAuditAction(programId,findingId){
  const audit=coachProgramAudit(programId),f=audit?.findings.find(x=>x.id===findingId);if(!f)return false;
  if(f.action==='review_routine'&&f.routineId){closeModal();if(openCoachRoutineControl(f.routineId)&&coachRoutineSession){coachRoutineSession.lastResponse='Program audit: '+f.title+' '+f.text;renderCoachRoutineControl()}return true}
