@@ -85,10 +85,14 @@ for(const width of widths){
    assert(button.textContent.trim().length>0,'Unlabeled review action');
    assert(!button.disabled,'Unexpected disabled action');
   }
+  const originalCardId=review.querySelector('.coach-phase4-suggestion')?.getAttribute('data-coach-phase4-candidate');
   const dismissed=review.querySelector('.coach-phase4-suggestion [onclick*="coachPhase4ProgramReviewDismiss"]');
-  assert(dismissed,'No reversible non-mutating opt-out');
+  assert(dismissed&&originalCardId,'No reversible non-mutating opt-out');
   dismissed.click();
-  assert(!body.querySelector('.coach-phase4-suggestion'),'Keep as is must dismiss current observation');
+  assert(!body.querySelector('[data-coach-phase4-candidate="'+originalCardId+'"]'),
+   'Keep as is must dismiss only the current observation');
+  // Another independently grounded observation can be shown next, without
+  // affecting the dismissed one or changing any saved workouts.
   assert.equal(w.eval('JSON.stringify({sessions:state.sessions,routines:state.routines,programs:state.programs})'),
    before,'Tap Keep as is modified personal workout state');
   const back=[...body.querySelectorAll('button')].find(b=>b.textContent.trim()==='Back to Program Audit');
@@ -96,7 +100,8 @@ for(const width of widths){
   assert(body.textContent.includes('PROGRAM AUDIT'),'Back must restore existing audit');
   const reopen=[...body.querySelectorAll('button')].find(b=>b.textContent.trim()==='Review Training History');
   assert(reopen);reopen.click();
-  assert(body.querySelector('.coach-phase4-suggestion'),'Review should be available next time');
+  assert(body.querySelector('[data-coach-phase4-candidate="'+originalCardId+'"]'),
+   'Reopening must restore the same dismissed observation');
   assert.equal(w.localStorage.getItem('overload_v3'),storageBefore,
    'Navigating or dismissing reviews must not trigger persistence');
   evidence.push({width,slotRows:2,reviewActions:buttons.length,
