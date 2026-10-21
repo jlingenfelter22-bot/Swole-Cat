@@ -32,7 +32,17 @@ function coachPhase4ExerciseEvidence(exerciseId,referenceMs=Date.now()){
  if(!ex)return {...base,reason:'unknown_exercise'};
  if(exerciseLoadType(exerciseId)!=='external'||exerciseMeasurementType(exerciseId)!=='reps')
   return {...base,reason:'measurement_not_comparable_by_external_load'};
+ // The underlying v0.60 profile processes eight raw exposures, not one
+ // per training day. Its estimated trend cannot safely be reused if those
+ // raw rows include duplicates or a session-level measurement/load override.
+ // Fail closed instead of showing an apparently stronger multi-week claim.
+ const raw=coachProgressionExposureRows(exerciseId,now,8);
  const rows=coachPhase4DistinctExposureRows(exerciseId,now);
+ if(raw.some(r=>r.loadType!=='external'||r.measurementType!=='reps'))
+  return {...base,reason:'mixed_load_or_measurement_history'};
+ if(raw.length!==rows.length)
+  return {...base,supporting:{...base.supporting,exposures:rows.length},
+   reason:'duplicate_or_incomplete_comparable_exposures'};
  const latest=rows.at(-1),first=rows[0];
  const latestMs=new Date(latest?.date||0).getTime(),firstMs=new Date(first?.date||0).getTime();
  const spanDays=rows.length>=2?(latestMs-firstMs)/86400000:0;
