@@ -118,7 +118,7 @@ function coachPhase4ProgramComparison(programId,referenceMs=Date.now()){
   for(const group of coverage){
    if(coachProgramAuditGroupScore(planned.scores,group)>0)continue;
    add('design:'+program.id+':'+group.key,'planned_gap',50,
-    group.label+' is not represented in today's saved Program.',
+    group.label+' is not represented in today’s saved Program.',
     'Today’s saved Routines do not include meaningful '+group.label.toLowerCase()+
     ' work. That may be intentional given your split and goals. This describes the current plan, not the workouts you missed or completed. No changes are required.',
     {groupKey:group.key,nextStep:'review_program',evidence:{plannedSetEquivalents:0}});
