@@ -30,6 +30,7 @@ const JS_SOURCES = [
   'src/js/04g-coach-history-insights.js',
   'src/js/04g2-coach-longitudinal-evidence.js',
   'src/js/04h-coach-program-auditor.js',
+  'src/js/04h2-coach-phase4-program-review.js',
   'src/js/05-exercises-routines.js',
   'src/js/05b-sharing.js',
   'src/js/06-workout-engine.js',
