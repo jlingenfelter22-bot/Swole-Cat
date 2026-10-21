@@ -67,6 +67,17 @@ try{
  setState(logs(['2026-10-06','2026-10-06','2026-10-12','2026-10-12'],[100,100,100,100],{rir:1}));
  assert.equal(only().eligible,false,'Same-day duplicate logs must not make a plateau');
  track('duplicate_day',{reason:only().reason});
+ // Four *different* days do not rescue a v0.60 raw trend if a fifth
+ // duplicate day was also counted as an extra exposure.
+ setState(logs([...d4,'2026-10-07'],[100,100,100,100,100],{rir:1}));
+ assert.equal(only().eligible,false,'Duplicate exposures can bias existing adaptive profile even with four distinct days');
+ track('extra_duplicate_with_four_days',{reason:only().reason});
+ const mixed=logs(d4,[100,100,100,100],{rir:1});
+ mixed[2].exercises[0].config={loadType:'assistance'};
+ setState(mixed);
+ assert.equal(only().eligible,false,'Session-specific assistance override must not enter the external-load trend');
+ assert.equal(only().reason,'mixed_load_or_measurement_history');
+ track('mixed_load_override',{reason:only().reason});
  const withDeload=[
   ...logs(['2026-09-21','2026-09-29','2026-10-07'],[100,100,100],{rir:1}),
   ...logs(['2026-10-09','2026-10-11','2026-10-15'],[40,40,40],{rir:1,phase:'deload'})
@@ -134,6 +145,7 @@ try{
   scenarios:evidence.length,readOnly:true,staleSuppressed:true,
   sparseHistorySuppressed:true,deloadExcluded:true,sameDayDeduped:true,
   futureDatesExcluded:true,singleOffDaySuppressed:true,
-  multimodalProtected:true,explicitSkipsOnly:true,existingProgressionUntouched:true
+  multimodalProtected:true,mixedOverridesSuppressed:true,
+  duplicateEligibleDatesSuppressed:true,explicitSkipsOnly:true,existingProgressionUntouched:true
  }));
 }finally{dom.window.close()}
