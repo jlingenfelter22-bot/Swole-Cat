@@ -37,7 +37,11 @@ const audit=w.coachProgramAudit('p');
 assert(audit);assert.equal(audit.routines.length,3);
 assert(audit.coverageRows.find(x=>x.key==='lower body').plannedSets>0);
 assert.equal(audit.coverageRows.find(x=>x.key==='lower body').actualSets,0);
-for(const type of ['adherence','slot_gap','actual_coverage_gap','redundancy','distribution','plateau_high_effort','progressing'])assert(audit.findings.some(x=>x.type===type),'missing '+type);
+for(const type of ['adherence','slot_gap','redundancy','distribution','plateau_high_effort','progressing'])assert(audit.findings.some(x=>x.type===type),'missing '+type);
+assert(!audit.findings.some(x=>x.type==='actual_coverage_gap'),
+ 'Missed workouts alone cannot justify a muscle-coverage shortfall warning');
+assert(!w.coachProgramAuditHasComparableCoverage(audit),
+ 'This schedule is below target: should not claim comparable planned-vs-actual weekly coverage');
 const distribution=audit.findings.find(x=>x.type==='distribution'&&x.evidence==='actual_adjacent_sessions');
 assert(distribution,'distribution must be supported by actual adjacent completed Program sessions rather than positional preferred-day assumptions');
 assert.match(distribution.text,/completed Program days|on .* and .* on /i);
