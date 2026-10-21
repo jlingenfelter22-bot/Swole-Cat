@@ -166,6 +166,17 @@ jobs:
       - name: Phase 4 opt-in planned-versus-completed Program review acceptance
         run: node scripts/coach-phase4-program-review-stress.mjs
 
+      - name: Phase 4 Android phone-width and coaching-language usability quality gate
+        run: node scripts/coach-phase4-android-copy-usability-stress.mjs
+
+      - name: Retain Phase 4 phone-width and wording QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-phase4-mobile-language-audit
+          path: /tmp/swole-cat-coach-phase4-mobile/
+          retention-days: 30
+
       - name: Retain Phase 4 Program review evidence
         if: always()
         uses: actions/upload-artifact@v4
