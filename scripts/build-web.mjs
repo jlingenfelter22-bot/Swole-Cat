@@ -28,6 +28,7 @@ const JS_SOURCES = [
   'src/js/04e-coach-ui.js',
   'src/js/04f-coach-routine-control.js',
   'src/js/04g-coach-history-insights.js',
+  'src/js/04g2-coach-longitudinal-evidence.js',
   'src/js/04h-coach-program-auditor.js',
   'src/js/05-exercises-routines.js',
   'src/js/05b-sharing.js',
