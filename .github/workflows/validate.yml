@@ -163,6 +163,17 @@ jobs:
       - name: Phase 4 read-only longitudinal evidence quality and no-mutation checks
         run: node scripts/coach-phase4-readonly-evidence-stress.mjs
 
+      - name: Phase 4 opt-in planned-versus-completed Program review acceptance
+        run: node scripts/coach-phase4-program-review-stress.mjs
+
+      - name: Retain Phase 4 Program review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-phase4-program-review
+          path: /tmp/swole-cat-coach-phase4-program/
+          retention-days: 30
+
       - name: Retain Phase 4 longitudinal coaching evidence audit
         if: always()
         uses: actions/upload-artifact@v4
