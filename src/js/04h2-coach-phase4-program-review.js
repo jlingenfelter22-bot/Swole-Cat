@@ -43,10 +43,10 @@ function coachPhase4ProgramComparison(programId,referenceMs=Date.now()){
  // We never map preferred weekdays to Routine slots by index.
  if(enoughTime&&sessions.length>=3&&weeklyRate<target*.65){
   add('schedule:'+program.id,'schedule_gap',95,
-   'Your completed Program frequency is below its saved target.',
+   'Your logged Program workouts are below the saved weekly target.',
    'The saved target is '+target+' sessions a week; '+sessions.length+
    ' completed Program sessions across about '+weeks.toFixed(1)+
-   ' observed weeks is '+weeklyRate.toFixed(1)+' per week. This is a schedule/logging difference, not evidence that your exercise selection is wrong.',
+   ' observed weeks is '+weeklyRate.toFixed(1)+' per week. This describes logged sessions only. Training outside this Program, unlogged sessions, or changes in availability could explain the difference; it does not mean your exercises are wrong.',
    {evidence:{targetPerWeek:target,loggedPerWeek:Number(weeklyRate.toFixed(2)),
     sessions:sessions.length,observedWeeks:Number(weeks.toFixed(2))},nextStep:'review_program'});
  }
@@ -58,10 +58,10 @@ function coachPhase4ProgramComparison(programId,referenceMs=Date.now()){
     maxCount>=minCount+3&&minCount<=Math.max(1,maxCount*.4)){
   const under=bySlot.filter(x=>x.count===minCount).sort((a,b)=>a.name.localeCompare(b.name))[0];
   add('rotation:'+program.id+':'+under.routineId,'rotation_gap',83,
-   under.name+' has appeared less often in completed sessions.',
+   under.name+' appears less often in your Program logs.',
    'In '+sessions.length+' recent Program workouts, '+under.name+' appeared '+
    under.count+' time'+(under.count===1?'':'s')+
-   ' while another Routine appeared '+maxCount+' times. Review your routine rotation before changing individual exercises.',
+   ' while another Routine appeared '+maxCount+' times. That can reflect your schedule, preferences, or logging. Review your routine rotation before considering exercise changes.',
    {routineId:under.routineId,
     evidence:{underCount:under.count,maxCount,sessions:sessions.length},
     nextStep:'review_program'});
@@ -101,11 +101,11 @@ function coachPhase4ProgramComparison(programId,referenceMs=Date.now()){
   if(issues.length){
    const item=issues[0];
    add('execution:'+program.id+':'+slot.id+':'+item.group.key,'execution_gap',72,
-    item.group.label+' work in '+slot.routine.name+' differs from the current plan.',
+    item.group.label+' work in '+slot.routine.name+' has a logged-work difference to review.',
     item.deficits.length+' of '+comparable.length+' comparable completed '+
     slot.routine.name+' sessions logged substantially less '+
     item.group.label.toLowerCase()+
-    ' involvement than the Routine currently specifies. The Routine may have changed since those sessions; review logs and preferences rather than adding exercises automatically.',
+    ' involvement than the Routine currently specifies. The saved Routine may have changed, and missing sets may be incomplete logs. Check the sessions before editing your plan; Coach will not add exercises automatically.',
     {routineId:slot.id,groupKey:item.group.key,nextStep:'review_routine',
      evidence:{comparableSessions:comparable.length,lowerCoverageSessions:item.deficits.length,
        plannedSetEquivalents:Number(item.plannedSets.toFixed(2))}});
@@ -118,9 +118,9 @@ function coachPhase4ProgramComparison(programId,referenceMs=Date.now()){
   for(const group of coverage){
    if(coachProgramAuditGroupScore(planned.scores,group)>0)continue;
    add('design:'+program.id+':'+group.key,'planned_gap',50,
-    group.label+' does not appear in the current Program plan.',
+    group.label+' is not represented in today's saved Program.',
     'Today’s saved Routines do not include meaningful '+group.label.toLowerCase()+
-    ' work. That may be intentional given your split and goals. It is a plan-design observation, not something caused by missed workouts.',
+    ' work. That may be intentional given your split and goals. This describes the current plan, not the workouts you missed or completed. No changes are required.',
     {groupKey:group.key,nextStep:'review_program',evidence:{plannedSetEquivalents:0}});
   }
  }
@@ -146,14 +146,16 @@ function coachPhase4ProgramReviewHtml(review){
   :review.sessions+' completed sessions; about '+review.actualPerWeek.toFixed(1)+
    ' per week against '+review.targetPerWeek+' planned.';
  const header='<div class="coach-console"><div class="eyebrow">COACH // TRAINING REVIEW</div>'+
-  '<div class="exercise-name">'+esc(review.title)+'</div>'+
+  '<div class="exercise-name" role="heading" aria-level="2">'+esc(review.title)+'</div>'+
   '<div class="mini">'+esc(evidence)+'</div></div>';
- const slotSummary='<div class="coach-rationale"><b>Logged Routine distribution</b>'+
-  '<div class="mini">'+review.slots.map(x=>esc(x.name)+': '+x.count).join(' · ')+'</div></div>';
- const card=candidate?'<div class="card" style="margin-top:10px" data-coach-phase4-candidate="'+escAttr(candidate.id)+'">'+
+ const slotSummary='<div class="coach-rationale"><b>Completed sessions by Routine</b>'+
+  '<div class="coach-phase4-slot-list">'+review.slots.map(x=>
+   '<div class="coach-phase4-slot"><span>'+esc(x.name)+'</span><b>'+
+   x.count+' logged</b></div>').join('')+'</div></div>';
+ const card=candidate?'<div class="card coach-phase4-suggestion" style="margin-top:10px" data-coach-phase4-candidate="'+escAttr(candidate.id)+'">'+
   '<div class="eyebrow">OPTIONAL REVIEW · '+esc(candidate.kind.replaceAll('_',' '))+'</div>'+
   '<div class="exercise-name">'+esc(candidate.title)+'</div>'+
-  '<div class="mini" style="margin-top:7px">'+esc(candidate.detail)+'</div>'+
+  '<div class="coach-phase4-description" style="margin-top:7px">'+esc(candidate.detail)+'</div>'+
   '<div class="actions"><button class="btn secondary" onclick="coachPhase4ProgramReviewAction(\''+
     escAttr(review.programId)+'\',\''+escAttr(candidate.id)+'\')">'+
     esc(candidate.nextStep==='review_routine'?'Review Routine':'Review Program')+'</button>'+
@@ -161,9 +163,9 @@ function coachPhase4ProgramReviewHtml(review){
     escAttr(review.programId)+'\',\''+escAttr(candidate.id)+'\')">Keep as is</button></div></div>'
   :'<div class="notice">'+(review.confidence==='history_forming'
    ?'There is not enough completed Program history yet to draw reliable planned-versus-actual conclusions.'
-   :'No further Program follow-through suggestions need review from these logs.')+'</div>';
+   :'There are no other suggestions to review right now. Reopen this review to see dismissed observations again.')+'</div>';
  return header+slotSummary+card+'<div class="mini" style="margin-top:10px">'+esc(review.caveat)+
-  ' Suggestions are optional. “Keep as is” hides one suggestion for this review only; it does not edit your plan.</div>'+
+  ' Suggestions are optional. “Keep as is” hides this observation until you reopen the review; your Program and progression targets stay unchanged.</div>'+
   '<div class="actions"><button class="btn secondary" onclick="openCoachProgramAudit(\''+
   escAttr(review.programId)+'\')">Back to Program Audit</button>'+
   '<button class="btn secondary" onclick="closeModal()">Done</button></div>';
@@ -172,7 +174,7 @@ function openCoachPhase4ProgramReview(programId,{reset=true}={}){
  const review=coachPhase4ProgramComparison(programId);
  if(!review){showToast('Program not found');return false}
  if(reset)coachPhase4DismissedReviews.delete(programId);
- openModal('Coach · Training Review','<div class="coach-builder" id="coachPhase4Review">'+
+ openModal('Coach · Training Review','<div class="coach-builder coach-phase4-review" id="coachPhase4Review" aria-live="polite">'+
   coachPhase4ProgramReviewHtml(review)+'</div>');
  return true;
 }
