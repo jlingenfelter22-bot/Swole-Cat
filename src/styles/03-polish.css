@@ -3646,3 +3646,64 @@ nav .rest-dock-pocket::after{
     line-height:1.45;
   }
 }
+
+
+/* Phase 4: opt-in Training History Review, phone-width Android usability.
+   Scoped to the review modal so other Coach/Program actions do not change. */
+.coach-phase4-review,.coach-phase4-review .card,
+.coach-phase4-review .coach-console,.coach-phase4-review .coach-rationale{
+  min-width:0;
+  max-width:100%;
+}
+.coach-phase4-review .exercise-name,
+.coach-phase4-review .coach-phase4-description,
+.coach-phase4-review .mini,
+.coach-phase4-review .coach-phase4-slot span{
+  white-space:normal;
+  overflow-wrap:anywhere;
+  text-overflow:clip;
+  max-width:100%;
+}
+.coach-phase4-review .coach-phase4-description{
+  color:var(--text-muted,#cbd5e1);
+  font-size:.94rem;
+  line-height:1.52;
+}
+.coach-phase4-review .coach-phase4-slot-list{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:8px;
+  margin-top:10px;
+}
+.coach-phase4-review .coach-phase4-slot{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:12px;
+  min-width:0;
+  border-bottom:1px solid rgba(148,163,184,.13);
+  padding:0 0 7px;
+}
+.coach-phase4-review .coach-phase4-slot span{flex:1;min-width:0}
+.coach-phase4-review .coach-phase4-slot b{
+  white-space:nowrap;
+  flex:none;
+  font-size:.84rem;
+  font-weight:600;
+}
+.coach-phase4-review .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.coach-phase4-review .actions .btn{
+  min-width:0;
+  min-height:48px;
+  width:100%;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  text-overflow:clip;
+  line-height:1.3;
+  padding:10px 12px;
+}
+.coach-phase4-review .actions .btn:focus-visible{outline:2px solid #67e8f9;outline-offset:2px}
+@media(max-width:430px){
+  .coach-phase4-review .actions{grid-template-columns:minmax(0,1fr)}
+  .coach-phase4-review .coach-phase4-description{font-size:.95rem;line-height:1.55}
+}
