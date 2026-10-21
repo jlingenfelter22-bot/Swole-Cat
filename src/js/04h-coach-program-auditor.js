@@ -78,7 +78,8 @@ function coachProgramAuditExerciseEntries(program){
 function coachProgramAuditAdherence(program,audit){
  const f=[],sessions=audit.actual.sessions;
  if(!sessions.length)return [coachProgramAuditFinding('history_depth',45,'No completed Program sessions yet.','Coach can audit Program structure now, but needs completed Program workouts before comparing saved frequency with actual completion.',{action:'none'})];
- if(audit.historyDays<14)return [coachProgramAuditFinding('history_depth',42,'Program history is still forming.','There are completed Program workouts, but fewer than two weeks of Program history, so Coach avoids strong adherence conclusions.',{action:'none'})];
+ if(audit.historyDays<21||sessions.length<Math.max(3,audit.routines.length))
+  return [coachProgramAuditFinding('history_depth',42,'Program history is still forming.','Recent workouts are not yet enough to make a reliable weekly follow-through comparison.',{action:'none'})];
  const target=Math.max(1,Number(program.frequency)||1),rate=sessions.length/audit.actual.weeks;
  audit.targetPerWeek=target;audit.actualPerWeek=rate;
  if(rate/target<.65)f.push(coachProgramAuditFinding('adherence',86,'Actual Program frequency is below the saved target.','The Program is set to '+target+' workouts per week. Recent completed Program history averages about '+rate.toFixed(1)+' per week. That is a completion pattern, not a recovery or motivation diagnosis.',{action:'edit_program',programId:program.id}));
