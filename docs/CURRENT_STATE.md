@@ -1,5 +1,25 @@
 # Swole Cat Current State
 
+## Latest milestone: 2026-10-22 · Testing v0.93.8 Released, Phase 4 Program-Change QA in Draft
+
+**Published signed Testing:** v0.93.8 / Android versionCode **144**, package com.jlingenfelter.swolecat.testing. **Field Beta:** v0.73.1, unchanged. **Main:** commit 22c4fa00e1548c8fcfc825fea8546f233093ffbf. Physical Android v0.93.8 owner acceptance is still pending.
+
+- October 21 Coach Audit polish merged through PR [#94](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/94) in commit f214202e46d29bb34e525e1cac8ec6ee9cf9a054. The UI now leads with Review Training History; cross-day Full Body bench/row repetition is no longer falsely treated as redundant; sparse logged attendance cannot be converted into a claimed muscle-training deficit. Optional plan-versus-logged set equivalents have clearer evidence qualifiers, scannable findings and Android-width tests.
+- Official Testing release: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.93.8
+- Signed APK: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.93.8/swole-cat-testing-v0.93.8-signed.apk
+- Testing manifest: https://github.com/jlingenfelter22-bot/Swole-Cat/blob/main/updates/testing.json . APK SHA-256 **403edf9ea7ba28481bf3ec4e35ac0bcb33cf785eb472a19ba40893c754ed8798**; permanent Testing certificate **d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53**; manifest publication **2026-10-21T17:35:51Z**.
+- New draft PR [#95](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/95) adds a read-only Phase 4 Program-change and cross-Program regression battery to Validate Swole Cat. This is **development-only** and does not change the released Android app. Initial targeted CI step passed; full exact-head validation must be rechecked after the final documentation commit. See [Phase 4 v0.93.8 program-change QA](coach-quality/PHASE4_PROGRAM_CHANGE_QA_V0938.md).
+- **Unresolved evidence limitation:** comparisons against today's saved weekly frequency and set counts cannot prove an older target when a person edits a Program. Historic dated plan snapshots are not available to this review. No automatic history edits or stronger claims are approved.
+
+**NEXT GATE:** Owner reviews physical Android Testing v0.93.8 in place: open Program Options > Coach Audit, verify History Review is prominent, repeated Full Body movements are not false redundancy alerts, sparse history is neutral, expandable Why Coach noticed and coverage detail remain readable, and Keep as is only dismisses the observation temporarily. Provide screenshot/silent walkthrough for issues. The new PR #95 remains draft, with no APK or Beta publication. Do not alter cloud identities or recover historically mixed records as part of this review.
+
+**Release safeguards:** Keep Testing and Beta signing/package IDs and user data separated; no automatic Program edits, changed progression rules, cloud migrations or cloud-record cleanup. Any new Testing release requires a separate owner go-ahead, green exact-head checks and verified updater artifacts. Beta requires separate explicit authorization.
+
+Older milestones below are historical.
+
+---
+
+
 ## Latest milestone: 2026-10-14 · Testing v0.93.0 Coach Integrated Phone Candidate
 
 **Current signed Testing:** v0.93.0 / Android versionCode **135**, package `com.jlingenfelter.swolecat.testing`, unchanged permanent Testing signing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
