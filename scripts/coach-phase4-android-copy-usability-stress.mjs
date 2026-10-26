@@ -80,7 +80,7 @@ for(const width of widths){
    'Coaching wording claims more than activity logs support');
   assert(!review.textContent.includes('…'),'Do not ellipsize user-visible coach text');
   const buttons=[...review.querySelectorAll('.actions .btn')];
-  assert.equal(buttons.length,4,'Review card + footer should offer four explicit controls');
+  assert.equal(buttons.length,3,'Review needs two optional actions and one clear Back button');
   for(const button of buttons){
    assert(button.textContent.trim().length>0,'Unlabeled review action');
    assert(!button.disabled,'Unexpected disabled action');
@@ -97,7 +97,7 @@ for(const width of widths){
    before,'Tap Keep as is modified personal workout state');
   const back=[...body.querySelectorAll('button')].find(b=>b.textContent.trim()==='Back to Program Audit');
   assert(back);back.click();
-  assert(body.textContent.includes('PROGRAM AUDIT'),'Back must restore existing audit');
+  assert(body.querySelector('.coach-audit-simple'),'Back must restore the simplified Coach Audit');
   const reopen=[...body.querySelectorAll('button')].find(b=>b.textContent.trim()==='Review Training History');
   assert(reopen);reopen.click();
   assert(body.querySelector('[data-coach-phase4-candidate="'+originalCardId+'"]'),
