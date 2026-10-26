@@ -151,6 +151,17 @@ jobs:
       - name: Validate Phase 3 optional preview accept, decline and saved-program parity
         run: node scripts/coach-phase3-recommendation-preview-stress.mjs
 
+      - name: Validate cautious first-draft week balance and user-choice protections
+        run: node scripts/coach-weekly-first-draft-balance-stress.mjs
+
+      - name: Retain first-draft balance acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-first-draft-balance
+          path: /tmp/swole-cat-coach-first-draft/
+          retention-days: 30
+
       - name: Validate Coach phone-width recommendation usability constraints
         run: node scripts/coach-phase3-mobile-usability-stress.mjs
 
