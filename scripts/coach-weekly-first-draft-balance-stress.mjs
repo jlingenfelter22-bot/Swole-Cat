@@ -108,8 +108,12 @@ try{
   {...o,requiredExerciseIds:[base.days[1].selectedIds[0]]}:o)};
  noop('person_accepted_manual_exercise',manual);
  noop('recommendations_disabled',{...base,recommendationsDisabled:true});
- const current=w.coachImproveFreshProgramDraft(base);
- assert(current===base||current!==base); // no hidden writes in either path
+ noop('track_only_mode',{...base,intent:{...base.intent,trainingMode:'track'}});
+ noop('strength_mode_selected',{...base,intent:{...base.intent,trainingMode:'strength'}});
+ noop('explicit_overhead_press',{...base,request:{...base.request,
+  prompt:'3 day full body program 45 minutes with overhead press'}});
+ noop('explicit_shoulder_priority_in_prose',{...base,request:{...base.request,
+  prompt:'3 day full body program 45 minutes, mainly shoulders'}});
  assert.equal(saved(),originalSaved,'Auto-quality draft touched workout/account/settings data');
  assert.equal(w.localStorage.getItem('overload_v3'),originalStore,
   'Auto-quality draft should never save anything to localStorage');
