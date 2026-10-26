@@ -82,7 +82,7 @@ try{
    'Hard constraint issue before preview in '+c.id);
   // Do not use freshly regenerated scripts' shadow suggestions as proof that
   // those suggestions were accepted; only explicit initial-draft path is tested.
-  const actual=w.coachImproveFreshProgramDraft(before);
+  const actual=w.coachImproveFreshWeeklyDraft(before);
   const afterAudit=w.coachProjectedWeekAudit(actual);
   assert(!afterAudit.findings.some(f=>['equipment_violation','unknown_exercise','required_exercise_absent'].includes(f.type)),
    'First-draft adjustment introduced a hard constraint violation '+c.id);
@@ -92,7 +92,7 @@ try{
   if(actual!==before){
    assert(actual.initialWeekBalance,'No documented reason for draft change '+c.id);
    assert(w.coachProjectedRepairDebt(afterAudit)<w.coachProjectedRepairDebt(beforeAudit));
-   assert(['3day_full_gym','3day_full_30_gym','3day_full_75_gym'].includes(c.id),
+   assert(['3day_full_gym','3day_full_75_gym','4day_glute_priority_dumbbells'].includes(c.id),
     'Unexpected automatic case '+c.id);
    comparisons++;
   }
@@ -155,7 +155,7 @@ try{
   data.push(result);
   console.log('COACH_FINAL_WEEK_ROW '+JSON.stringify(result));
  }
- assert(comparisons>=1&&comparisons<=3,
+ assert.equal(comparisons,3,
   'Unexpected count of eligible first-draft balancing cases: '+comparisons);
 
  // Exercise the real multi-step intake handoff, not only the pure optimizer.
