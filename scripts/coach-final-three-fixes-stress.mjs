@@ -87,14 +87,14 @@ try{
  assert(changes.some(c=>c.kind==='add'&&w.exById(c.addedId).pattern==='knee_flexion'));
  assert((audit(longBetter).roles?.vertical_pull?.count||0)>=1);
  assert((audit(longBetter).roles?.knee_flexion?.count||0)>=1);
- for(const c of changes){
-  const beforeDay=long.days[c.dayIndex],afterDay=longBetter.days[c.dayIndex];
-  assert(afterDay.selectedIds.length<=7,'Added too many exercises');
-  if(c.kind==='add'){
-   assert.equal(afterDay.selectedIds.length,beforeDay.selectedIds.length+1);
-   assert.equal(afterDay.brainSetCounts[c.addedId].sets,2);
-  }else assert.equal(afterDay.selectedIds.length,beforeDay.selectedIds.length);
- }
+ // Both adjustments are on Day B: one swap is count-neutral, one adds
+ // exactly one two-set accessory. Judge the combined final preview once.
+ assert(changes.every(c=>c.dayIndex===1));
+ assert.equal(longBetter.days[1].selectedIds.length,long.days[1].selectedIds.length+1);
+ assert(longBetter.days[1].selectedIds.length<=7,'Added too many exercises');
+ assert.equal(longBetter.days[1].brainSetCounts[changes.find(c=>c.kind==='add').addedId]?.sets,2);
+ for(const i of [0,2])assert.deepEqual(plain(longBetter.days[i].selectedIds),
+  plain(long.days[i].selectedIds),'Unrelated full-body day was changed');
  assert(longBetter.days.every(day=>day.brainTime.estimateMinutes<=day.request.duration),
   'Complimentary work should fit this long-session midpoint');
  assert.equal(JSON.stringify(long),longJson);
