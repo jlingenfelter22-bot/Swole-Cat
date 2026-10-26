@@ -154,6 +154,17 @@ jobs:
       - name: Validate cautious first-draft week balance and user-choice protections
         run: node scripts/coach-weekly-first-draft-balance-stress.mjs
 
+      - name: Audit complete 2-6 day Coach whole-week outputs and saved-data protection
+        run: node scripts/coach-final-week-quality-matrix.mjs
+
+      - name: Retain complete Coach whole-week exercise review matrix
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-final-week-quality-matrix
+          path: /tmp/swole-cat-coach-final-week-matrix/
+          retention-days: 30
+
       - name: Retain first-draft balance acceptance evidence
         if: always()
         uses: actions/upload-artifact@v4
