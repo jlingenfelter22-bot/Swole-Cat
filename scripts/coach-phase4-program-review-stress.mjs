@@ -114,7 +114,7 @@ try{
  assert.match(w.document.getElementById('modalBody').textContent,/Review Training History/i);
  assert(w.openCoachPhase4ProgramReview('p'));
  const body=w.document.getElementById('modalBody');
- assert.match(body.textContent,/COACH \/\/ TRAINING REVIEW/);
+ assert(body.querySelector('.coach-phase4-head'),'Training review should have a single simple summary');
  assert.match(body.textContent,/Keep as is/);
  assert.match(body.textContent,/Completed sessions by Routine/);
  assert.match(body.textContent,/saved schedule|current plan|saved target|logging/i);

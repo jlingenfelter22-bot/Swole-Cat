@@ -256,6 +256,17 @@ jobs:
       - name: Coach Audit v0.93.7 hierarchy, full-body repetition and insufficient-history fidelity
         run: node scripts/coach-v0937-audit-hierarchy-fidelity-stress.mjs
 
+      - name: Coach Audit simplified phone navigation and sparse-history clarity
+        run: node scripts/coach-audit-clarity-stress.mjs
+
+      - name: Keep Coach Audit clarity UI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-audit-clarity-qa
+          path: /tmp/swole-cat-coach-clarity/
+          retention-days: 30
+
       - name: Retain Coach Audit mobile and evidence-fidelity review
         if: always()
         uses: actions/upload-artifact@v4
