@@ -100,9 +100,7 @@ try{
  assert.equal(JSON.stringify(long),longJson);
 
  // 3. Deliberate distinct arm angles must not be reported as redundancy.
- const arms=gen('3 day custom program 45 minutes');
- // Generic 3 day prompt is populated with explicit custom Arms slots below.
- arms.intent.split='custom';arms.slots=['arms','arms','arms'];
+ // Build an explicit custom Arms split rather than inferring a whole-body program.
  // Build a true custom Arms rotation through the real generator.
  const armReq=w.coachBrainApplyEquipmentChoice(w.coachParsePrompt('3 day custom program 45 minutes'),'gym');
  assert(armReq.ok);
