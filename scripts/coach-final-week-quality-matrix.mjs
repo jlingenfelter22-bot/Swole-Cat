@@ -157,6 +157,36 @@ try{
  }
  assert(comparisons>=1&&comparisons<=3,
   'Unexpected count of eligible first-draft balancing cases: '+comparisons);
+
+ // Exercise the real multi-step intake handoff, not only the pure optimizer.
+ // The latest new-program draft must present the corrected weekly selection.
+ const fromIntake=w.coachBrainApplyEquipmentChoice(
+  w.coachParsePrompt('3 day full body program 45 minutes','hypertrophy'),'gym');
+ assert(fromIntake.ok);
+ const intakeIntent=w.coachParseProgramIntent('3 day full body program 45 minutes');
+ intakeIntent.trainingMode='guided';
+ intakeIntent.deload={enabled:false,intervalWeeks:4};
+ intakeIntent.preferredDays=[1,3,5];
+ const blankDraft={
+  request:fromIntake.request,intent:intakeIntent,days:[],
+  intake:{scheduleAnswered:true,goalAnswered:true,deloadAnswered:true},
+  interactiveBrainFlow:false
+ };
+ w.eval('coachProgramBuildDraft='+JSON.stringify(blankDraft)+';');
+ w.coachContinueProgramRequest();
+ const intakeResult=w.eval('coachProgramBuildDraft');
+ assert.equal(intakeResult.days?.length,3,'Actual intake did not create three days');
+ assert.equal(intakeResult.initialWeekBalance?.kind,'optional_vertical_pull_swap',
+  'Live intake path did not apply its documented fresh-draft balancing step');
+ assert(intakeResult.days[1].selectedIds.some(id=>w.exById(id)?.pattern==='vertical_pull'),
+  'Intake preview is missing the intended complementary vertical pull');
+ assert(w.document.querySelector('.coach-program-day-card'),
+  'Real intake did not render an editable program preview');
+ console.log('COACH_FINAL_INTAKE_HANDOFF_PASS '+JSON.stringify({
+  days:intakeResult.days.length,
+  improvement:intakeResult.initialWeekBalance.kind,
+  previewRendered:true,historyUnchanged:true
+ }));
  assert.equal(w.eval('JSON.stringify({sessions:state.sessions,routines:state.routines,programs:state.programs,settings:state.settings})'),
   savedBefore,'Audit mutated saved routines, sessions or settings');
  assert.equal(w.localStorage.getItem('overload_v3'),storageBefore,
