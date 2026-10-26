@@ -1,5 +1,14 @@
 # Swole Cat Current State
 
+## 2026-10-26 · Accepted Testing v0.93.9 Coach Review, intelligence closeout QA in draft
+
+- Owner accepted the simplified physical Android Coach Audit / Training Review UX as materially clearer in signed **Testing v0.93.9, versionCode 145**. [PR #96](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/96) merged; Testing signing certificate and updater manifest validated; **Beta v0.73.1 remains unchanged**.
+- Next priority: **finish core Coach intelligence rather than rework accepted UI**. Live source already includes Phase 1 catalog and frozen 12-weekly-scenario baseline, Phase 2 independent whole-week auditor, Phase 3 bounded opt-in swap/add recommendation flow and Phase 4 sparse-history read-only review. Do not restart implemented engineering phases based on earlier undated roadmap notes.
+- This branch is a **development-only final-history evidence checkpoint**, merging protective tests conceptually from the stale [draft PR #95](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/95) onto the accepted v0.93.9 code, with conservative current-plan vs historical-logs wording and explicit provenance. No schema, account, stored workout, progression, Beta, updater, version bump or release.
+- Completion criteria in [Coach intelligence exit gate](coach-quality/COACH_INTELLIGENCE_EXIT_GATE_V0939.md): representative human review of actual 2–6 day selections and opt-in repairs, history eligibility, strict user/equipment overrides, time as approximate, current-vs-historic program comparability, deterministic execution and regression.
+- **Release guard**: Keep the accepted v0.93.9 Android UX stable; do not ship another Testing APK until exact-head CI, desired runtime improvements, and explicit owner approval. Historical effective-dated plan snapshots are **not** present for older workouts. Do not certify a past weekly target from current Program settings.
+
+
 ## Latest milestone: 2026-10-14 · Testing v0.93.0 Coach Integrated Phone Candidate
 
 **Current signed Testing:** v0.93.0 / Android versionCode **135**, package `com.jlingenfelter.swolecat.testing`, unchanged permanent Testing signing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.

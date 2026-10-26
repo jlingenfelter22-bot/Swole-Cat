@@ -166,6 +166,17 @@ jobs:
       - name: Phase 4 opt-in planned-versus-completed Program review acceptance
         run: node scripts/coach-phase4-program-review-stress.mjs
 
+      - name: Coach history provenance, cross-Program and edited-plan acceptance
+        run: node scripts/coach-phase4-history-crossover-stress.mjs
+
+      - name: Retain history provenance regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-phase4-history-crossover
+          path: /tmp/swole-cat-coach-phase4-crossover/
+          retention-days: 30
+
       - name: Phase 4 Android phone-width and coaching-language usability quality gate
         run: node scripts/coach-phase4-android-copy-usability-stress.mjs
 

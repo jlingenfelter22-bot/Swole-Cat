@@ -43,10 +43,10 @@ function coachPhase4ProgramComparison(programId,referenceMs=Date.now()){
  // We never map preferred weekdays to Routine slots by index.
  if(enoughTime&&sessions.length>=3&&weeklyRate<target*.65){
   add('schedule:'+program.id,'schedule_gap',95,
-   'Your logged Program workouts are below the saved weekly target.',
-   'The saved target is '+target+' sessions a week; '+sessions.length+
+   'Recent Program logs differ from the current weekly target.',
+   'The current saved target is '+target+' sessions a week; '+sessions.length+
    ' completed Program sessions across about '+weeks.toFixed(1)+
-   ' observed weeks is '+weeklyRate.toFixed(1)+' per week. This describes logged sessions only. Training outside this Program, unlogged sessions, or changes in availability could explain the difference; it does not mean your exercises are wrong.',
+   ' observed weeks is '+weeklyRate.toFixed(1)+' per week. This is a comparison with today’s saved plan, which may have changed during those weeks. Training outside this Program, unlogged sessions, or changes in availability could also explain the difference; it does not mean your exercises are wrong.',
    {evidence:{targetPerWeek:target,loggedPerWeek:Number(weeklyRate.toFixed(2)),
     sessions:sessions.length,observedWeeks:Number(weeks.toFixed(2))},nextStep:'review_program'});
  }
@@ -133,6 +133,9 @@ function coachPhase4ProgramComparison(programId,referenceMs=Date.now()){
   actualPerWeek:weeklyRate==null?null:Number(weeklyRate.toFixed(2)),
   confidence:enoughTime?'comparative':'history_forming',
   slots:bySlot.map(x=>({routineId:x.routineId,name:x.name,count:x.count})),
+  // Older Programs have no effective-dated frequency/sets snapshots. Never
+  // assert that today's target was the user's target throughout the window.
+  historicalPlanConfirmed:false,comparisonBasis:'current_plan_vs_recent_logs',
   candidates,requiresUserReview:true,noAutomaticChanges:true,
   caveat:'Coach compares the current saved plan with completed Program logs. Changes to the plan, incomplete logging, training goals and equipment can explain differences. No medical or recovery conclusions.'};
 }
