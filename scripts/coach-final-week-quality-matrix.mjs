@@ -70,6 +70,8 @@ try{
   // those suggestions were accepted; only explicit initial-draft path is tested.
   const actual=w.coachImproveFreshProgramDraft(before);
   const afterAudit=w.coachProjectedWeekAudit(actual);
+  assert(!afterAudit.findings.some(f=>['equipment_violation','unknown_exercise','required_exercise_absent'].includes(f.type)),
+   'First-draft adjustment introduced a hard constraint violation '+c.id);
   assert.equal(JSON.stringify(before),unchanged,'Audit/optimizer mutated its input: '+c.id);
   assert(!w.coachProjectedRepairRegresses(beforeAudit,afterAudit),
     'First-draft balance introduced a critical issue '+c.id);
