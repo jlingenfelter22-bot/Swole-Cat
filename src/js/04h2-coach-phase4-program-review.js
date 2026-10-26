@@ -139,36 +139,45 @@ function coachPhase4ProgramComparison(programId,referenceMs=Date.now()){
 function coachPhase4ProgramReviewHtml(review){
  if(!review)return '<div class="notice">Program not found.</div>';
  const dismissed=coachPhase4DismissedReviews.get(review.programId)||new Set();
- const visible=review.candidates.filter(c=>!dismissed.has(c.id));
+ // Current-plan structural gaps belong to Program Audit, not a screen that
+ // claims to compare completed training. With sparse history, do not present
+ // a planned gap as a finding about the user's actual workouts.
+ const visible=review.candidates.filter(c=>c.kind!=='planned_gap'&&!dismissed.has(c.id));
  const candidate=visible[0];
+ const enough=review.confidence==='comparative';
  const evidence=review.actualPerWeek==null
-  ?review.sessions+' completed Program sessions; more history needed to assess a weekly average.'
-  :review.sessions+' completed sessions; about '+review.actualPerWeek.toFixed(1)+
-   ' per week against '+review.targetPerWeek+' planned.';
- const header='<div class="coach-console"><div class="eyebrow">COACH // TRAINING REVIEW</div>'+
+  ?review.sessions+' logged Program workout'+(review.sessions===1?'':'s')+
+   ' in the last 28 days. More history is needed to compare patterns.'
+  :review.sessions+' logged workouts, about '+review.actualPerWeek.toFixed(1)+
+   ' per week. Current plan: '+review.targetPerWeek+' per week.';
+ const header='<div class="coach-phase4-head">'+
   '<div class="exercise-name" role="heading" aria-level="2">'+esc(review.title)+'</div>'+
   '<div class="mini">'+esc(evidence)+'</div></div>';
- const slotSummary='<div class="coach-rationale"><b>Completed sessions by Routine</b>'+
+ const slotSummary='<details class="coach-phase4-slots">'+
+  '<summary>Completed sessions by Routine</summary>'+
   '<div class="coach-phase4-slot-list">'+review.slots.map(x=>
    '<div class="coach-phase4-slot"><span>'+esc(x.name)+'</span><b>'+
-   x.count+' logged</b></div>').join('')+'</div></div>';
- const card=candidate?'<div class="card coach-phase4-suggestion" style="margin-top:10px" data-coach-phase4-candidate="'+escAttr(candidate.id)+'">'+
-  '<div class="eyebrow">OPTIONAL REVIEW · '+esc(candidate.kind.replaceAll('_',' '))+'</div>'+
-  '<div class="exercise-name">'+esc(candidate.title)+'</div>'+
-  '<div class="coach-phase4-description" style="margin-top:7px">'+esc(candidate.detail)+'</div>'+
+   x.count+' logged</b></div>').join('')+'</div></details>';
+ const names={schedule_gap:'Your logged schedule differs from the current plan',
+  rotation_gap:'Some routines appear less often in your logs',
+  execution_gap:'Your logged sets differ from the current routine'};
+ const card=candidate?'<section class="coach-phase4-suggestion" data-coach-phase4-candidate="'+escAttr(candidate.id)+'">'+
+  '<div class="eyebrow">One thing to check</div>'+
+  '<div class="exercise-name">'+esc(names[candidate.kind]||candidate.title)+'</div>'+
+  '<details class="coach-phase4-why"><summary>Why Coach noticed</summary>'+
+  '<div class="coach-phase4-description">'+esc(candidate.detail)+'</div></details>'+
   '<div class="actions"><button class="btn secondary" onclick="coachPhase4ProgramReviewAction(\''+
     escAttr(review.programId)+'\',\''+escAttr(candidate.id)+'\')">'+
     esc(candidate.nextStep==='review_routine'?'Review Routine':'Review Program')+'</button>'+
   '<button class="btn secondary" onclick="coachPhase4ProgramReviewDismiss(\''+
-    escAttr(review.programId)+'\',\''+escAttr(candidate.id)+'\')">Keep as is</button></div></div>'
-  :'<div class="notice">'+(review.confidence==='history_forming'
-   ?'There is not enough completed Program history yet to draw reliable planned-versus-actual conclusions.'
-   :'There are no other suggestions to review right now. Reopen this review to see dismissed observations again.')+'</div>';
- return header+slotSummary+card+'<div class="mini" style="margin-top:10px">'+esc(review.caveat)+
-  ' Suggestions are optional. “Keep as is” hides this observation until you reopen the review; your Program and progression targets stay unchanged.</div>'+
-  '<div class="actions"><button class="btn secondary" onclick="openCoachProgramAudit(\''+
-  escAttr(review.programId)+'\')">Back to Program Audit</button>'+
-  '<button class="btn secondary" onclick="closeModal()">Done</button></div>';
+    escAttr(review.programId)+'\',\''+escAttr(candidate.id)+'\')">Keep as is</button></div></section>'
+  :'<div class="coach-phase4-empty">'+(!enough
+   ?'Not enough logged workouts to compare your training with the current plan yet. This is not a problem with your workouts.'
+   :'Nothing in these logged workouts clearly needs a change right now. You can reopen the review to revisit dismissed ideas.')+'</div>';
+ return header+slotSummary+card+
+  '<div class="mini coach-phase4-footnote">This compares what you logged with your current plan. Plans and schedules can change, and unlogged workouts are not counted. Suggestions are optional. “Keep as is” hides this idea until you reopen the review; nothing is saved.</div>'+
+  '<div class="actions coach-phase4-footer"><button class="btn secondary" onclick="openCoachProgramAudit(\''+
+  escAttr(review.programId)+'\')">Back to Program Audit</button></div>';
 }
 function openCoachPhase4ProgramReview(programId,{reset=true}={}){
  const review=coachPhase4ProgramComparison(programId);
