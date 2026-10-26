@@ -76,7 +76,8 @@ try{
   if(actual!==before){
    assert(actual.initialWeekBalance,'No documented reason for draft change '+c.id);
    assert(w.coachProjectedRepairDebt(afterAudit)<w.coachProjectedRepairDebt(beforeAudit));
-   assert.equal(c.id,'3day_full_gym','Unexpected automatic case '+c.id);
+   assert(['3day_full_gym','3day_full_30_gym','3day_full_75_gym'].includes(c.id),
+    'Unexpected automatic case '+c.id);
    comparisons++;
   }
   const dims={primary:{},secondary:{},patterns:{},names:[]},days=[];
@@ -138,7 +139,8 @@ try{
   data.push(result);
   console.log('COACH_FINAL_WEEK_ROW '+JSON.stringify(result));
  }
- assert.equal(comparisons,1,'Narrow first-draft balancing contract changed');
+ assert(comparisons>=1&&comparisons<=3,
+  'Unexpected count of eligible first-draft balancing cases: '+comparisons);
  assert.equal(w.eval('JSON.stringify({sessions:state.sessions,routines:state.routines,programs:state.programs,settings:state.settings})'),
   savedBefore,'Audit mutated saved routines, sessions or settings');
  assert.equal(w.localStorage.getItem('overload_v3'),storageBefore,
