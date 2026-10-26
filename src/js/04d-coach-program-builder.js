@@ -897,24 +897,63 @@ function coachImproveFreshLongFullBodyDraft(draft){
  if(before.roles?.vertical_pull?.count||before.roles?.knee_flexion?.count||
     !before.findings.some(f=>f.type==='missing_weekly_role'&&f.role==='vertical_pull')||
     !before.findings.some(f=>f.type==='missing_weekly_role'&&f.role==='knee_flexion'))return draft;
- const proposed=coachProposeProjectedWeekRepair(draft,{maxSwaps:2,maxTrials:150});
- const changes=proposed.changes||[];
- if(changes.length!==2||!changes.some(c=>c.kind==='swap'&&
-    c.role==='vertical_pull'&&c.dayIndex===1&&
-    exById(c.removedId)?.pattern==='vertical_press'&&
-    exById(c.addedId)?.pattern==='vertical_pull')||
-    !changes.some(c=>c.kind==='add'&&c.role==='knee_flexion'&&
-      exById(c.addedId)?.pattern==='knee_flexion')||
-    proposed.draft.days.some(day=>day.selectedIds.length>7||
-      day.brainTime?.estimateMinutes>Number(day.request.duration)+Math.max(6,Math.ceil(Number(day.request.duration)*.15)))||
-    !proposed.after.roles?.vertical_pull?.count||
-    !proposed.after.roles?.knee_flexion?.count||
-    coachProjectedRepairRegresses(before,proposed.after)||
-    coachProjectedRepairDebt(proposed.after)>=coachProjectedRepairDebt(before))return draft;
- return {...proposed.draft,
-   lastRefinement:'Balanced this longer week with vertical pulling and hamstring-curl work. Both are editable.',
-   initialWeekBalance:{kind:'long_full_body_complements',changes:changes.map(c=>({
-    kind:c.kind,dayIndex:c.dayIndex,removedId:c.removedId,addedId:c.addedId}))}};
+ // The generic shadow search prefers trading Day A's optional cable crunch
+ // for a pulldown. That is feasible but loses useful existing core variety.
+ // On a NEW longer full-body plan prefer the more complementary middle-day
+ // swap, preserving core on Day A/C and existing shoulder press exposure.
+ const dayIndex=1,middle=draft.days[dayIndex];
+ const shoulderIndex=middle.selectedIds.findIndex(id=>exById(id)?.pattern==='vertical_press');
+ const shoulder=exById(middle.selectedIds[shoulderIndex]);
+ if(shoulderIndex<0||!shoulder||
+    coachProjectedRepairProtected(shoulder,middle,shoulderIndex)||
+    !coachProjectedRepairCrossDayOverlap(draft,
+     {type:'missing_weekly_role',role:'vertical_pull'},dayIndex,shoulder)||
+    middle.selectedIds.length>=7)return draft;
+ const service=coachBrainExerciseService(),context=coachBrainEquipmentConstraints(middle.request);
+ if(!service||!context)return draft;
+ const available=pattern=>LIBRARY.filter(ex=>ex.pattern===pattern&&
+    !middle.selectedIds.includes(ex.id)&&
+    coachExerciseAllowedByConstraints(ex,middle.request)&&
+    service.evaluateAvailability(ex.id,context).status==='available'&&
+    Number.isFinite(coachCandidateBaseScore(ex,middle.request))&&
+    exerciseMuscleMetadata(ex).primary.some(r=>(middle.request.targetRegions||[]).includes(r)))
+    .sort((a,b)=>coachCandidateBaseScore(b,middle.request)-coachCandidateBaseScore(a,middle.request)||
+      a.name.localeCompare(b.name)||String(a.id).localeCompare(String(b.id))).slice(0,6);
+ const verticals=available('vertical_pull'),curls=available('knee_flexion');
+ for(const vertical of verticals){
+  const swapped=coachProjectedRepairClone(draft),next=swapped.days[dayIndex];
+  next.selectedIds[shoulderIndex]=vertical.id;
+  delete next.brainSetCounts[shoulder.id];
+  next.brainTime=coachBrainSessionTimeEstimate(next.selectedIds,next.request,next.defaults,
+    {explicitConfigById:next.brainSetCounts});
+  if(!coachProjectedRepairPreservesDay(middle,next))continue;
+  const afterSwap=coachProjectedWeekAudit(swapped);
+  if(!afterSwap.roles?.vertical_pull?.count||
+     coachProjectedRepairRegresses(before,afterSwap))continue;
+  for(const curl of curls){
+   if(next.selectedIds.includes(curl.id)||
+      next.selectedIds.some(id=>coachMovementFamily(exById(id))===coachMovementFamily(curl)))continue;
+   const trial=coachProjectedRepairClone(swapped),target=trial.days[dayIndex];
+   target.selectedIds.push(curl.id);
+   target.brainSetCounts[curl.id]={sets:2};
+   target.brainTime=coachBrainSessionTimeEstimate(target.selectedIds,target.request,target.defaults,
+     {explicitConfigById:target.brainSetCounts});
+   const time=Number(target.brainTime?.estimateMinutes),oldTime=Number(next.brainTime?.estimateMinutes);
+   if(!Number.isFinite(time)||time>Number(target.request.duration)||
+      time>oldTime+7||target.selectedIds.length>7)continue;
+   const after=coachProjectedWeekAudit(trial);
+   if(!after.roles?.vertical_pull?.count||!after.roles?.knee_flexion?.count||
+      coachProjectedRepairRegresses(before,after)||
+      coachProjectedRepairDebt(after)>=coachProjectedRepairDebt(before))continue;
+   return {...trial,
+    lastRefinement:'Balanced this longer week with vertical pulling and hamstring-curl work. Both are editable.',
+    initialWeekBalance:{kind:'long_full_body_complements',changes:[
+      {kind:'swap',dayIndex,removedId:shoulder.id,addedId:vertical.id},
+      {kind:'add',dayIndex,removedId:null,addedId:curl.id}
+    ]}};
+  }
+ }
+ return draft;
 }
 
 function coachImproveFreshWeeklyDraft(draft){
