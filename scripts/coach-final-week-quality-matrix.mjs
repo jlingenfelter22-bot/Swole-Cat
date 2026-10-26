@@ -23,7 +23,21 @@ try{
  const storageBefore=w.localStorage.getItem('overload_v3');
  const frozen=JSON.parse(fs.readFileSync('docs/coach-quality/phase1-baseline-v0934.json','utf8'));
  assert.equal(frozen.scenarios.length,12,'Stable baseline must have 12 scenarios');
- const specs=[...frozen.scenarios.map(x=>({id:x.id,prompt:x.prompt,equipment:x.equipment,goal:x.goal,focus:x.focus,expectGenerated:x.generated})),
+ const baselineInputs={
+  '2day_general_full_gym':{prompt:'2 day full body program 45 minutes',equipment:'gym',goal:'general'},
+  '3day_full_gym':{prompt:'3 day full body program 45 minutes',equipment:'gym'},
+  '3day_ppl_gym':{prompt:'3 day push pull legs program 60 minutes',equipment:'gym'},
+  '4day_upper_lower_gym':{prompt:'4 day upper lower program 45 minutes',equipment:'gym'},
+  '4day_upper_lower_dumbbells':{prompt:'4 day upper lower program 45 minutes',equipment:'dumbbells'},
+  '4day_shoulder_priority_gym':{prompt:'4 day upper lower program 50 minutes',equipment:'gym',focus:['side_delts','rear_delts']},
+  '4day_glute_priority_dumbbells':{prompt:'4 day upper lower program 50 minutes',equipment:'dumbbells',focus:['glutes']},
+  '5day_balanced_gym':{prompt:'5 day balanced program 45 minutes',equipment:'gym'},
+  '6day_ppl_gym':{prompt:'6 day push pull legs program 60 minutes',equipment:'gym'},
+  '6day_ppl_strength':{prompt:'6 day push pull legs strength program 60 minutes',equipment:'gym',goal:'strength'},
+  '3day_full_bodyweight_limit':{prompt:'3 day full body program 30 minutes',equipment:'bodyweight'},
+  '3day_full_dumbbells':{prompt:'3 day full body program 45 minutes',equipment:'dumbbells'}
+ };
+ const specs=[...frozen.scenarios.map(x=>({id:x.id,...baselineInputs[x.id],expectGenerated:x.generated})),
   {id:'3day_full_30_gym',prompt:'3 day full body program 30 minutes',equipment:'gym'},
   {id:'3day_full_75_gym',prompt:'3 day full body program 75 minutes',equipment:'gym'},
   {id:'4day_upper_lower_35_gym',prompt:'4 day upper lower program 35 minutes',equipment:'gym'},
