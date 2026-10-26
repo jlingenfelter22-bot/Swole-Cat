@@ -52,7 +52,7 @@ assert.equal(w.coachProgramAuditIntent('audit my program').handled,true);
 assert.equal(w.coachProgramAuditIntent('build me a 3 day program').handled,false);
 assert.equal(w.coachTryProgramAuditQuestion('how is my program actually going?',{render:false}),true);
 w.coachTryProgramAuditQuestion('audit my program',{render:true});
-assert.match(w.document.getElementById('modalBody').textContent,/PROGRAM AUDIT/i);
+assert.match(w.document.getElementById('modalBody').textContent,/COACH REVIEW/i);
 
 const plateau=audit.findings.find(x=>x.type==='plateau_high_effort');
 w.coachProgramAuditAction('p',plateau.id);
