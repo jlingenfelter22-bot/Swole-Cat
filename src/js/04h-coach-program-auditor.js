@@ -242,7 +242,7 @@ function coachProgramAuditCoverageText(audit){
 function coachProgramAuditCoverageHtml(audit){
  const enough=coachProgramAuditHasComparableCoverage(audit);
  return '<details class="coach-audit-disclosure coach-audit-coverage">'+
-  '<summary>View estimated muscle coverage</summary>'+
+  '<summary>Advanced: muscle involvement estimates</summary>'+
   '<div class="mini">Estimated set-equivalents per week, based on today’s saved Routines. Primary involvement counts 1 per set and secondary involvement 0.5; these are estimates, not measures of muscle growth. Logged values reflect the last 28 days, not necessarily the same Routine versions.</div>'+
   (!enough?'<div class="notice">Not enough comparable completed Program history for an actual-versus-planned weekly comparison. Coach will not treat missing workouts as missing muscle development.</div>':'')+
   '<div class="coach-audit-coverage-rows">'+audit.coverageRows.map(r=>
@@ -265,45 +265,48 @@ function coachProgramAuditActionLabel(f){
 }
 function coachProgramAuditFindingHtml(f,programId){
  const label=coachProgramAuditActionLabel(f);
- const badge=f.severity==='high'?'REVIEW':f.severity==='medium'?'CHECK':'OPTIONAL';
- return '<div class="card coach-audit-finding">'+
-  '<div class="eyebrow">'+esc(badge)+'</div>'+
-  '<div class="exercise-name">'+esc(f.title)+'</div>'+
-  '<details class="coach-audit-disclosure"><summary>Why Coach noticed</summary>'+
-  '<div class="mini">'+esc(f.text)+'</div></details>'+
-  (label?'<div class="actions"><button class="btn secondary" onclick="coachProgramAuditAction(\''+
-    escAttr(programId)+'\',\''+escAttr(f.id)+'\')">'+esc(label)+'</button></div>':'')+
-  '</div>';
+ // One expandable row per idea. Do not stack a card, a second disclosure,
+ // and a prominent action button before the user asks for the explanation.
+ return '<details class="coach-audit-finding coach-audit-item">'+
+  '<summary><span class="coach-audit-item-title">'+esc(f.title)+'</span>'+
+  '<span class="coach-audit-item-hint">Details</span></summary>'+
+  '<div class="coach-audit-item-body"><div class="mini">'+esc(f.text)+'</div>'+
+  (label?'<button class="btn secondary" onclick="coachProgramAuditAction(\''+
+   escAttr(programId)+'\',\''+escAttr(f.id)+'\')">'+esc(label)+'</button>':'')+
+  '</div></details>';
 }
 function renderCoachProgramAudit(audit){
  if(!audit)return false;
  const p=audit.program;
  const findings=audit.findings.filter(f=>f.type!=='history_depth'&&f.type!=='clear'&&f.type!=='progressing');
- const first=findings.slice(0,3),rest=findings.slice(3);
- const quick='<div class="coach-audit-primary"><div class="mini">Understand how your saved plan compares with workouts you actually logged. Suggestions are optional.</div>'+
-  '<button class="btn" onclick="openCoachPhase4ProgramReview(\''+escAttr(p.id)+'\')">Review Training History</button></div>';
- const count=first.length+rest.length;
- const cardList=first.map(f=>coachProgramAuditFindingHtml(f,p.id)).join('')+
-  (rest.length?'<details class="coach-audit-disclosure coach-audit-more"><summary>Show '+rest.length+
-    ' more observation'+(rest.length===1?'':'s')+'</summary>'+
-    rest.map(f=>coachProgramAuditFindingHtml(f,p.id)).join('')+'</details>':'');
+ const first=findings.slice(0,2),rest=findings.slice(2),count=findings.length;
  const status=coachProgramAuditStatus(audit);
- openModal('Coach · Program Audit','<div class="coach-builder coach-audit-refresh">'+
-  '<div class="coach-console"><div class="eyebrow">PROGRAM AUDIT</div>'+
-  '<div class="exercise-name" style="font-size:1.16rem;margin-top:5px">'+esc(p.name)+'</div>'+
-  '<div class="mini">'+audit.routines.length+' Routines · saved target '+
-   esc(String(p.frequency))+'×/week · '+audit.actual.sessions.length+' completed Program session'+
-   (audit.actual.sessions.length===1?'':'s')+' in 28 days</div></div>'+
-  quick+'<div class="coach-audit-status"><b>History context</b><div class="mini">'+esc(status)+'</div></div>'+
+ const quick='<div class="coach-audit-primary"><div class="coach-audit-status">'+
+  '<b>Training history</b><div class="mini">'+esc(status)+'</div></div>'+
+  '<button class="btn secondary" onclick="openCoachPhase4ProgramReview(\''+
+   escAttr(p.id)+'\')">Review Training History</button></div>';
+ const ideas=first.map(f=>coachProgramAuditFindingHtml(f,p.id)).join('')+
+  (rest.length?'<details class="coach-audit-disclosure coach-audit-more"><summary>Show '+rest.length+
+   ' more idea'+(rest.length===1?'':'s')+'</summary>'+
+   rest.map(f=>coachProgramAuditFindingHtml(f,p.id)).join('')+'</details>':'');
+ openModal('Coach · Program Audit','<div class="coach-builder coach-audit-refresh coach-audit-simple">'+
+  '<div class="coach-console coach-audit-head"><div class="eyebrow">COACH REVIEW</div>'+
+  '<div class="exercise-name">'+esc(p.name)+'</div>'+
+  '<div class="mini">'+audit.routines.length+' routines · '+
+   esc(String(p.frequency))+' planned each week · '+
+   audit.actual.sessions.length+' logged in the last 28 days</div></div>'+
+  quick+
+  '<section class="coach-audit-plan" aria-label="Saved plan review">'+
+  '<div class="coach-audit-findings-label">'+(count?
+   count+' idea'+(count===1?'':'s')+' for your plan':
+   'Your saved plan')+'</div>'+
+  '<div class="mini coach-audit-plan-intro">'+(count?
+   'These are things to consider, not changes you need to make. Tap one to see why.':
+   'Coach did not find a major plan concern with the available information.')+'</div>'+
+  ideas+'</section>'+
   coachProgramAuditCoverageHtml(audit)+
-  '<div class="coach-audit-findings-label">Program observations · '+count+
-   (count===1?' to review':' to review')+'</div>'+
-  (count?cardList:'<div class="notice">No significant Program-design issue needs attention from the evidence available.</div>')+
-  '<div class="mini coach-audit-footnote">Coach flags possible programming patterns, not diagnoses of fatigue, motivation, recovery or injury. Reviewing never silently saves changes.</div>'+
-  '<div class="actions coach-audit-footer"><button class="btn secondary" onclick="closeModal();newProgram(\''+
-   escAttr(p.id)+'\')">Edit Program</button>'+
-  '<button class="btn secondary" onclick="closeModal();go(\'analytics\')">Open Progress</button>'+
-  '<button class="btn secondary" onclick="closeModal()">Done</button></div></div>');
+  '<div class="mini coach-audit-footnote">Coach reviews recorded workouts and your current plan. It cannot judge recovery or effort from these records alone. Nothing changes unless you edit it.</div>'+
+  '<div class="actions coach-audit-footer"><button class="btn secondary" onclick="closeModal()">Done</button></div></div>');
  return true;
 }
 function openCoachProgramAudit(programId){
