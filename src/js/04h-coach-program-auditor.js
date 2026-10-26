@@ -263,12 +263,33 @@ function coachProgramAuditActionLabel(f){
  return f.action==='review_routine'?'Review Routine':
   f.action==='open_progress'?'Open Progress':f.action==='edit_program'?'Review Program':'';
 }
+function coachProgramAuditPlainTitle(f){
+ // UI copy only. Preserve original analytical finding and its rationale.
+ const routine=state.routines.find(r=>r.id===f.routineId);
+ const group=coachProgramAuditGroups().find(g=>g.key===f.groupKey);
+ if(f.type==='redundancy')return 'Similar exercises in '+(routine?.name||'this routine');
+ if(f.type==='planned_gap'&&group)return 'No '+group.label.toLowerCase()+' work in this plan';
+ if(f.type==='distribution'&&group){
+  if(f.evidence==='routine_concentration')
+   return 'Most '+group.label.toLowerCase()+' work is in '+(routine?.name||'one routine');
+  if(f.evidence==='actual_adjacent_sessions')
+   return group.label+' work was logged on back-to-back days';
+  if(f.evidence==='rotation_wide_schedule_risk')
+   return 'Your schedule may repeat '+group.label.toLowerCase()+' work on nearby days';
+ }
+ if(f.type==='slot_gap')return (routine?.name||'A routine')+' shows up less often in your logs';
+ if(f.type==='adherence')return 'Your logs show fewer workouts than the current weekly goal';
+ if(f.type==='plateau_high_effort')return 'Consider reviewing progress on '+(f.exerciseName||'this exercise');
+ if(f.type==='plateau_watch')return 'Recent progress appears steady';
+ if(f.type==='performance_dip')return 'Recent logged performance is below earlier workouts';
+ return f.title;
+}
 function coachProgramAuditFindingHtml(f,programId){
  const label=coachProgramAuditActionLabel(f);
  // One expandable row per idea. Do not stack a card, a second disclosure,
  // and a prominent action button before the user asks for the explanation.
  return '<details class="coach-audit-finding coach-audit-item">'+
-  '<summary><span class="coach-audit-item-title">'+esc(f.title)+'</span>'+
+  '<summary><span class="coach-audit-item-title">'+esc(coachProgramAuditPlainTitle(f))+'</span>'+
   '<span class="coach-audit-item-hint">Details</span></summary>'+
   '<div class="coach-audit-item-body"><div class="mini">'+esc(f.text)+'</div>'+
   (label?'<button class="btn secondary" onclick="coachProgramAuditAction(\''+
