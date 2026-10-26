@@ -756,6 +756,12 @@ function coachProposeProjectedWeekRepair(draft=coachProgramBuildDraft,{maxSwaps=
 // Missing knee flexion or accessory volume continues to use opt-in suggestions.
 function coachImproveFreshProgramDraft(draft){
  if(!draft?.days||draft.days.length!==3||draft.intent?.split!=='full_body')return draft;
+ if(['strength','track'].includes(draft.intent?.trainingMode))return draft;
+ // A specific named shoulder press or an unparsed shoulder emphasis is a
+ // user instruction, never a disposable duplicate in a draft.
+ const prompt=String(draft.request?.prompt||'');
+ if(/\b(?:overhead|military|arnold|shoulder)(?:\s+(?:barbell|dumbbell|machine))?\s+press(?:es)?\b/i.test(prompt)||
+    /\b(?:focus on|prioritize|emphasize|more|mainly)\b.{0,45}\b(?:shoulders?|delts?)\b/i.test(prompt))return draft;
  if(draft.days.some(day=>coachProjectedWeekDayKey(day)!=='full body'||
      day.request?.brainEquipment?.choice!=='gym'||day.request?.goal==='strength'||
      day.request?.allowCoachExerciseSwaps===false||
