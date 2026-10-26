@@ -77,7 +77,6 @@ try{
  const long=gen('3 day full body program 75 minutes');
  assert(!(audit(long).roles?.vertical_pull?.count||0));
  assert(!(audit(long).roles?.knee_flexion?.count||0));
- console.log('COACH_LONG_PROPOSAL_DIAGNOSTIC '+JSON.stringify(w.coachProposeProjectedWeekRepair(long,{maxSwaps:2,maxTrials:150}).changes.map(x=>({kind:x.kind,finding:x.finding,role:x.role,dayIndex:x.dayIndex,removed:x.removedName,added:x.addedName}))));
  const longJson=JSON.stringify(long),longBetter=w.coachImproveFreshWeeklyDraft(long);
  assertSafe(long,longBetter);
  assert.equal(longBetter.initialWeekBalance.kind,'long_full_body_complements');
