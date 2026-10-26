@@ -1,5 +1,24 @@
 # Swole Cat Current State
 
+## 2026-10-26 · Signed Testing v0.94.0 Coach intelligence release candidate
+
+**Owner-authorized Testing-only consolidation.** Starting from accepted signed Testing v0.93.9 (versionCode 145), prepare **v0.94.0 / Android versionCode 146**. Preserve package `com.jlingenfelter.swolecat.testing`, existing Testing signer (certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`), mandatory Android installation confirmation, updater and local workout data. **Beta v0.73.1 is unchanged.**
+
+This release consolidates **new, unsaved Coach intake draft only** changes and their regression gates from development PRs [#98](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/98), [#99](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/99), and [#100](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/100). It does **not** silently merge separate draft [#97](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/97) concerning historical plan provenance.
+
+- 45-minute, three-day full-body gym: safely trade a non-required repeated shoulder press for a compatible vertical pull, without changing the user's saved work.
+- 50-minute, four-day dumbbell upper/lower **glute emphasis**: verified replacement of redundant Bodyweight Squat with Side-Lying Hip Abduction on both lower days, preserving glute emphasis and major lifts.
+- 65–90-minute, three-day gym full-body: add week-level vertical pulling and a modest two-set hamstring curl to the second day when feasibility, estimated time and weekly audit support the complete change; no stopwatch guarantee or automatic padding.
+- Arms specialization: suppress erroneous same-family overlap warnings for complementary supinated/neutral-grip curls and overhead/non-overhead triceps extensions, while still warning about genuinely redundant same-grip exercises.
+- 20-program audit matrix (19 valid builds, one intentionally infeasible limited-equipment case), user-choice/mode/excluded-equipment protections, read-only saved-data invariants, Android/UI/cloud regressions and performance CI.
+
+**Publication gate:** CI on exact-head release PR must pass before merge. After merge, the **Testing** Android workflow verifies existing signing certificate, produces the signed prerelease APK, and automatically advances `updates/testing.json`. Verify released asset digest matches the manifest, version increases to 146 and main post-merge checks pass. Do not declare installation or device acceptance until owner actually tests the phone.
+
+**Next Android user acceptance:** Install **in place** using Testing's in-app updater, without uninstalling, clearing data or switching cloud accounts. Create (do not need to save) a 3-day full-body gym ~45-minute plan (Lat Pulldown replaces one redundant shoulder press), a 4-day upper/lower dumbbell program with glute priority (~50 minutes), a 3-day full-body gym ~75-minute plan (Lat Pulldown + 2-set Lying Leg Curl on Day B), and a 3-day custom arms split (no inappropriate overlapping-arm warnings). Confirm preview swap/removal options, saved routines/history and login remain as before. Beta needs distinct owner authorization.
+
+---
+
+
 ## Latest milestone: 2026-10-14 · Testing v0.93.0 Coach Integrated Phone Candidate
 
 **Current signed Testing:** v0.93.0 / Android versionCode **135**, package `com.jlingenfelter.swolecat.testing`, unchanged permanent Testing signing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
