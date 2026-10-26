@@ -1,5 +1,13 @@
 # Swole Cat Current State
 
+## 2026-10-26 · Testing v0.94.1 app icon upgrade (owner approved, awaiting release)
+
+**Scope:** Replace the old purple cat/dumbbell icon with the owner-selected cyan/magenta minimal cat face. Stage updated `resources/logo.svg` (transparent Android adaptive foreground), `assets/logo.svg`, `icon-192.svg`, and `icon-512.svg` (PWA). Preserve the approved eyebrow-free focused expression and dark background. Version bump: **v0.94.1**, Android **versionCode 147** from v0.94.0/code146. No workout engine, Coach intelligence, cloud data, auth, signing or updater changes.
+
+**Release gate:** Use normal main-branch CI and the existing persistent Testing signing workflow. Confirm signed Testing APK package remains `com.jlingenfelter.swolecat.testing` with certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`; confirm Testing release/tag `testing-v0.94.1`, asset SHA-256 and `updates/testing.json` agree. Owner should install *in place* via app updater, no uninstall or data reset, and assess adaptive launcher masks, small icon clarity, and existing local data. **Beta is untouched and requires separate explicit approval**.
+
+---
+
 ## 2026-10-26 · Signed Testing v0.94.0 Coach intelligence release candidate
 
 **Owner-authorized Testing-only consolidation.** Starting from accepted signed Testing v0.93.9 (versionCode 145), prepare **v0.94.0 / Android versionCode 146**. Preserve package `com.jlingenfelter.swolecat.testing`, existing Testing signer (certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`), mandatory Android installation confirmation, updater and local workout data. **Beta v0.73.1 is unchanged.**
