@@ -157,6 +157,17 @@ jobs:
       - name: Audit complete 2-6 day Coach whole-week outputs and saved-data protection
         run: node scripts/coach-final-week-quality-matrix.mjs
 
+      - name: Validate targeted glute, longer full-body and arms audit intelligence corrections
+        run: node scripts/coach-final-three-fixes-stress.mjs
+
+      - name: Retain final targeted Coach intelligence regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-final-three-fixes
+          path: /tmp/swole-cat-coach-three-fixes/
+          retention-days: 30
+
       - name: Retain complete Coach whole-week exercise review matrix
         if: always()
         uses: actions/upload-artifact@v4

@@ -118,7 +118,7 @@ try{
  assert.equal(w.localStorage.getItem('overload_v3'),originalStore,
   'Auto-quality draft should never save anything to localStorage');
  const source=fs.readFileSync('src/js/04d-coach-program-builder.js','utf8');
- assert(source.includes('if(freshDraft)coachProgramBuildDraft=coachImproveFreshProgramDraft(coachProgramBuildDraft);'),
+ assert(source.includes('if(freshDraft)coachProgramBuildDraft=coachImproveFreshWeeklyDraft(coachProgramBuildDraft);'),
   'Must run only for the initial intake-generated draft, not edits');
  fs.mkdirSync('/tmp/swole-cat-coach-first-draft',{recursive:true});
  fs.writeFileSync('/tmp/swole-cat-coach-first-draft/acceptance.json',
