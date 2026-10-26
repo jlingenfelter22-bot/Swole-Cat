@@ -3,12 +3,12 @@
   "enabled": true,
   "channel": "testing",
   "packageId": "com.jlingenfelter.swolecat.testing",
-  "version": "0.93.9",
-  "versionCode": 145,
-  "apkUrl": "https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.93.9/swole-cat-testing-v0.93.9-signed.apk",
-  "sha256": "9c139d6052d5954f30cb4ccc6d5fed3e19396f7ab9230ef8de64a7ebe9f7a7c6",
+  "version": "0.94.0",
+  "versionCode": 146,
+  "apkUrl": "https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.94.0/swole-cat-testing-v0.94.0-signed.apk",
+  "sha256": "8bc35697a65525134d2b1d25d900ba9369bb2c66ea4e033dff46e55e24e7abc6",
   "signingCertSha256": "d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53",
-  "notes": "Swole Cat Testing v0.93.9",
-  "publishedAt": "2026-10-26T16:07:15.509Z",
+  "notes": "Swole Cat Testing v0.94.0",
+  "publishedAt": "2026-10-26T21:50:37.193Z",
   "required": false
 }
