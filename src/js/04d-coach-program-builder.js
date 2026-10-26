@@ -255,6 +255,22 @@ function coachProjectedWeekFocusSpecific(ex,region){
  }[region];
  return !matched||matched.includes(p);
 }
+function coachProjectedWeekDistinctArmAngles(day,family,items){
+ const target=coachProjectedWeekDayKey(day);
+ if(!['arms','biceps','triceps'].includes(target)||items.length!==2||
+    items.some(x=>x.required))return false;
+ if(family==='biceps_curl'&&target!=='triceps'){
+  const isNeutral=name=>/\b(?:hammer|cross.body|neutral.grip|rope hammer)\b/i.test(name);
+  // Intentionally distinct curl grip positions, not a blanket exception
+  // for any two curls (two similar hammer curls are still reviewable).
+  return isNeutral(items[0].name)!==isNeutral(items[1].name);
+ }
+ if(family==='triceps_extension'&&target!=='biceps'){
+  const overhead=name=>/\boverhead\b/i.test(name);
+  return overhead(items[0].name)!==overhead(items[1].name);
+ }
+ return false;
+}
 function coachProjectedWeekAudit(draft=coachProgramBuildDraft){
  if(!draft?.days?.length)return {version:'phase2-read-only',ready:false,reason:'no_generated_week',findings:[],regions:{},roles:{},days:[]};
  const regions={},roles={},dayRows=[],findings=[],roleFeasibility={};
@@ -311,6 +327,10 @@ function coachProjectedWeekAudit(draft=coachProgramBuildDraft){
   for(const [family,items] of Object.entries(byFamily)){
    if(items.length<2)continue;
    if(items.every(row=>row.required))continue;
+   // A custom Arms day intentionally combines two complementary elbow angles.
+   // Do not call a neutral + supinated curl or overhead + non-overhead
+   // triceps extension redundant; still flag two genuinely similar variants.
+   if(coachProjectedWeekDistinctArmAngles(day,family,items))continue;
    // This is a *review opportunity* rather than an automatic duplication ban:
    // paired lifts of the same family can be an intentional strength strategy.
    append('same_day_family_overlap','review','Similar '+family.replaceAll('_',' ')+' movements on one day',
@@ -801,6 +821,110 @@ function coachImproveFreshProgramDraft(draft){
       ' on '+day.label+'. You can change any exercise.',
     initialWeekBalance:{kind:'optional_vertical_pull_swap',
       dayIndex:change.dayIndex,removedId:change.removedId,addedId:change.addedId}};
+}
+
+// Shared guard for two further quality passes on NEW, unsaved Program previews.
+// Existing direct generators, user-edited days and saved workouts are unchanged.
+function coachFreshComplementEditable(draft){
+ if(!draft?.days?.length||['strength','track'].includes(draft.intent?.trainingMode)||
+    draft.request?.recommendationsDisabled===true||
+    draft.recommendationsDisabled===true||
+    draft.request?.requiredExerciseIds?.length||
+    draft.request?.excludedExerciseIds?.length||
+    draft.days.some(day=>day.request?.requiredExerciseIds?.length||
+      day.request?.excludedExerciseIds?.length||
+      day.request?.allowCoachExerciseSwaps===false)||
+    (draft.dayOverrides||[]).some(o=>o?.requiredExerciseIds?.length||
+      o?.excludedExerciseIds?.length||o?.recommendationsDeclined||
+      Object.keys(o?.acceptedSetCounts||{}).length))return false;
+ const p=String(draft.request?.prompt||'');
+ if(/\b(?:exactly|only|no more than|max(?:imum)?)\s+\d+\s+exercises?\b/i.test(p)||
+    /\b\d{1,2}\s*(?:working\s*)?sets?\b/i.test(p))return false;
+ return true;
+}
+
+// The Phase 3 shadow proposer already demonstrates two independent, bounded
+// Bodyweight Squat -> hip-abduction swaps for the frozen glute-priority case.
+// Accept only those same proposals for a fresh four-day dumbbell upper/lower
+// week, after inspecting both day constraints and independent week audit.
+function coachImproveFreshGluteDraft(draft){
+ if(draft?.intent?.split!=='upper_lower'||draft.days?.length!==4||
+    !coachFreshComplementEditable(draft)||
+    draft.days.some(d=>d.request?.brainEquipment?.choice!=='dumbbells'||
+      d.request?.goal==='strength')||
+    (draft.request?.programFocusRegions||[]).join(',')!=='glutes'||
+    (draft.intent?.focusRegions||[]).join(',')!=='glutes'||
+    /\b(?:bodyweight|goblet)\s+squats?\b/i.test(draft.request?.prompt||''))return draft;
+ const lower=draft.days.map((d,i)=>coachProjectedWeekDayKey(d)==='lower body'?i:-1)
+   .filter(i=>i>=0);
+ if(lower.length!==2)return draft;
+ const before=coachProjectedWeekAudit(draft);
+ if(!lower.every(i=>before.findings.some(f=>
+   f.type==='same_day_family_overlap'&&f.dayIndex===i&&f.family==='squat')))return draft;
+ const proposal=coachProposeProjectedWeekRepair(draft,{maxSwaps:2,maxTrials:150});
+ const changes=proposal.changes||[];
+ if(changes.length!==2||!changes.every(c=>c.kind==='swap'&&
+    c.finding==='same_day_family_overlap'&&c.removedName==='Bodyweight Squat'&&
+    exById(c.addedId)?.pattern==='hip_abduction'&&lower.includes(c.dayIndex))||
+    new Set(changes.map(c=>c.dayIndex)).size!==2||
+    coachProjectedRepairRegresses(before,proposal.after)||
+    coachProjectedRepairDebt(proposal.after)>=coachProjectedRepairDebt(before)||
+    lower.some(i=>proposal.after.findings.some(f=>f.type==='same_day_family_overlap'&&
+      f.family==='squat'&&f.dayIndex===i)))return draft;
+ return {...proposal.draft,
+   lastRefinement:'Balanced both glute workouts with complementary hip work. You can edit either day.',
+   initialWeekBalance:{kind:'glute_day_complementary_swaps',changes:changes.map(c=>({
+     dayIndex:c.dayIndex,removedId:c.removedId,addedId:c.addedId}))}};
+}
+
+// Longer full-body gym days sometimes have room for meaningful complementary
+// patterns. Choose ONLY a vetted cross-day shoulder-press -> vertical-pull
+// swap plus a modest, two-set knee-flexion accessory if both are safe.
+// There is no requirement to fill every available minute.
+function coachImproveFreshLongFullBodyDraft(draft){
+ if(draft?.intent?.split!=='full_body'||draft.days?.length!==3||
+    !coachFreshComplementEditable(draft)||
+    draft.days.some(d=>coachProjectedWeekDayKey(d)!=='full body'||
+      d.request?.brainEquipment?.choice!=='gym'||
+      d.request?.goal==='strength'||Number(d.request?.duration)<65||
+      Number(d.request?.duration)>90||d.request?.priorityRegions?.length)||
+    draft.request?.programFocusRegions?.length||
+    draft.intent?.focusRegions?.length)return draft;
+ const prompt=String(draft.request?.prompt||'');
+ if(/\b(?:overhead|military|arnold|shoulder)(?:\s+(?:barbell|dumbbell|machine))?\s+press(?:es)?\b/i.test(prompt)||
+    /\b(?:focus on|prioritize|emphasize|more|mainly)\b.{0,45}\b(?:shoulders?|delts?)\b/i.test(prompt))return draft;
+ const before=coachProjectedWeekAudit(draft);
+ if(before.roles?.vertical_pull?.count||before.roles?.knee_flexion?.count||
+    !before.findings.some(f=>f.type==='missing_weekly_role'&&f.role==='vertical_pull')||
+    !before.findings.some(f=>f.type==='missing_weekly_role'&&f.role==='knee_flexion'))return draft;
+ const proposed=coachProposeProjectedWeekRepair(draft,{maxSwaps:2,maxTrials:150});
+ const changes=proposed.changes||[];
+ if(changes.length!==2||!changes.some(c=>c.kind==='swap'&&
+    c.role==='vertical_pull'&&c.dayIndex===1&&
+    exById(c.removedId)?.pattern==='vertical_press'&&
+    exById(c.addedId)?.pattern==='vertical_pull')||
+    !changes.some(c=>c.kind==='add'&&c.role==='knee_flexion'&&
+      exById(c.addedId)?.pattern==='knee_flexion')||
+    proposed.draft.days.some(day=>day.selectedIds.length>7||
+      day.brainTime?.estimateMinutes>Number(day.request.duration)+Math.max(6,Math.ceil(Number(day.request.duration)*.15)))||
+    !proposed.after.roles?.vertical_pull?.count||
+    !proposed.after.roles?.knee_flexion?.count||
+    coachProjectedRepairRegresses(before,proposed.after)||
+    coachProjectedRepairDebt(proposed.after)>=coachProjectedRepairDebt(before))return draft;
+ return {...proposed.draft,
+   lastRefinement:'Balanced this longer week with vertical pulling and hamstring-curl work. Both are editable.',
+   initialWeekBalance:{kind:'long_full_body_complements',changes:changes.map(c=>({
+    kind:c.kind,dayIndex:c.dayIndex,removedId:c.removedId,addedId:c.addedId}))}};
+}
+
+function coachImproveFreshWeeklyDraft(draft){
+ // Order matters: preserve the 45-minute accepted behavior, then use two
+ // narrowly verified cases without duplicating it or adding to short days.
+ const extended=coachImproveFreshLongFullBodyDraft(draft);
+ if(extended!==draft)return extended;
+ const glute=coachImproveFreshGluteDraft(draft);
+ if(glute!==draft)return glute;
+ return coachImproveFreshProgramDraft(draft);
 }
 
 // Planning-only quality review of the *current* generated preview.
@@ -1446,7 +1570,7 @@ function coachContinueProgramRequest(){
    '<div class="mini">Some days need more time, a different focus, or different available equipment. Coach will not invent equipment.</div><div class="actions"><button class="btn" onclick="coachRetryProgramBrainEquipment()">Change equipment</button><button class="btn secondary" onclick="coachRestartProgramSplit()">Change split</button><button class="btn secondary" onclick="coachReviseProgramDuration()">Change time</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New request</button></div>');
   return;
  }
- if(freshDraft)coachProgramBuildDraft=coachImproveFreshProgramDraft(coachProgramBuildDraft);
+ if(freshDraft)coachProgramBuildDraft=coachImproveFreshWeeklyDraft(coachProgramBuildDraft);
  renderCoachProgramPreview();
 }
 function coachClearProgramDayFocus(index){
