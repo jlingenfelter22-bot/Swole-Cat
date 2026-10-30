@@ -11,7 +11,8 @@ const dom=new JSDOM(fs.readFileSync('/tmp/swole-cat-test.html','utf8'),{
   w.alert=()=>{};w.confirm=()=>true;w.scrollTo=()=>{};
  }
 });
-const NOW=Date.parse('2026-10-21T12:00:00Z'),DAY=86400000;
+// Keep synthetic logs recent relative to the runtime's review clock, not a fixed calendar date.
+const NOW=Date.now(),DAY=86400000;
 const findings=[];
 try{
  await new Promise(resolve=>setTimeout(resolve,220));
