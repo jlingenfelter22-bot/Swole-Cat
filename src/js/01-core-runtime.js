@@ -1,3 +1,10 @@
+function programDeloadConfig(source){
+ const d=source&&typeof source==='object'?source:{};
+ return {enabled:d.enabled===true,intervalWeeks:Math.min(52,Math.max(2,Math.trunc(Number(d.intervalWeeks)||4))),
+   decisions:d.decisions&&typeof d.decisions==='object'&&!Array.isArray(d.decisions)?{...d.decisions}:{},
+   deferNext:d.deferNext===true,deferredFrom:typeof d.deferredFrom==='string'?d.deferredFrom:''};
+}
+
 const LSKEY='overload_v3';
 const APP_VERSION='__SWOLE_CAT_VERSION__';
 const DATA_SCHEMA_VERSION=1;
@@ -83,6 +90,7 @@ function normalizeState(saved){
  merged.routines.forEach(r=>{if(!Array.isArray(r.exercises))r.exercises=[];r.trainingMode=normalizeTrainingMode(r.trainingMode);r.description=typeof r.description==='string'?r.description:'';r.archivedAt=typeof r.archivedAt==='string'&&r.archivedAt?r.archivedAt:null});
  merged.programs.forEach(p=>{
    p.trainingMode=normalizeProgramTrainingMode(p.trainingMode);
+   p.deload=programDeloadConfig(p.deload);
    p.routineIds=Array.isArray(p.routineIds)?p.routineIds.filter(id=>merged.routines.some(r=>r.id===id)):[];
    p.frequency=Math.min(7,Math.max(1,Number(p.frequency)||3));
    p.preferredDays=Array.isArray(p.preferredDays)?p.preferredDays.filter(d=>Number.isInteger(d)&&d>=0&&d<=6):[];
@@ -171,7 +179,7 @@ function load(){
  }
 }
 let state=load();
-let stateRevision=0,pendingStateSave=false,pendingStateSaveTimer=null;
+let stateRevision=0,pendingStateSave=false,pendingStateSaveTimer=null,pendingStateSaveSyncRelevant=true;
 SwoleCatRuntime.registerService('state',{
  read(){return cloneData(state)},
  revision(){return stateRevision},
@@ -204,10 +212,10 @@ function derivedSessionData(){
    (session.exercises||[]).forEach(e=>{
      const working=progressionSets(e),all=completedSets(e);
      if(all.length)loggedExerciseIds.add(e.exerciseId);
-     if(!previousByExercise.has(e.exerciseId))previousByExercise.set(e.exerciseId,{date:session.date,...e});
+     if(session.programPhase!=='deload'&&working.length&&!previousByExercise.has(e.exerciseId))previousByExercise.set(e.exerciseId,{date:session.date,...e});
      if(!working.length)return;
      if(!historyByExercise.has(e.exerciseId))historyByExercise.set(e.exerciseId,[]);
-     historyByExercise.get(e.exerciseId).push({date:session.date,routineName:session.routineName,sets:working,allSets:all,notes:e.notes||''});
+     historyByExercise.get(e.exerciseId).push({date:session.date,routineName:session.routineName,programId:session.programId||null,programPhase:session.programPhase||'normal',loadType:exerciseLoadType(e.exerciseId,e.config),measurementType:loggedExerciseMeasurement(e),sets:working,allSets:all,notes:e.notes||''});
    });
  });
  historyByExercise.forEach(rows=>rows.sort((a,b)=>String(a.date).localeCompare(String(b.date))));
@@ -235,8 +243,10 @@ function queueNavigationRefresh(id){
    if(activeViewId()===id)renderNavigationView(id);
  });
 }
-function scheduleStateSave(delay=220){
+function scheduleStateSave(delay=220,syncRelevant=true){
  if(storageWriteBlocked)return false;
+ if(!pendingStateSave)pendingStateSaveSyncRelevant=!!syncRelevant;
+ else pendingStateSaveSyncRelevant=pendingStateSaveSyncRelevant||!!syncRelevant;
  pendingStateSave=true;
  if(pendingStateSaveTimer)clearTimeout(pendingStateSaveTimer);
  pendingStateSaveTimer=setTimeout(()=>flushPendingStateSave(),delay);
@@ -245,8 +255,10 @@ function scheduleStateSave(delay=220){
 function flushPendingStateSave(){
  if(pendingStateSaveTimer){clearTimeout(pendingStateSaveTimer);pendingStateSaveTimer=null}
  if(!pendingStateSave)return true;
+ const syncRelevant=pendingStateSaveSyncRelevant;
  pendingStateSave=false;
- return save();
+ pendingStateSaveSyncRelevant=true;
+ return save({syncRelevant});
 }
 function renderNavigationView(id){
  if(!Object.prototype.hasOwnProperty.call(navigationRenderRevision,id))return;
@@ -259,10 +271,12 @@ function renderNavigationView(id){
  navigationRenderRevision[id]=stateRevision;
 }
 
-function save(){
+function save(options={}){
  if(storageWriteBlocked)return false;
+ const syncRelevant=options?.syncRelevant!==false;
  if(pendingStateSaveTimer){clearTimeout(pendingStateSaveTimer);pendingStateSaveTimer=null}
  pendingStateSave=false;
+ pendingStateSaveSyncRelevant=true;
  try{
    if(!recoverySnapshotWritten){
      const previous=swoleCatStorage.getItem(LSKEY);
@@ -275,7 +289,7 @@ function save(){
    swoleCatStorage.setItem(LSKEY,serialized);
    stateRevision++;
    lastStorageError='';
-   SwoleCatRuntime.events.dispatchEvent(new CustomEvent('state:saved',{detail:{revision:stateRevision,savedAt:state.meta.lastSavedAt}}));
+   SwoleCatRuntime.events.dispatchEvent(new CustomEvent('state:saved',{detail:{revision:stateRevision,savedAt:state.meta.lastSavedAt,syncRelevant}}));
    return true;
  }catch(e){
    lastStorageError=e?.message||String(e);
@@ -411,9 +425,14 @@ function syncViewportMetrics(){
 }
 function scrollFocusedFieldIntoView(){
  const active=document.activeElement;
- if(active&&/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)){
-   setTimeout(()=>{try{active.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}},60);
- }
+ if(!active||!/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName))return;
+ // Android resize and the sticky Coach composer already keep this focused
+ // control visible. Do not add a competing smooth center scroll.
+ if(active.closest?.('.coach-program-composer'))return;
+ setTimeout(()=>{
+  if(document.activeElement!==active)return;
+  try{active.scrollIntoView({block:'nearest',behavior:'instant'})}catch(e){}
+ },80);
 }
 async function configureNativeUi(){
  syncViewportMetrics();
@@ -429,6 +448,7 @@ async function configureNativeUi(){
      const height=Math.max(0,Number(info?.keyboardHeight)||0);
      document.documentElement.style.setProperty('--sc-keyboard-height',height+'px');
      document.body.classList.add('keyboard-open');
+      syncViewportMetrics();
      scrollFocusedFieldIntoView();
    });
    await keyboard?.addListener?.('keyboardWillHide',()=>{
@@ -578,23 +598,24 @@ function markWorkoutStructureDirty(){
    }catch(e){}
  }
 }
-function saveActiveWorkout(defer=false){
+function saveActiveWorkout(defer=false,syncRelevant=true){
  if(state.activeWorkout){
    state.activeWorkout.status='active';
    state.activeWorkout.lastSavedAt=new Date().toISOString();
  }
- return defer?scheduleStateSave():save();
+ return defer?scheduleStateSave(220,syncRelevant):save({syncRelevant});
 }
-function saveActiveWorkoutWithoutExtendingPendingSave(delay=90){
+function saveActiveWorkoutWithoutExtendingPendingSave(delay=90,syncRelevant=false){
  if(state.activeWorkout){
    state.activeWorkout.status='active';
    state.activeWorkout.lastSavedAt=new Date().toISOString();
  }
  if(pendingStateSaveTimer){
    pendingStateSave=true;
+   pendingStateSaveSyncRelevant=pendingStateSaveSyncRelevant||!!syncRelevant;
    return true;
  }
- return scheduleStateSave(delay);
+ return scheduleStateSave(delay,syncRelevant);
 }
 function workoutHeaderIcon(stateName){
  if(stateName==='pause'){
@@ -628,6 +649,7 @@ function pauseActiveWorkout(){
  const w=state.activeWorkout;
  if(!w){showToast('No active workout');return}
  if(!w.pausedAt)w.pausedAt=new Date().toISOString();
+ if(typeof stopWorkoutHoldTimer==='function')stopWorkoutHoldTimer(true);
  saveActiveWorkout();
  stopRestTimer();
  releaseWakeLock();
@@ -657,14 +679,19 @@ function toggleActiveWorkoutControl(){
  else resumeActiveWorkout();
 }
 function activeSetsFromRoutineExercise(re,rec,ex){
+ const measurement=exerciseMeasurementType(re.exerciseId,re);
  const working=Array.from({length:re.sets},(_,i)=>({
    weight:rec.weights?.[i]??rec.weight??0,
-   reps:rec.targetReps?.[i]??re.minReps,
+   reps:measurement==='reps'?(rec.targetReps?.[i]??re.minReps):0,
+   durationSeconds:0,
+   distanceMeters:0,
+   metricRecorded:false,
+   weightEntered:measurement==='distance'&&exerciseLoadType(re.exerciseId,re)==='external'?(Number(rec.weights?.[i]??rec.weight)||0)>0:true,
    done:false,rir:'',type:'working',pr:'',
    role:typeof coachAdaptiveSetRole==='function'?coachAdaptiveSetRole(re,i):'working',
    amrap:!!re.lastSetAmrap&&i===Math.max(0,re.sets-1)
  }));
- if(!re.autoWarmup||!ex||!COACH_COMPOUND_PATTERNS.has(ex.pattern))return working;
+ if(measurement!=='reps'||!re.autoWarmup||!ex||exerciseLoadType(re.exerciseId,re)!=='external'||!COACH_COMPOUND_PATTERNS.has(ex.pattern))return working;
  const targetWeight=Number(rec.weights?.[0]??rec.weight??0);
  let warmups=warmupGuide(targetWeight,ex);
  if(!warmups.length&&ex.equipment!=='bodyweight'){
@@ -681,13 +708,31 @@ function startRoutineFresh(id,programId=null){
  const programMode=normalizeProgramTrainingMode(program?.trainingMode);
  const effectiveMode=programMode!=='inherit'?normalizeTrainingMode(programMode):normalizeTrainingMode(r.trainingMode);
  const now=new Date().toISOString();
+ const weekContext=program?programDeloadContext(program,now):null;
+ if(weekContext?.needsReview){reviewProgramDeload(program,Math.max(0,program.routineIds.indexOf(id)));return}
+ const isDeload=effectiveMode==='guided'&&weekContext?.phase==='deload';
  const active={
-   id:uid(),routineId:id,routineName:r.name,trainingMode:effectiveMode,programId:programId||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,structureNoticeSeen:false,pausedAt:null,pausedDurationMs:0,focusExerciseIndex:0,focusSetIndex:0,deferredExerciseIndexes:[],
+   id:uid(),routineId:id,routineName:r.name,trainingMode:effectiveMode,programId:programId||null,
+   programPhase:isDeload?'deload':'normal',programWeekKey:weekContext?.key||null,programWeekIndex:weekContext?.weekIndex||null,startDate:now,status:'active',lastSavedAt:now,structureDirty:false,structureNoticeSeen:false,pausedAt:null,pausedDurationMs:0,focusExerciseIndex:0,focusSetIndex:0,deferredExerciseIndexes:[],
    exercises:r.exercises.map((re,routineIndex)=>{
-     const prev=previousExercise(re.exerciseId);
-     const mode=effectiveMode,config={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode};
-     const rec=buildRecommendation(config,prev,re.exerciseId);
-     return {exerciseId:re.exerciseId,routineIndex,config,targetOverride:null,supersetId:re.supersetGroup||null,skipped:false,expanded:routineIndex===0,sets:activeSetsFromRoutineExercise(re,rec,exById(re.exerciseId)),notes:''};
+     const prev=previousExercise(re.exerciseId,programId,re);
+     const loadType=exerciseLoadType(re.exerciseId,re);
+     const mode=effectiveMode,normalConfig={trainingGoal:'general',resetPercent:7.5,...re,routineMode:mode,mode:re.mode==='range'?'double':re.mode,programGuided:!!(program&&programMode==='guided')};
+     if(loadType!=='external'||exerciseMeasurementType(re.exerciseId,re)!=='reps'){normalConfig.adaptiveProgression=false;normalConfig.setStructure=null;normalConfig.progressionStrategy='double';}
+     const reducedSets=isDeload?Math.max(1,Math.ceil((Number(re.sets)||1)/2)):Math.max(1,Number(re.sets)||1);
+     const config=isDeload?{...normalConfig,sets:reducedSets,setStructure:null,adaptiveProgression:false}:normalConfig;
+     const normalRec=buildRecommendation(normalConfig,prev,re.exerciseId);
+     const priorWorking=progressionSets(prev);
+     const rec=isDeload?{
+       status:'deload',
+       weights:Array.from({length:reducedSets},(_,i)=>Number(priorWorking[i]?.weight??priorWorking[0]?.weight??0)),
+       targetReps:Array(reducedSets).fill(Math.max(1,Number(config.minReps)||8)),
+       targetValues:Array(reducedSets).fill(exerciseMovementProfile(re.exerciseId,config).min),
+       weight:Number(priorWorking[0]?.weight)||0,
+       headline:'Deload · Fewer working sets',
+       detail:'Lighter training stress by design. Performance from this week will not lower your normal progression baseline.'
+     }:normalRec;
+     return {exerciseId:re.exerciseId,routineIndex,config,targetOverride:null,supersetId:re.supersetGroup||null,skipped:false,expanded:routineIndex===0,sets:activeSetsFromRoutineExercise({...re,sets:reducedSets,setStructure:config.setStructure},rec,exById(re.exerciseId)),notes:''};
    })
  };
  state.activeWorkout=active;

@@ -78,7 +78,8 @@ function coachProgramAuditExerciseEntries(program){
 function coachProgramAuditAdherence(program,audit){
  const f=[],sessions=audit.actual.sessions;
  if(!sessions.length)return [coachProgramAuditFinding('history_depth',45,'No completed Program sessions yet.','Coach can audit Program structure now, but needs completed Program workouts before comparing saved frequency with actual completion.',{action:'none'})];
- if(audit.historyDays<14)return [coachProgramAuditFinding('history_depth',42,'Program history is still forming.','There are completed Program workouts, but fewer than two weeks of Program history, so Coach avoids strong adherence conclusions.',{action:'none'})];
+ if(audit.historyDays<21||sessions.length<Math.max(3,audit.routines.length))
+  return [coachProgramAuditFinding('history_depth',42,'Program history is still forming.','Recent workouts are not yet enough to make a reliable weekly follow-through comparison.',{action:'none'})];
  const target=Math.max(1,Number(program.frequency)||1),rate=sessions.length/audit.actual.weeks;
  audit.targetPerWeek=target;audit.actualPerWeek=rate;
  if(rate/target<.65)f.push(coachProgramAuditFinding('adherence',86,'Actual Program frequency is below the saved target.','The Program is set to '+target+' workouts per week. Recent completed Program history averages about '+rate.toFixed(1)+' per week. That is a completion pattern, not a recovery or motivation diagnosis.',{action:'edit_program',programId:program.id}));
@@ -93,28 +94,55 @@ function coachProgramAuditAdherence(program,audit){
  }
  return f;
 }
+function coachProgramAuditHasComparableCoverage(audit){
+ // Planned coverage presumes the entire saved rotation was completed at its
+ // target frequency. Do not describe fewer attended sessions as a muscle
+ // development or exercise-selection deficit.
+ const target=Math.max(1,Number(audit.program.frequency)||1);
+ const count=audit.actual.sessions.filter(s=>(s.exercises||[])
+  .some(e=>!e.skipped&&progressionSets(e).length>0)).length;
+ return audit.historyDays>=21&&count>=Math.max(4,audit.routines.length*2)&&
+   count/audit.actual.weeks>=target*.75;
+}
 function coachProgramAuditCoverageFindings(program,audit){
- const f=[],evidence=audit.actual.sessions.length>=3&&audit.historyDays>=14,positive=audit.coverageRows.filter(x=>x.plannedSets>0);
+ const f=[],positive=audit.coverageRows.filter(x=>x.plannedSets>0);
  audit.coverageRows.forEach(row=>{
-  if(Number(program.frequency)>=3&&row.plannedSets===0&&positive.length>=2)f.push(coachProgramAuditFinding('planned_gap',68,row.label+' has no meaningful planned coverage.','Across the saved Program Routines, Coach does not find meaningful primary/secondary coverage for '+row.label.toLowerCase()+'. That may be intentional, so this is a design observation.',{action:'edit_program',programId:program.id,groupKey:row.key}));
-  else if(evidence&&row.plannedSets>=4&&row.actualSets<row.plannedSets*.45)f.push(coachProgramAuditFinding('actual_coverage_gap',78,row.label+' completion is well below the Program’s planned coverage.','The saved Program represents about '+row.plannedSets.toFixed(1)+' '+row.label.toLowerCase()+' set-equivalents per week, while recent completed Program sessions average about '+row.actualSets.toFixed(1)+'.',{action:'edit_program',programId:program.id,groupKey:row.key}));
+  if(Number(program.frequency)>=3&&row.plannedSets===0&&positive.length>=2)
+   f.push(coachProgramAuditFinding('planned_gap',58,
+    row.label+' has no planned coverage.',
+    'The current saved Routines do not include meaningful '+row.label.toLowerCase()+
+    ' work. This may fit your goals and is unrelated to missed workouts.',
+    {action:'edit_program',programId:program.id,groupKey:row.key}));
  });
+ // Within-session shortfalls belong in Phase 4's evidence-gated review.
+ // A weekly total cannot distinguish missed sessions from exercise choices.
  return f;
 }
 function coachProgramAuditRedundancy(program){
- const f=[],families=new Map();
- coachProgramAuditExerciseEntries(program).forEach(e=>{if(!e.family||e.family==='other')return;if(!families.has(e.family))families.set(e.family,[]);families.get(e.family).push(e)});
- families.forEach((rows,family)=>{
-  const routineIds=[...new Set(rows.map(x=>x.routineId))],exerciseIds=[...new Set(rows.map(x=>x.exerciseId))],roles=[...new Set(rows.map(x=>x.role))];
-  if(routineIds.length<2||rows.length<3)return;
-  const preferred=rows.filter(x=>x.preference==='prefer'||x.favorite).length;
-  const sameAcrossThree=exerciseIds.length===1&&routineIds.length>=3&&roles.length===1;
-  const variantsSameRole=exerciseIds.length>=2&&roles.length===1;
-  const stacked=routineIds.some(id=>rows.filter(x=>x.routineId===id).length>=2);
-  if(!(sameAcrossThree||variantsSameRole||stacked)||preferred===rows.length)return;
-  const names=[...new Set(rows.map(x=>x.exerciseName))].join(', ');
-  f.push(coachProgramAuditFinding('redundancy',72,patternLabel(family)+' work repeats with very similar roles across the Program.','Coach found '+rows.length+' '+family.replaceAll('_',' ')+' slots across '+routineIds.length+' Routines with a very similar progression/rep role: '+names+'.'+(preferred?' Some are explicitly preferred/favorited, so Coach will not treat them as automatic removal targets.':''),{action:'review_routine',programId:program.id,routineId:rows.at(-1).routineId,family}));
- });
+ const f=[];
+ // Repeating a movement family across different Full Body/Push/Pull days is
+ // often deliberate and effective. Only flag near-identical *alternatives
+ // inside one Routine*, where they compete for time and movement diversity.
+ for(const {id,routine} of coachProgramAuditRoutines(program)){
+  const families=new Map();
+  for(const e of coachProgramAuditExerciseEntries({routineIds:[id]})){
+   if(!e.family||e.family==='other')continue;
+   const key=e.family+'|'+e.role;
+   if(!families.has(key))families.set(key,[]);
+   families.get(key).push(e);
+  }
+  for(const rows of families.values()){
+   if(rows.length<2||new Set(rows.map(x=>x.exerciseId)).size<2)continue;
+   const optional=rows.filter(x=>x.preference!=='prefer'&&!x.favorite);
+   if(optional.length<2)continue;
+   const family=rows[0].family;
+   f.push(coachProgramAuditFinding('redundancy',65,
+    'Similar '+patternLabel(family).toLowerCase()+' variations in '+routine.name+'.',
+    'This Routine contains '+[...new Set(rows.map(x=>x.exerciseName))].join(' and ')+
+    ' in a similar role. Both may be intentional; consider whether each contributes something distinct. Repeating these patterns on different training days is not itself a problem.',
+    {action:'review_routine',programId:program.id,routineId:id,family}));
+  }
+ }
  return f;
 }
 function coachProgramAuditCalendarDayNumber(value){
@@ -207,20 +235,106 @@ function coachProgramAuditIntent(text){
  return {handled:true,program:null,needsChoice:true,programs};
 }
 function coachProgramAuditCoverageText(audit){
- return audit.coverageRows.map(r=>r.label+': planned '+r.plannedSets.toFixed(1)+' / actual '+(audit.actual.sessions.length?r.actualSets.toFixed(1):'--')).join(' · ');
+ const enough=coachProgramAuditHasComparableCoverage(audit);
+ return audit.coverageRows.map(r=>r.label+': planned '+r.plannedSets.toFixed(1)+
+  ' / logged '+(enough?r.actualSets.toFixed(1):'not enough comparable history')).join(' · ');
 }
-function coachProgramAuditActionLabel(f){return f.action==='review_routine'?'Review Routine':f.action==='open_progress'?'Open Progress':f.action==='edit_program'?'Review Program':''}
+function coachProgramAuditCoverageHtml(audit){
+ const enough=coachProgramAuditHasComparableCoverage(audit);
+ return '<details class="coach-audit-disclosure coach-audit-coverage">'+
+  '<summary>Advanced: muscle involvement estimates</summary>'+
+  '<div class="mini">Estimated set-equivalents per week, based on today’s saved Routines. Primary involvement counts 1 per set and secondary involvement 0.5; these are estimates, not measures of muscle growth. Logged values reflect the last 28 days, not necessarily the same Routine versions.</div>'+
+  (!enough?'<div class="notice">Not enough comparable completed Program history for an actual-versus-planned weekly comparison. Coach will not treat missing workouts as missing muscle development.</div>':'')+
+  '<div class="coach-audit-coverage-rows">'+audit.coverageRows.map(r=>
+    '<div class="coach-audit-coverage-row"><span>'+esc(r.label)+'</span>'+
+    '<span>Planned '+r.plannedSets.toFixed(1)+' / Logged '+
+    (enough?r.actualSets.toFixed(1):'—')+'</span></div>').join('')+'</div></details>';
+}
+function coachProgramAuditStatus(audit){
+ const sessions=audit.actual.sessions.length;
+ if(!sessions)return 'No completed sessions are logged for this Program in the last 28 days. Coach can review the saved plan, but cannot assess your follow-through yet.';
+ if(audit.historyDays<21||sessions<Math.max(4,audit.routines.length*2))
+  return 'Program history is still forming. Logged completion and muscle-coverage comparisons are limited until more sessions are available.';
+ if(!coachProgramAuditHasComparableCoverage(audit))
+  return 'The saved schedule and recently logged workouts differ. That does not mean your exercise selection or muscle development is inadequate.';
+ return 'Recent completed Program history is available for review. These are estimates, not direct measures of muscle growth or recovery.';
+}
+function coachProgramAuditActionLabel(f){
+ return f.action==='review_routine'?'Review Routine':
+  f.action==='open_progress'?'Open Progress':f.action==='edit_program'?'Review Program':'';
+}
+function coachProgramAuditPlainTitle(f){
+ // UI copy only. Preserve original analytical finding and its rationale.
+ const routine=state.routines.find(r=>r.id===f.routineId);
+ const group=coachProgramAuditGroups().find(g=>g.key===f.groupKey);
+ if(f.type==='redundancy')return 'Similar exercises in '+(routine?.name||'this routine');
+ if(f.type==='planned_gap'&&group)return 'No '+group.label.toLowerCase()+' work in this plan';
+ if(f.type==='distribution'&&group){
+  if(f.evidence==='routine_concentration')
+   return 'Most '+group.label.toLowerCase()+' work is in '+(routine?.name||'one routine');
+  if(f.evidence==='actual_adjacent_sessions')
+   return group.label+' work was logged on back-to-back days';
+  if(f.evidence==='rotation_wide_schedule_risk')
+   return 'Your schedule may repeat '+group.label.toLowerCase()+' work on nearby days';
+ }
+ if(f.type==='slot_gap')return (routine?.name||'A routine')+' shows up less often in your logs';
+ if(f.type==='adherence')return 'Your logs show fewer workouts than the current weekly goal';
+ if(f.type==='plateau_high_effort')return 'Consider reviewing progress on '+(f.exerciseName||'this exercise');
+ if(f.type==='plateau_watch')return 'Recent progress appears steady';
+ if(f.type==='performance_dip')return 'Recent logged performance is below earlier workouts';
+ return f.title;
+}
 function coachProgramAuditFindingHtml(f,programId){
- const label=coachProgramAuditActionLabel(f),badge=f.severity==='high'?'HIGH':f.severity==='medium'?'CHECK':f.severity==='low'?'NOTE':'POSITIVE';
- return '<div class="card" style="margin-top:9px"><div class="eyebrow">'+esc(badge)+'</div><div class="exercise-name" style="margin-top:3px">'+esc(f.title)+'</div><div class="mini" style="margin-top:5px">'+esc(f.text)+'</div>'+(label?'<div class="actions"><button class="btn small secondary" onclick="coachProgramAuditAction(\''+escAttr(programId)+'\',\''+escAttr(f.id)+'\')">'+esc(label)+'</button></div>':'')+'</div>';
+ const label=coachProgramAuditActionLabel(f);
+ // One expandable row per idea. Do not stack a card, a second disclosure,
+ // and a prominent action button before the user asks for the explanation.
+ return '<details class="coach-audit-finding coach-audit-item">'+
+  '<summary><span class="coach-audit-item-title">'+esc(coachProgramAuditPlainTitle(f))+'</span>'+
+  '<span class="coach-audit-item-hint">Details</span></summary>'+
+  '<div class="coach-audit-item-body"><div class="mini">'+esc(f.text)+'</div>'+
+  (label?'<button class="btn secondary" onclick="coachProgramAuditAction(\''+
+   escAttr(programId)+'\',\''+escAttr(f.id)+'\')">'+esc(label)+'</button>':'')+
+  '</div></details>';
 }
 function renderCoachProgramAudit(audit){
  if(!audit)return false;
- const p=audit.program,rate=Number.isFinite(audit.actualPerWeek)?audit.actualPerWeek.toFixed(1):'--';
- openModal('Coach · Program Audit','<div class="coach-builder"><div class="coach-console"><div class="eyebrow">PROGRAM AUDIT // v0.63</div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">'+esc(p.name)+'</div><div class="mini" style="margin-top:5px">'+audit.routines.length+' Routines · target '+p.frequency+'×/week · recent actual '+rate+'×/week · '+audit.actual.sessions.length+' Program sessions in audit window</div></div><div class="coach-rationale"><b>Planned vs. recent completed muscle coverage:</b><br><span class="mini">'+esc(coachProgramAuditCoverageText(audit))+'</span></div><div class="mini" style="margin:9px 0 2px">Ranked findings · '+audit.issueCount+' items to review</div>'+audit.findings.map(f=>coachProgramAuditFindingHtml(f,p.id)).join('')+'<div class="notice">Findings are programming observations only. Coach does not diagnose fatigue, soreness, injury, recovery, overtraining, or medical readiness, and auditing never silently saves changes.</div><div class="actions"><button class="btn secondary" onclick="closeModal();newProgram(\''+escAttr(p.id)+'\')">Edit Program</button><button class="btn secondary" onclick="closeModal();go(\'analytics\')">Open Progress</button><button class="btn secondary" onclick="closeModal()">Done</button></div></div>');
+ const p=audit.program;
+ const findings=audit.findings.filter(f=>f.type!=='history_depth'&&f.type!=='clear'&&f.type!=='progressing');
+ const first=findings.slice(0,2),rest=findings.slice(2),count=findings.length;
+ const status=coachProgramAuditStatus(audit);
+ const quick='<div class="coach-audit-primary"><div class="coach-audit-status">'+
+  '<b>Training history</b><div class="mini">'+esc(status)+'</div></div>'+
+  '<button class="btn secondary" onclick="openCoachPhase4ProgramReview(\''+
+   escAttr(p.id)+'\')">Review Training History</button></div>';
+ const ideas=first.map(f=>coachProgramAuditFindingHtml(f,p.id)).join('')+
+  (rest.length?'<details class="coach-audit-disclosure coach-audit-more"><summary>Show '+rest.length+
+   ' more idea'+(rest.length===1?'':'s')+'</summary>'+
+   rest.map(f=>coachProgramAuditFindingHtml(f,p.id)).join('')+'</details>':'');
+ openModal('Coach · Program Audit','<div class="coach-builder coach-audit-refresh coach-audit-simple">'+
+  '<div class="coach-console coach-audit-head"><div class="eyebrow">COACH REVIEW</div>'+
+  '<div class="exercise-name">'+esc(p.name)+'</div>'+
+  '<div class="mini">'+audit.routines.length+' routines · '+
+   esc(String(p.frequency))+' planned each week · '+
+   audit.actual.sessions.length+' logged in the last 28 days</div></div>'+
+  quick+
+  '<section class="coach-audit-plan" aria-label="Saved plan review">'+
+  '<div class="coach-audit-findings-label">'+(count?
+   count+' idea'+(count===1?'':'s')+' for your plan':
+   'Your saved plan')+'</div>'+
+  '<div class="mini coach-audit-plan-intro">'+(count?
+   'These are things to consider, not changes you need to make. Tap one to see why.':
+   'Coach did not find a major plan concern with the available information.')+'</div>'+
+  ideas+'</section>'+
+  coachProgramAuditCoverageHtml(audit)+
+  '<div class="mini coach-audit-footnote">Coach reviews recorded workouts and your current plan. It cannot judge recovery or effort from these records alone. Nothing changes unless you edit it.</div>'+
+  '<div class="actions coach-audit-footer"><button class="btn secondary" onclick="closeModal()">Done</button></div></div>');
  return true;
 }
-function openCoachProgramAudit(programId){const audit=coachProgramAudit(programId);if(!audit){showToast('Program not found');return false}return renderCoachProgramAudit(audit)}
+function openCoachProgramAudit(programId){
+ const audit=coachProgramAudit(programId);
+ if(!audit){showToast('Program not found');return false}
+ return renderCoachProgramAudit(audit);
+}
 function coachProgramAuditAction(programId,findingId){
  const audit=coachProgramAudit(programId),f=audit?.findings.find(x=>x.id===findingId);if(!f)return false;
  if(f.action==='review_routine'&&f.routineId){closeModal();if(openCoachRoutineControl(f.routineId)&&coachRoutineSession){coachRoutineSession.lastResponse='Program audit: '+f.title+' '+f.text;renderCoachRoutineControl()}return true}

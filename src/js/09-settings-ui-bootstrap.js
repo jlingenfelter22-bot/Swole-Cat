@@ -239,11 +239,12 @@ function syncAppSelect(select){
  trigger.dataset.value=type;
 }
 function enhanceAppSelect(select){
- if(!select||select.dataset.appSelectReady==='1')return;
+ const doc=select?.ownerDocument;
+ if(!select||!doc?.createElement||!select.isConnected||select.dataset.appSelectReady==='1')return;
  select.dataset.appSelectReady='1';
- const wrap=document.createElement('div');
+ const wrap=doc.createElement('div');
  wrap.className='app-select-wrap'+(select.classList.contains('set-type-select')?' app-select-compact':'');
- const trigger=document.createElement('button');
+ const trigger=doc.createElement('button');
  trigger.type='button';
  trigger.className='app-select-trigger';
  trigger.setAttribute('aria-haspopup','listbox');
@@ -254,8 +255,6 @@ function enhanceAppSelect(select){
  select.classList.add('app-select-source');
  trigger.addEventListener('click',()=>openAppSelect(select,trigger));
  select.addEventListener('change',()=>syncAppSelect(select));
- const observer=new MutationObserver(()=>syncAppSelect(select));
- observer.observe(select,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','selected']});
  syncAppSelect(select);
 }
 function enhanceAppSelects(root=document){
@@ -313,10 +312,22 @@ document.addEventListener('keydown',e=>{
    e.preventDefault();closeAppSelect();
  }
 });
+let appSelectEnhanceQueued=false;
+const appSelectPendingRoots=new Set();
+function scheduleAppSelectEnhancement(node){
+ if(!node||node.nodeType!==1||!node.isConnected)return;
+ appSelectPendingRoots.add(node);
+ if(appSelectEnhanceQueued)return;
+ appSelectEnhanceQueued=true;
+ queueMicrotask(()=>{
+   appSelectEnhanceQueued=false;
+   const roots=[...appSelectPendingRoots].filter(root=>root?.isConnected);
+   appSelectPendingRoots.clear();
+   roots.filter((root,index)=>!roots.some((other,otherIndex)=>otherIndex!==index&&other?.contains?.(root))).forEach(enhanceAppSelects);
+ });
+}
 const appSelectObserver=new MutationObserver(records=>{
- records.forEach(record=>record.addedNodes.forEach(node=>{
-   if(node.nodeType===1)enhanceAppSelects(node);
- }));
+ records.forEach(record=>record.addedNodes.forEach(scheduleAppSelectEnhancement));
 });
 appSelectObserver.observe(document.body,{childList:true,subtree:true});
 
@@ -329,9 +340,20 @@ function openModal(title,body,modeClass=''){
  resetModalModeClasses(modal);
  if(modeClass)modal.classList.add(modeClass);
  document.getElementById('modalTitle').innerHTML=title;
- document.getElementById('modalBody').innerHTML=body;
+ const modalBody=document.getElementById('modalBody');
+ modalBody.innerHTML=body;
  modal.classList.add('open');
- enhanceAppSelects(document.getElementById('modalBody'));
+ // Every new dialog starts at the top; the recycled sheet previously kept
+ // Coach's long preview scroll offset when Workout complete opened.
+ const sheet=modal.querySelector('.sheet');
+ if(sheet)sheet.scrollTop=0;
+ modalBody.scrollTop=0;
+ if(title==='Workout complete'&&typeof requestAnimationFrame==='function'){
+  requestAnimationFrame(()=>{
+   if(modal.classList.contains('open')&&document.getElementById('modalTitle')?.textContent==='Workout complete'&&sheet)sheet.scrollTop=0;
+  });
+ }
+ enhanceAppSelects(modalBody);
 }
 function closeModal(){
  closeAppSelect();

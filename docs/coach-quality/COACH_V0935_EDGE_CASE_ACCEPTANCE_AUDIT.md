@@ -1,0 +1,54 @@
+# Coach v0.93.5: Real-World Edge-Case Acceptance Audit
+
+**Checkpoint:** October 20, 2026. **Branch:** `quality/coach-edge-case-acceptance-v0935` / draft PR #89. **Installed Testing:** 0.93.5, Android code 141. **Beta:** unchanged.
+
+## Objective
+
+Determine whether whole-week exercise allocation, time planning and the optional recommendation UI remain reliable outside the original 12 golden test scenarios. Exercise recommendations must improve the *whole week* where possible, never take ownership away from the trainee, and avoid equipment or muscle-focus mistakes. This work is an audit and regression gate; it does not change the live exercise catalog, generated plans, saved routines, cloud data, or the Testing/Beta channels.
+
+## Automated matrix and evidence
+
+The expanded acceptance script `scripts/coach-v0935-edge-case-acceptance.mjs` runs **38 distinct realistic requests** plus override/opt-out adversarial checks. [First completed full CI run #39498863243](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39498863243) passed the first 31-case gate and all 108 workflow steps. [Expanded full CI run #39500562229](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39500562229) passed the dedicated 38-case gate and all 108 workflow steps; the evidence includes full per-day exercise names/patterns/sets/times for seven representative weeks and nonblocking quality-screening flags.
+
+**Expanded outcome:** 34 requests produce full valid programs; four requests do not yield a complete plan. Two have restrictive bodyweight/mixed equipment, one has a deliberately incompatible PPL-day focus, and one has a short 25-minute upper/lower day that deserves feasibility investigation. No program was fabricated, and saved user state was byte-for-byte unchanged. **Zero** original generated days exceeded the audit's *loose* duration-review threshold (requested duration plus the greater of eight minutes or 20%). This does not prove measured gym-session timing or forbid a user-accepted optional accessory from exceeding the exact target by a few minutes. Candidate additions already have their own stricter approximate-time budget tests.
+
+Validated:
+- Two through six weekly sessions, general full-body, push/pull/legs, upper/lower, balanced and **custom day-by-day splits** (shoulders/arms/legs; chest/back/legs/arms; duplicate arm days), including strength-mode programming. An incompatible push-day calf focus is rejected.
+- Day-specific 25-minute constraints plus thirty-, forty-five-, fifty-, sixty- and seventy-five-minute requests; workouts may be shorter than the full allowance. **Coach must never invent filler solely to use the clock.**
+- Full gym, dumbbell and bodyweight constraints; missing equipment, machine/cable exclusions, squat and vertical-pull exclusions; day-specific heterogeneous equipment and preferred weekdays.
+- Explicit "exactly 5 exercises" and "3 working sets" protect against unsolicited additions.
+- Explicit shoulder and glute focus; 4-day glute-priority redundant squat replacement with hip abduction. Specialty plans are not required to look like generic full-body plans.
+- Strict bound of at most two recommendations; suggestions are optional, user-editable, require affirmative acceptance, and improve the independent weekly quality audit without introducing critical role/priority regressions.
+- Deterministic original exercises and recommendations; no duplicates/unknown exercises, preserved equipment constraints, preview-to-routine exercise IDs, required exercises, manual day declinations, and user-wide opt-out.
+- All saved sessions, routines and programs remain unchanged by generator trials or recommendation viewing.
+
+## Specific human-review findings and limitations
+
+1. **Two-day full-body, 30–45 minutes:** No safe swap passed the bounded whole-week improvement rules, and the review still records *optional* vertical pulling, direct hamstring knee-flexion, calves and core variety gaps. A two-day program can still train posterior chain and back via compound hinges and rows. We **must not imply complete direct-muscle coverage**, or add filler at the cost of foundational lifts. Those gaps are visible in the weekly review; they are not automatically a failure.
+2. **Two-day full-body, 75 minutes:** Longer time permits more baseline work, including core, but some optional roles (vertical pull, knee flexion, calves) remain. Longer requested duration does not mean Coach should inject random extra movements.
+3. **Three-day full-body, 45 minutes:** Existing validated example remains **Day B overhead press → lat pulldown** without increasing Day B's exercise count. An independent modest two-set seated leg curl suggestion on Day A fills knee-flexion. Direct calf and core variety remain optional gaps rather than blanket mandates.
+4. **Three-day full-body, 30 minutes:** Coach finds two small optional additions for vertical pull and knee flexion, subject to its separate conservative time margin. Actual on-device setup/rest may run longer, so the duration presented is approximate, not a guarantee.
+5. **Three-day full-body, 75 minutes:** Coach may replace an existing cable crunch with vertical pulling when other days already cover core. Keep a full-week lens: changing the *distribution* can be preferable to adding time. The seven-program export supports detailed human inspection.
+6. **Four-day upper/lower, glute priority, dumbbells:** A repeated bodyweight squat slot can be replaced with a glute-abduction accessory without deleting foundational squat/hinge/glute work.
+7. **Six-day PPL strength:** No optional volume inflation or safety-driven substitutions were forced.
+8. **Four infeasible requests:** Three-day full-body with bodyweight-only constraints, a mixed-equipment full-body week containing a bodyweight-only day, a deliberately contradictory PPL push-day calf priority, and a four-day upper/lower week with a **25-minute upper day** could not satisfy the current generator constraints. For equipment restrictions and explicitly contradictory muscle priorities, the correct behavior is to ask for workable adjustments rather than fabricate unavailable movements. The **25-minute upper-day rejection must be investigated**, because a shorter but meaningful session may be feasible with fewer exercises and realistic set/rest choices. A *user-facing* message should be reviewed on an actual Android session; the generator's null result is not itself proof that the UI explanation is adequate.
+9. **Human judgment still matters:** The numeric "weekly quality debt" is an internal heuristic, not a peer-reviewed hypertrophy outcome. The tests do not prove optimal weekly frequency, recoverability, injury suitability, real rest/setup logistics or preference satisfaction for every trainee.
+
+## Human-programming review: remaining substantive opportunities
+
+The expanded exact-day export from [successful full run #39499431406](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39499431406) confirms that **passing safety and whole-week coverage tests is not the same thing as optimizing exercise distribution and fatigue**. The following are editorial concerns for the next exercise-selection quality iteration, not automated diagnoses:
+
+- **Dumbbells-only 3-day push/pull/legs (60-minute target):** Push has **seven movements / 21 planned working sets / ~51 minutes**, Pull has **four movements / 12 sets / ~31 minutes**, and Legs has **seven movements / 21 sets / ~52 minutes**. Pull still includes row, pullover, rear-delt fly and curl, so a missing role was not reported; nevertheless the large raw workload/time imbalance merits a human review of whether pulling stimulus is sufficient. This is a *rough* comparison, because equal numbers of direct sets across unlike muscle groups are not a validated requirement. Do not add exercises merely to hit 60 minutes.
+- **Four-day upper/lower with cables and machines excluded (50-minute target):** Lower A combines **Back Squat, Romanian Deadlift, Sumo Deadlift, Bulgarian Split Squat, Hip Thrust** and calves. Lower B combines **Front Squat, Dumbbell Romanian Deadlift, Sumo Deadlift, Reverse Lunge, Glute Bridge** and calves. Those are equipment-feasible but unusually hinge- and axial/posterior-chain-heavy combinations, potentially redundant or fatiguing. Review whether replacing one heavy hinge with an equipment-compatible hamstring/knee-flexion or less demanding accessory would produce a better stimulus-to-fatigue trade-off. Do not replace a required exercise or invent equipment.
+- **Three-day full-body, 75-minute target:** Day B contains Bulgarian Split Squat **and** Front Squat; this may be valid but is another same-day knee-dominant repetition to review. The algorithm sensibly proposes swapping Cable Crunch for Lat Pulldown on Day A because core is still trained elsewhere; it does not pad the workout to fill 75 minutes.
+- **Two-day full-body, 45-minute target:** Both sessions retain five foundational compounds. Vertical pull, knee-flexion, calves and direct core variety remain absent from the role audit, and the bounded recommender has no safe change. Rather than claiming complete direct-subgroup coverage, the UI should explain these as optional trade-offs in a constrained two-day schedule.
+
+The enhanced test emits `COACH_EDGE_CASE_EDITORIAL_FLAGS` and stores **three** `reviewFlags` (one raw push/pull/legs imbalance, two heavy-hinge day warnings) alongside seven full human-review prescriptions in the CI artifact. These flags are intentionally **nonblocking** until additional human judgment determines appropriate and generalizable rules. They must not be converted into arbitrary per-muscle set targets or exercise stuffing.
+
+## Release / next-decision gate
+
+**Edge-case stress and static/mobile DOM validation: automated acceptance successful; the expanded seven-program human-review evidence now identifies specific potential workload/fatigue-selection improvements.** The project must not claim that all possible requests are feasible or that every muscle gets dedicated isolation work within short sessions.
+
+This branch changes only the additional acceptance script and CI workflow (plus this audit report). There is **no production behavior change to ship**, so **do not issue an unnecessary new Testing APK**. The next engineering pass, if authorized, should address justified human-quality findings as narrowly as possible with new deterministic tests. A later production implementation improvement can be developed on a new branch if human acceptance identifies a justified rule change. No Beta promotion without explicit authorization.
+
+Artifacts: GitHub Actions `coach-v0935-edge-case-acceptance` contains the 38-case matrix, unresolved role findings and selected human-review prescriptions.

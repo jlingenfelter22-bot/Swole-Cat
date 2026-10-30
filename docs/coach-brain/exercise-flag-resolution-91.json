@@ -1,0 +1,2385 @@
+{
+  "version": "2026-10-13",
+  "type": "research_only",
+  "runtime": false,
+  "initialPriorityIds": [
+    "lib_13",
+    "lib_31",
+    "lib_49",
+    "lib_50",
+    "lib_55",
+    "lib_56",
+    "lib_57",
+    "lib_71",
+    "lib_76",
+    "lib_79",
+    "lib_83",
+    "lib_84",
+    "lib_85",
+    "lib_89",
+    "lib_90",
+    "lib_94",
+    "lib_97",
+    "lib_109",
+    "lib_110",
+    "lib_114",
+    "lib_115",
+    "lib_116",
+    "lib_117",
+    "lib_119",
+    "lib_124",
+    "lib_130",
+    "lib_131",
+    "lib_143",
+    "lib_163",
+    "lib_166",
+    "lib_167",
+    "lib_168",
+    "lib_170",
+    "lib_171",
+    "lib_173",
+    "lib_174",
+    "lib_181",
+    "lib_182",
+    "lib_184",
+    "lib_185",
+    "lib_186",
+    "lib_187",
+    "lib_189",
+    "lib_198",
+    "lib_199",
+    "lib_200",
+    "lib_202",
+    "lib_205",
+    "lib_207",
+    "lib_209",
+    "lib_211",
+    "lib_215",
+    "lib_222",
+    "lib_223",
+    "lib_225",
+    "lib_233",
+    "lib_234",
+    "lib_235",
+    "lib_236",
+    "lib_238",
+    "lib_242",
+    "lib_243",
+    "lib_244",
+    "lib_245",
+    "lib_258",
+    "lib_259",
+    "lib_260",
+    "lib_265",
+    "lib_267",
+    "lib_270",
+    "lib_273",
+    "lib_275",
+    "lib_276",
+    "lib_279",
+    "lib_287",
+    "lib_288",
+    "lib_289",
+    "lib_290",
+    "lib_291",
+    "lib_292",
+    "lib_299",
+    "lib_300",
+    "lib_302",
+    "lib_305",
+    "lib_306",
+    "lib_307"
+  ],
+  "totalReviewed": 91,
+  "sources": {
+    "acsm2026": "https://pubmed.ncbi.nlm.nih.gov/41843416/",
+    "variation2022": "https://pubmed.ncbi.nlm.nih.gov/35438660/",
+    "unilateral2025": "https://pubmed.ncbi.nlm.nih.gov/39794667/",
+    "nscaGluteHam": "https://www.nsca.com/education/articles/kinetic-select/glute-ham-raise/",
+    "lumbarSpecificity": "https://pubmed.ncbi.nlm.nih.gov/24092889/",
+    "romanChair": "https://pubmed.ncbi.nlm.nih.gov/20508534/",
+    "nscaPowerClean": "https://www.nsca.com/education/articles/kinetic-select/power-clean/",
+    "nscaCleanVariations": "https://dxpprod.nsca.com/education/articles/nsca-coach/clean-variations-progressions-and-application/",
+    "nscaNordic": "https://www.nsca.com/education/articles/nsca-coach/exercise-progressions-for-resuming-strength-training-following-posterior-chain-muscle-injury/"
+  },
+  "items": [
+    {
+      "id": "lib_13",
+      "name": "Bulgarian Split Squat",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "dumbbells"
+      ],
+      "proposedMovementRole": "lunge",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_31",
+      "name": "Pull-Up",
+      "originalFlags": [
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "secure_overhead_bar"
+      ],
+      "proposedMovementRole": "vertical_pull",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_49",
+      "name": "Close Grip Bench Press",
+      "originalFlags": [
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Maintain this movement's distinct mechanics and requirements; the current catalog labels are not proof of interchangeability.",
+      "equipmentCapabilities": [
+        "barbell",
+        "plates",
+        "bench"
+      ],
+      "proposedMovementRole": "horizontal_press",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_50",
+      "name": "Dip",
+      "originalFlags": [
+        "bodyweight_class_with_auxiliary_equipment",
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "equipment_and_resistance_separation",
+        "substitution_scope_only"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "dip_bars_or_stable_bench"
+      ],
+      "proposedMovementRole": "dip_press",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_55",
+      "name": "Hanging Leg Raise",
+      "originalFlags": [
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "secure_overhead_bar"
+      ],
+      "proposedMovementRole": "hip_flexion_core",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_56",
+      "name": "Ab Wheel",
+      "originalFlags": [
+        "catalog_bodyweight_understates_required_implement",
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "ab_wheel"
+      ],
+      "proposedMovementRole": "anti_extension",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_57",
+      "name": "Plank",
+      "originalFlags": [
+        "limited_substitution_choices"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Sparse same-role catalog alternatives are legitimate; related exercises are not equivalent.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space"
+      ],
+      "proposedMovementRole": "anti_extension",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_71",
+      "name": "Single Arm Dumbbell Bench Press",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "dumbbells",
+        "bench"
+      ],
+      "proposedMovementRole": "horizontal_press",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_76",
+      "name": "Single Arm Cable Chest Press",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "cable_station"
+      ],
+      "proposedMovementRole": "horizontal_press",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_79",
+      "name": "Single Arm Cable Fly",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "cable_station"
+      ],
+      "proposedMovementRole": "chest_fly",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_83",
+      "name": "Deficit Push-Up",
+      "originalFlags": [
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "stable_platform"
+      ],
+      "proposedMovementRole": "horizontal_press",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_84",
+      "name": "Weighted Push-Up",
+      "originalFlags": [
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Requires secure added resistance and tracks added weight, not total body mass.",
+      "equipmentCapabilities": [
+        "exercise_space",
+        "secure_added_weight"
+      ],
+      "proposedMovementRole": "loaded_horizontal_pushup",
+      "proposedResistancePolicy": "added_external_load_not_total_bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_85",
+      "name": "Feet Elevated Push-Up",
+      "originalFlags": [
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "stable_platform"
+      ],
+      "proposedMovementRole": "horizontal_press",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_89",
+      "name": "Landmine Row",
+      "originalFlags": [
+        "catalog_equipment_understates_landmine_attachment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "Explicitly require anchored barbell/landmine or matching T-bar setup.",
+      "equipmentCapabilities": [
+        "barbell",
+        "plates",
+        "landmine_or_tbar_anchor"
+      ],
+      "proposedMovementRole": "landmine_horizontal_row",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_90",
+      "name": "T-Bar Row",
+      "originalFlags": [
+        "catalog_equipment_understates_tbar_setup"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "Require a T-bar station or anchored landmine and matching loading.",
+      "equipmentCapabilities": [
+        "tbar_station_or_landmine",
+        "plates_if_required"
+      ],
+      "proposedMovementRole": "tbar_row",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_94",
+      "name": "Meadows Row",
+      "originalFlags": [
+        "catalog_equipment_understates_landmine_attachment",
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics",
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "Reassign proposed equipment capability to anchored barbell; catalog dumbbell tag is incorrect for selection.",
+      "equipmentCapabilities": [
+        "barbell",
+        "plates",
+        "anchored_landmine",
+        "stable_braced_stance"
+      ],
+      "proposedMovementRole": "landmine_unilateral_row",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_97",
+      "name": "Single Arm Cable Row",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "cable_station"
+      ],
+      "proposedMovementRole": "horizontal_pull",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_109",
+      "name": "Single Arm Lat Pulldown",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "cable_station"
+      ],
+      "proposedMovementRole": "vertical_pull",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_110",
+      "name": "Kneeling Single Arm Pulldown",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "cable_station"
+      ],
+      "proposedMovementRole": "vertical_pull",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_114",
+      "name": "Chin-Up",
+      "originalFlags": [
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "secure_overhead_bar"
+      ],
+      "proposedMovementRole": "vertical_pull",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_115",
+      "name": "Neutral Grip Pull-Up",
+      "originalFlags": [
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "secure_overhead_bar"
+      ],
+      "proposedMovementRole": "vertical_pull",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_116",
+      "name": "Weighted Pull-Up",
+      "originalFlags": [
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "secure_overhead_bar"
+      ],
+      "proposedMovementRole": "vertical_pull",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_117",
+      "name": "Weighted Chin-Up",
+      "originalFlags": [
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "secure_overhead_bar"
+      ],
+      "proposedMovementRole": "vertical_pull",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_119",
+      "name": "Single Arm Straight Arm Pulldown",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "cable_station"
+      ],
+      "proposedMovementRole": "shoulder_extension",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_123",
+      "name": "Push Press",
+      "originalFlags": [
+        "new_specialized_review"
+      ],
+      "category": [
+        "specialized_training_knowledge"
+      ],
+      "decision": "Leg drive overhead power differs from strict overhead pressing.",
+      "equipmentCapabilities": [
+        "barbell",
+        "plates"
+      ],
+      "proposedMovementRole": "leg_drive_overhead_power",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_124",
+      "name": "Behind-the-Neck Press",
+      "originalFlags": [
+        "technique_mobility_sensitive"
+      ],
+      "category": [
+        "technique_and_goal_fit"
+      ],
+      "decision": "Maintain this movement's distinct mechanics and requirements; the current catalog labels are not proof of interchangeability.",
+      "equipmentCapabilities": [
+        "barbell",
+        "plates"
+      ],
+      "proposedMovementRole": "vertical_press",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_130",
+      "name": "Single Arm Dumbbell Shoulder Press",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "dumbbells"
+      ],
+      "proposedMovementRole": "vertical_press",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_131",
+      "name": "Single Arm Cable Shoulder Press",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "cable_station"
+      ],
+      "proposedMovementRole": "vertical_press",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_143",
+      "name": "Single Arm Rear Delt Cable Fly",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "cable_station"
+      ],
+      "proposedMovementRole": "rear_delt",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_163",
+      "name": "Single Leg Press",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "matching_machine"
+      ],
+      "proposedMovementRole": "squat",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_166",
+      "name": "Front Foot Elevated Split Squat",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "dumbbells",
+        "stable_platform"
+      ],
+      "proposedMovementRole": "lunge",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_167",
+      "name": "Step-Up",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "dumbbells",
+        "stable_platform"
+      ],
+      "proposedMovementRole": "lunge",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_168",
+      "name": "Dumbbell Step-Up",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "dumbbells",
+        "stable_platform"
+      ],
+      "proposedMovementRole": "lunge",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_170",
+      "name": "Barbell Split Squat",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "barbell",
+        "plates"
+      ],
+      "proposedMovementRole": "lunge",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_171",
+      "name": "Smith Machine Split Squat",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "smith_station"
+      ],
+      "proposedMovementRole": "lunge",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_173",
+      "name": "Single Leg Extension",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "matching_machine"
+      ],
+      "proposedMovementRole": "knee_extension",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_174",
+      "name": "Sled Push",
+      "originalFlags": [
+        "travel_surface_affects_tracking",
+        "limited_substitution_choices",
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "environment_and_direction",
+        "substitution_scope_only"
+      ],
+      "decision": "Sled push is not a synonym for sled drag or squat; compare only like implement/surface/distance.",
+      "equipmentCapabilities": [
+        "sled",
+        "clear_lane",
+        "suitable_surface"
+      ],
+      "proposedMovementRole": "sled_push_locomotion",
+      "proposedResistancePolicy": "added_sled_mass_not_normalized_resistance",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_181",
+      "name": "Single Leg Seated Curl",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "matching_machine"
+      ],
+      "proposedMovementRole": "knee_flexion",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_182",
+      "name": "Single Leg Lying Curl",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "matching_machine"
+      ],
+      "proposedMovementRole": "knee_flexion",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_183",
+      "name": "Nordic Curl Machine",
+      "originalFlags": [
+        "new_specialized_review"
+      ],
+      "category": [
+        "specialized_training_knowledge"
+      ],
+      "decision": "Nordic device may provide assistance or resistance; identify its mechanism rather than assuming external loading.",
+      "equipmentCapabilities": [
+        "nordic_training_station",
+        "assistance_mechanism_unknown"
+      ],
+      "proposedMovementRole": "nordic_knee_flexion_machine",
+      "proposedResistancePolicy": "unknown_until_machine_assist_or_external_type_confirmed",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Identify machine assistance/resistance mechanism",
+      "sourceIds": [
+        "nscaNordic"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_184",
+      "name": "Nordic Hamstring Curl",
+      "originalFlags": [
+        "catalog_bodyweight_understates_ankle_anchor",
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "secure_ankle_anchor"
+      ],
+      "proposedMovementRole": "knee_flexion",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "nscaNordic"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_185",
+      "name": "Sliding Leg Curl",
+      "originalFlags": [
+        "catalog_bodyweight_understates_sliders",
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "sliders_and_floor"
+      ],
+      "proposedMovementRole": "knee_flexion",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_186",
+      "name": "45-Degree Back Extension",
+      "originalFlags": [
+        "hip_vs_spinal_extension_depends_on_execution",
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "mechanical_role_correction",
+        "substitution_scope_only"
+      ],
+      "decision": "An angled support does not prove isolated lumbar-extension training. Treat typical hip extension and lumbar involvement as technique-dependent.",
+      "equipmentCapabilities": [
+        "angle_back_extension_bench"
+      ],
+      "proposedMovementRole": "supported_hip_extension_variable_lumbar",
+      "proposedResistancePolicy": "bodyweight_or_added_external_load",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Determine execution emphasis and trunk motion",
+      "sourceIds": [
+        "romanChair",
+        "lumbarSpecificity"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_187",
+      "name": "Glute Ham Raise",
+      "originalFlags": [
+        "hybrid_knee_flexion_and_hip_extension",
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "mechanical_role_correction",
+        "substitution_scope_only"
+      ],
+      "decision": "Combined knee-flexion and hip-extension hamstring exercise on a GHD; no default machine stack, and not interchangeable with an RDL.",
+      "equipmentCapabilities": [
+        "glute_ham_developer"
+      ],
+      "proposedMovementRole": "combined_knee_flexion_and_hip_extension",
+      "proposedResistancePolicy": "bodyweight_default_optional_added_load",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "nscaGluteHam",
+        "lumbarSpecificity"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_189",
+      "name": "B-Stance Hip Thrust",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "barbell",
+        "plates"
+      ],
+      "proposedMovementRole": "hip_extension",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "offset_stance_each_side",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_198",
+      "name": "Banded Hip Abduction",
+      "originalFlags": [
+        "catalog_bodyweight_understates_required_band",
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "resistance_band"
+      ],
+      "proposedMovementRole": "hip_abduction",
+      "proposedResistancePolicy": "band_tension_not_machine_weight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_199",
+      "name": "Hip Adduction Machine",
+      "originalFlags": [
+        "limited_substitution_choices"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Sparse same-role catalog alternatives are legitimate; related exercises are not equivalent.",
+      "equipmentCapabilities": [
+        "matching_machine"
+      ],
+      "proposedMovementRole": "hip_adduction",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_200",
+      "name": "Cable Hip Adduction",
+      "originalFlags": [
+        "limited_substitution_choices"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Sparse same-role catalog alternatives are legitimate; related exercises are not equivalent.",
+      "equipmentCapabilities": [
+        "cable_station"
+      ],
+      "proposedMovementRole": "hip_adduction",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_202",
+      "name": "Reverse Barbell Curl",
+      "originalFlags": [
+        "limited_substitution_choices"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Sparse same-role catalog alternatives are legitimate; related exercises are not equivalent.",
+      "equipmentCapabilities": [
+        "barbell",
+        "plates"
+      ],
+      "proposedMovementRole": "elbow_flexion",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_205",
+      "name": "Alternating Dumbbell Curl",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "dumbbells"
+      ],
+      "proposedMovementRole": "elbow_flexion",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "alternating_sides",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_207",
+      "name": "Concentration Curl",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "dumbbells"
+      ],
+      "proposedMovementRole": "elbow_flexion",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_209",
+      "name": "Cross-Body Hammer Curl",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "dumbbells"
+      ],
+      "proposedMovementRole": "elbow_flexion",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_211",
+      "name": "Reverse Dumbbell Curl",
+      "originalFlags": [
+        "limited_substitution_choices"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Sparse same-role catalog alternatives are legitimate; related exercises are not equivalent.",
+      "equipmentCapabilities": [
+        "dumbbells"
+      ],
+      "proposedMovementRole": "elbow_flexion",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_215",
+      "name": "Single Arm Cable Curl",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "cable_station"
+      ],
+      "proposedMovementRole": "elbow_flexion",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_222",
+      "name": "Single Arm Triceps Pushdown",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "cable_station"
+      ],
+      "proposedMovementRole": "elbow_extension",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_223",
+      "name": "Cross-Body Cable Triceps Extension",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "cable_station"
+      ],
+      "proposedMovementRole": "elbow_extension",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_225",
+      "name": "Single Arm Overhead Cable Extension",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "cable_station"
+      ],
+      "proposedMovementRole": "elbow_extension",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_233",
+      "name": "Assisted Dip",
+      "originalFlags": [
+        "pattern_misses_compound_dip",
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "mechanical_role_correction",
+        "substitution_scope_only"
+      ],
+      "decision": "Compound triceps/chest pressing; lower assistance after valid comparable exposures.",
+      "equipmentCapabilities": [
+        "assisted_dip_machine"
+      ],
+      "proposedMovementRole": "compound_dip_press",
+      "proposedResistancePolicy": "assistance",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_234",
+      "name": "Plate Loaded Dip",
+      "originalFlags": [
+        "pattern_misses_compound_dip",
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "mechanical_role_correction",
+        "substitution_scope_only"
+      ],
+      "decision": "Compound press on plate-loaded dip machine, not elbow-isolation extension.",
+      "equipmentCapabilities": [
+        "plate_loaded_dip_machine"
+      ],
+      "proposedMovementRole": "compound_dip_press",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_235",
+      "name": "Bench Dip",
+      "originalFlags": [
+        "pattern_misses_compound_dip",
+        "bodyweight_class_with_auxiliary_equipment",
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "equipment_and_resistance_separation",
+        "mechanical_role_correction",
+        "substitution_scope_only"
+      ],
+      "decision": "Compound bench-supported dip; stable support and execution range matter.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "dip_bars_or_stable_bench"
+      ],
+      "proposedMovementRole": "compound_dip_press",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_236",
+      "name": "Diamond Push-Up",
+      "originalFlags": [
+        "pattern_misses_compound_pushup"
+      ],
+      "category": [
+        "mechanical_role_correction"
+      ],
+      "decision": "Compound close-hands push-up with triceps emphasis, not isolation.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space"
+      ],
+      "proposedMovementRole": "close_hand_horizontal_press",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_238",
+      "name": "Single Leg Standing Calf Raise",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "matching_machine"
+      ],
+      "proposedMovementRole": "calf_raise",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_242",
+      "name": "Single Leg Dumbbell Calf Raise",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "dumbbells"
+      ],
+      "proposedMovementRole": "calf_raise",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_243",
+      "name": "Single Leg Calf Raise",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space"
+      ],
+      "proposedMovementRole": "calf_raise",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_244",
+      "name": "Tibialis Raise Machine",
+      "originalFlags": [
+        "limited_substitution_choices"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Sparse same-role catalog alternatives are legitimate; related exercises are not equivalent.",
+      "equipmentCapabilities": [
+        "matching_machine"
+      ],
+      "proposedMovementRole": "dorsiflexion",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_245",
+      "name": "Wall Tibialis Raise",
+      "originalFlags": [
+        "limited_substitution_choices"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Sparse same-role catalog alternatives are legitimate; related exercises are not equivalent.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "stable_wall"
+      ],
+      "proposedMovementRole": "dorsiflexion",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_258",
+      "name": "Dumbbell Farmer Carry",
+      "originalFlags": [
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Maintain this movement's distinct mechanics and requirements; the current catalog labels are not proof of interchangeability.",
+      "equipmentCapabilities": [
+        "dumbbells",
+        "clear_carry_space"
+      ],
+      "proposedMovementRole": "grip",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_259",
+      "name": "Trap Bar Farmer Carry",
+      "originalFlags": [
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Maintain this movement's distinct mechanics and requirements; the current catalog labels are not proof of interchangeability.",
+      "equipmentCapabilities": [
+        "trap_bar",
+        "plates",
+        "clear_carry_space"
+      ],
+      "proposedMovementRole": "grip",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_260",
+      "name": "Plate Pinch Carry",
+      "originalFlags": [
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Maintain this movement's distinct mechanics and requirements; the current catalog labels are not proof of interchangeability.",
+      "equipmentCapabilities": [
+        "plate",
+        "clear_carry_space"
+      ],
+      "proposedMovementRole": "grip",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_265",
+      "name": "Decline Crunch",
+      "originalFlags": [
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "bench_or_specific_support"
+      ],
+      "proposedMovementRole": "spinal_flexion",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_267",
+      "name": "Captain Chair Leg Raise",
+      "originalFlags": [
+        "catalog_bodyweight_understates_dedicated_station",
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "captains_chair_station"
+      ],
+      "proposedMovementRole": "hip_flexion_core",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_270",
+      "name": "Hanging Knee Raise",
+      "originalFlags": [
+        "bodyweight_class_with_auxiliary_equipment"
+      ],
+      "category": [
+        "equipment_and_resistance_separation"
+      ],
+      "decision": "This exercise uses bodyweight resistance but needs specific physical apparatus; exclude it from equipment-free workouts unless the apparatus is confirmed.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space",
+        "secure_overhead_bar"
+      ],
+      "proposedMovementRole": "hip_flexion_core",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_273",
+      "name": "Pallof Press",
+      "originalFlags": [
+        "side_specific_repetition_ambiguity",
+        "per_side_comparability",
+        "limited_substitution_choices",
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "side_logging_semantics",
+        "substitution_scope_only"
+      ],
+      "decision": "Anti-rotation plus per-side sets: woodchop is only a related option, never an equivalent.",
+      "equipmentCapabilities": [
+        "cable_station",
+        "stable_cable_anchor"
+      ],
+      "proposedMovementRole": "anti_rotation",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_275",
+      "name": "RKC Plank",
+      "originalFlags": [
+        "limited_substitution_choices"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Sparse same-role catalog alternatives are legitimate; related exercises are not equivalent.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space"
+      ],
+      "proposedMovementRole": "anti_extension",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_276",
+      "name": "Dead Bug",
+      "originalFlags": [
+        "side_specific_repetition_ambiguity",
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Alternating limb anti-extension; separate per-side performance remains unsupported in present UI.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space"
+      ],
+      "proposedMovementRole": "alternating_anti_extension_core",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "alternating_sides",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_279",
+      "name": "Side Plank",
+      "originalFlags": [
+        "limited_substitution_choices"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Timed anti-lateral-flexion isometric with side-dependent support and lever.",
+      "equipmentCapabilities": [
+        "bodyweight",
+        "exercise_space"
+      ],
+      "proposedMovementRole": "isometric_anti_lateral_flexion",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_285",
+      "name": "Roman Chair Back Extension",
+      "originalFlags": [
+        "new_specialized_review"
+      ],
+      "category": [
+        "specialized_training_knowledge"
+      ],
+      "decision": "Treat Roman-chair hip/trunk extension as technique-dependent; do not equate with restrained lumbar extension.",
+      "equipmentCapabilities": [
+        "roman_chair_extension_bench"
+      ],
+      "proposedMovementRole": "supported_hip_extension_variable_lumbar",
+      "proposedResistancePolicy": "bodyweight_or_added_external_load",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Determine execution emphasis and trunk motion",
+      "sourceIds": [
+        "romanChair",
+        "lumbarSpecificity"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_286",
+      "name": "Seated Back Extension Machine",
+      "originalFlags": [
+        "new_specialized_review"
+      ],
+      "category": [
+        "specialized_training_knowledge"
+      ],
+      "decision": "Confirm machine pelvic restraint, range and stack system before asserting lumbar isolation or transferable strength.",
+      "equipmentCapabilities": [
+        "back_extension_machine",
+        "pelvic_restraint_status_unknown"
+      ],
+      "proposedMovementRole": "machine_trunk_extension_pelvic_restraint_dependent",
+      "proposedResistancePolicy": "machine_design_dependent_external_load",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm machine and pelvic-restraint design",
+      "sourceIds": [
+        "romanChair",
+        "lumbarSpecificity"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_287",
+      "name": "Power Clean",
+      "originalFlags": [
+        "explosive_lift_requires_technique_specific_progression"
+      ],
+      "category": [
+        "technique_and_goal_fit"
+      ],
+      "decision": "Catch-based explosive clean: require skill and purpose, not generic hypertrophy failure prescription.",
+      "equipmentCapabilities": [
+        "barbell",
+        "plates",
+        "safe_lifting_area"
+      ],
+      "proposedMovementRole": "olympic_pull",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "nscaPowerClean",
+        "nscaCleanVariations"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_288",
+      "name": "Hang Power Clean",
+      "originalFlags": [
+        "explosive_lift_requires_technique_specific_progression"
+      ],
+      "category": [
+        "technique_and_goal_fit"
+      ],
+      "decision": "Hang-start clean changes range/catch; do not equate with floor-start clean.",
+      "equipmentCapabilities": [
+        "barbell",
+        "plates",
+        "safe_lifting_area"
+      ],
+      "proposedMovementRole": "olympic_pull",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "nscaPowerClean",
+        "nscaCleanVariations"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_289",
+      "name": "Clean Pull",
+      "originalFlags": [
+        "explosive_lift_requires_technique_specific_progression"
+      ],
+      "category": [
+        "technique_and_goal_fit"
+      ],
+      "decision": "Explosive clean pulling derivative without catch, not equivalent to caught clean.",
+      "equipmentCapabilities": [
+        "barbell",
+        "plates",
+        "safe_lifting_area"
+      ],
+      "proposedMovementRole": "olympic_pull",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "nscaPowerClean",
+        "nscaCleanVariations"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_290",
+      "name": "High Pull",
+      "originalFlags": [
+        "explosive_lift_requires_technique_specific_progression"
+      ],
+      "category": [
+        "technique_and_goal_fit"
+      ],
+      "decision": "Explosive pulling skill movement, not a conventional rowing accessory.",
+      "equipmentCapabilities": [
+        "barbell",
+        "plates",
+        "safe_lifting_area"
+      ],
+      "proposedMovementRole": "olympic_pull",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "nscaPowerClean",
+        "nscaCleanVariations"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_291",
+      "name": "Power Snatch",
+      "originalFlags": [
+        "explosive_lift_requires_technique_specific_progression"
+      ],
+      "category": [
+        "technique_and_goal_fit"
+      ],
+      "decision": "Technical overhead catch and wide grip, requires skill and suitable lifting area.",
+      "equipmentCapabilities": [
+        "barbell",
+        "plates",
+        "safe_lifting_area"
+      ],
+      "proposedMovementRole": "olympic_pull",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "nscaPowerClean",
+        "nscaCleanVariations"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_292",
+      "name": "Hang Power Snatch",
+      "originalFlags": [
+        "explosive_lift_requires_technique_specific_progression"
+      ],
+      "category": [
+        "technique_and_goal_fit"
+      ],
+      "decision": "Hang-start technical overhead catch, start height matters.",
+      "equipmentCapabilities": [
+        "barbell",
+        "plates",
+        "safe_lifting_area"
+      ],
+      "proposedMovementRole": "olympic_pull",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "nscaPowerClean",
+        "nscaCleanVariations"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_293",
+      "name": "Kettlebell Swing",
+      "originalFlags": [
+        "new_specialized_review"
+      ],
+      "category": [
+        "specialized_training_knowledge"
+      ],
+      "decision": "Ballistic hinge power with quality repetitions, not grinding work to failure.",
+      "equipmentCapabilities": [
+        "kettlebell"
+      ],
+      "proposedMovementRole": "ballistic_hinge_power",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_299",
+      "name": "Kettlebell Farmer Carry",
+      "originalFlags": [
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "substitution_scope_only"
+      ],
+      "decision": "Maintain this movement's distinct mechanics and requirements; the current catalog labels are not proof of interchangeability.",
+      "equipmentCapabilities": [
+        "kettlebell",
+        "clear_carry_space"
+      ],
+      "proposedMovementRole": "carry",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_300",
+      "name": "Kettlebell Suitcase Carry",
+      "originalFlags": [
+        "side_specific_distance_ambiguity",
+        "per_side_comparability",
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "side_logging_semantics",
+        "substitution_scope_only"
+      ],
+      "decision": "Unilateral loaded carry; side, distance and working-arm load matter.",
+      "equipmentCapabilities": [
+        "kettlebell",
+        "clear_carry_space"
+      ],
+      "proposedMovementRole": "asymmetric_loaded_carry",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_302",
+      "name": "Half-Kneeling Landmine Press",
+      "originalFlags": [
+        "per_side_comparability"
+      ],
+      "category": [
+        "side_logging_semantics"
+      ],
+      "decision": "Record one side at a time with an explicit side convention. Current logs must not imply side-specific comparisons that weren't collected.",
+      "equipmentCapabilities": [
+        "landmine_anchor",
+        "barbell",
+        "anchored_landmine_or_tbar_station"
+      ],
+      "proposedMovementRole": "vertical_press",
+      "proposedResistancePolicy": "external",
+      "sideExecution": "one_side_at_a_time",
+      "contextRequired": "Collect true per-side metrics before side-specific analytics",
+      "sourceIds": [
+        "unilateral2025"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_305",
+      "name": "Backward Sled Drag",
+      "originalFlags": [
+        "travel_surface_affects_tracking",
+        "limited_substitution_choices",
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "environment_and_direction",
+        "substitution_scope_only"
+      ],
+      "decision": "Backward-oriented locomotion is distinct from generic sled drag, and friction must be considered.",
+      "equipmentCapabilities": [
+        "sled",
+        "clear_lane",
+        "suitable_surface"
+      ],
+      "proposedMovementRole": "backward_sled_drag_knee_emphasis",
+      "proposedResistancePolicy": "added_sled_mass_not_normalized_resistance",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Specify the actual pull direction",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_306",
+      "name": "Sled Drag",
+      "originalFlags": [
+        "drag_direction_undefined",
+        "travel_surface_affects_tracking",
+        "limited_substitution_choices",
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "environment_and_direction",
+        "substitution_scope_only"
+      ],
+      "decision": "Direction remains user-specific; no invented backward/forward emphasis.",
+      "equipmentCapabilities": [
+        "sled",
+        "clear_lane",
+        "drag_direction_to_confirm"
+      ],
+      "proposedMovementRole": "sled_drag_direction_unspecified",
+      "proposedResistancePolicy": "added_sled_mass_not_normalized_resistance",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Specify the actual pull direction",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    },
+    {
+      "id": "lib_307",
+      "name": "Dead Hang",
+      "originalFlags": [
+        "bodyweight_class_with_auxiliary_equipment",
+        "no_close_catalog_alternative",
+        "limited_substitution_choices",
+        "manually_curated_alternative_scope"
+      ],
+      "category": [
+        "equipment_and_resistance_separation",
+        "substitution_scope_only"
+      ],
+      "decision": "Timed suspended grip endurance has no close same-metric alternative; no fake substitution.",
+      "equipmentCapabilities": [
+        "secure_overhead_bar"
+      ],
+      "proposedMovementRole": "timed_suspended_grip",
+      "proposedResistancePolicy": "bodyweight",
+      "sideExecution": "usual_bilateral_or_unspecified",
+      "contextRequired": "Confirm user equipment and comparable execution when relevant",
+      "sourceIds": [
+        "acsm2026",
+        "variation2022"
+      ],
+      "resolution": "desk_adjudicated_requires_explicit_runtime_review",
+      "historicalDataChanges": "none"
+    }
+  ]
+}

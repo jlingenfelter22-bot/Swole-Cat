@@ -32,10 +32,10 @@
 <main>
   <section id="home" class="view active">
     <div id="homePrimary" class="hero home-command-hero" aria-live="polite"></div>
-    <div id="homeCoachLauncher"></div>
-    <div id="homeQuickActions" class="home-quick-actions"></div>
     <div id="homeTelemetry" class="home-telemetry" aria-label="Training summary"></div>
+    <div id="homeCoachLauncher"></div>
     <div id="homeLatest"></div>
+    <div id="homeQuickActions" class="home-quick-actions"></div>
   </section>
 
   <section id="routines" class="view">
@@ -43,14 +43,18 @@
       <div><div class="screen-code">PROGRAM MATRIX // 02</div><h1>Build the rotation.</h1><div class="screen-copy">Organize routines into repeatable training systems, then launch the next session without losing your individual progression.</div></div>
       <div class="screen-mark" aria-hidden="true"><span></span><span></span><span></span></div>
     </div>
+    <div class="routine-view-switch" role="tablist" aria-label="Routines screen">
+      <button id="routineViewRoutines" class="routine-view-tab active" role="tab" aria-selected="true" onclick="setRoutinePageMode('routines')">Routines <span id="routineViewRoutineCount">0</span></button>
+      <button id="routineViewPrograms" class="routine-view-tab" role="tab" aria-selected="false" onclick="setRoutinePageMode('programs')">Programs <span id="routineViewProgramCount">0</span></button>
+    </div>
     <div id="routinePageSections">
-      <div id="programsSection" class="routine-page-section">
-        <div class="section-title"><h2>Programs</h2><button class="btn small" onclick="newProgram()">+ Program</button></div>
-        <div id="programList" class="grid"></div>
-      </div>
       <div id="workoutRoutinesSection" class="routine-page-section">
-        <div class="section-title"><h2>Workout routines</h2><div class="section-title-actions"><button class="btn small secondary" onclick="openShareImport()">Import</button><button class="btn small" onclick="newRoutine()">+ Create</button></div></div>
+        <div class="section-title routine-compact-head"><h2>Workout routines</h2><div class="section-title-actions"><button class="btn small secondary" onclick="openShareImport()">Import</button><button class="btn small" onclick="newRoutine()">+ Create</button></div></div>
         <div id="routineList" class="grid"></div>
+      </div>
+      <div id="programsSection" class="routine-page-section" hidden>
+        <div class="section-title routine-compact-head"><h2>Programs</h2><div class="section-title-actions"><button class="btn small secondary" onclick="openShareImport()">Import</button><button class="btn small" onclick="newProgram()">+ Create</button></div></div>
+        <div id="programList" class="grid"></div>
       </div>
     </div>
   </section>
@@ -62,17 +66,21 @@
     </div>
     <div class="section-title"><h2>Exercise library</h2><button class="btn small" onclick="newExercise()">+ Custom</button></div>
     <input id="exerciseSearch" class="search" placeholder="Search bench, row, squat..." oninput="scheduleExerciseRender()">
-    <div class="picker-chips" style="margin-bottom:10px">
-      <button id="exerciseFilterAll" class="chip active" data-history-filter="all" onclick="setExerciseHistoryFilter('all')">All</button>
-      <button id="exerciseFilterDone" class="chip" data-history-filter="done" onclick="setExerciseHistoryFilter('done')">✓ Done Before</button>
-      <button id="exerciseFilterNew" class="chip" data-history-filter="new" onclick="setExerciseHistoryFilter('new')">Not Yet Logged</button>
-      <button id="exerciseFilterFav" class="chip" data-history-filter="favorite" onclick="setExerciseHistoryFilter('favorite')">★ Favorites</button>
-      <button id="exerciseFilterPrefer" class="chip" data-history-filter="prefer" onclick="setExerciseHistoryFilter('prefer')">Prefer</button>
-      <button id="exerciseFilterHidden" class="chip" data-history-filter="hidden" onclick="setExerciseHistoryFilter('hidden')">Hidden</button>
-    </div>
-    <div class="form-grid" style="margin-bottom:12px">
-      <select id="muscleFilter" onchange="renderExercises()"><option value="">All muscle groups</option></select>
-      <select id="equipmentFilter" onchange="renderExercises()"><option value="">All equipment</option></select>
+    <div class="exercise-filter-controls" aria-label="Exercise filters">
+      <div class="exercise-status-field">
+        <select id="exerciseHistoryFilterSelect" aria-label="Exercise status" onchange="setExerciseHistoryFilter(this.value)">
+          <option id="exerciseFilterAll" value="all">All</option>
+          <option id="exerciseFilterDone" value="done">Done Before</option>
+          <option id="exerciseFilterNew" value="new">Not Yet Logged</option>
+          <option id="exerciseFilterFav" value="favorite">Favorites</option>
+          <option id="exerciseFilterPrefer" value="prefer">Preferred</option>
+          <option id="exerciseFilterHidden" value="hidden">Hidden</option>
+        </select>
+      </div>
+      <div class="exercise-attribute-fields">
+        <select id="muscleFilter" aria-label="Muscle group" onchange="renderExercises()"><option value="">All muscle groups</option></select>
+        <select id="equipmentFilter" aria-label="Equipment" onchange="renderExercises()"><option value="">All equipment</option></select>
+      </div>
     </div>
     <div id="exerciseList" class="card"></div>
   </section>
@@ -82,7 +90,7 @@
       <div><div class="screen-code">SESSION LOG // 05</div><h1>Everything you logged.</h1><div class="screen-copy">Your completed sessions stay independent from routine edits, so this is the permanent record of what you actually did.</div></div>
       <div class="screen-mark history-mark" aria-hidden="true"><span></span><span></span><span></span></div>
     </div>
-    <div class="section-title"><h2>History</h2><button class="btn small danger" onclick="clearWorkoutHistory()">Clear History</button></div>
+    <div class="section-title"><h2>History</h2><button class="btn small secondary" onclick="openHistoryOptions()">Manage</button></div>
     <div id="historyList" class="grid"></div>
   </section>
 
@@ -101,6 +109,11 @@
 </main>
 
 <nav aria-label="Primary">
+  <div id="restDockPocket" class="rest-dock-pocket" aria-hidden="true"></div>
+  <svg id="restNavHousing" class="rest-nav-housing" aria-hidden="true" focusable="false" preserveAspectRatio="none" viewBox="0 0 1 1">
+    <path id="restNavHousingFill" class="rest-nav-housing-fill"></path>
+    <path id="restNavHousingContour" class="rest-nav-housing-contour"></path>
+  </svg>
   <div class="inner">
     <button class="navbtn active" data-go="home" onclick="go('home')" aria-label="Home" aria-current="page">
       <span class="nav-glyph"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3l8.5 7.5v9H15v-6H9v6H3.5z"/><path d="M7 7.4h10"/></svg></span><span class="nav-label">Home</span>
@@ -123,15 +136,14 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true">Saved</div>
 
-<div id="restTimer" class="resttimer" role="timer" aria-live="polite">
-  <button class="rest-main" onclick="toggleRestTimerExpanded()" aria-label="Expand rest timer controls">
-    <small>Rest</small><span id="restTimerText">2:00</span><span class="rest-chevron">⌃</span>
+<div id="restTimer" class="resttimer" role="timer" aria-live="off" aria-label="Rest timer">
+  <button type="button" class="rest-main" onclick="toggleRestTimerExpanded()" aria-controls="restTimerActions" aria-expanded="false" aria-label="Show rest timer controls">
+    <small>Rest</small><span id="restTimerText">2:00</span><span class="rest-chevron" aria-hidden="true">⌃</span>
   </button>
-  <button class="rest-quick-add" onclick="adjustRestTimer(30)" aria-label="Add 30 seconds">+30</button>
-  <div class="rest-actions" aria-label="Rest timer controls">
-    <button onclick="adjustRestTimer(-30)">−30</button>
-    <button onclick="adjustRestTimer(30)">+30</button>
-    <button onclick="stopRestTimer()">Skip</button>
+  <div id="restTimerActions" class="rest-actions" aria-label="Rest timer controls" aria-hidden="true">
+    <button type="button" onclick="adjustRestTimer(-30)" tabindex="-1">−30</button>
+    <button type="button" onclick="adjustRestTimer(30)" tabindex="-1">+30</button>
+    <button type="button" onclick="stopRestTimer()" tabindex="-1">Skip</button>
   </div>
 </div>
 
@@ -164,9 +176,13 @@
 <script src="./src/js/01-core-runtime.js"></script>
 <script src="./src/data/anatomy.js"></script>
 <script src="./src/data/coach-knowledge.js"></script>
+<script src="./src/data/coach-brain-exercise-profiles.js"></script>
 <script src="./src/js/02-muscle-history-analytics.js"></script>
 <script src="./src/js/03-programs.js"></script>
 <script src="./src/js/04a-coach-input-intent.js"></script>
+<script src="./src/js/04a0-coach-brain-knowledge.js"></script>
+<script src="./src/js/04a1-coach-brain-conversation.js"></script>
+<script src="./src/js/04a2-coach-brain-duration.js"></script>
 <script src="./src/js/04b-coach-programming.js"></script>
 <script src="./src/js/04b2-coach-intelligence.js"></script>
 <script src="./src/js/04b3-coach-adaptive-progression.js"></script>

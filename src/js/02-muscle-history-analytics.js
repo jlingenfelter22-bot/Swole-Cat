@@ -9,6 +9,7 @@ const MUSCLE_REGION_LABELS={
 };
 function uniqueMuscles(list){return [...new Set((list||[]).filter(Boolean))]}
 const EXERCISE_MUSCLE_OVERRIDES={
+ 'Dead Hang':{primary:['forearms'],secondary:['lats','upper_back','traps']},
  'Deadlift':{primary:['quads','glutes','lower_back'],secondary:['hamstrings','upper_back','forearms','core']},
  'Rack Pull':{primary:['glutes','lower_back','upper_back'],secondary:['hamstrings','traps','forearms','core']},
  'Block Pull':{primary:['glutes','lower_back','upper_back'],secondary:['hamstrings','traps','forearms','core']},
@@ -200,7 +201,9 @@ function muscleHeatMapHtml(session){
  <div class="muscle-map-note">Based on completed working sets. Primary muscles contribute more than secondary muscles. This map shows relative training involvement only — not soreness, recovery, muscle damage, or measured activation.</div>`;
 }
 function sessionVolume(s){
- return s.exercises.reduce((sum,e)=>sum+completedSets(e).reduce((a,x)=>a+(Number(x.weight)||0)*(Number(x.reps)||0),0),0);
+ // Assistance numbers are counterweights, not external resistance volume.
+ return s.exercises.reduce((sum,e)=>sum+(exerciseLoadType(e.exerciseId,e.config)==='external'
+   ?completedSets(e).reduce((a,x)=>a+(Number(x.weight)||0)*(Number(x.reps)||0),0):0),0);
 }
 function sessionSetCount(s){return s.exercises.reduce((n,e)=>n+progressionSets(e).length,0)}
 function sessionAllSetCount(s){return s.exercises.reduce((n,e)=>n+completedSets(e).length,0)}
@@ -227,6 +230,7 @@ function sessionPRDetails(s){
 }
 function previousSessionExercise(exerciseId,sessions=state.sessions){
  for(let i=sessions.length-1;i>=0;i--){
+   if(sessions[i].programPhase==='deload')continue;
    const row=(sessions[i].exercises||[]).find(e=>e.exerciseId===exerciseId&&progressionSets(e).length);
    if(row)return row;
  }
@@ -248,6 +252,7 @@ function openHistoricalWorkoutRecap(id){
  openModal('Workout recap',workoutRecapHtml(session,{progressHighlights:historicalProgressHighlights(session),historical:true}));
 }
 function sessionProgressHighlights(s,priorSessions=state.sessions){
+ if(s.programPhase==='deload')return [];
  const highlights=[];
  (s.exercises||[]).forEach(e=>{
    const current=progressionSets(e);
@@ -256,13 +261,37 @@ function sessionProgressHighlights(s,priorSessions=state.sessions){
    if(!prior)return;
    const previous=progressionSets(prior);
    if(!previous.length)return;
-   const ex=exById(e.exerciseId),name=ex?.name||'Exercise';
+   const ex=exById(e.exerciseId),name=ex?.name||'Exercise',type=exerciseLoadType(e.exerciseId,e.config);
+   const measurement=exerciseMeasurementType(e.exerciseId,e.config);
+   if(measurement!=='reps'){
+    const sum=rows=>rows.reduce((n,set)=>n+exerciseMetricValue(set,measurement),0);
+    const currentTotal=sum(current),previousTotal=sum(previous);
+    if(currentTotal>previousTotal&&previousTotal>0)
+     highlights.push({name,text:measurement==='duration'?
+      'Total working hold time increased from '+compactMetricNumber(previousTotal)+' to '+compactMetricNumber(currentTotal)+' seconds.':
+      'Total working distance increased from '+compactMetricNumber(distanceFromMeters(previousTotal))+' to '+compactMetricNumber(distanceFromMeters(currentTotal))+' '+distanceUnitLabel()+'.'});
+    return;
+   }
    const currentMax=Math.max(...current.map(set=>Number(set.weight)||0));
    const previousMax=Math.max(...previous.map(set=>Number(set.weight)||0));
    const currentReps=current.reduce((n,set)=>n+(Number(set.reps)||0),0);
    const previousReps=previous.reduce((n,set)=>n+(Number(set.reps)||0),0);
    const currentVolume=current.reduce((n,set)=>n+(Number(set.weight)||0)*(Number(set.reps)||0),0);
    const previousVolume=previous.reduce((n,set)=>n+(Number(set.weight)||0)*(Number(set.reps)||0),0);
+   if(type==='assistance'){
+     const currentMin=Math.min(...current.map(set=>Number(set.weight)||0));
+     const previousMin=Math.min(...previous.map(set=>Number(set.weight)||0));
+     if(currentMin<previousMin&&currentReps>=previousReps){
+       highlights.push({name,text:'Reduced assistance from '+previousMin+' to '+currentMin+' '+state.profile.unit+' while maintaining or increasing reps.'});
+     }else if(currentMin===previousMin&&currentReps>previousReps){
+       highlights.push({name,text:'Completed '+(currentReps-previousReps)+' more reps at '+currentMin+' '+state.profile.unit+' assistance.'});
+     }
+     return;
+   }
+   if(type==='bodyweight'){
+     if(currentReps>previousReps)highlights.push({name,text:'Completed '+(currentReps-previousReps)+' more bodyweight reps.'});
+     return;
+   }
    if(currentMax>previousMax){
      highlights.push({name,text:`Top working weight increased from ${previousMax} to ${currentMax} ${state.profile.unit}.`});
    }else if(currentMax===previousMax&&currentReps>previousReps){
@@ -337,24 +366,37 @@ function saveCompletedSessionAsRoutine(sessionId){
 }
 function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],historical=false}={}){
  const workingSets=sessionSetCount(session),allSets=sessionAllSetCount(session),reps=sessionTotalReps(session);
+ const holdSeconds=(session.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='duration'?completedSets(e).reduce((a,set)=>a+(Number(set.durationSeconds)||0),0):0),0);
+ const distanceMeters=(session.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='distance'?completedSets(e).reduce((a,set)=>a+(Number(set.distanceMeters)||0),0):0),0);
+ const recapMetrics=[
+  {value:sessionCompletedExerciseCount(session),label:'Exercises'},
+  {value:workingSets,label:'Working sets'},
+  ...(reps>0?[{value:reps,label:'Total reps'}]:[]),
+  ...(holdSeconds>0?[{value:compactMetricNumber(holdSeconds),label:'Hold seconds'}]:[]),
+  ...(distanceMeters>0?[{value:compactMetricNumber(distanceFromMeters(distanceMeters)),label:'Distance ('+distanceUnitLabel()+')'}]:[]),
+  {value:sessionPRCount(session),label:'Exercises with PR'}
+ ];
  const savedRoutine=routineSavedFromSession(session.id);
  const linkedRoutine=!!(session.routineId&&state.routines.some(r=>r.id===session.routineId));
  const volume=Math.round(sessionVolume(session)),prs=sessionPRDetails(session),muscles=sessionMuscleGroups(session);
  const completedExercises=sessionCompletedExerciseCount(session),skipped=(session.exercises||[]).filter(e=>e.skipped).length;
+ const metricTotalsHtml=recapMetrics.map(card=>'<div class="recap-metric"><b>'+card.value+'</b><span>'+esc(card.label)+'</span></div>').join('');
  const exerciseRows=(session.exercises||[]).map(e=>{
    const ex=exById(e.exerciseId),done=completedSets(e),working=progressionSets(e);
    if(e.skipped)return `<div class="recap-exercise"><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">Skipped for this session</div></div>`;
    if(!done.length)return `<div class="recap-exercise"><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">No completed sets</div>${e.notes?`<div class="muscle-map-note" style="margin-top:8px"><b>Notes</b><br>${esc(e.notes)}</div>`:''}</div>`;
+   const measurement=exerciseMeasurementType(e.exerciseId,e.config);
    const totalReps=done.reduce((n,set)=>n+(Number(set.reps)||0),0);
+   const metricTotal=done.reduce((n,set)=>n+exerciseMetricValue(set,measurement),0);
    const topWeight=Math.max(...done.map(set=>Number(set.weight)||0));
    const prCount=working.filter(set=>set.pr).length;
    const setRows=done.map((set,i)=>{
      const ordinal=e.sets.slice(0,e.sets.indexOf(set)+1).filter(x=>setType(x)===setType(set)).length;
      const load=Number(set.weight)||0,reps=Number(set.reps)||0;
-     return `<div class="recap-set-row"><span>${esc(setTypeLabel(setType(set)))} ${ordinal}</span><b>${load} ${state.profile.unit} × ${reps}</b>${set.rir!==''&&set.rir!=null?`<span>${esc(String(set.rir))} RIR</span>`:'<span></span>'}${set.pr?`<span class="inline-pr-mark">PR</span>`:'<span></span>'}</div>`;
+     return `<div class="recap-set-row"><span>${esc(setTypeLabel(setType(set)))} ${ordinal}</span><b>${measurement==='reps'?`${load} ${state.profile.unit} × ${reps}`:esc(setMeasurementText(e,set))+(load>0?' @ '+load+' '+state.profile.unit+(measurement==='distance'?' ('+carryLoadLabel(ex)+')':''):'')}</b>${measurement==='reps'&&set.rir!==''&&set.rir!=null?`<span>${esc(String(set.rir))} RIR</span>`:'<span></span>'}${set.pr?`<span class="inline-pr-mark">PR</span>`:'<span></span>'}</div>`;
    }).join('');
    return `<div class="recap-exercise">
-     <div class="recap-exercise-top"><div><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">${working.length} working set${working.length===1?'':'s'} · ${totalReps} total reps${topWeight>0?` · top ${topWeight} ${state.profile.unit}`:''}</div></div>${prCount?`<span class="preference-badge prefer">PR ×${prCount}</span>`:''}</div>
+     <div class="recap-exercise-top"><div><div class="recap-exercise-name">${esc(ex?.name||'Exercise')}</div><div class="recap-exercise-meta">${working.length} working set${working.length===1?'':'s'} · ${measurement==='duration'?compactMetricNumber(metricTotal)+' total seconds':measurement==='distance'?compactMetricNumber(distanceFromMeters(metricTotal))+' '+distanceUnitLabel()+' total':totalReps+' total reps'}${topWeight>0?` · ${measurement==='distance'?carryLoadLabel(ex)+': ':'top '}${topWeight} ${state.profile.unit}`:''}</div></div>${prCount?`<span class="preference-badge prefer">PR ×${prCount}</span>`:''}</div>
      <div class="recap-set-list">${setRows}</div>
      ${e.notes?`<div class="muscle-map-note" style="margin-top:8px"><b>Notes</b><br>${esc(e.notes)}</div>`:''}
    </div>`;
@@ -367,19 +409,17 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
    :'<div class="notice">No PR badge this time. PRs are only called when the logged performance clears the existing record logic.</div>';
  return `
    <div class="workout-recap-hero">
-     <div class="eyebrow">${historical?'HISTORICAL SESSION · SAVED LOCALLY':'SESSION COMPLETE · SAVED LOCALLY'}</div>
+     <div class="eyebrow">${session.programPhase==='deload'?'DELOAD WEEK · INTENTIONALLY LIGHTER':historical?'HISTORICAL SESSION · SAVED LOCALLY':'SESSION COMPLETE · SAVED LOCALLY'}</div>
      <div class="workout-recap-title">${esc(session.routineName)}</div>
      <div class="workout-recap-time">${esc(formatSessionCompletionTime(session))} · ${session.durationMinutes||0} min</div>
    </div>
+   ${session.programPhase==='deload'?'<div class="workout-deload-note"><b>☾ Deload workout</b><span>This workload is saved in your training history, but it is not used to conclude that you lost strength or to lower your next normal target.</span></div>':''}
    <div class="recap-metrics">
-     <div class="recap-metric"><b>${completedExercises}</b><span>Exercises</span></div>
-     <div class="recap-metric"><b>${workingSets}</b><span>Working sets</span></div>
-     <div class="recap-metric"><b>${reps}</b><span>Total reps</span></div>
-     <div class="recap-metric"><b>${prs.length}</b><span>Exercises with PR</span></div>
+     ${metricTotalsHtml}
    </div>
    <div class="recap-section">
      <div class="recap-section-title">Training snapshot</div>
-     ${volume>0?`<div class="summary-win"><b>${volume.toLocaleString()} ${state.profile.unit} × reps</b><div class="mini">External-load volume from completed sets. Useful as context, not a score to maximize.</div></div>`:'<div class="notice">External-load volume is not meaningful for this session based on the logged weights.</div>'}
+     ${volume>0?`<div class="summary-win"><b>${volume.toLocaleString()} ${state.profile.unit} × reps</b><div class="mini">External resistance times repetitions for applicable sets only. Hold time and carry distance are shown separately above.</div></div>`:(holdSeconds>0||distanceMeters>0?'<div class="notice">Timed holds and loaded carries are tracked by seconds and distance. Standard weight × reps volume does not apply to those movements.</div>':'<div class="notice">No external-load training volume was recorded.</div>')}
      ${allSets!==workingSets?`<div class="mini" style="margin:8px 2px 0">${allSets} total completed sets including warm-up/drop/failure sets.</div>`:''}
      ${skipped?`<div class="mini" style="margin:5px 2px 0">${skipped} exercise${skipped===1?' was':'s were'} skipped today.</div>`:''}
      ${updateRoutine?'<div class="summary-win"><b>Routine updated</b><div class="mini">Today’s structural changes are now saved to the routine.</div></div>':''}
@@ -406,17 +446,24 @@ function workoutRecapHtml(session,{updateRoutine=false,progressHighlights=[],his
 }
 function exerciseHistory(exerciseId){return derivedSessionData().historyByExercise.get(exerciseId)||[];}
 function exerciseMetrics(exerciseId){
- const h=exerciseHistory(exerciseId),sets=h.flatMap(x=>x.sets);
- const bestWeight=sets.length?Math.max(...sets.map(x=>Number(x.weight)||0)):0;
- const bestE1=sets.length?Math.max(...sets.map(x=>estimated1RM(x.weight,x.reps))):0;
- const bestVolume=h.length?Math.max(...h.map(x=>x.sets.reduce((a,s)=>a+(Number(s.weight)||0)*(Number(s.reps)||0),0))):0;
- const latest=h.at(-1),prior=h.at(-2);
- const latestE1=latest?Math.max(...latest.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
- const priorE1=prior?Math.max(...prior.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ const h=exerciseHistory(exerciseId).filter(row=>row.programPhase!=='deload'),sets=h.flatMap(x=>x.sets);
+ const measurement=exerciseMeasurementType(exerciseId,h.at(-1)||null);
+ const type=exerciseLoadType(exerciseId,h.at(-1)||null);
+ const metricRows=measurement==='reps'?sets:sets.filter(x=>exerciseMetricValue(x,measurement)>0);
+ const bestMetric=measurement==='reps'?0:Math.max(0,...metricRows.map(x=>exerciseMetricValue(x,measurement)));
+ const bestWeight=measurement==='reps'&&type==='external'&&sets.length?Math.max(...sets.map(x=>Number(x.weight)||0)):0;
+ const bestAssistance=measurement==='reps'&&type==='assistance'&&sets.length?Math.min(...sets.map(x=>Math.max(0,Number(x.weight)||0))):null;
+ const bestReps=measurement==='reps'&&sets.length?Math.max(...sets.map(x=>Number(x.reps)||0)):0;
+ const bestE1=measurement==='reps'&&type==='external'&&sets.length?Math.max(...sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ const bestVolume=measurement==='reps'&&type==='external'&&h.length?Math.max(...h.map(x=>x.sets.reduce((n,v)=>n+(Number(v.weight)||0)*(Number(v.reps)||0),0))):0;
+ const comparable=h.filter(x=>x.sets.some(set=>exerciseMetricValue(set,measurement)>0));
+ const latest=comparable.at(-1),prior=comparable.at(-2);
+ const latestE1=measurement==='reps'&&type==='external'&&latest?Math.max(...latest.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
+ const priorE1=measurement==='reps'&&type==='external'&&prior?Math.max(...prior.sets.map(x=>estimated1RM(x.weight,x.reps))):0;
  let trend='flat';
- if(priorE1 && latestE1>priorE1*1.01)trend='up';
- else if(priorE1 && latestE1<priorE1*.99)trend='down';
- return {history:h,sets,bestWeight,bestE1,bestVolume,latestE1,priorE1,trend};
+ if(priorE1&&latestE1>priorE1*1.01)trend='up';
+ else if(priorE1&&latestE1<priorE1*.99)trend='down';
+ return {history:h,sets,measurement,type,bestMetric,bestWeight,bestAssistance,bestReps,bestE1,bestVolume,latestE1,priorE1,trend};
 }
 function lastEightWeeks(){
  const now=startOfWeek(),rows=[];
@@ -467,8 +514,8 @@ function progressCalendarHtml(){
    </div>
    <div class="calendar-weekdays">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>`<div>${x}</div>`).join('')}</div>
    <div class="calendar-grid">${data.cells.map(cell=>cell
-     ?`<button class="calendar-day ${cell.today?'today':''} ${cell.count?'trained':''}" ${cell.count?`onclick="openProgressDay('${cell.key}')"`:'disabled'}>
-        <span class="daynum">${cell.day}</span>${cell.count?'<span class="calendar-dot"></span>':''}
+     ?`<button class="calendar-day ${cell.today?'today':''} ${cell.count?'trained':''} ${cell.sessions.some(s=>s.programPhase==='deload')?'calendar-deload':''}" ${cell.count?`onclick="openProgressDay('${cell.key}')"`:'disabled'}>
+        <span class="daynum">${cell.day}</span>${cell.count?'<span class="calendar-dot"></span>':''}${cell.sessions.some(s=>s.programPhase==='deload')?'<span class="calendar-deload-icon" title="Deload workout">☾</span>':''}
         ${cell.count?`<span class="daycount">${cell.count} workout${cell.count===1?'':'s'}</span>`:''}
        </button>`
      :'<div class="calendar-day empty"></div>').join('')}</div>
@@ -481,7 +528,7 @@ function openProgressDay(key){
  openModal(d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}),`
    <div class="mini" style="margin-bottom:10px">${sessions.length} workout${sessions.length===1?'':'s'} logged</div>
    ${sessions.map(s=>`<div class="card" style="margin-bottom:9px">
-     <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})} · ${sessionSetCount(s)} working sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div>${sessionPRCount(s)?`<span class="tag pr-tag">PR · ${sessionPRCount(s)}</span>`:''}</div>
+     <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${s.programPhase==='deload'?'☾ DELOAD · ':''}${new Date(s.date).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})} · ${sessionSetCount(s)} working sets${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div>${sessionPRCount(s)?`<span class="tag pr-tag">PR · ${sessionPRCount(s)}</span>`:''}</div>
      <div class="mini" style="margin-top:8px">${s.exercises.filter(e=>progressionSets(e).length).map(e=>esc(exById(e.exerciseId)?.name||'Exercise')).join(' · ')}</div>
      <div class="actions"><button class="btn small" onclick="closeModal();openHistoricalWorkoutRecap('${s.id}')">View Recap</button><button class="btn small secondary" onclick="closeModal();go('history')">Open History</button></div>
    </div>`).join('')}
@@ -494,16 +541,21 @@ function lifetimeExerciseRecords(){
    const rows=[];
    history.forEach(h=>h.sets.forEach(set=>rows.push({set,date:h.date,routineName:h.routineName})));
    if(!rows.length)return null;
+   const type=exerciseLoadType(id,history.at(-1)||null),measurement=exerciseMeasurementType(id,history.at(-1)||null);
+   const bestMetric=measurement==='reps'?0:Math.max(0,...rows.map(x=>exerciseMetricValue(x.set,measurement)));
    const byLoad=[...rows].sort((a,b)=>(Number(b.set.weight)||0)-(Number(a.set.weight)||0)||(Number(b.set.reps)||0)-(Number(a.set.reps)||0))[0];
+   const byAssistance=type==='assistance'?[...rows].sort((a,b)=>(Number(a.set.weight)||0)-(Number(b.set.weight)||0)||(Number(b.set.reps)||0)-(Number(a.set.reps)||0))[0]:null;
    const byE1=[...rows].sort((a,b)=>estimated1RM(b.set.weight,b.set.reps)-estimated1RM(a.set.weight,a.set.reps))[0];
    const byReps=[...rows].sort((a,b)=>(Number(b.set.reps)||0)-(Number(a.set.reps)||0))[0];
    const prs=rows.filter(x=>x.set.pr);
    return {
-     id,ex,history,
-     bestWeight:Number(byLoad?.set.weight)||0,
+     id,ex,history,type,measurement,bestMetric,
+     bestAssistance:byAssistance?(Number(byAssistance.set.weight)||0):null,
+     bestAssistanceReps:byAssistance?(Number(byAssistance.set.reps)||0):0,
+     bestWeight:type==='external'?(Number(byLoad?.set.weight)||0):0,
      bestWeightReps:Number(byLoad?.set.reps)||0,
      bestReps:Number(byReps?.set.reps)||0,
-     bestE1:byE1?estimated1RM(byE1.set.weight,byE1.set.reps):0,
+     bestE1:measurement==='reps'&&type==='external'&&byE1?estimated1RM(byE1.set.weight,byE1.set.reps):0,
      sessions:history.length,
      lastDate:history.at(-1)?.date||'',
      lastPRDate:prs.at(-1)?.date||''
@@ -511,10 +563,17 @@ function lifetimeExerciseRecords(){
  }).filter(Boolean);
 }
 function recordPrimaryText(r){
- return r.bestWeight>0?`${r.bestWeight} ${state.profile.unit} × ${r.bestWeightReps}`:`${r.bestReps} reps`;
+ if(r.measurement==='duration')return compactMetricNumber(r.bestMetric)+' sec';
+ if(r.measurement==='distance')return compactMetricNumber(distanceFromMeters(r.bestMetric))+' '+distanceUnitLabel();
+ if(r.type==='assistance')return (r.bestAssistance??0)+' '+state.profile.unit+' assist × '+r.bestAssistanceReps;
+ if(r.type==='bodyweight')return r.bestReps+' reps';
+ return r.bestWeight>0?r.bestWeight+' '+state.profile.unit+' × '+r.bestWeightReps:r.bestReps+' reps';
 }
 function recordSecondaryText(r){
- return r.bestE1>0?`${r.bestE1.toFixed(0)} ${state.profile.unit} est. 1RM`:`${r.sessions} logged session${r.sessions===1?'':'s'}`;
+ if(r.measurement==='duration'||r.measurement==='distance')return r.sessions+' tracked sessions';
+ if(r.type==='assistance')return 'Less assistance is harder · '+r.sessions+' sessions';
+ if(r.type==='bodyweight')return 'Repetition record · '+r.sessions+' sessions';
+ return r.bestE1>0?r.bestE1.toFixed(0)+' '+state.profile.unit+' est. 1RM':r.sessions+' logged sessions';
 }
 function recentPREvents(limit=8){
  const events=[];
@@ -635,7 +694,7 @@ function renderRecordsModal(){
  const rows=lifetimeExerciseRecords().filter(r=>!q||(r.ex?.name||'').toLowerCase().includes(q)).sort((a,b)=>(a.ex?.name||'').localeCompare(b.ex?.name||''));
  host.innerHTML=rows.length?rows.map(r=>`<div class="records-row clickable" onclick="openExerciseProgress('${r.id}')">
    <div><div class="exercise-name">${esc(r.ex?.name||'Exercise')}</div><div class="mini">${r.sessions} session${r.sessions===1?'':'s'} · last ${new Date(r.lastDate).toLocaleDateString()}</div></div>
-   <div class="records-value"><b>${esc(recordPrimaryText(r))}</b><span>${r.bestWeight>0?'Best load':'Best reps'}</span></div>
+   <div class="records-value"><b>${esc(recordPrimaryText(r))}</b><span>${r.measurement==='duration'?'Best hold':r.measurement==='distance'?'Best distance':r.type==='assistance'?'Least assistance':r.type==='bodyweight'?'Best reps':r.bestWeight>0?'Best load':'Best reps'}</span></div>
    <div class="records-value e1"><b>${r.bestE1>0?r.bestE1.toFixed(0):'—'}</b><span>Est. 1RM</span></div>
  </div>`).join(''):'<div class="empty">No matching records yet.</div>';
 }
@@ -782,11 +841,26 @@ function renderFormGuidePickerResults(exerciseId){
 
 function openExerciseProgress(exerciseId){
  const ex=exById(exerciseId),m=exerciseMetrics(exerciseId),h=m.history,pref=exercisePreference(exerciseId);
- const recent=h.slice(-12);
+ const type=exerciseLoadType(exerciseId,h.at(-1)||null),measurement=exerciseMeasurementType(exerciseId,h.at(-1)||null),recent=h.filter(x=>measurement==='reps'||x.sets.some(set=>exerciseMetricValue(set,measurement)>0)).slice(-12);
  const e1s=recent.map(x=>Math.max(...x.sets.map(s=>estimated1RM(s.weight,s.reps))));
+ const bestReps=recent.map(x=>Math.max(...x.sets.map(s=>Number(s.reps)||0)));
+ const firstAssistance=recent.length?Math.min(...recent[0].sets.map(s=>Number(s.weight)||0)):0;
+ const assistanceReductions=recent.map(x=>firstAssistance-Math.min(...x.sets.map(s=>Number(s.weight)||0)));
  const trend=m.trend==='up'?'<span class="trend-up">↑ Trending up</span>':m.trend==='down'?'<span class="trend-down">↓ Recent dip</span>':'<span class="trend-flat">→ Holding steady</span>';
  const progressHtml=!h.length
   ?'<div class="empty"><strong>No workout history yet</strong>Log this exercise in a workout and its progress will appear here.</div>'
+  :measurement!=='reps'?`<div class="notice">This movement is tracked by ${measurement==='duration'?'hold time':'distance'}, not repetitions. Your chart shows the best completed working set each session; it does not invent a one-rep max.</div>
+    <div class="metric-row"><div class="metric-mini"><b>${measurement==='duration'?compactMetricNumber(m.bestMetric)+' sec':compactMetricNumber(distanceFromMeters(m.bestMetric))+' '+distanceUnitLabel()}</b><span>Best ${measurement==='duration'?'hold':'distance'}</span></div><div class="metric-mini"><b>${h.length}</b><span>Logged sessions</span></div></div>
+    <div class="chart-card"><div class="row"><b>Best ${measurement==='duration'?'hold time':'distance'} by session</b><span class="mini">Last ${recent.length}</span></div>${svgLine(recent.map(x=>Math.max(0,...x.sets.map(set=>measurement==='duration'?Number(set.durationSeconds)||0:distanceFromMeters(set.distanceMeters)))))}</div>
+    <div class="picker-section">Recent sessions</div><div class="card">${h.slice().reverse().slice(0,8).map(x=>`<div class="list-item"><b>${new Date(x.date).toLocaleDateString()}</b><span class="mini">${x.sets.map(set=>setMeasurementText({exerciseId,config:{measurementType:measurement}},set)).join(' · ')}</span></div>`).join('')}</div>`
+  :type==='assistance'?`<div class="notice">Assistance is a counterweight. <b>Less assistance means a harder movement.</b> Estimated 1RM and conventional external-load volume are not applicable.</div>
+    <div class="metric-row"><div class="metric-mini"><b>${m.bestAssistance??0} ${state.profile.unit}</b><span>Least assistance</span></div><div class="metric-mini"><b>${m.bestReps}</b><span>Most reps</span></div><div class="metric-mini"><b>${h.length}</b><span>Sessions</span></div></div>
+    <div class="chart-card"><div class="row"><b>Reduction in assistance</b><span class="mini">Last ${recent.length}</span></div>${svgLine(assistanceReductions)}</div>
+    <div class="picker-section">Recent sessions</div><div class="card">${h.slice().reverse().slice(0,8).map(x=>`<div class="list-item"><div class="grow"><b>${new Date(x.date).toLocaleDateString()}</b><div class="mini">${x.sets.map(s=>`${s.weight} ${state.profile.unit} assist × ${s.reps}`).join(' · ')}</div></div></div>`).join('')}</div>`
+  :type==='bodyweight'?`<div class="notice">Repetitions track progress in this unweighted movement. To add external resistance, use a weighted variant or configure a different load type in the routine.</div>
+    <div class="metric-row"><div class="metric-mini"><b>${m.bestReps}</b><span>Best reps</span></div><div class="metric-mini"><b>${h.length}</b><span>Sessions</span></div></div>
+    <div class="chart-card"><div class="row"><b>Best reps per session</b><span class="mini">Last ${recent.length}</span></div>${svgLine(bestReps)}</div>
+    <div class="picker-section">Recent sessions</div><div class="card">${h.slice().reverse().slice(0,8).map(x=>`<div class="list-item"><b>${new Date(x.date).toLocaleDateString()}</b><span class="mini">${x.sets.map(s=>s.reps+' reps').join(' · ')}</span></div>`).join('')}</div>`
   :`<div style="margin-top:8px;font-weight:850">${trend}</div>
    <div class="metric-row">
      <div class="metric-mini"><b>${m.bestWeight} ${state.profile.unit}</b><span>Best load</span></div>
@@ -815,14 +889,55 @@ function openExerciseProgress(exerciseId){
  `);
  loadExerciseFormGuide(exerciseId);
 }
+function progressVolumeTrend30(now=Date.now()){
+ const day=86400000;
+ const current=state.sessions.filter(s=>{const age=now-new Date(s.date).getTime();return age>=0&&age<=30*day});
+ const prior=state.sessions.filter(s=>{const age=now-new Date(s.date).getTime();return age>30*day&&age<=60*day});
+ const currentVolume=current.reduce((n,s)=>n+sessionVolume(s),0);
+ const priorVolume=prior.reduce((n,s)=>n+sessionVolume(s),0);
+ const pct=priorVolume>0?((currentVolume-priorVolume)/priorVolume*100):null;
+ return {currentVolume,priorVolume,pct};
+}
+function openProgressMethodology(topic='overview'){
+ const blocks={
+   workload:`<div class="notice"><b>Muscle workload</b><br><br>Top bars show audited muscle set-equivalents this week. Bottom bars show the average per week across the previous four full weeks. A completed working set contributes 1.0 to primary muscles and 0.5 to secondary muscles. This is training-volume context, not a recovery or soreness score.</div>`,
+   strength:`<div class="notice"><b>Strength changes</b><br><br>Recent strength uses estimated 1RM from your latest logged exposure versus the previous one for the same exercise. Small changes can reflect reps, load, fatigue, or logging differences, so Swole Cat treats this as a trend rather than a diagnosis.</div>`,
+   coverage:`<div class="notice"><b>Muscle coverage</b><br><br>Coverage is derived from completed working sets and the app's audited primary/secondary muscle map. It shows what your training has involved, not measured muscle activation, soreness, recovery, or growth.</div>`,
+   overview:`<div class="notice"><b>Progress analytics</b><br><br>Swole Cat summarizes your completed local workout history. PRs, volume, consistency, estimated strength, muscle coverage, and workload are signals to help you understand training patterns. No single metric is intended to be maximized in isolation.</div>`
+ };
+ openModal('How Progress Works',blocks[topic]||blocks.overview);
+}
 function renderAnalytics(){
  const host=document.getElementById('analyticsArea');if(!host)return;
+ try{
+   renderAnalyticsContent(host);
+ }catch(error){
+   // A single legacy or mixed-history record must not leave Progress blank.
+   // Never remove or rewrite history as a side effect of an analytics failure.
+   console.error('Swole Cat Progress rendering failed',error);
+   const count=Array.isArray(state.sessions)?state.sessions.length:0;
+   const message=String(error?.message||'Unexpected analytics error').slice(0,200);
+   host.innerHTML='<div class="card"><div class="eyebrow">TRAINING TELEMETRY · RECOVERY MODE</div>'+
+     '<h2>Progress could not display</h2>'+
+     '<p class="mini">Your '+count+' locally stored workout record'+(count===1?' is':'s are')+
+     ' still available. No workouts were deleted or changed. One analytics calculation failed.</p>'+
+     '<div class="notice">'+esc(message)+'</div>'+
+     '<div class="actions"><button class="btn" onclick="renderAnalytics()">Retry Progress</button>'+
+     '<button class="btn secondary" onclick="exportBackup()">Export safety backup</button></div></div>';
+ }
+}
+function renderAnalyticsContent(host){
  const now=Date.now(),last30=state.sessions.filter(s=>now-new Date(s.date).getTime()<=30*86400000);
  const weekStart=startOfWeek(),thisWeek=state.sessions.filter(s=>new Date(s.date)>=weekStart);
  const prs30=last30.reduce((a,s)=>a+sessionPRCount(s),0);
- const sets30=last30.reduce((a,s)=>a+sessionSetCount(s),0);
  const trainingDays30=new Set(last30.map(s=>localDateKey(s.date))).size;
  const weeks=lastEightWeeks(),maxWeek=Math.max(1,...weeks.map(x=>x.workouts));
+ const activeWeeks=weeks.filter(x=>x.workouts>0).length;
+ const avgWorkouts=(weeks.reduce((a,x)=>a+x.workouts,0)/Math.max(1,weeks.length));
+ const volumeTrend=progressVolumeTrend30(now);
+ const recentDeloadCount=last30.filter(s=>s.programPhase==='deload').length;
+ const volumeTrendText=volumeTrend.pct==null?'—':`${volumeTrend.pct>0?'+':''}${Math.round(volumeTrend.pct)}%`;
+ const volumeTrendClass=volumeTrend.pct==null||recentDeloadCount&&volumeTrend.pct<-2?'trend-flat':volumeTrend.pct>2?'trend-up':volumeTrend.pct<-2?'trend-down':'trend-flat';
  const workloads=muscleWorkloadComparison(),maxWorkload=Math.max(1,...workloads.flatMap(x=>[x.current,x.average]));
  const coveragePeriods=muscleCoveragePeriods(),frequency=muscleFrequencyWeeks(8);
  const records=lifetimeExerciseRecords();
@@ -834,31 +949,43 @@ function renderAnalytics(){
  const coachInsights=used.map(id=>{
    const r=state.routines.flatMap(x=>x.exercises).find(e=>e.exerciseId===id)||{trainingGoal:'general',resetPercent:7.5,increment:state.settings.defaultIncrement,minReps:state.settings.defaultMin,maxReps:state.settings.defaultMax,sets:state.settings.defaultSets};
    return {id,ex:exById(id),signal:coachSignal(id,r)};
- }).filter(x=>x.signal.stalled||x.signal.level==='good').slice(0,8);
+ }).filter(x=>x.signal&&(x.signal.stalled||x.signal.level==='good')).slice(0,8);
 
  host.innerHTML=`
- <div class="progress-hero telemetry-hero">
-   <div class="row"><div><div class="eyebrow">LIVE LOCAL TELEMETRY</div><div class="exercise-name" style="font-size:1.15rem;margin-top:4px">Progress at a glance</div><div class="mini" style="margin-top:4px">Calendar, records, workload, consistency, and exercise trends from your completed workouts.</div></div><span class="tag">${state.sessions.length} workout${state.sessions.length===1?'':'s'}</span></div>
+ <div class="progress-hero telemetry-hero progress-snapshot-hero">
+   <div class="progress-snapshot-head">
+     <div>
+       <div class="eyebrow">YOUR TRAINING SIGNAL</div>
+       <div class="exercise-name progress-snapshot-title">Progress at a glance</div>
+       <div class="mini progress-snapshot-copy">Results first. Deeper training analytics are below when you want them.</div>
+     </div>
+     <button class="progress-help-btn" onclick="openProgressMethodology('overview')" aria-label="How Progress works">?</button>
+   </div>
+   <div class="progress-snapshot-grid">
+     <div class="progress-snapshot-metric"><span>THIS WEEK</span><b>${thisWeek.length}</b><small>workout${thisWeek.length===1?'':'s'}</small></div>
+     <div class="progress-snapshot-metric"><span>PRs · 30D</span><b>${prs30}</b><small>exercise PR${prs30===1?'':'s'}</small></div>
+     <div class="progress-snapshot-metric"><span>CONSISTENCY</span><b>${activeWeeks}/8</b><small>active weeks · ${avgWorkouts.toFixed(1)}/wk</small></div>
+     <div class="progress-snapshot-metric"><span>VOLUME · 30D</span><b class="${volumeTrendClass}">${volumeTrendText}</b><small>${volumeTrend.pct==null?'build more history':'vs prior 30 days'}${recentDeloadCount?' · includes deload':''}</small></div>
+   </div>
+ </div>
+ ${recentDeloadCount?'<div class="workout-deload-note"><b>☾ Planned deload sessions in the last 30 days</b><span>Lower set counts or volume during a planned deload are intentional, not proof of lost strength. These sessions remain in your workout counts and volume totals; estimated strength changes and future progression exclude them.</span></div>':''}
+
+ <div class="progress-primary-section">
+   <div class="section-title"><h2>8-week consistency</h2><span class="mini">${weeks.reduce((a,x)=>a+x.workouts,0)} workouts</span></div>
+   <div class="chart-card progress-primary-chart">
+     <div class="weekbars">${weeks.map(w=>`<div class="weekcol"><div class="weekbar" style="height:${Math.max(3,w.workouts/maxWeek*92)}px" title="${w.workouts} workouts · ${w.sets} working sets"></div><div class="weeklabel">${w.label}</div></div>`).join('')}</div>
+   </div>
  </div>
 
- <div class="stat-grid">
-   <div class="stat-card"><div class="caption">This week</div><div class="big">${thisWeek.length}</div><div class="mini">workouts</div></div>
-   <div class="stat-card"><div class="caption">Last 30 days</div><div class="big">${trainingDays30}</div><div class="mini">training days</div></div>
-   <div class="stat-card"><div class="caption">Working sets · 30d</div><div class="big">${sets30}</div><div class="mini">completed</div></div>
-   <div class="stat-card"><div class="caption">PRs · 30d</div><div class="big">${prs30}</div><div class="mini">exercises with PRs</div></div>
+ <div class="section-title progress-section-title"><h2>Recent strength changes</h2><button class="progress-inline-help" onclick="openProgressMethodology('strength')">How it works</button></div>
+ <div class="chart-card">
+   ${changes.length?`<div class="progress-change-list">${changes.map(x=>`<div class="progress-change clickable" onclick="openExerciseProgress('${x.id}')">
+     <div><div class="exercise-name">${esc(x.ex?.name||'Exercise')}</div><div class="mini">${x.prior.toFixed(0)} → ${x.latest.toFixed(0)} ${state.profile.unit} est. 1RM · ${new Date(x.date).toLocaleDateString()}</div></div>
+     <div class="progress-change-value ${x.delta>0?'trend-up':x.delta<0?'trend-down':'trend-flat'}">${x.delta>0?'+':''}${x.pct.toFixed(1)}%</div>
+   </div>`).join('')}</div>`:'<div class="empty">Log an exercise at least twice to compare recent strength.</div>'}
  </div>
 
- <div class="section-title"><h2>Training calendar</h2><span class="mini">Tap a training day</span></div>
- ${progressCalendarHtml()}
-
- <div class="section-title"><h2>Lifetime records</h2><button class="btn small secondary" onclick="openAllRecords()">View All</button></div>
- ${recordCards.length?`<div class="record-grid">${recordCards.map(r=>`<div class="record-card" onclick="openExerciseProgress('${r.id}')">
-   <div class="record-name">${esc(r.ex?.name||'Exercise')}</div>
-   <div class="record-big">${esc(recordPrimaryText(r))}</div>
-   <div class="record-meta">${esc(recordSecondaryText(r))}<br>${r.sessions} logged session${r.sessions===1?'':'s'}</div>
- </div>`).join('')}</div>`:'<div class="empty">Complete working sets to build your record book.</div>'}
-
- <div class="section-title"><h2>Recent PRs</h2><span class="mini">Newest first</span></div>
+ <div class="section-title progress-section-title"><h2>Recent PRs</h2><span class="mini">Newest first</span></div>
  <div class="chart-card">
    ${prEvents.length?`<div class="pr-feed">${prEvents.map(p=>`<div class="pr-feed-row clickable" onclick="openExerciseProgress('${p.exerciseId}')">
      <div class="pr-icon" aria-label="Personal record"><span class="pr-glyph">PR</span></div>
@@ -867,16 +994,25 @@ function renderAnalytics(){
    </div>`).join('')}</div>`:'<div class="empty">PRs will show here after an exercise has an established baseline to beat.</div>'}
  </div>
 
- <div class="section-title"><h2>Muscle coverage</h2><span class="mini">Audited primary + secondary involvement</span></div>
+ <div class="progress-secondary-divider"><span>TRAINING DETAIL</span></div>
+
+ <div class="section-title progress-section-title"><h2>Training calendar</h2><span class="mini">Tap a training day</span></div>
+ ${progressCalendarHtml()}
+
+ <div class="section-title progress-section-title"><h2>Lifetime records</h2><button class="btn small secondary" onclick="openAllRecords()">View All</button></div>
+ ${recordCards.length?`<div class="record-grid">${recordCards.map(r=>`<div class="record-card" onclick="openExerciseProgress('${r.id}')">
+   <div class="record-name">${esc(r.ex?.name||'Exercise')}</div>
+   <div class="record-big">${esc(recordPrimaryText(r))}</div>
+   <div class="record-meta">${esc(recordSecondaryText(r))}<br>${r.sessions} logged session${r.sessions===1?'':'s'}</div>
+ </div>`).join('')}</div>`:'<div class="empty">Complete working sets to build your record book.</div>'}
+
+ <div class="section-title progress-section-title"><h2>Muscle coverage</h2><button class="progress-inline-help" onclick="openProgressMethodology('coverage')">How it works</button></div>
  <div class="coverage-period-grid">
    ${coveragePeriodHtml(coveragePeriods.week,'This week')}
    ${coveragePeriodHtml(coveragePeriods.month,'This month to date')}
  </div>
 
- <div class="section-title"><h2>Training frequency</h2><span class="mini">Sessions involving each muscle · last 8 weeks</span></div>
- ${muscleFrequencyHtml(frequency)}
-
- <div class="section-title"><h2>Muscle workload</h2><span class="mini">This week vs prior 4-week average</span></div>
+ <div class="section-title progress-section-title"><h2>Muscle workload</h2><button class="progress-inline-help" onclick="openProgressMethodology('workload')">How it works</button></div>
  <div class="chart-card">
    ${workloads.length?`<div class="workload-grid">${workloads.map(x=>`<div class="workload-row">
      <span>${esc(x.name)}</span>
@@ -885,30 +1021,19 @@ function renderAnalytics(){
        <div class="workload-track" title="Prior 4-week average"><div class="workload-average" style="width:${Math.round(x.average/maxWorkload*100)}%"></div></div>
      </div>
      <div class="workload-values"><b>${x.current}</b> now<br>${x.average.toFixed(1)} avg</div>
-   </div>`).join('')}</div><div class="mini" style="margin-top:11px">Top bar = audited muscle set-equivalents this week. Bottom bar = average set-equivalents per week across the previous four full weeks. Primary involvement contributes 1.0 per working set; secondary contributes 0.5.</div>`:'<div class="empty">Complete working sets to populate muscle workload.</div>'}
+   </div>`).join('')}</div>`:'<div class="empty">Complete working sets to populate muscle workload.</div>'}
  </div>
 
- <div class="section-title"><h2>8-week consistency</h2></div>
- <div class="chart-card">
-   <div class="row"><div class="mini">Completed workouts per week</div><span class="tag">${weeks.reduce((a,x)=>a+x.workouts,0)} total</span></div>
-   <div class="weekbars">${weeks.map(w=>`<div class="weekcol"><div class="weekbar" style="height:${Math.max(3,w.workouts/maxWeek*92)}px" title="${w.workouts} workouts · ${w.sets} working sets"></div><div class="weeklabel">${w.label}</div></div>`).join('')}</div>
- </div>
+ <div class="section-title progress-section-title"><h2>Training frequency</h2><span class="mini">Sessions involving each muscle · last 8 weeks</span></div>
+ ${muscleFrequencyHtml(frequency)}
 
- <div class="section-title"><h2>Recent strength changes</h2><span class="mini">Latest session vs previous session</span></div>
- <div class="chart-card">
-   ${changes.length?`<div class="progress-change-list">${changes.map(x=>`<div class="progress-change clickable" onclick="openExerciseProgress('${x.id}')">
-     <div><div class="exercise-name">${esc(x.ex?.name||'Exercise')}</div><div class="mini">${x.prior.toFixed(0)} → ${x.latest.toFixed(0)} ${state.profile.unit} est. 1RM · ${new Date(x.date).toLocaleDateString()}</div></div>
-     <div class="progress-change-value ${x.delta>0?'trend-up':x.delta<0?'trend-down':'trend-flat'}">${x.delta>0?'+':''}${x.pct.toFixed(1)}%</div>
-   </div>`).join('')}</div>`:'<div class="empty">Log an exercise at least twice to compare recent strength.</div>'}
- </div>
-
- <div class="section-title"><h2>Coach insights</h2></div>
+ <div class="section-title progress-section-title"><h2>Coach insights</h2></div>
  <div class="chart-card">${coachInsights.length?`<div class="insight-list">${coachInsights.map(x=>`<div class="coachbox ${x.signal.level==='info'?'':x.signal.level}" style="margin:0"><div class="row"><div><div class="coach-title">${esc(x.ex?.name||'Exercise')}</div><div class="coach-text">${esc(x.signal.text)}</div></div><span class="${x.signal.level==='good'?'trend-up':x.signal.level==='reset'?'trend-down':'trend-flat'}">${x.signal.level==='good'?'↑':x.signal.level==='reset'?'!':'→'}</span></div></div>`).join('')}</div>`:'<div class="empty">No notable progression patterns yet. Keep logging consistent sessions.</div>'}</div>
 
- <div class="section-title"><h2>Recently trained exercises</h2></div>
+ <div class="section-title progress-section-title"><h2>Recently trained exercises</h2></div>
  <div class="grid">${recentExercises.length?recentExercises.map(x=>`<div class="card clickable" onclick="openExerciseProgress('${x.id}')"><div class="row"><div><div class="exercise-name">${esc(x.ex?.name||'Exercise')}</div><div class="mini">${x.history.length} logged sessions · best load ${x.bestWeight} ${state.profile.unit}</div></div><span class="${x.trend==='up'?'trend-up':x.trend==='down'?'trend-down':'trend-flat'}">${x.trend==='up'?'↑':x.trend==='down'?'↓':'→'} ${x.latestE1.toFixed(0)}</span></div></div>`).join(''):'<div class="empty">Once you log repeated exercises, your strength trends will live here.</div>'}</div>
 
- <div class="section-title"><h2>Bodyweight <span class="mini">(optional)</span></h2><button class="btn small secondary" onclick="logBodyweight()">+ Log</button></div>
+ <div class="section-title progress-section-title"><h2>Bodyweight <span class="mini">(optional)</span></h2><button class="btn small secondary" onclick="logBodyweight()">+ Log</button></div>
  <div class="chart-card">${(state.bodyweight||[]).length?`${svgLine(state.bodyweight.slice(-20).map(x=>Number(x.value)))}<div class="row"><span class="mini">Latest</span><b>${state.bodyweight.at(-1).value} ${state.profile.unit}</b></div>`:'<div class="empty">Optional bodyweight tracking lives only on this device.</div>'}</div>`;
 }
 function logBodyweight(){

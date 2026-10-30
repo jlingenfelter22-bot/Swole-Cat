@@ -146,7 +146,8 @@ function shareCustomDefinition(ex,ref){
   pattern:shareSafeText(ex?.pattern,80)||'other',
   primaryMuscles:shareStringArray(ex?.primaryMuscles),
   secondaryMuscles:shareStringArray(ex?.secondaryMuscles),
-  movementFamily:shareSafeText(ex?.movementFamily,80)
+  movementFamily:shareSafeText(ex?.movementFamily,80),
+  measurementType:['reps','duration','distance'].includes(ex?.measurementType)?ex.measurementType:'auto'
  };
 }
 function shareExportContext(){return {customRefs:new Map(),customExercises:[]}}
@@ -174,6 +175,12 @@ function shareRoutineExercise(re,context){
   sets:shareClampInteger(re?.sets,1,20,3),
   minReps,maxReps,
   increment:Math.max(0,Number(re?.increment)||0),
+  loadType:['external','assistance','bodyweight'].includes(re?.loadType)?re.loadType:'auto',
+  measurementType:['reps','duration','distance'].includes(re?.measurementType)?re.measurementType:'auto',
+  minDurationSeconds:shareClampNumber(re?.minDurationSeconds,1,7200,20),
+  maxDurationSeconds:shareClampNumber(re?.maxDurationSeconds,1,7200,45),
+  minDistanceMeters:shareClampNumber(re?.minDistanceMeters,.25,100000,10),
+  maxDistanceMeters:shareClampNumber(re?.maxDistanceMeters,.25,100000,30),
   mode,
   progressionStrategy,
   adaptiveProgression:!!re?.adaptiveProgression,
@@ -229,6 +236,8 @@ function createProgramShareEnvelope(id){
    frequency:shareClampInteger(program.frequency,1,7,3),
    preferredDays:Array.isArray(program.preferredDays)?program.preferredDays.filter(d=>Number.isInteger(d)&&d>=0&&d<=6).slice(0,7):[],
    trainingMode:normalizeProgramTrainingMode(program.trainingMode),
+   deload:{enabled:program?.trainingMode==='guided'&&programDeloadConfig(program.deload).enabled,
+     intervalWeeks:programDeloadConfig(program.deload).intervalWeeks},
    routineKeys
   },
   routines,customExercises:context.customExercises
@@ -288,7 +297,8 @@ function shareCustomSignature(ex){
   pattern:shareSafeText(ex?.pattern,80).toLowerCase(),
   primary:shareStringArray(ex?.primaryMuscles).slice().sort(),
   secondary:shareStringArray(ex?.secondaryMuscles).slice().sort(),
-  family:shareSafeText(ex?.movementFamily,80).toLowerCase()
+  family:shareSafeText(ex?.movementFamily,80).toLowerCase(),
+  measurementType:['reps','duration','distance'].includes(ex?.measurementType)?ex.measurementType:'auto'
  });
 }
 function sharePrepareCustomExercises(envelope){
@@ -305,6 +315,7 @@ function sharePrepareCustomExercises(envelope){
     primaryMuscles:shareStringArray(def.primaryMuscles),
     secondaryMuscles:shareStringArray(def.secondaryMuscles),
     movementFamily:shareSafeText(def.movementFamily,80),
+    measurementType:['reps','duration','distance'].includes(def?.measurementType)?def.measurementType:'auto',
     custom:true
    };
    additions.push(existing);pool.push(existing);
@@ -328,6 +339,12 @@ function shareImportRoutineExercise(re,customMap,sourceUnit,targetUnit,supersetM
   sets:shareClampInteger(re.sets,1,20,3),
   minReps,maxReps,
   increment:shareConvertLoad(re.increment,sourceUnit,targetUnit),
+  loadType:['external','assistance','bodyweight'].includes(re.loadType)?re.loadType:'auto',
+  measurementType:['reps','duration','distance'].includes(re.measurementType)?re.measurementType:'auto',
+  minDurationSeconds:shareClampNumber(re.minDurationSeconds,1,7200,20),
+  maxDurationSeconds:shareClampNumber(re.maxDurationSeconds,1,7200,45),
+  minDistanceMeters:shareClampNumber(re.minDistanceMeters,.25,100000,10),
+  maxDistanceMeters:shareClampNumber(re.maxDistanceMeters,.25,100000,30),
   mode:['double','range','total','manual'].includes(re.mode)?re.mode:'double',
   progressionStrategy:['double','load_first','top_backoff'].includes(re.progressionStrategy)?re.progressionStrategy:'double',
   adaptiveProgression:!!re.adaptiveProgression,
@@ -372,6 +389,7 @@ function buildSharedPlanImport(envelope){
   frequency:shareClampInteger(envelope.program.frequency,1,7,3),
   preferredDays:Array.isArray(envelope.program.preferredDays)?envelope.program.preferredDays.filter(d=>Number.isInteger(d)&&d>=0&&d<=6).slice(0,7):[],
   trainingMode:normalizeProgramTrainingMode(envelope.program.trainingMode),
+  deload:{...programDeloadConfig(envelope.program.deload),decisions:{},deferNext:false,deferredFrom:''},
   nextIndex:0
  };
  return {customExercises:prepared.additions,routines,program};

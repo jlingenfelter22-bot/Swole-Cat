@@ -1,0 +1,86 @@
+{
+  "date": "2026-10-13",
+  "original308AuditUnchanged": true,
+  "catalogCountAfterAdditions": 310,
+  "profiles": [
+    {
+      "id": "lib_308",
+      "name": "Bodyweight Squat",
+      "equipment": "bodyweight",
+      "pattern": "squat",
+      "role": "squat",
+      "primary": [
+        "quads",
+        "glutes"
+      ],
+      "secondary": [
+        "adductors"
+      ],
+      "needs": [
+        "bodyweight",
+        "exercise_space"
+      ],
+      "load": "bodyweight",
+      "measurement": "reps",
+      "side": "usual_bilateral_or_unspecified",
+      "sideMetrics": true,
+      "power": false,
+      "demand": [
+        1.5,
+        1.5,
+        0.5
+      ],
+      "reason": "Foundational knee-dominant squat without external weights; build controlled reps and comfortable range before choosing a different loaded exercise.",
+      "review": "product_review_candidate",
+      "flags": [
+        "new_floor_only_exercise_requires_device_acceptance"
+      ],
+      "suggested": [
+        "lib_10"
+      ]
+    },
+    {
+      "id": "lib_309",
+      "name": "Bodyweight Reverse Lunge",
+      "equipment": "bodyweight",
+      "pattern": "lunge",
+      "role": "lunge",
+      "primary": [
+        "quads",
+        "glutes"
+      ],
+      "secondary": [
+        "adductors"
+      ],
+      "needs": [
+        "bodyweight",
+        "exercise_space"
+      ],
+      "load": "bodyweight",
+      "measurement": "reps",
+      "side": "alternating_or_one_side_at_a_time",
+      "sideMetrics": false,
+      "power": false,
+      "demand": [
+        2,
+        2,
+        0.5
+      ],
+      "reason": "No-equipment per-leg knee/hip training; track controlled repetitions consistently per side and use stable footing.",
+      "review": "product_review_candidate",
+      "flags": [
+        "new_floor_only_exercise",
+        "per_side_comparability"
+      ],
+      "suggested": [
+        "lib_164"
+      ]
+    }
+  ],
+  "safetyNotes": [
+    "Do not merge loaded and bodyweight IDs or their histories",
+    "No invented external loads",
+    "Reverse Lunge per-side totals are not individually available in current logging",
+    "Reject or qualify floor-only full-body if pulling cannot be performed"
+  ]
+}

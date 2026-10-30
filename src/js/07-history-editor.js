@@ -1,34 +1,127 @@
 let sessionEditDraft=null;
 
-function renderHistory(){
- const el=document.getElementById('historyList');
- const sessions=derivedSessionData().sessionsDesc;
- if(!sessions.length){el.innerHTML='<div class="empty"><div class="empty-illustration"><span class="empty-glyph empty-glyph-history" aria-hidden="true"></span></div><strong>No workout history yet</strong>Finish your first session and it will be saved here.</div>';return;}
- el.innerHTML=sessions.map((s,sessionIndex)=>`<div class="card history-entry">
-   <div class="history-sequence"><span>${String(sessions.length-sessionIndex).padStart(2,'0')}</span><small>SESSION</small></div>
-   <div class="history-entry-body">
-   <div class="row"><div><div class="exercise-name">${esc(s.routineName)}</div><div class="mini">${new Date(s.date).toLocaleString()} · ${sessionSetCount(s)} working sets${sessionAllSetCount(s)!==sessionSetCount(s)?` · ${sessionAllSetCount(s)} total`:''}${s.durationMinutes!=null?` · ${s.durationMinutes} min`:''}</div></div></div>
-   <div class="editor-summary"><span class="tag">${Math.round(sessionVolume(s)).toLocaleString()} ${state.profile.unit}×reps</span>${sessionPRCount(s)?`<span class="tag">🏆 ${sessionPRCount(s)} PR</span>`:''}</div>
-   ${s.exercises.map(e=>{const ex=exById(e.exerciseId),sets=completedSets(e); return sets.length?`<table class="history-table"><tr><th colspan="3"><span class="exercise-link" onclick="openExerciseProgress('${e.exerciseId}')">${esc(ex?.name||'Exercise')}</span></th></tr>${sets.map((x,i)=>`<tr><td>${esc(setTypeLabel(setType(x)))} ${e.sets.slice(0,e.sets.indexOf(x)+1).filter(y=>setType(y)===setType(x)).length}</td><td>${x.weight} ${state.profile.unit}</td><td>${x.reps} reps${x.rir!==''&&x.rir!=null?` · ${x.rir} RIR`:''}</td></tr>`).join('')}</table>`:''}).join('')}
-   <div class="history-card-actions">
-     <button class="btn small" onclick="openHistoricalWorkoutRecap('${s.id}')">View Recap</button>
-     <button class="btn small secondary" onclick="editCompletedWorkout('${s.id}')">Edit Workout</button>
-     <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete Workout</button>
-   </div>
-   </div>
- </div>`).join('');
+function historySessionDateParts(session){
+ const d=new Date(session?.date||0);
+ if(!Number.isFinite(d.getTime()))return {date:'Unknown date',time:''};
+ return {
+   date:d.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}),
+   time:d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})
+ };
 }
-function calculateHistoricalPR(prior,set){
- if(!prior.length)return '';
- const w=Number(set.weight)||0,r=Number(set.reps)||0;
- const maxWeight=Math.max(...prior.map(x=>Number(x.weight)||0));
- const sameWeightMax=Math.max(0,...prior.filter(x=>Number(x.weight)===w).map(x=>Number(x.reps)||0));
- const priorE1=Math.max(0,...prior.map(x=>estimated1RM(x.weight,x.reps)));
- const curE1=estimated1RM(w,r);
- if(w>maxWeight)return `Load PR: ${w} ${state.profile.unit}`;
- if(r>sameWeightMax)return `Rep PR: ${w} ${state.profile.unit} × ${r}`;
- if(curE1>priorE1*1.01)return 'Estimated strength PR';
- return '';
+function historyExerciseSummary(session){
+ const names=(session?.exercises||[])
+   .filter(e=>!e.skipped&&completedSets(e).length)
+   .map(e=>exById(e.exerciseId)?.name||'Exercise');
+ if(!names.length)return 'No completed exercises';
+ const shown=names.slice(0,3);
+ return shown.join(' · ')+(names.length>shown.length?` · +${names.length-shown.length} more`:'');
+}
+function historyMuscleSummaryHtml(session){
+ const muscles=sessionMuscleGroups(session);
+ if(!muscles.length)return '';
+ const shown=muscles.slice(0,4),more=muscles.length-shown.length;
+ return `<div class="history-muscle-row">${shown.map(m=>`<span>${esc(m)}</span>`).join('')}${more>0?`<span class="history-muscle-more">+${more}</span>`:''}</div>`;
+}
+function openHistorySessionMenu(id){
+ const s=state.sessions.find(x=>x.id===id);if(!s)return;
+ const when=historySessionDateParts(s);
+ openModal('Workout options',`
+   <div class="history-manage-summary">
+     <div class="eyebrow">SESSION OPTIONS</div>
+     <div class="history-manage-title">${esc(s.routineName||'Workout')}</div>
+     <div class="mini">${esc(when.date)}${when.time?` · ${esc(when.time)}`:''}</div>
+   </div>
+   <div class="history-manage-actions">
+     <button class="btn" onclick="closeModal();openHistoricalWorkoutRecap('${escAttr(s.id)}')">View Recap</button>
+     <button class="btn secondary" onclick="closeModal();editCompletedWorkout('${escAttr(s.id)}')">Edit Workout</button>
+     <button class="btn danger" onclick="closeModal();deleteSession('${escAttr(s.id)}')">Delete Workout</button>
+   </div>
+ `);
+}
+function openHistoryOptions(){
+ openModal('History options',`
+   <div class="notice">History is your permanent local record of completed workouts. Clearing it recalculates records and progression history.</div>
+   <div class="history-manage-actions" style="margin-top:12px">
+     <button class="btn danger" onclick="closeModal();clearWorkoutHistory()">Clear All Workout History</button>
+     <button class="btn secondary" onclick="closeModal()">Cancel</button>
+   </div>
+ `);
+}
+// History cards keep exactly the same markup and interactions, but older cards
+// are appended near the scroll edge instead of parsing years of logs at once.
+const HISTORY_RENDER_BATCH_SIZE=24;
+let historyRenderSnapshot=[],historyRenderedCount=0,historyScrollBound=false,historyScrollFrame=0;
+function historyRenderNextBatch(){
+ const el=document.getElementById('historyList'),sessions=historyRenderSnapshot;
+ if(!el||historyRenderedCount>=sessions.length)return false;
+ const from=historyRenderedCount,to=Math.min(sessions.length,from+HISTORY_RENDER_BATCH_SIZE);
+ el.insertAdjacentHTML('beforeend',sessions.slice(from,to).map((s,i)=>historySessionCardHtml(s,from+i,sessions.length)).join(''));
+ historyRenderedCount=to;
+ return true;
+}
+function historyScrollMaybeAppend(){
+ if(historyScrollFrame)return;
+ historyScrollFrame=requestAnimationFrame(()=>{
+  historyScrollFrame=0;
+  const section=document.getElementById('history'),list=document.getElementById('historyList');
+  if(!section?.classList.contains('active')||!list||historyRenderedCount>=historyRenderSnapshot.length)return;
+  if(list.getBoundingClientRect().bottom<=window.innerHeight+Math.min(600,window.innerHeight))historyRenderNextBatch();
+ });
+}
+function renderHistory(){
+ const el=document.getElementById('historyList');if(!el)return;
+ const sessions=derivedSessionData().sessionsDesc;
+ // Keep already-loaded older entries when an edit/delete refreshes the page.
+ const desired=Math.min(sessions.length,Math.max(HISTORY_RENDER_BATCH_SIZE,historyRenderedCount));
+ historyRenderSnapshot=sessions;historyRenderedCount=desired;
+ if(!sessions.length){el.innerHTML='<div class="empty"><div class="empty-illustration"><span class="empty-glyph empty-glyph-history" aria-hidden="true"></span></div><strong>No workout history yet</strong>Finish your first session and it will be saved here.</div>';return;}
+ el.innerHTML=sessions.slice(0,desired).map((s,i)=>historySessionCardHtml(s,i,sessions.length)).join('');
+ if(!historyScrollBound){
+  window.addEventListener('scroll',historyScrollMaybeAppend,{passive:true});
+  window.addEventListener('resize',historyScrollMaybeAppend,{passive:true});
+  historyScrollBound=true;
+ }
+}
+function historySessionCardHtml(s,sessionIndex,total){
+   const when=historySessionDateParts(s);
+   const workingSets=sessionSetCount(s),allSets=sessionAllSetCount(s),volume=Math.round(sessionVolume(s)),prs=sessionPRCount(s);
+   const exercises=sessionCompletedExerciseCount(s),totalReps=sessionTotalReps(s);
+   const totalTime=(s.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='duration'?completedSets(e).reduce((a,set)=>a+(Number(set.durationSeconds)||0),0):0),0);
+   const totalDistance=(s.exercises||[]).reduce((n,e)=>n+(loggedExerciseMeasurement(e)==='distance'?completedSets(e).reduce((a,set)=>a+(Number(set.distanceMeters)||0),0):0),0);
+   const measureSummary=[totalReps?totalReps+' total reps':'',totalTime?compactMetricNumber(totalTime)+' hold seconds':'',totalDistance?compactMetricNumber(distanceFromMeters(totalDistance))+' '+distanceUnitLabel()+' traveled':''].filter(Boolean).join(' · ')||'No measured sets';
+   return `<article class="card history-entry">
+     <div class="history-sequence"><small>SESSION</small><span>${String(total-sessionIndex).padStart(2,'0')}</span></div>
+     <div class="history-entry-body">
+       <div class="history-entry-head">
+         <div class="history-entry-heading">
+           <div class="history-entry-date">${esc(when.date)}${when.time?` <span>· ${esc(when.time)}</span>`:''}</div>
+           <div class="history-entry-title">${esc(s.routineName||'Workout')}</div>
+           ${s.programPhase==='deload'?'<div class="history-deload-label">☾ DELOAD WEEK · Training stress reduced intentionally</div>':''}
+           <div class="history-entry-exercises">${exercises} exercise${exercises===1?'':'s'} · ${esc(historyExerciseSummary(s))}</div>
+         </div>
+         <button class="history-manage-btn" onclick="openHistorySessionMenu('${escAttr(s.id)}')" aria-label="Manage ${escAttr(s.routineName||'workout')}">•••</button>
+       </div>
+
+       <div class="history-metrics" aria-label="Workout summary">
+         <span><b>${s.durationMinutes!=null?Math.max(0,Number(s.durationMinutes)||0):'—'}</b><small>min</small></span>
+         <span><b>${workingSets}</b><small>working sets</small></span>
+         <span><b>${volume>0?volume.toLocaleString():'—'}</b><small>${volume>0?esc(state.profile.unit)+' × reps':'volume'}</small></span>
+         <span class="${prs?'has-pr':''}"><b>${prs}</b><small>PR${prs===1?'':'s'}</small></span>
+       </div>
+
+       ${historyMuscleSummaryHtml(s)}
+       <div class="history-entry-submeta">${measureSummary}${allSets!==workingSets?` · ${allSets} total completed sets`:''}</div>
+
+       <div class="history-card-actions">
+         <button class="btn small history-recap-btn" onclick="openHistoricalWorkoutRecap('${escAttr(s.id)}')">View Recap</button>
+         <button class="btn small secondary history-edit-btn" onclick="editCompletedWorkout('${escAttr(s.id)}')">Edit</button>
+       </div>
+     </div>
+   </article>`;
+}
+
+function calculateHistoricalPR(prior,set,exerciseId=null,config=null){
+ return loadAwarePR(prior,set,exerciseId,config);
 }
 function rebuildAllPRs(){
  const priorByExercise={};
@@ -37,9 +130,11 @@ function rebuildAllPRs(){
  chronological.forEach(session=>(session.exercises||[]).forEach(e=>{
    const prior=priorByExercise[e.exerciseId]||(priorByExercise[e.exerciseId]=[]);
    (e.sets||[]).forEach(set=>{
-     if(!set.done||!isProgressionSet(set)||Number(set.reps)<=0)return;
-     set.pr=calculateHistoricalPR(prior,set);
-     prior.push({weight:Number(set.weight)||0,reps:Number(set.reps)||0,rir:set.rir});
+     if(!set.done||!isProgressionSet(set)||exerciseMetricValue(set,loggedExerciseMeasurement(e))<=0)return;
+     const cfg={...e.config,measurementType:loggedExerciseMeasurement(e)};
+     set.pr=calculateHistoricalPR(prior,set,e.exerciseId,cfg);
+     prior.push({weight:Number(set.weight)||0,reps:Number(set.reps)||0,rir:set.rir,
+       durationSeconds:Number(set.durationSeconds)||0,distanceMeters:Number(set.distanceMeters)||0});
    });
  }));
 }
@@ -54,14 +149,15 @@ function renderCompletedWorkoutEditor(){
    <div class="notice">Fix weights, reps, RIR, set types, notes, or accidentally logged sets. Saving recalculates PR badges and future progression from the corrected history.</div>
    <div class="field" style="margin-top:12px"><label>Workout name</label><input id="sessionEditName" value="${escAttr(s.routineName||'Workout')}"></div>
    ${s.exercises.map((e,ei)=>{
-     const ex=exById(e.exerciseId);
+     const ex=exById(e.exerciseId),measurement=loggedExerciseMeasurement(e);
      return `<div class="history-edit-exercise">
        <div class="row"><div><div class="exercise-name">${esc(ex?.name||'Exercise')}</div><div class="mini">${esc(ex?.muscle||'')} · ${esc(ex?.equipment||'')}</div></div><button class="btn small secondary" onclick="addSessionDraftSet(${ei})">+ Set</button></div>
        ${(e.sets||[]).map((set,si)=>`<div class="history-edit-set">
          <div class="set-type-field"><label>Type</label><select id="sessType-${ei}-${si}">${setTypeOptions(setType(set))}</select></div>
-         <div><label>Weight (${state.profile.unit})</label><input id="sessWeight-${ei}-${si}" type="number" step=".25" min="0" value="${Number(set.weight)||0}"></div>
-         <div><label>Reps</label><input id="sessReps-${ei}-${si}" type="number" min="0" value="${Number(set.reps)||0}"></div>
-         <div><label>RIR</label><select id="sessRir-${ei}-${si}"><option value="">—</option>${[0,1,2,3,4,5].map(v=>`<option value="${v}" ${String(set.rir)===String(v)?'selected':''}>${v}</option>`).join('')}</select></div>
+         ${exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?'<div class="mini">Bodyweight · no added load</div>':`<div><label>${exerciseLoadLabel(exerciseLoadType(e.exerciseId,e.config))} (${state.profile.unit})</label><input id="sessWeight-${ei}-${si}" type="number" step=".25" min="0" value="${Number(set.weight)||0}"></div>`}
+         ${measurement==='reps'?`<div><label>Reps</label><input id="sessReps-${ei}-${si}" type="number" min="0" value="${Number(set.reps)||0}"></div>
+         <div><label>RIR</label><select id="sessRir-${ei}-${si}"><option value="">—</option>${[0,1,2,3,4,5].map(v=>`<option value="${v}" ${String(set.rir)===String(v)?'selected':''}>${v}</option>`).join('')}</select></div>`
+         :`<div><label>${measurement==='duration'?'Seconds':'Distance ('+distanceUnitLabel()+')'}</label><input id="sessMetric-${ei}-${si}" type="number" step=".1" min="0" value="${measurement==='duration'?Number(set.durationSeconds)||0:compactMetricNumber(distanceFromMeters(set.distanceMeters))}"></div>`}
          <button class="btn danger history-edit-remove" onclick="removeSessionDraftSet(${ei},${si})" aria-label="Remove set">×</button>
        </div>`).join('')||'<div class="empty">No sets logged.</div>'}
        <div class="field" style="margin-top:10px"><label>Exercise notes</label><textarea id="sessNotes-${ei}">${esc(e.notes||'')}</textarea></div>
@@ -78,10 +174,16 @@ function syncSessionEditDraft(){
      const type=document.getElementById(`sessType-${ei}-${si}`);
      const weight=document.getElementById(`sessWeight-${ei}-${si}`);
      const reps=document.getElementById(`sessReps-${ei}-${si}`);
+     const metric=document.getElementById(`sessMetric-${ei}-${si}`);
      const rir=document.getElementById(`sessRir-${ei}-${si}`);
      if(type)set.type=type.value;
      if(weight)set.weight=Math.max(0,Number(weight.value)||0);
      if(reps)set.reps=Math.max(0,Math.round(Number(reps.value)||0));
+     if(metric){
+      if(loggedExerciseMeasurement(e)==='duration')set.durationSeconds=Math.max(0,Number(metric.value)||0);
+      else set.distanceMeters=Math.max(0,distanceToMeters(Number(metric.value)||0));
+      set.reps=0;
+     }
      if(rir)set.rir=rir.value===''?'':Number(rir.value);
      set.done=true;
    });
@@ -93,7 +195,10 @@ function addSessionDraftSet(ei){
  const e=sessionEditDraft?.exercises?.[ei];if(!e)return;
  const last=e.sets?.at(-1);
  e.sets=e.sets||[];
- e.sets.push({weight:Number(last?.weight)||0,reps:Number(last?.reps)||0,rir:'',done:true,type:'working',pr:''});
+ e.sets.push({weight:Number(last?.weight)||0,reps:loggedExerciseMeasurement(e)==='reps'?(Number(last?.reps)||0):0,
+  durationSeconds:loggedExerciseMeasurement(e)==='duration'?(Number(last?.durationSeconds)||0):0,
+  distanceMeters:loggedExerciseMeasurement(e)==='distance'?(Number(last?.distanceMeters)||0):0,
+  rir:'',done:true,type:'working',pr:''});
  renderCompletedWorkoutEditor();
 }
 function removeSessionDraftSet(ei,si){

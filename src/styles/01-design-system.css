@@ -304,10 +304,10 @@
   .exercise-title{text-shadow:0 0 20px color-mix(in srgb,var(--ex-accent) 20%,transparent)}
   .exercise-number{box-shadow:0 0 14px color-mix(in srgb,var(--ex-accent) 9%,transparent)}
   .superset-badge{
-    border-color:rgba(244,114,182,.4);
-    background:rgba(244,114,182,.09);
-    color:#ffd2eb;
-    box-shadow:0 0 14px rgba(244,114,182,.045);
+    border-color:color-mix(in srgb,var(--signal-superset) 58%,transparent);
+    background:color-mix(in srgb,var(--signal-superset) 11%,transparent);
+    color:var(--signal-superset-soft);
+    box-shadow:0 0 14px color-mix(in srgb,var(--signal-superset) 5%,transparent);
   }
 
   .summary-win{
@@ -315,8 +315,8 @@
     border-color:rgba(53,233,138,.3);
   }
   .summary-pr{
-    background:linear-gradient(135deg,rgba(251,191,36,.09),rgba(244,114,182,.035));
-    border-color:rgba(251,191,36,.31);
+    background:linear-gradient(135deg,color-mix(in srgb,var(--signal-pr) 8%,transparent),rgba(244,114,182,.025));
+    border-color:color-mix(in srgb,var(--signal-pr) 34%,transparent);
   }
   .empty{
     background:rgba(8,14,25,.42);
@@ -343,6 +343,20 @@
     --cyan:#22d3ee;
     --pink:#ff2e88;
     --success:#35e98a;
+
+    /* Semantic color language — colors communicate state, not decoration. */
+    --signal-info:#22d3ee;
+    --signal-plan:#a855f7;
+    --signal-coach:#a855f7;
+    --signal-active:#35e98a;
+    --signal-pr:#ff4fa3;
+    --signal-history:#f472b6;
+    --signal-warning:#f59e0b;
+    --signal-danger:#fb7185;
+    --signal-superset:#facc15;
+    --signal-superset-soft:#fff0a0;
+    --signal-neutral:#8fa3b8;
+
     --display:"Arial Narrow","Roboto Condensed","Segoe UI",system-ui,sans-serif;
     --body:Inter,"Segoe UI",Roboto,system-ui,sans-serif;
     --panel-cut:4px 17px 4px 17px;

@@ -12,8 +12,8 @@ const deleteFunction=fs.readFileSync('supabase/functions/delete-account/index.ts
 const settingsSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.73.1');
-assert.equal(pkg.swoleCat.androidVersionCode,104);
+assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'package version should be a semantic x.y.z app version');
+assert(Number.isInteger(pkg.swoleCat.androidVersionCode)&&pkg.swoleCat.androidVersionCode>=1,'Android versionCode should be a positive integer');
 assert.match(cloudSource,/SWOLE_CAT_CLOUD_AUTOMATION_KEY='swolecat-cloud-automation-v1'/);
 assert.match(cloudSource,/SWOLE_CAT_AUTO_BACKUP_INTERVAL_MS=24\*60\*60\*1000/);
 assert.match(cloudSource,/autoBackup:parsed\?\.autoBackup!==false/);
@@ -202,10 +202,18 @@ await cloud.registerProvider({
 await assert.rejects(()=>cloud.list(),/cloud offline/);
 assert.equal(w.localStorage.getItem('overload_v3'),localBeforeFailure,'cloud failure must not mutate or block local workout data');
 
-await identity.signOut();
-assert.equal(identity.snapshot().signedIn,false);
-await assert.rejects(()=>cloud.backUpNow(),/Sign in/i);
-assert.equal(w.localStorage.getItem('overload_v3'),localBeforeFailure,'signed-out cloud backup attempts must leave local data untouched');
+// Fake an offline sync adapter to prove sign-out fails closed, without
+// inadvertently loading Supabase's network SDK inside a DOM smoke test.
+w.SwoleCatRuntime.getService('cloudSync').registerProvider({
+  async registerDevice(){throw new Error('Cloud sync offline');},
+  async pullChanges(){throw new Error('Cloud sync offline');},
+  async getRecord(){return null;},
+  async insertRecord(){throw new Error('Cloud sync offline');},
+  async updateRecord(){throw new Error('Cloud sync offline');}
+});
+await assert.rejects(()=>identity.signOut(),/Cloud sync offline/);
+assert.equal(identity.snapshot().signedIn,true);
+assert.equal(w.localStorage.getItem('overload_v3'),localBeforeFailure,'blocked sign-out preserves local workouts');
 
 dom.window.close();
 console.log('Swole Cat v0.69.4 cloud backup and restore PASS');
