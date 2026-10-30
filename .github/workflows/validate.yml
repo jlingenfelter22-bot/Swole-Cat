@@ -52,7 +52,10 @@ jobs:
           assert(!/<style>[\s\S]*<\/style>/.test(source),'index.html should not contain the application stylesheet');
           assert(!/<script>[\s\S]*<\/script>/.test(source),'index.html should not contain the application runtime');
           const moduleTags=[...source.matchAll(/<script src="\.\/src\/js\/([^"]+)"><\/script>/g)].map(m=>m[1]);
-          assert.equal(moduleTags.length,28,'source shell should load all JavaScript domain modules');
+          assert.equal(moduleTags.length,31,'source shell should load all JavaScript domain modules');
+          assert(moduleTags.includes('04a2-coach-brain-duration.js'),'v0.89 duration model must load');
+          assert(moduleTags.includes('04a1-coach-brain-conversation.js'),'v0.89 conversation decision adapter must load');
+          assert(moduleTags.includes('04a0-coach-brain-knowledge.js'),'v0.89 standalone Brain knowledge service must load');
           assert(moduleTags.includes('04f-coach-routine-control.js'),'v0.61 Coach saved-routine control module must stay registered');
           assert(moduleTags.includes('04g-coach-history-insights.js'),'v0.62 Coach history intelligence module must stay registered');
           assert(moduleTags.includes('04h-coach-program-auditor.js'),'v0.63 Coach Program auditor module must stay registered');
@@ -67,7 +70,7 @@ jobs:
           assert(moduleTags.includes('10h-supabase-sharing-provider.js'),'v0.71 Supabase short-share provider must stay registered');
           assert(!moduleTags.includes('04-coach.js'),'legacy monolithic Coach module must stay removed');
           const dataTags=[...source.matchAll(/<script src="\.\/src\/data\/([^"]+)"><\/script>/g)].map(m=>m[1]);
-          assert.deepEqual(dataTags,['exercises.js','anatomy.js','coach-knowledge.js'],'source shell should load static data modules in order');
+          assert.deepEqual(dataTags,['exercises.js','anatomy.js','coach-knowledge.js','coach-brain-exercise-profiles.js'],'source shell should load static data modules in order');
           const styleTags=[...source.matchAll(/<link rel="stylesheet" href="\.\/src\/styles\/([^"]+)">/g)].map(m=>m[1]);
           assert.equal(styleTags.length,4,'source shell should load all stylesheet layers');
           const built=fs.readFileSync('www/index.html','utf8');
@@ -93,11 +96,180 @@ jobs:
           fs.writeFileSync('/tmp/swole-cat-test.html',html);
           JS
 
+      - name: Verify 308-exercise Brain knowledge audit (documentation only)
+        run: node scripts/verify-coach-brain-308-audit.mjs
+
+      - name: Stress test v0.89 standalone Brain exercise knowledge and substitutions
+        run: node scripts/coach-brain-knowledge-stress.mjs
+
+      - name: Stress test v0.89 contextual Coach conversation and equipment preview
+        run: node scripts/coach-brain-conversation-stress.mjs
+
+      - name: Stress test v0.89 realistic duration, multi-instruction edits and programs
+        run: node scripts/coach-brain-duration-program-stress.mjs
+
+      - name: Test v0.89 Brain quality remediation acceptance gates
+        run: node scripts/coach-brain-quality-remediation-stress.mjs
+
+      - name: Capture realistic Coach-generated workouts for human review
+        run: node scripts/coach-brain-human-review-matrix.mjs
+
+      - name: Audit Phase 1 full catalog roles, muscles and actual equipment capabilities
+        run: node scripts/coach-phase1-catalog-audit.mjs
+
+      - name: Capture deterministic Phase 1 whole-week baseline twice
+        run: |
+          node scripts/coach-phase1-weekly-baseline.mjs
+          cp /tmp/swole-cat-coach-phase1/weekly-baseline-frozen.json /tmp/swole-cat-phase1-first.json
+          node scripts/coach-phase1-weekly-baseline.mjs
+          cmp /tmp/swole-cat-phase1-first.json /tmp/swole-cat-coach-phase1/weekly-baseline-frozen.json
+
+      - name: Retain Phase 1 catalog and human-review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-phase1-quality-evidence
+          path: /tmp/swole-cat-coach-phase1/
+          retention-days: 30
+      
+      - name: Audit Phase 2 projected weekly coverage against locked baseline
+        run: node scripts/coach-phase2-weekly-audit-stress.mjs
+
+      - name: Retain Phase 2 projected-week quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-phase2-weekly-diagnostics
+          path: /tmp/swole-cat-coach-phase2/
+          retention-days: 30
+
+
+
+      - name: Validate Phase 3 shadow swap-first weekly repairs against frozen baseline
+        run: node scripts/coach-phase3-bounded-repair-stress.mjs
+
+      - name: Validate Phase 3 optional preview accept, decline and saved-program parity
+        run: node scripts/coach-phase3-recommendation-preview-stress.mjs
+
+      - name: Validate cautious first-draft week balance and user-choice protections
+        run: node scripts/coach-weekly-first-draft-balance-stress.mjs
+
+      - name: Audit complete 2-6 day Coach whole-week outputs and saved-data protection
+        run: node scripts/coach-final-week-quality-matrix.mjs
+
+      - name: Validate targeted glute, longer full-body and arms audit intelligence corrections
+        run: node scripts/coach-final-three-fixes-stress.mjs
+
+      - name: Retain final targeted Coach intelligence regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-final-three-fixes
+          path: /tmp/swole-cat-coach-three-fixes/
+          retention-days: 30
+
+      - name: Retain complete Coach whole-week exercise review matrix
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-final-week-quality-matrix
+          path: /tmp/swole-cat-coach-final-week-matrix/
+          retention-days: 30
+
+      - name: Retain first-draft balance acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-first-draft-balance
+          path: /tmp/swole-cat-coach-first-draft/
+          retention-days: 30
+
+      - name: Validate Coach phone-width recommendation usability constraints
+        run: node scripts/coach-phase3-mobile-usability-stress.mjs
+
+      - name: Coach v0.93.5 final whole-week edge-case and override acceptance audit
+        run: node scripts/coach-v0935-edge-case-acceptance.mjs
+
+      - name: Validate Coach short-day, Pull workload and heavy-hinge selection quality
+        run: node scripts/coach-v0935-selection-quality-stress.mjs
+
+      - name: Phase 4 read-only longitudinal evidence quality and no-mutation checks
+        run: node scripts/coach-phase4-readonly-evidence-stress.mjs
+
+      - name: Phase 4 opt-in planned-versus-completed Program review acceptance
+        run: node scripts/coach-phase4-program-review-stress.mjs
+
+      - name: Phase 4 Android phone-width and coaching-language usability quality gate
+        run: node scripts/coach-phase4-android-copy-usability-stress.mjs
+
+      - name: Retain Phase 4 phone-width and wording QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-phase4-mobile-language-audit
+          path: /tmp/swole-cat-coach-phase4-mobile/
+          retention-days: 30
+
+      - name: Retain Phase 4 Program review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-phase4-program-review
+          path: /tmp/swole-cat-coach-phase4-program/
+          retention-days: 30
+
+      - name: Retain Phase 4 longitudinal coaching evidence audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-phase4-readonly-evidence
+          path: /tmp/swole-cat-coach-phase4/
+          retention-days: 30
+
+      - name: Retain targeted Coach selection-quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-v0935-selection-quality
+          path: /tmp/swole-cat-coach-selection/
+          retention-days: 30
+
+      - name: Retain Coach whole-week edge-case audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-v0935-edge-case-acceptance
+          path: /tmp/swole-cat-coach-edge-case/
+          retention-days: 30
+
+      - name: Retain Phase 3 before-after swap quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-phase3-swap-repair-proposals
+          path: /tmp/swole-cat-coach-phase3/
+          retention-days: 30
+
+      - name: Stress test v0.84.0 exercise intelligence and timed/distance measurement
+        run: node scripts/exercise-intelligence-stress.mjs
+
+      - name: Stress test v0.85.0 ergonomic measurement logging and mixed-metric recaps
+        run: node scripts/logging-ergonomics-stress.mjs
+
+      - name: Stress test v0.86.0 smart workout viewport and sticky overview
+        run: node scripts/workout-viewport-focus-stress.mjs
+
+      - name: Stress test v0.87.0 rest timer navigation tray
+        run: node scripts/rest-tray-stress.mjs
+
       - name: Stress test Coach Swolecat prompt matrix
         run: node scripts/coach-stress.mjs
 
       - name: Stress test Coach Swolecat language resilience
         run: node scripts/coach-language-fuzz.mjs
+
+      - name: Verify Coach program fast-path preserves explicit exercise parsing
+        run: node scripts/coach-program-parse-fastpath-stress.mjs
 
       - name: Stress test v0.59 Coach training intelligence
         run: node scripts/coach-intelligence-stress.mjs
@@ -113,6 +285,28 @@ jobs:
 
       - name: Stress test v0.63 Program auditor and long-term planning
         run: node scripts/coach-program-auditor-stress.mjs
+
+      - name: Coach Audit v0.93.7 hierarchy, full-body repetition and insufficient-history fidelity
+        run: node scripts/coach-v0937-audit-hierarchy-fidelity-stress.mjs
+
+      - name: Coach Audit simplified phone navigation and sparse-history clarity
+        run: node scripts/coach-audit-clarity-stress.mjs
+
+      - name: Keep Coach Audit clarity UI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-audit-clarity-qa
+          path: /tmp/swole-cat-coach-clarity/
+          retention-days: 30
+
+      - name: Retain Coach Audit mobile and evidence-fidelity review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coach-audit-v0937-quality
+          path: /tmp/swole-cat-coach-audit-polish/
+          retention-days: 30
 
       - name: Battle test v0.64 Coach longitudinal intelligence
         run: node scripts/coach-battle-hardening-stress.mjs
@@ -138,9 +332,6 @@ jobs:
       - name: Stress test v0.73.0 in-app updater foundation
         run: node scripts/app-updater-stress.mjs
 
-      - name: Stress test v0.73.1 Beta baseline promotion
-        run: node scripts/beta-baseline-stress.mjs
-
       - name: Stress test v0.65 Focus Mode workout flow
         run: node scripts/focus-mode-workout-stress.mjs
 
@@ -152,6 +343,36 @@ jobs:
 
       - name: Stress test v0.66.1 beta optimization hardening
         run: node scripts/beta-optimization-stress.mjs
+
+      - name: Stress test v0.75.0 performance hardening
+        run: node scripts/performance-hardening-stress.mjs
+
+      - name: Stress test v0.76.0 Home hierarchy refinement
+        run: node scripts/home-hierarchy-stress.mjs
+
+      - name: Stress test v0.77.0 History density refinement
+        run: node scripts/history-density-stress.mjs
+
+      - name: Verify bounded History rendering and scroll-on-demand with old actions intact
+        run: node scripts/history-progressive-render-stress.mjs
+
+      - name: Verify bounded Exercise Library rendering, filters and complete scroll access
+        run: node scripts/exercise-library-progressive-render-stress.mjs
+
+      - name: Stress test v0.78.0 Routines hierarchy refinement
+        run: node scripts/routines-hierarchy-stress.mjs
+
+      - name: Stress test v0.79.0 Progress hierarchy refinement
+        run: node scripts/progress-hierarchy-stress.mjs
+
+      - name: Stress test v0.80.0 semantic visual language
+        run: node scripts/visual-language-stress.mjs
+
+      - name: Stress test v0.82.0 Guided Progressive Overload programs and deloads
+        run: node scripts/guided-program-deload-stress.mjs
+
+      - name: Stress test v0.83.0 exercise-aware assisted and bodyweight progression
+        run: node scripts/load-aware-progression-stress.mjs
 
       - name: Stress test v0.67.0 cloud shell boundaries
         run: node scripts/cloud-shell-stress.mjs
@@ -546,6 +767,7 @@ jobs:
 
             // Custom program builder should allow a user-defined A/B rotation and preserve its order.
             w.newProgram();
+            w.changeProgramTrainingMode('inherit'); // New programs require an explicit mode choice.
             w.document.getElementById('programName').value='Custom AB';
             w.document.getElementById('programFrequency').value='2';
             w.addProgramRoutine(a);
@@ -1881,7 +2103,7 @@ jobs:
             await wait(70);
             const w=dom.window;
             const audit=w.auditExerciseMuscleCoverage();
-            assert.equal(audit.length,307,'every built-in exercise must be audited');
+            assert.equal(audit.length,310,'original 308 plus bodyweight squat and reverse lunge must have muscle metadata');
             assert.equal(audit.filter(x=>!x.primary.length).length,0,'every exercise needs a primary muscle');
             assert.equal(audit.filter(x=>x.missing.length).length,0,'every mapped muscle must be drawable on the heat map');
 
@@ -2242,7 +2464,7 @@ jobs:
 
 
 
-      - name: Smoke test V501 adaptive routines priority
+      - name: Smoke test v0.78 Routines and Programs segmented navigation
         run: |
           node <<'JS'
           const fs=require('fs');
@@ -2257,27 +2479,45 @@ jobs:
           const run=async()=>{
             await wait(70);
             const w=dom.window,d=w.document;
-            const host=d.getElementById('routinePageSections');
             w.renderRoutines();
-            assert.equal(host.firstElementChild.id,'workoutRoutinesSection','without programs, routines must be first');
-            assert(d.getElementById('programList').querySelector('.program-empty-compact'),'empty programs should be compact, not a large dead section');
+
+            const routines=d.getElementById('workoutRoutinesSection');
+            const programs=d.getElementById('programsSection');
+            const routinesTab=d.getElementById('routineViewRoutines');
+            const programsTab=d.getElementById('routineViewPrograms');
+
+            assert.equal(routines.hidden,false,'Routines should be the default view');
+            assert.equal(programs.hidden,true,'Programs should not create a second stacked section by default');
+            assert(routinesTab.classList.contains('active'),'Routines tab should start active');
+            assert.equal(d.getElementById('routineViewRoutineCount').textContent,'0','empty routine count should be visible');
+            assert.equal(d.getElementById('routineViewProgramCount').textContent,'0','empty program count should be visible');
 
             const ex=w.allExercises().find(x=>x.name==='Barbell Bench Press');
             w.eval(`state.routines=[{id:'r1',name:'Push',description:'',trainingMode:'guided',exercises:[{exerciseId:'${ex.id}',sets:3,minReps:8,maxReps:12,increment:5,mode:'double'}]}];save();renderRoutines()`);
-            assert.equal(host.firstElementChild.id,'workoutRoutinesSection','routines stay first when routines exist but programs do not');
-            assert(d.getElementById('routineList').textContent.includes('Push'),'saved routine should be immediately visible at top');
+            assert.equal(routines.hidden,false,'adding a routine should keep Routines visible');
+            assert(d.getElementById('routineList').textContent.includes('Push'),'saved routine should be visible');
+            assert.equal(d.getElementById('routineViewRoutineCount').textContent,'1','routine tab should show active routine count');
 
             w.eval(`state.programs=[{id:'p1',name:'PPL',routineIds:['r1'],frequency:3,preferredDays:[],trainingMode:'inherit',nextIndex:0}];save();renderRoutines()`);
-            assert.equal(host.firstElementChild.id,'programsSection','programs must take priority once any program exists');
-            assert(d.getElementById('programList').textContent.includes('PPL'),'program should be visible in prioritized section');
-            assert.equal(host.children[1].id,'workoutRoutinesSection','routines should remain directly below programs');
+            assert.equal(routines.hidden,false,'Programs should not reorder the whole screen when one is created');
+            assert.equal(programs.hidden,true,'Programs stay behind their segmented view until selected');
+            assert.equal(d.getElementById('routineViewProgramCount').textContent,'1','program tab should show program count');
+
+            w.setRoutinePageMode('programs');
+            assert.equal(routines.hidden,true,'selecting Programs should hide routine list');
+            assert.equal(programs.hidden,false,'selecting Programs should reveal program list');
+            assert(programsTab.classList.contains('active'),'Programs tab should become active');
+            assert(d.getElementById('programList').textContent.includes('PPL'),'program should be visible in Programs view');
+
+            w.setRoutinePageMode('routines');
+            assert.equal(routines.hidden,false,'Routines should be one tap away from Programs');
+            assert.equal(programs.hidden,true,'switching back should hide Programs');
 
             dom.window.close();
-            console.log('Swole Cat V50.1 adaptive routines priority PASS');
+            console.log('Swole Cat v0.78 segmented Routines/Programs navigation PASS');
           };
           run().catch(err=>{console.error(err);dom.window.close();process.exit(1)});
           JS
-
 
       - name: Smoke test V502 save completed workout as routine
         run: |

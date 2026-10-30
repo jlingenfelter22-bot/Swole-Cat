@@ -268,7 +268,13 @@ const beforeAudit=stateSnapshot();
 audit=w.coachProgramAudit(ppl.id);
 assert(audit.findings.some(x=>x.type==='adherence'),'inconsistent Program should surface below-target completion pattern');
 assert(audit.findings.some(x=>x.type==='slot_gap'&&x.routineId===legs.id),'repeatedly uncompleted legs slot should be underrepresented');
-assert(audit.findings.some(x=>x.type==='actual_coverage_gap'&&x.groupKey==='lower body'),'planned lower-body coverage should disagree with actual PPL history');
+assert(!audit.findings.some(x=>x.type==='actual_coverage_gap'),
+ 'Skipping the entire Legs slot must not be called an exercise-selection or muscular development deficiency');
+assert(audit.coverageRows.find(x=>x.key==='lower body').plannedSets>0&&
+ audit.coverageRows.find(x=>x.key==='lower body').actualSets===0,
+ 'The read-only coverage values should still be available as context, not an inflated warning');
+assert(!w.coachProgramAuditHasComparableCoverage(audit),
+ 'Missing a full rotation is insufficient for a fair weekly muscle-coverage comparison');
 const auditText=audit.findings.map(x=>x.text).join(' ');
 assert.match(auditText,/completion pattern|without assuming why|recent completed Program/i);
 assert(!/\b(?:lazy|undisciplined|unmotivated|injured|overtrained)\b/i.test(auditText),'Program audit invented a causal/blaming diagnosis');

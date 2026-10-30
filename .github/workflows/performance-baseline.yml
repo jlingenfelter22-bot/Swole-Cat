@@ -1,0 +1,60 @@
+name: Swole Cat Synthetic Performance Baseline
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/performance-audit-baseline.mjs"
+      - ".github/workflows/performance-baseline.yml"
+      - "docs/PERFORMANCE_AUDIT_CHECKPOINT.md"
+      - "src/**"
+      - "index.html"
+      - "package.json"
+
+permissions:
+  contents: read
+
+jobs:
+  performance-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install isolated DOM benchmark tools
+        run: npm install --no-save --package-lock=false --no-audit --no-fund jsdom@24
+
+      - name: Build app without changes
+        run: npm run build:web
+
+      - name: Prepare isolated DOM fixture
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          let html=fs.readFileSync('www/index.html','utf8');
+          const css=fs.readFileSync('www/app.css','utf8').replace(/<\/style/gi,'<\\/style');
+          const js=fs.readFileSync('www/app.js','utf8').replace(/<\/script/gi,'<\\/script');
+          const fixture=fs.readFileSync('scripts/test-runtime-fixture.js','utf8').replace(/<\/script/gi,'<\\/script');
+          html=html.replace('<link rel="stylesheet" href="./app.css">',()=>`<style>${css}</style>`);
+          html=html.replace('<script src="./app.js"></script>',()=>`<script>${js}</script><script>${fixture}</script>`);
+          fs.writeFileSync('/tmp/swole-cat-test.html',html);
+          JS
+
+      - name: Record synthetic CPU and DOM baseline
+        run: node scripts/performance-audit-baseline.mjs
+
+      - name: Upload performance baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-performance-baseline
+          path: performance-baseline.json
+          if-no-files-found: warn
+          retention-days: 45

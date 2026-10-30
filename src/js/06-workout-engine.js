@@ -1,7 +1,147 @@
-function previousExercise(exerciseId){return derivedSessionData().previousByExercise.get(exerciseId);}
+/* Small, deterministic exercise intelligence. The catalog defines mechanics, while
+   personal targets and history remain in routine/session data. No network calls. */
+const EXERCISE_FAMILY_PRESETS=Object.freeze({
+ horizontal_press:{general:[6,12],strength:[3,6],hypertrophy:[6,12]},
+ incline_press:{general:[6,12],strength:[4,8],hypertrophy:[6,12]},
+ squat:{general:[6,12],strength:[3,6],hypertrophy:[6,12]},
+ hinge:{general:[6,12],strength:[3,6],hypertrophy:[6,12]},
+ horizontal_pull:{general:[8,12],strength:[5,8],hypertrophy:[8,15]},
+ vertical_pull:{general:[6,12],strength:[4,8],hypertrophy:[6,12]},
+ vertical_press:{general:[6,12],strength:[3,6],hypertrophy:[6,12]},
+ elbow_flexion:{general:[8,15],strength:[6,10],hypertrophy:[10,15]},
+ elbow_extension:{general:[8,15],strength:[6,10],hypertrophy:[10,15]},
+ lateral_raise:{general:[12,20],strength:[8,12],hypertrophy:[12,20]},
+ rear_delt:{general:[12,20],strength:[8,12],hypertrophy:[12,20]},
+ chest_fly:{general:[10,15],strength:[8,12],hypertrophy:[10,20]},
+ calf_raise:{general:[10,20],strength:[8,12],hypertrophy:[10,20]},
+ olympic_pull:{general:[2,5],strength:[2,5],hypertrophy:[3,6]}
+});
+function exerciseMeasurementType(exerciseId,config=null){
+ if(['reps','duration','distance'].includes(config?.measurementType))return config.measurementType;
+ const ex=exById(exerciseId);
+ if(['reps','duration','distance'].includes(ex?.measurementType))return ex.measurementType;
+ if(['carry','sled_push','sled_pull'].includes(ex?.pattern))return 'distance';
+ return 'reps';
+}
+function loggedExerciseMeasurement(e){
+ const override=e?.config?.measurementType;
+ if(['reps','duration','distance'].includes(override))return override;
+ if((e?.sets||[]).some(set=>Number(set.durationSeconds)>0))return 'duration';
+ if((e?.sets||[]).some(set=>Number(set.distanceMeters)>0))return 'distance';
+ if((e?.sets||[]).some(set=>Number(set.reps)>0))return 'reps';
+ return exerciseMeasurementType(e?.exerciseId,e?.config);
+}
+function exerciseMovementProfile(exerciseId,config=null,goal='general'){
+ const ex=exById(exerciseId)||{};
+ const measurement=exerciseMeasurementType(exerciseId,config);
+ const loadType=exerciseLoadType(exerciseId,config);
+ const family=EXERCISE_FAMILY_PRESETS[ex.pattern]||null;
+ const range=family?.[goal]||family?.general||[8,12];
+ const isTimed=measurement==='duration',isDistance=measurement==='distance';
+ // Retain explicit choices; offer natural feet rather than a raw 10m conversion
+ // for legacy automatic carry templates in the imperial UI.
+ const naturalFeet=state.profile.unit!=='kg'&&config?.measurementType!=='distance'&&
+  Number(config?.minDistanceMeters)===10&&Number(config?.maxDistanceMeters)===30;
+ return {measurement,loadType,pattern:ex.pattern||'unknown',source:config?.measurementType&&config.measurementType!=='auto'?'routine':ex.measurementType?'library':family?'family':'fallback',
+  min: isTimed?Math.max(1,Number(config?.minDurationSeconds)||20):isDistance?naturalFeet?distanceToMeters(30):Math.max(1,Number(config?.minDistanceMeters)||10):range[0],
+  max: isTimed?Math.max(1,Number(config?.maxDurationSeconds)||45):isDistance?naturalFeet?distanceToMeters(100):Math.max(1,Number(config?.maxDistanceMeters)||30):range[1],
+  increment: isTimed?5:isDistance?state.profile.unit==='kg'?2.5:distanceToMeters(5):1,
+  suggestedReps:range};
+}
+function exerciseDefaultRoutineConfig(exerciseId,settings=state.settings,goal='general'){
+ const profile=exerciseMovementProfile(exerciseId,null,goal);
+ const honorCustomReps=Number(settings?.defaultMin)!==8||Number(settings?.defaultMax)!==12;
+ const repRange=honorCustomReps?[Math.max(1,Number(settings.defaultMin)||8),Math.max(1,Number(settings.defaultMax)||12)]:profile.suggestedReps;
+ return {exerciseId,sets:Math.max(1,Number(settings?.defaultSets)||3),minReps:repRange[0],maxReps:Math.max(repRange[0],repRange[1]),
+   minDurationSeconds:20,maxDurationSeconds:45,minDistanceMeters:state.profile.unit==='kg'?10:distanceToMeters(30),
+   maxDistanceMeters:state.profile.unit==='kg'?30:distanceToMeters(100),
+   measurementType:'auto',loadType:'auto',increment:Math.max(0,Number(settings?.defaultIncrement)||5),mode:'double',
+   restSeconds:profile.measurement==='duration'?75:profile.measurement==='distance'?90:120};
+}
+function exerciseMetricValue(set,measurement){
+ return measurement==='duration'?Math.max(0,Number(set?.durationSeconds)||0):measurement==='distance'?Math.max(0,Number(set?.distanceMeters)||0):Math.max(0,Number(set?.reps)||0);
+}
+function actualMetricValue(e,set){
+ const measurement=exerciseMeasurementType(e?.exerciseId,e?.config);
+ if(measurement==='reps')return Number(set?.reps)||0;
+ // A previously seeded but untouched recommendation is not an actual result.
+ if(!set?.done&&set?.metricRecorded!==true)return 0;
+ return exerciseMetricValue(set,measurement);
+}
+function workoutMetricPreviousSet(e,si){
+ if(!e)return null;
+ for(let i=si-1;i>=0;i--){
+  const previous=e.sets[i];
+  if(previous?.done&&isProgressionSet(previous)&&actualMetricValue(e,previous)>0)return previous;
+ }
+ return null;
+}
+function carryLoadLabel(ex){
+ const name=String(ex?.name||'').toLowerCase();
+ if(name.includes('suitcase'))return 'Weight in working hand';
+ if(name.includes('dumbbell')||name.includes('kettlebell'))return 'Weight per hand';
+ if(name.includes('trap bar'))return 'Total carry weight';
+ if(name.includes('plate pinch'))return 'Weight of plate';
+ if(name.includes('sled'))return 'Added sled load';
+ return 'Carried weight';
+}
+function distanceUnitLabel(){return state.profile.unit==='kg'?'m':'ft'}
+function distanceFromMeters(m){return state.profile.unit==='kg'?Number(m)||0:(Number(m)||0)*3.280839895}
+function distanceToMeters(display){return state.profile.unit==='kg'?Number(display)||0:(Number(display)||0)/3.280839895}
+function compactMetricNumber(n){return (Math.round(Number(n)*10)/10).toString()}
+function setMeasurementText(e,set){
+ const kind=exerciseMeasurementType(e.exerciseId,e.config);
+ if(kind==='duration'&&Number(set.durationSeconds)>0)return compactMetricNumber(set.durationSeconds)+' sec';
+ if(kind==='distance'&&Number(set.distanceMeters)>0)return compactMetricNumber(distanceFromMeters(set.distanceMeters))+' '+distanceUnitLabel();
+ if(kind!=='reps'&&Number(set.reps)>0)return set.reps+' legacy reps';
+ return String(Number(set.reps)||0)+' reps';
+}
+
+// Loading semantics are intentionally separate from numeric weights:
+// an assistance value decreases as performance improves, while an unweighted
+// bodyweight exercise records reps without treating body mass as external load.
+function exerciseLoadType(exerciseId,config=null){
+ const override=config?.loadType;
+ if(['external','assistance','bodyweight'].includes(override))return override;
+ const ex=exById(exerciseId),name=String(ex?.name||'').toLowerCase();
+ if(['external','assistance','bodyweight'].includes(ex?.loadType))return ex.loadType;
+ if(/\bweighted\b|\badded.weight\b/.test(name))return 'external';
+ if(/\bassisted\b|\bcounterweight\b/.test(name))return 'assistance';
+ if(ex?.equipment==='bodyweight')return 'bodyweight';
+ return 'external';
+}
+function exerciseLoadLabel(type){
+ return type==='assistance'?'Assistance':type==='bodyweight'?'Bodyweight reps':'Weight';
+}
+function exerciseLoadExplanation(type){
+ return type==='assistance'?'A lower counterweight means more of your bodyweight is lifted. Once all sets reach the rep target, reduce assistance by your configured step.':
+  type==='bodyweight'?'Track repetitions and effort. No external weight is needed; use the weighted exercise variation if you add resistance.':
+  'Build repetitions and increase resistance when the programmed sets meet the progression criteria.';
+}
+function progressionLoadSets(prev,type){
+ return progressionSets(prev).filter(s=>type==='bodyweight'||Number(s.weight)>=0);
+}
+
+function previousExercise(exerciseId,programId=state.activeWorkout?.programId||null,config=null){
+ // Deload performances are genuine history, but not evidence of normal training capacity.
+ const candidates=(state.sessions||[]).filter(s=>s.programPhase!=='deload')
+  .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+ const type=exerciseLoadType(exerciseId,config);
+ const measure=exerciseMeasurementType(exerciseId,config);
+ const eligible=s=>((s.exercises||[]).find(e=>e.exerciseId===exerciseId&&!e.skipped&&progressionSets(e).some(set=>
+    (measure==='reps'||exerciseMetricValue(set,measure)>0)&&(type!=='external'||measure!=='reps'||Number(set.weight)>0))));
+ const selected=(programId?candidates.filter(s=>s.programId===programId):candidates).find(eligible)
+    ||candidates.find(eligible);
+ const exercise=selected&&eligible(selected);
+ return exercise?{...exercise,date:selected.date}:null;
+}
 function setType(set){return ['working','warmup','drop','failure'].includes(set?.type)?set.type:'working'}
 function isProgressionSet(set){return setType(set)==='working'}
-function completedSets(prev){return (prev?.sets||[]).filter(s=>s.done && Number(s.weight)>=0 && Number(s.reps)>0)}
+function completedSets(prev){
+ const kind=exerciseMeasurementType(prev?.exerciseId,prev?.config);
+ return (prev?.sets||[]).filter(s=>s.done && Number(s.weight)>=0 &&
+   (exerciseMetricValue(s,kind)>0||(kind!=='reps'&&Number(s.reps)>0)));
+}
 function progressionSets(prev){return completedSets(prev).filter(isProgressionSet)}
 function workingSetIndexes(e){return (e?.sets||[]).map((s,i)=>isProgressionSet(s)?i:-1).filter(i=>i>=0)}
 function workingSetOrdinal(e,si){
@@ -57,11 +197,12 @@ function averageLoggedRIR(sets){
  return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
 }
 function recentExerciseSessions(exerciseId,n=4){
- return exerciseHistory(exerciseId).slice(-n);
+ return exerciseHistory(exerciseId).filter(row=>row.programPhase!=='deload').slice(-n);
 }
 function coachSignal(exerciseId,config){
  if(normalizeTrainingMode(config.routineMode)==='track')return null;
  const hist=recentExerciseSessions(exerciseId,4);
+ if(exerciseLoadType(exerciseId,config)!=='external')return null;
  if(hist.length<2)return {level:'info',title:'Building baseline',text:`Keep logging this movement. The coach waits for repeated sessions before calling anything a stall.`,stalled:false,canReset:false};
  const scores=hist.map(h=>({
    e1:Math.max(...h.sets.map(s=>estimated1RM(s.weight,s.reps))),
@@ -96,7 +237,7 @@ function coachSignal(exerciseId,config){
  return {level:'info',title:'On track',text:goalRIRText(config.trainingGoal||'general'),stalled:false,canReset:false};
 }
 function workoutCoachSignal(){
- const w=state.activeWorkout;if(!w)return null;
+ const w=state.activeWorkout;if(!w||w.programPhase==='deload')return null;
  const signals=w.exercises.filter(e=>!e.skipped).map(e=>coachSignal(e.exerciseId,e.config)).filter(Boolean);
  const reset=signals.filter(x=>x.canReset).length,stalls=signals.filter(x=>x.stalled).length;
  if(reset>=2)return {level:'reset',text:`${reset} exercises are showing repeated high-effort stalls. A lighter session may be worth considering, but it is optional.`};
@@ -111,61 +252,167 @@ function applyCoachReset(ei){
  saveActiveWorkout();renderWorkout();
 }
 function openTargetOverride(ei){
- const e=state.activeWorkout.exercises[ei],prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
- openModal('Override session target',`
- <div class="notice">This changes the target for this workout only. It does not rewrite your routine or old history.</div>
- <div class="form-grid" style="margin-top:12px">
-   <div><label>Target weight (${state.profile.unit})</label><input id="ovWeight" type="number" step=".25" value="${e.targetOverride?.weight??t.weight}"></div>
-   <div><label>Target reps</label><input id="ovReps" type="number" min="1" value="${e.targetOverride?.reps??t.reps}"></div>
- </div>
- <div class="actions"><button class="btn" onclick="saveTargetOverride(${ei})">Use for this session</button>${e.targetOverride?`<button class="btn secondary" onclick="clearTargetOverride(${ei})">Clear override</button>`:''}<button class="btn secondary" onclick="closeModal()">Cancel</button></div>`);
+ const e=state.activeWorkout.exercises[ei],prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config),load=exerciseLoadType(e.exerciseId,e.config);
+ const value=measurement==='duration'?Number(e.targetOverride?.durationSeconds??t.durationSeconds??0):
+    measurement==='distance'?distanceFromMeters(e.targetOverride?.distanceMeters??t.distanceMeters??0):Number(e.targetOverride?.reps??t.reps??0);
+ const label=measurement==='duration'?'Seconds':measurement==='distance'?'Distance ('+distanceUnitLabel()+')':'Target reps';
+ const loadField=load==='bodyweight'?'':'<div><label>'+exerciseLoadLabel(load)+' ('+state.profile.unit+')</label><input id="ovWeight" type="number" step=".25" min="0" value="'+(e.targetOverride?.weight??t.weight)+'"></div>';
+ openModal('Override session target',
+  '<div class="notice">This changes the target for this workout only. Your saved routine and history remain unchanged.</div>'+
+  '<div class="form-grid" style="margin-top:12px">'+loadField+
+  '<div><label>'+label+'</label><input id="ovMeasure" type="number" min="1" step="'+(measurement==='distance'?'.1':'1')+'" value="'+compactMetricNumber(value)+'"></div></div>'+
+  '<div class="actions"><button class="btn" onclick="saveTargetOverride('+ei+')">Use for this session</button>'+
+  (e.targetOverride?'<button class="btn secondary" onclick="clearTargetOverride('+ei+')">Clear override</button>':'')+
+  '<button class="btn secondary" onclick="closeModal()">Cancel</button></div>');
 }
 function saveTargetOverride(ei){
- const e=state.activeWorkout.exercises[ei],weight=Math.max(0,+document.getElementById('ovWeight').value||0),reps=Math.max(1,+document.getElementById('ovReps').value||1);
- e.targetOverride={weight:roundLoad(weight),reps:Math.round(reps),reason:'Manual override'};
- e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=e.targetOverride.weight;s.reps=e.targetOverride.reps;}});
+ const e=state.activeWorkout.exercises[ei],measurement=exerciseMeasurementType(e.exerciseId,e.config),load=exerciseLoadType(e.exerciseId,e.config);
+ const weight=load==='bodyweight'?0:Math.max(0,Number(document.getElementById('ovWeight')?.value)||0);
+ const measure=Math.max(1,Number(document.getElementById('ovMeasure')?.value)||1);
+ const target={weight:roundLoad(weight),reason:'Manual override'};
+ if(measurement==='duration')target.durationSeconds=measure;
+ else if(measurement==='distance')target.distanceMeters=distanceToMeters(measure);
+ else target.reps=Math.round(measure);
+ e.targetOverride=target;
+ e.sets.forEach(s=>{
+  if(s.done||!isProgressionSet(s))return;
+  s.weight=target.weight;
+  if(measurement==='reps')s.reps=target.reps;
+  // Duration and distance are *actual measurements*. A target must not overwrite them.
+ });
  saveActiveWorkout();closeModal();renderWorkout();
 }
 function clearTargetOverride(ei){
  const e=state.activeWorkout.exercises[ei];e.targetOverride=null;
- const prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId);
- let wi=0;e.sets.forEach(s=>{if(!isProgressionSet(s))return;if(!s.done){s.weight=rec.weights?.[wi]??rec.weight??0;s.reps=rec.targetReps?.[wi]??e.config.minReps;}wi++;});
+ const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),rec=buildRecommendation(e.config,prev,e.exerciseId);
+ let wi=0;e.sets.forEach(s=>{if(!isProgressionSet(s))return;if(!s.done){
+   s.weight=rec.weights?.[wi]??rec.weight??0;
+   if(exerciseMeasurementType(e.exerciseId,e.config)==='reps')s.reps=rec.targetReps?.[wi]??e.config.minReps;
+  }wi++;});
  saveActiveWorkout();closeModal();renderWorkout();
 }
 function applyLightSession(){
  const w=state.activeWorkout;if(!w)return;
  w.exercises.forEach(e=>{
-   const prev=previousExercise(e.exerciseId),base=liveSetTarget(e,firstWorkingSetIndex(e),prev);
-   const wt=roundLoad(base.weight*.925);
+   const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),base=liveSetTarget(e,firstWorkingSetIndex(e),prev);
+   const kind=exerciseLoadType(e.exerciseId,e.config);
+   const wt=kind==='bodyweight'?0:kind==='assistance'?
+     roundLoad(base.weight+Math.max(.25,Number(e.config.increment)||base.weight*.075)):roundLoad(base.weight*.925);
    e.targetOverride={weight:wt,reps:e.config.minReps,reason:'Light session'};
    e.sets.forEach(s=>{if(!s.done&&isProgressionSet(s)){s.weight=wt;s.reps=e.config.minReps;}});
  });
  saveActiveWorkout();renderWorkout();
 }
 
+function buildMetricRecommendation(config,prev,exerciseId,measurement){
+ const profile=exerciseMovementProfile(exerciseId,config,config.trainingGoal||'general');
+ const count=Math.max(1,Math.trunc(Number(config.sets)||3));
+ const key=measurement==='duration'?'durationSeconds':'distanceMeters';
+ const done=progressionSets(prev).filter(set=>exerciseMetricValue(set,measurement)>0);
+ const prior=done.slice(0,count);
+ const values=prior.map(set=>exerciseMetricValue(set,measurement));
+ const previousWeights=prior.map(set=>Math.max(0,Number(set.weight)||0));
+ const weight=previousWeights[0]||0;
+ const loadType=exerciseLoadType(exerciseId,config);
+ const weights=Array.from({length:count},(_,i)=>loadType==='bodyweight'?0:previousWeights[i]??weight);
+ const units=measurement==='duration'?'seconds':distanceUnitLabel();
+ const display=n=>measurement==='duration'?compactMetricNumber(n):compactMetricNumber(distanceFromMeters(n));
+ const min=Math.max(1,profile.min),max=Math.max(min,profile.max);
+ const mode=normalizeTrainingMode(config.routineMode);
+ if(!done.length){
+  return {status:'baseline',weight:0,weights:Array(count).fill(0),targetValues:Array(count).fill(min),
+   headline:measurement==='duration'?'First hold · establish a baseline':'First carry · establish a baseline',
+   detail:'Suggested starting target: '+display(min)+' '+units+'. Actual performance stays blank until you log it.'};
+ }
+ const target=Array.from({length:count},(_,i)=>values[i]??min);
+ if(mode==='track'||config.mode==='manual'){
+  return {status:mode==='track'?'track':'manual',weight,weights,targetValues:target,
+   headline:'Track your '+(measurement==='duration'?'hold time':'distance'),
+   detail:'No automatic progression target is active. Log the actual '+units+' achieved.'};
+ }
+ const allAtMax=prior.length>=count&&prior.every(set=>exerciseMetricValue(set,measurement)>=max);
+ const minMet=prior.length>=count&&prior.every(set=>exerciseMetricValue(set,measurement)>=min);
+ const ready=allAtMax||(mode==='strength'&&minMet&&loadType==='external');
+ if(ready&&loadType==='external'&&weight>0){
+  const increment=Math.max(0,Number(config.increment)||0);
+  if(increment>0&&increment/weight<=.1){
+   return {status:'load',weight:roundLoad(weight+increment),weights:Array(count).fill(roundLoad(weight+increment)),targetValues:Array(count).fill(min),
+    headline:'Increase load, reset '+(measurement==='duration'?'hold time':'distance'),
+    detail:'You met the programmed goal at the previous load. Increase only if equipment and technique allow it.'};
+  }
+ }
+ if(allAtMax)return {status:'hold',weight,weights,targetValues:Array(count).fill(max),
+  headline:measurement==='duration'?'Hold quality or choose a harder variation':'Distance goal reached · hold or adjust load',
+  detail:'You reached the target range. Maintain quality or manually customize the movement, duration or resistance.'};
+ let next=values.map(v=>Math.min(max,Math.max(min,v+profile.increment)));
+ while(next.length<count)next.push(min);
+ if(config.mode==='total'&&values.length){
+  next=values.map(v=>Math.min(max,Math.max(min,v)));
+  while(next.length<count)next.push(min);
+  const idx=next.findIndex(v=>v<max);
+  if(idx>=0)next[idx]=Math.min(max,next[idx]+profile.increment);
+ }
+ return {status:'reps',weight,weights,targetValues:next,
+  headline:measurement==='duration'?'Build hold time':'Build distance',
+  detail:'Suggested next target: '+next.map(display).join(' / ')+' '+units+'. Progress gradually with repeatable technique.'};
+}
 function buildRecommendation(config,prev,exerciseId=null){
- const done=progressionSets(prev);
+ const measurement=exerciseMeasurementType(exerciseId,config);
+ if(measurement!=='reps')return buildMetricRecommendation(config,prev,exerciseId,measurement);
+ const loadType=exerciseLoadType(exerciseId,config);
+ const done=progressionLoadSets(prev,loadType);
  const goal=config.trainingGoal||'general';
  const routineMode=normalizeTrainingMode(config.routineMode);
  const avgRIR=averageLoggedRIR(done);
- if(routineMode!=='track'&&typeof coachAdaptiveRecommendation==='function'){
+ if(loadType==='external'&&routineMode!=='track'&&typeof coachAdaptiveRecommendation==='function'){
    const adaptive=coachAdaptiveRecommendation(config,prev,exerciseId);
    if(adaptive)return adaptive;
  }
  if(!done.length){
    const mode=normalizeTrainingMode(config.routineMode);
-   const headline=mode==='track'?'Log your starting sets':mode==='strength'?'Choose a strength starting load':'Set your starting weight';
-   const detail=mode==='track'?`No automatic progression target is active. Log the weight and reps you actually perform.`:mode==='strength'?`Choose a controlled load you can perform for at least ${config.minReps} clean reps across the programmed sets. Once the minimum is established, Strength Focus can prioritize small load increases.`:`Choose a clean starting load for about ${config.minReps}-${config.maxReps} reps. ${goalRIRText(goal)}`;
+   const headline=loadType==='bodyweight'?'Start with controlled reps':loadType==='assistance'?'Set your starting assistance':mode==='track'?'Log your starting sets':mode==='strength'?'Choose a strength starting load':'Set your starting weight';
+   const detail=loadType!=='external'?exerciseLoadExplanation(loadType):mode==='track'?`No automatic progression target is active. Log the weight and reps you actually perform.`:mode==='strength'?`Choose a controlled load you can perform for at least ${config.minReps} clean reps across the programmed sets. Once the minimum is established, Strength Focus can prioritize small load increases.`:`Choose a clean starting load for about ${config.minReps}-${config.maxReps} reps. ${goalRIRText(goal)}`;
    return {status:'baseline',weight:0,weights:Array(config.sets).fill(0),targetReps:Array(config.sets).fill(config.minReps),headline,detail};
  }
- const weights=done.map(s=>Math.max(0,finiteNumber(s.weight,0)));
+ const weights=done.map(s=>loadType==='bodyweight'?0:Math.max(0,finiteNumber(s.weight,0)));
  const reps=done.map(s=>Math.max(0,finiteNumber(s.reps,0)));
  const sameWeight=weights.every(w=>w===weights[0]);
  const baseWeight=weights[0]||0;
  const total=reps.reduce((a,b)=>a+b,0);
  if(routineMode==='track'){
-   return {status:'track',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),headline:'Track your working sets',detail:`Previous session: ${done.map(s=>`${s.weight}×${s.reps}`).join(' · ')}. No automatic progression target is active for this routine.`};
+   return {status:'track',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),
+     targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),
+     headline:'Track your working sets',detail:'No automatic progression target is active. '+exerciseLoadExplanation(loadType)};
  }
+ // Unweighted movements progress in repetitions only. A weighted variant is a
+ // different exercise and must be selected explicitly, not invented from zero.
+ if(loadType==='bodyweight'){
+   if(config.mode==='manual')return {status:'manual',weight:0,weights:Array(config.sets).fill(0),targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),headline:'Repeat or adjust bodyweight reps',detail:exerciseLoadExplanation(loadType)};
+   const complete=done.length>=config.sets&&done.slice(0,config.sets).every(s=>Number(s.reps)>=config.maxReps);
+   const target=complete?Array(config.sets).fill(config.maxReps):config.mode==='total'?distributeTarget(reps,config.minReps,config.maxReps,config.sets):progressEverySetTarget(reps,config.minReps,config.maxReps,config.sets);
+   return {status:complete?'hold':'reps',weight:0,weights:Array(config.sets).fill(0),targetReps:target,
+     headline:complete?'Rep goal reached · Keep quality or choose a harder variation':'Add a rep to each bodyweight set',
+     detail:complete?'You reached the top of the rep range. Repeat the reps cleanly or manually choose a harder or weighted variation; no load is automatically invented.':exerciseLoadExplanation(loadType)};
+ }
+ // Assistance weight is a counterweight, not the resistance lifted.
+ if(loadType==='assistance'){
+   if(config.mode==='manual')return {status:'manual',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:Array.from({length:config.sets},(_,i)=>reps[i]??config.minReps),headline:'Repeat or adjust assistance manually',detail:exerciseLoadExplanation(loadType)};
+   const repGoal=routineMode==='strength'?config.minReps:config.maxReps;
+   const ready=done.length>=config.sets&&sameWeight&&done.slice(0,config.sets).every(s=>Number(s.reps)>=repGoal);
+   const step=Math.max(0,finiteNumber(config.increment,0));
+   if(ready&&step>0&&baseWeight>0){
+     const next=Math.max(0,roundLoad(baseWeight-step));
+     return {status:'load',weight:next,weights:Array(config.sets).fill(next),targetReps:Array(config.sets).fill(config.minReps),
+       headline:'Reduce assistance to '+next+' '+state.profile.unit,
+       detail:'All programmed working sets met the rep goal at the same assistance. Less assistance increases the challenge. The suggestion never goes below zero.'};
+   }
+   const target=ready?Array(config.sets).fill(repGoal):config.mode==='total'?distributeTarget(reps,config.minReps,config.maxReps,config.sets):progressEverySetTarget(reps,config.minReps,config.maxReps,config.sets);
+   return {status:ready?'hold':'reps',weight:baseWeight,weights:Array.from({length:config.sets},(_,i)=>weights[i]??baseWeight),targetReps:target,
+     headline:baseWeight===0?'No assistance left · Build reps or switch to pull-ups':ready?'Maintain assistance or choose a smaller decrement':'Keep assistance and build reps',
+     detail:baseWeight===0?'You are already at zero assistance. Improve repetitions and technique or switch to an unassisted movement.':step===0?'Choose a positive assistance reduction step to progress the counterweight.':exerciseLoadExplanation(loadType)};
+ }
+
  if(routineMode==='strength'){
    const enoughSets=done.length>=config.sets;
    const completedMinimum=enoughSets&&done.slice(0,config.sets).every(s=>finiteNumber(s.reps,0)>=config.minReps);
@@ -190,7 +437,14 @@ function buildRecommendation(config,prev,exerciseId=null){
  const enoughSets=done.length>=config.sets;
  const allTop=enoughSets && done.slice(0,config.sets).every(s=>finiteNumber(s.reps,0)>=config.maxReps);
  if(sameWeight && allTop){
-   const next=roundLoad(baseWeight+finiteNumber(config.increment,0));
+   const inc=Math.max(0,finiteNumber(config.increment,0));
+   if(config.programGuided&&(baseWeight<=0||inc<=0||inc/baseWeight>0.10)){
+     return {status:'hold',weight:baseWeight,weights:Array(config.sets).fill(baseWeight),
+       targetReps:Array(config.sets).fill(config.maxReps),headline:'Repeat this load or choose a smaller increment',
+       detail:baseWeight<=0?(exById(exerciseId)?.equipment==='bodyweight'?'You reached the top of the bodyweight rep range. Consider a harder variation or add external resistance manually when appropriate.':'Establish a positive external load before adding weight automatically.'):
+         'The configured weight increase is more than 10% of your current load, or no increase is configured. Keep clean reps or select a smaller load step, then progress manually.'};
+   }
+   const next=roundLoad(baseWeight+inc);
    return {status:'load',weight:next,weights:Array(config.sets).fill(next),targetReps:Array(config.sets).fill(config.minReps),
      headline:`Increase to ${next} ${state.profile.unit}`,detail:`You earned one configured load step after reaching the top of the rep range across all working sets. ${goalRIRText(goal)}`};
  }
@@ -205,12 +459,26 @@ function buildRecommendation(config,prev,exerciseId=null){
 }
 function roundLoad(n){return Math.round(Number(n)*4)/4}
 
-function setReference(prev,workingIndex){
- const done=progressionSets(prev),s=done[workingIndex]||done[done.length-1];
- return s?`${s.weight} ${state.profile.unit} × ${s.reps}${s.rir!==''&&s.rir!=null?` @${s.rir} RIR`:''}`:'No prior set';
+function setReference(prev,workingIndex,exerciseId=null,config=null){
+ const measurement=exerciseMeasurementType(exerciseId,config);
+ const done=progressionSets(prev).filter(set=>measurement==='reps'||exerciseMetricValue(set,measurement)>0);
+ const set=done[workingIndex]||done[done.length-1];
+ if(!set)return 'No comparable prior set';
+ if(measurement!=='reps')return setMeasurementText({exerciseId,config},set)+(exerciseLoadType(exerciseId,config)==='external'&&Number(set.weight)>0?' @ '+set.weight+' '+state.profile.unit:'');
+ const loadType=exerciseLoadType(exerciseId,config);
+ const weight=loadType==='bodyweight'?'Bodyweight':loadType==='assistance'?set.weight+' '+state.profile.unit+' assist':set.weight+' '+state.profile.unit;
+ return weight+' × '+set.reps+(set.rir!==''&&set.rir!=null?' @'+set.rir+' RIR':'');
 }
 function liveSetTarget(e,si,prev){
- const current=e.sets?.[si],type=setType(current);
+ const current=e.sets?.[si],type=setType(current),measurement=exerciseMeasurementType(e.exerciseId,e.config);
+ if(measurement!=='reps'){
+  const key=measurement==='duration'?'durationSeconds':'distanceMeters';
+  const kind=exerciseLoadType(e.exerciseId,e.config);
+  const base=type==='working'?buildRecommendation(e.config,prev,e.exerciseId):null;
+  const wi=workingSetOrdinal(e,si);
+  return {weight:roundLoad(Number(e.targetOverride?.weight??base?.weights?.[wi]??base?.weight??current?.weight??0)),
+   [key]:Math.max(0,Number(e.targetOverride?.[key]??(normalizeTrainingMode(e.config.routineMode)==='track'?current?.[key]:base?.targetValues?.[wi])??current?.[key]??exerciseMovementProfile(e.exerciseId,e.config).min)||0)};
+ }
  if(type!=='working')return {weight:roundLoad(Number(current?.weight)||0),reps:Math.max(1,Number(current?.reps)||e.config.minReps)};
  const wi=workingSetOrdinal(e,si);
  if(e.targetOverride)return {weight:roundLoad(e.targetOverride.weight),reps:Math.max(1,Number(e.targetOverride.reps)||e.config.minReps)};
@@ -231,9 +499,6 @@ function liveSetTarget(e,si,prev){
    else if(miss>=2) reps=Math.min(roleRange.max,reps+1);
    if(last.rir!=='' && Number(last.rir)===0) reps=Math.max(Math.max(1,roleRange.min-2),reps-1);
  }
- // Strong in-session performance can adjust a target inside the programmed
- // range, but Coach never prescribes reps above that role's saved ceiling.
- // The user can still manually log whatever they actually perform.
  reps=Math.min(roleRange.max,reps);
  return {weight:roundLoad(weight),reps:Math.max(1,reps)};
 }
@@ -244,24 +509,32 @@ function displaySetWeightValue(value){
  const n=Number(value);
  return n>0?n:'';
 }
-function targetBadgeText(target,ex){
+function targetBadgeText(target,ex,config=null){
+ const measurement=exerciseMeasurementType(ex?.id,config);
+ if(measurement==='duration')return 'Target '+compactMetricNumber(target?.durationSeconds||0)+' sec';
+ if(measurement==='distance')return 'Target '+compactMetricNumber(distanceFromMeters(target?.distanceMeters||0))+' '+distanceUnitLabel()+(Number(target?.weight)>0?' @ '+target.weight+' '+state.profile.unit:'');
  const wt=Number(target?.weight)||0,reps=Math.max(1,Number(target?.reps)||1);
- if(wt<=0){
-   return ex?.equipment==='bodyweight'?`Bodyweight · ${reps} reps`:`Choose weight · ${reps} reps`;
- }
- return `Target ${wt} × ${reps}`;
+ const kind=exerciseLoadType(ex?.id,config);
+ if(kind==='bodyweight')return 'Bodyweight · '+reps+' reps';
+ if(kind==='assistance')return 'Target '+wt+' '+state.profile.unit+' assistance × '+reps;
+ return wt<=0?'Choose starting weight · '+reps+' reps':'Target '+wt+' × '+reps;
 }
 
 function changeSetValue(ei,si,key,delta){
- const set=state.activeWorkout?.exercises?.[ei]?.sets?.[si];if(!set)return;
- let v=Number(set[key])||0;
- v=Math.max(0,roundLoad(v+delta));
+ const edit=workoutSetEditTarget(ei,si),set=edit?edit.draft:state.activeWorkout?.exercises?.[ei]?.sets?.[si];if(!set)return;
+ if((key==='durationSeconds'||key==='distanceMeters')&&workoutHoldClock)stopWorkoutHoldTimer(true);
+ let v=(key==='durationSeconds'||key==='distanceMeters')&&set.metricRecorded!==true&&!set.done?0:Number(set[key])||0;
+ v=Math.max(0,key==='distanceMeters'?Math.round((v+distanceToMeters(delta))*1000)/1000:key==='durationSeconds'?Math.round(v+delta):roundLoad(v+delta));
  set[key]=key==='reps'?Math.round(v):v;
+ if(key==='durationSeconds'||key==='distanceMeters')set.metricRecorded=v>0;
+ if(key==='weight')set.weightEntered=true;
  if(key!=='rir')set.pr='';
  const card=document.querySelector(`#workoutExercise-${ei} .set-card[data-set-index="${si}"]`);
  const input=card?.querySelector(`input[aria-label="${key}"]`);
- if(input)input.value=key==='weight'?displaySetWeightValue(set[key]):set[key];
- haptic(8);saveActiveWorkout(true);
+ if(input)input.value=key==='weight'?displaySetWeightValue(set[key]):key==='distanceMeters'?compactMetricNumber(distanceFromMeters(set[key])):set[key];
+ haptic(8);
+ if(edit)return;
+ saveActiveWorkout(true,false);
  if(key==='weight')scheduleFirstExerciseWeightAutofill(ei,si,120);
 }
 function workoutCounts(){return activeWorkoutCounts()}
@@ -285,32 +558,57 @@ function estimated1RM(weight,reps){
  if(weight<=0||reps<=0)return 0;
  return weight*(1+Math.min(reps,15)/30);
 }
+function loadAwarePR(prior,set,exerciseId,config=null){
+ if(!prior?.length)return '';
+ const measurement=exerciseMeasurementType(exerciseId,config);
+ if(measurement!=='reps'){
+  const value=exerciseMetricValue(set,measurement);
+  if(value<=0)return '';
+  const comparable=prior.filter(x=>exerciseMetricValue(x,measurement)>0&&(Number(x.weight)||0)>=(Number(set.weight)||0));
+  const previousBest=Math.max(0,...comparable.map(x=>exerciseMetricValue(x,measurement)));
+  if(previousBest&&value>previousBest)return measurement==='duration'?'Hold time PR: '+compactMetricNumber(value)+' sec':'Distance PR: '+compactMetricNumber(distanceFromMeters(value))+' '+distanceUnitLabel();
+  return '';
+ }
+ if(!Number.isFinite(Number(set.reps))||Number(set.reps)<=0)return '';
+ const kind=exerciseLoadType(exerciseId,config),w=Math.max(0,Number(set.weight)||0),r=Number(set.reps);
+ if(kind==='bodyweight'){
+   const best=Math.max(0,...prior.map(p=>Number(p.reps)||0));
+   return r>best?'Bodyweight rep PR: '+r+' reps':'';
+ }
+ if(kind==='assistance'){
+   const same=prior.filter(p=>Number(p.weight)===w);
+   const bestSame=Math.max(0,...same.map(p=>Number(p.reps)||0));
+   // Lower assistance is only a comparable record if at least as many reps
+   // were completed as on some previous exposure using more assistance.
+   const comparable=prior.filter(p=>Number(p.reps)<=r&&Number(p.weight)>w);
+   if(comparable.length){
+     const bestPrior=Math.min(...prior.filter(p=>Number(p.reps)<=r).map(p=>Number(p.weight)||0));
+     if(w<bestPrior)return 'Less assistance PR: '+w+' '+state.profile.unit+' × '+r;
+   }
+   return same.length&&r>bestSame?'Rep PR: '+r+' reps at '+w+' '+state.profile.unit+' assistance':'';
+ }
+ const maxWeight=Math.max(...prior.map(p=>Number(p.weight)||0));
+ const sameWeightMax=Math.max(0,...prior.filter(p=>Number(p.weight)===w).map(p=>Number(p.reps)||0));
+ const priorE1=Math.max(0,...prior.map(p=>estimated1RM(p.weight,p.reps)));
+ const curE1=estimated1RM(w,r);
+ if(w>maxWeight)return 'Load PR: '+w+' '+state.profile.unit;
+ if(prior.some(p=>Number(p.weight)===w)&&r>sameWeightMax)return 'Rep PR: '+w+' '+state.profile.unit+' × '+r;
+ if(curE1>priorE1*1.01)return 'Estimated strength PR';
+ return '';
+}
 function detectPR(exerciseId,set){
  if(!isProgressionSet(set))return '';
  const prior=[];
- state.sessions.forEach(s=>s.exercises.forEach(e=>{
+ state.sessions.forEach(s=>(s.exercises||[]).forEach(e=>{
    if(e.exerciseId===exerciseId)progressionSets(e).forEach(x=>prior.push(x));
  }));
- // Include earlier completed working sets from the current active workout, but not the
- // set currently being evaluated. This prevents duplicate PR badges when
- // multiple sets tie the same newly achieved record in one session.
  if(state.activeWorkout){
    state.activeWorkout.exercises.forEach(e=>{
      if(e.exerciseId===exerciseId)progressionSets(e).forEach(x=>{if(x!==set)prior.push(x)});
    });
  }
- // A first-ever logged performance establishes the baseline. It is not counted
- // as a PR until a future performance actually beats it.
- if(!prior.length)return '';
- const w=Number(set.weight)||0,r=Number(set.reps)||0;
- const maxWeight=Math.max(...prior.map(x=>Number(x.weight)||0));
- const sameWeightMax=Math.max(0,...prior.filter(x=>Number(x.weight)===w).map(x=>Number(x.reps)||0));
- const priorE1=Math.max(0,...prior.map(x=>estimated1RM(x.weight,x.reps)));
- const curE1=estimated1RM(w,r);
- if(w>maxWeight)return `Load PR: ${w} ${state.profile.unit}`;
- if(r>sameWeightMax)return `Rep PR: ${w} ${state.profile.unit} × ${r}`;
- if(curE1>priorE1*1.01)return `Estimated strength PR`;
- return '';
+ const current=state.activeWorkout?.exercises.find(e=>e.exerciseId===exerciseId);
+ return loadAwarePR(prior,set,exerciseId,current?.config);
 }
 function plateLoadText(weight,ex){
  if(!ex || !['barbell','trap bar'].includes(ex.equipment) || Number(weight)<=0)return '';
@@ -327,7 +625,7 @@ function plateLoadText(weight,ex){
 }
 function warmupGuide(weight,ex){
  const compound=['horizontal_press','incline_press','vertical_press','horizontal_pull','squat','hinge','lunge'];
- if(!ex||!compound.includes(ex.pattern)||Number(weight)<=0)return [];
+ if(!ex||exerciseLoadType(ex.id)!=='external'||!compound.includes(ex.pattern)||Number(weight)<=0)return [];
  const inc=state.profile.unit==='kg'?2.5:5;
  const round=x=>Math.max(0,Math.round(x/inc)*inc);
  const w=Number(weight);
@@ -338,7 +636,7 @@ function warmupGuide(weight,ex){
  ].filter((x,i,a)=>x.weight>0 && (i===0||x.weight!==a[i-1].weight) && x.weight<w);
 }
 function openWarmupGuide(ei){
- const e=state.activeWorkout.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),sets=warmupGuide(t.weight,ex);
+ const e=state.activeWorkout.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),sets=warmupGuide(t.weight,ex);
  openModal(`${esc(ex?.name||'Exercise')} warm-up`,sets.length?`
  <div class="notice">Optional ramp-up sets before your working sets. Adjust or skip them based on how you feel and how heavy the working weight is.</div>
  <div class="card" style="margin-top:12px">${sets.map((s,i)=>`<div class="list-item"><div class="setnum">${i+1}</div><div class="grow"><b>${s.weight} ${state.profile.unit} × ${s.reps}</b><div class="mini">${plateLoadText(s.weight,ex)}</div></div></div>`).join('')}</div>
@@ -382,8 +680,9 @@ function addWorkoutSet(ei,type='working'){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei];if(!e)return;
  type=['working','warmup','drop','failure'].includes(type)?type:'working';
  const existingWorking=workingSetIndexes(e);
- const prev=previousExercise(e.exerciseId),rec=buildRecommendation(e.config,prev,e.exerciseId);
+ const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),rec=buildRecommendation(e.config,prev,e.exerciseId);
  let weight=0,reps=e.config.minReps;
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config),profile=exerciseMovementProfile(e.exerciseId,e.config);
  if(type==='working'){
    const wi=existingWorking.length,lastWorking=existingWorking.length?e.sets[existingWorking.at(-1)]:null;
    weight=Number((rec.weights&&rec.weights[wi])??rec.weight??(lastWorking&&lastWorking.weight)??0);
@@ -392,7 +691,11 @@ function addWorkoutSet(ei,type='working'){
    const source=existingWorking.length?e.sets[existingWorking.at(-1)]:e.sets.at(-1);
    weight=Number(source&&source.weight)||0;reps=Number(source&&source.reps)||e.config.minReps;
  }
- const item={weight:roundLoad(weight),reps:Math.max(1,Math.round(reps)),done:false,rir:'',type:type,pr:'',
+ const metricValue=type==='working'?(rec.targetValues?.[existingWorking.length]??rec.targetValues?.at(-1)??profile.min):profile.min;
+ const item={weight:roundLoad(weight),reps:measurement==='reps'?Math.max(1,Math.round(reps)):0,
+   durationSeconds:0,distanceMeters:0,metricRecorded:false,
+   weightEntered:measurement!=='distance'||exerciseLoadType(e.exerciseId,e.config)!=='external'||weight>0,
+   done:false,rir:'',type:type,pr:'',
    role:type==='working'&&typeof coachAdaptiveSetRole==='function'?coachAdaptiveSetRole(e.config,existingWorking.length):undefined};
  let at=e.sets.length;
  if(type==='warmup')at=existingWorking.length?existingWorking[0]:0;
@@ -426,7 +729,7 @@ function addSuggestedWarmups(ei){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],ex=e?exById(e.exerciseId):null;if(!e||!ex)return;
  const existing=e.sets.filter(function(s){return setType(s)==='warmup'});
  if(existing.length){closeModal();showToast('Warm-up sets are already in this exercise');return}
- const prev=previousExercise(e.exerciseId),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),suggested=warmupGuide(t.weight,ex);
+ const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),t=liveSetTarget(e,firstWorkingSetIndex(e),prev),suggested=warmupGuide(t.weight,ex);
  if(!suggested.length){closeModal();showToast('No warm-up ramp available for this target');return}
  const at=firstWorkingSetIndex(e);
  e.sets.splice.apply(e.sets,[at,0].concat(suggested.map(function(s){return {weight:s.weight,reps:s.reps,done:false,rir:'',type:'warmup',pr:''}})));
@@ -563,6 +866,53 @@ function advanceSupersetAfterSet(ei,si){
  if(advanceFromCompletedExercise(ei))return true;
  saveActiveWorkout();renderWorkout();return true;
 }
+function supersetFlowState(w,ei,si){
+ const meta=supersetMeta(ei),e=w?.exercises?.[ei];if(!meta||!e)return null;
+ const groups=workoutSupersetGroups(),groupNumber=Math.max(1,groups.indexOf(meta.id)+1);
+ const working=!!isProgressionSet(e.sets?.[si]),round=Math.max(0,workingSetOrdinal(e,si));
+ const rounds=Math.max(1,...meta.members.map(mi=>workingSetIndexes(w.exercises[mi]).length));
+ const steps=meta.members.map((mi,pos)=>{
+   const member=w.exercises[mi],targetSi=workingSetIndexAtRound(member,round),set=targetSi>=0?member.sets[targetSi]:null;
+   return {mi,pos,targetSi,name:exById(member.exerciseId)?.name||'Exercise',done:!!set?.done,active:mi===ei};
+ });
+ const activePos=Math.max(0,steps.findIndex(step=>step.active));
+ let next=null;
+ for(let offset=1;offset<steps.length;offset++){
+   const candidate=steps[(activePos+offset)%steps.length];
+   if(candidate.targetSi>=0&&!candidate.done){next=candidate;break}
+ }
+ const roundTargets=steps.filter(step=>step.targetSi>=0),roundDone=roundTargets.length>0&&roundTargets.every(step=>step.done);
+ return {meta,groupNumber,working,round,rounds,steps,next,roundDone};
+}
+function selectSupersetFlowStep(ei,si){
+ const w=state.activeWorkout,set=w?.exercises?.[ei]?.sets?.[si];if(!w||!set||set.done)return;
+ workoutSetEditSession=null;
+ const current=normalizeWorkoutFocusState(w);
+ setWorkoutFocus(ei,si,{deferCurrent:false,render:false});
+ saveActiveWorkout();renderWorkoutExerciseTransition(current,ei);
+}
+function supersetFlowHtml(w,ei,si){
+ const flow=supersetFlowState(w,ei,si);if(!flow)return '';
+ const editing=!!workoutSetEditTarget(ei,si);
+ const order=flow.steps.map((step,index)=>'<span class="'+(step.active?'active':'')+'">'+String.fromCharCode(65+index)+'</span>').join('<i>→</i>');
+ const steps=flow.steps.map((step,index)=>{
+   const letter=String.fromCharCode(65+index),stateClass=step.active?'active':step.done?'done':'upcoming';
+   const sub=step.active?'NOW':step.done?'DONE':index===0?'FIRST':'NEXT';
+   const click=step.targetSi>=0&&!step.done?' onclick="selectSupersetFlowStep('+step.mi+','+step.targetSi+')"':' disabled';
+   return '<button class="superset-flow-step '+stateClass+'"'+click+'><span class="superset-flow-letter">'+letter+'</span><span class="superset-flow-copy"><b>'+esc(step.name)+'</b><small>'+sub+'</small></span><span class="superset-flow-state">'+(step.done?'✓':step.active?'●':'›')+'</span></button>';
+ }).join('');
+ let footer='';
+ if(editing)footer='Editing completed set · automatic rotation is paused.';
+ else if(!flow.working)footer='Finish this setup set, then the A → B rotation begins on working sets.';
+ else if(flow.next)footer='Next: '+flow.next.name;
+ else if(!flow.roundDone)footer='Finish this movement to complete round '+(flow.round+1)+'.';
+ else footer='Round '+(flow.round+1)+' complete.';
+ return '<section class="superset-flow" aria-label="Superset flow">'+
+  '<div class="superset-flow-head"><div class="superset-flow-title-wrap"><span class="superset-flow-bolt" aria-hidden="true">⚡</span><div><div class="eyebrow">SUPERSET '+flow.groupNumber+' · ROUND '+Math.min(flow.round+1,flow.rounds)+' OF '+flow.rounds+'</div><div class="superset-flow-order">'+order+'</div></div></div><span class="superset-flow-badge">SUPERSET</span></div>'+
+  '<div class="superset-flow-track">'+steps+'</div>'+
+  '<div class="superset-flow-footer">'+esc(footer)+'</div></section>';
+}
+
 function openRoutineSupersetPicker(routineId,index){
  const r=state.routines.find(x=>x.id===routineId),re=r?.exercises?.[index];if(!re)return;
  const cur=exById(re.exerciseId),meta=routineSupersetMeta(r,index);
@@ -610,6 +960,12 @@ function routineExerciseFromWorkout(e){
    setStructure:savedStructure,
    trainingGoal:cfg.trainingGoal||'general',
    resetPercent:Number(cfg.resetPercent)||7.5,
+   loadType:cfg.loadType||'auto',
+   measurementType:cfg.measurementType||'auto',
+   minDurationSeconds:Math.max(1,Number(cfg.minDurationSeconds)||20),
+   maxDurationSeconds:Math.max(1,Number(cfg.maxDurationSeconds)||45),
+   minDistanceMeters:Math.max(.25,Number(cfg.minDistanceMeters)||10),
+   maxDistanceMeters:Math.max(.25,Number(cfg.maxDistanceMeters)||30),
    restSeconds:Math.max(15,Number(cfg.restSeconds)||120),
    targetRIR:Number.isFinite(Number(cfg.targetRIR))?Number(cfg.targetRIR):null,
    supersetGroup:e.supersetId||null
@@ -617,6 +973,9 @@ function routineExerciseFromWorkout(e){
 }
 function syncActiveWorkoutStructureToRoutine(){
  const w=state.activeWorkout;if(!w)return false;
+ if(w.programPhase==='deload'){
+  showToast('Deload set counts are temporary. Edit the saved routine separately.');return false;
+ }
  const r=state.routines.find(x=>x.id===w.routineId);if(!r)return false;
  r.name=w.routineName||r.name;
  r.exercises=w.exercises.map(routineExerciseFromWorkout);
@@ -721,6 +1080,74 @@ function exerciseSetProgress(e){
  if(e.skipped)return {done,total,pct:100,complete:true,skipped:true};
  return {done,total,pct:total?Math.round(done/total*100):0,complete:total>0&&done===total,skipped:false};
 }
+let workoutSetEditSession=null;
+function workoutSetEditTarget(ei,si){
+ const edit=workoutSetEditSession;
+ return edit&&edit.ei===Number(ei)&&edit.si===Number(si)?edit:null;
+}
+function restoreWorkoutAfterSetEdit(edit){
+ const w=state.activeWorkout;if(!w||!edit)return;
+ const fallback=normalizeWorkoutFocusState(w);
+ const returnEi=Number.isInteger(edit.returnEi)&&w.exercises?.[edit.returnEi]&&!w.exercises[edit.returnEi].skipped?edit.returnEi:fallback;
+ if(returnEi<0)return;
+ const exercise=w.exercises[returnEi];
+ let returnSi=Number(edit.returnSi);
+ if(!Number.isInteger(returnSi)||returnSi<0||returnSi>=exercise.sets.length||(exercise.sets[returnSi]?.done&&exercise.sets.some(s=>!s.done))){
+   returnSi=workoutFirstIncompleteSetIndex(exercise);
+ }
+ w.focusExerciseIndex=returnEi;
+ w.focusSetIndex=Math.max(0,returnSi);
+ w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(i=>i!==returnEi);
+ w.exercises.forEach((x,i)=>x.expanded=i===returnEi);
+}
+function beginWorkoutSetEdit(ei,si){
+ if(workoutHoldClock)stopWorkoutHoldTimer(true);
+ const w=state.activeWorkout,e=w?.exercises?.[ei],set=e?.sets?.[si];if(!w||!e||!set?.done)return false;
+ if(workoutSetEditTarget(ei,si))return true;
+ const returnEi=normalizeWorkoutFocusState(w),returnSi=Number(w.focusSetIndex)||0;
+ workoutSetEditSession={
+   ei:Number(ei),si:Number(si),returnEi,returnSi,
+   draft:{weight:Number(set.weight)||0,reps:Number(set.reps)||0,
+    durationSeconds:Number(set.durationSeconds)||0,distanceMeters:Number(set.distanceMeters)||0,metricRecorded:true,weightEntered:set.weightEntered!==false,
+    rir:set.rir===''?'':Number(set.rir),type:setType(set),done:true,pr:set.pr||''}
+ };
+ w.focusExerciseIndex=Number(ei);w.focusSetIndex=Number(si);
+ w.exercises.forEach((x,i)=>x.expanded=i===Number(ei));
+ renderWorkout();haptic(8);return true;
+}
+function cancelWorkoutSetEdit(){
+ const edit=workoutSetEditSession;if(!edit)return;
+ workoutSetEditSession=null;restoreWorkoutAfterSetEdit(edit);renderWorkout();
+}
+function commitWorkoutSetEdit(){
+ const edit=workoutSetEditSession,w=state.activeWorkout,e=w?.exercises?.[edit?.ei],set=e?.sets?.[edit?.si];
+ if(!edit||!w||!e||!set){workoutSetEditSession=null;renderWorkout();return}
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config);
+ if(actualMetricValue(e,edit.draft)<=0){showToast('Enter a completed '+(measurement==='duration'?'hold time':measurement==='distance'?'distance':'rep count')+' first');return}
+ set.weight=Math.max(0,Number(edit.draft.weight)||0);
+ set.weightEntered=edit.draft.weightEntered!==false;
+ set.reps=Math.max(0,Math.round(Number(edit.draft.reps)||0));
+ set.durationSeconds=Math.max(0,Number(edit.draft.durationSeconds)||0);
+ set.distanceMeters=Math.max(0,Number(edit.draft.distanceMeters)||0);
+ set.metricRecorded=true;
+ set.rir=edit.draft.rir===''?'':Math.max(0,Number(edit.draft.rir)||0);
+ set.done=true;
+ set.pr=isProgressionSet(set)?detectPR(e.exerciseId,set):'';
+ workoutSetEditSession=null;
+ restoreWorkoutAfterSetEdit(edit);
+ saveActiveWorkout();
+ renderWorkout();
+ haptic(18);showToast('Set updated');
+}
+function reopenWorkoutSet(ei,si){
+ const w=state.activeWorkout,e=w?.exercises?.[ei],set=e?.sets?.[si];if(!w||!e||!set)return;
+ workoutSetEditSession=null;
+ set.done=false;set.pr='';
+ w.focusExerciseIndex=Number(ei);w.focusSetIndex=Number(si);
+ w.deferredExerciseIndexes=(w.deferredExerciseIndexes||[]).filter(i=>i!==Number(ei));
+ w.exercises.forEach((x,i)=>x.expanded=i===Number(ei));
+ saveActiveWorkout();renderWorkout();showToast('Set marked incomplete');
+}
 function workoutFirstIncompleteSetIndex(e){
  if(!e?.sets?.length)return -1;
  const next=e.sets.findIndex(s=>!s.done);
@@ -739,7 +1166,8 @@ function normalizeWorkoutFocusState(w=state.activeWorkout){
  }
  const focused=w.exercises[focus];
  let setIndex=Number(w.focusSetIndex);
- if(!Number.isInteger(setIndex)||setIndex<0||setIndex>=Math.max(1,focused?.sets?.length||0)||(focused?.sets?.[setIndex]?.done&&focused?.sets?.some(s=>!s.done))){
+ const editingSelectedSet=workoutSetEditTarget(focus,setIndex);
+ if(!Number.isInteger(setIndex)||setIndex<0||setIndex>=Math.max(1,focused?.sets?.length||0)||(!editingSelectedSet&&focused?.sets?.[setIndex]?.done&&focused?.sets?.some(s=>!s.done))){
    setIndex=workoutFirstIncompleteSetIndex(focused);
  }
  w.focusExerciseIndex=focus;
@@ -792,8 +1220,12 @@ function syncWorkoutStickyOffsets(){
 }
 function compactTargetText(e,ex,prev){
  const t=liveSetTarget(e,firstWorkingSetIndex(e),prev);
- if(e.targetOverride)return `Target ${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`;
- if((Number(t.weight)||0)<=0)return ex?.equipment==='bodyweight'?`${t.reps} reps · bodyweight`:`Choose starting weight · ${t.reps} reps`;
+ if(exerciseMeasurementType(e.exerciseId,e.config)!=='reps')return targetBadgeText(t,ex,e.config);
+ if(e.targetOverride)return exerciseLoadType(e.exerciseId,e.config)==='bodyweight'?`Target ${e.targetOverride.reps} bodyweight reps`:`Target ${e.targetOverride.weight} ${state.profile.unit} × ${e.targetOverride.reps}`;
+ const type=exerciseLoadType(e.exerciseId,e.config);
+ if(type==='bodyweight')return `${t.reps} reps · bodyweight`;
+ if(type==='assistance')return `${t.weight} ${state.profile.unit} assistance × ${t.reps}`;
+ if((Number(t.weight)||0)<=0)return `Choose starting weight · ${t.reps} reps`;
  return `${t.weight} ${state.profile.unit} × ${t.reps} target`;
 }
 
@@ -851,7 +1283,33 @@ function applyWorkoutMotionCues(){
    setTimeout(()=>{pill?.classList.remove('set-advance-pulse');card?.classList.remove('set-advance-settle')},520);
  }
 }
+let workoutViewportFocusQueued=false;
+function queueWorkoutViewportFocus(){workoutViewportFocusQueued=true;}
+function focusWorkoutViewportAfterAdvance(){
+ if(!state.activeWorkout||document.activeElement?.matches?.('#workout .focus-set-card input.direct-number'))return;
+ const shell=document.querySelector('#workout .focus-exercise-nav-shell');
+ const action=document.querySelector('#workout .focus-workout-complete button, #workout .focus-set-card .complete-set');
+ if(!shell||!action)return;
+ const viewport=window.visualViewport,header=document.querySelector('header'),dock=document.querySelector('nav');
+ const visibleTop=Math.max(0,Number(viewport?.offsetTop)||0,Number(header?.getBoundingClientRect().bottom)||0)+8;
+ const dockTop=Number(dock?.getBoundingClientRect().top);
+ const restTray=document.querySelector('#restTimer.resttimer.show');
+ const restVisible=restTray&&!document.documentElement.classList.contains('workout-keyboard-active')&&
+  !document.documentElement.classList.contains('keyboard-open');
+ // Passive rest is recessed into the nav housing. It must never push the
+ // Complete Set button upward. Only an intentionally expanded tray reserves room.
+ // The user deliberately opens rest controls as an overlay, not a new
+ // layout obstruction. Completing sets must never chase the lifted rail.
+ const trayHeight=0;
+ const visibleBottom=Math.min((Number(viewport?.offsetTop)||0)+(Number(viewport?.height)||window.innerHeight),
+   dockTop>0?dockTop-trayHeight:Infinity)-12;
+ // Keep the sticky exercise header, target, fields, and primary action together.
+ // Do not jump on ordinary input changes or take away manual overview scrolling.
+ const delta=Math.max(0,shell.getBoundingClientRect().top-visibleTop,action.getBoundingClientRect().bottom-visibleBottom);
+ if(delta>5)window.scrollTo({top:Math.max(0,window.scrollY+Math.ceil(delta)),behavior:workoutReducedMotion()?'auto':'smooth'});
+}
 function renderWorkoutExerciseTransition(fromEi,toEi){
+ if(workoutCounts().done>0)queueWorkoutViewportFocus();
  if(fromEi===toEi||workoutReducedMotion()){renderWorkout();return}
  const direction=toEi>fromEi?'forward':'back';
  if(typeof document.startViewTransition==='function'){
@@ -904,8 +1362,10 @@ function nextWorkoutExerciseIndex(from,w){
  }
  return -1;
 }
-function workoutExerciseNavigatorHtml(w,ei){
+function workoutExerciseNavigatorHtml(w,ei,workoutCoach=null,counts=null){
  const e=w.exercises[ei],ex=exById(e.exerciseId),p=exerciseSetProgress(e);
+ counts=counts||workoutCounts();
+ const percent=counts.total?Math.round(counts.done/counts.total*100):0;
  const rows=w.exercises.map(function(row,i){
    const rx=exById(row.exerciseId),status=workoutExerciseFocusStatus(w,row,i),rp=exerciseSetProgress(row);
    return '<button class="focus-nav-row '+status.cls+' '+(i===ei?'selected':'')+'" onclick="event.preventDefault();event.stopPropagation();selectWorkoutExercise('+i+')" '+(row.skipped?'disabled':'')+'>'+
@@ -917,13 +1377,24 @@ function workoutExerciseNavigatorHtml(w,ei){
    '<span class="focus-nav-add-icon">＋</span><span class="focus-nav-copy"><b>Add exercise</b><small>Add another movement to today\'s workout</small></span><span class="focus-nav-go">›</span></button>';
  return '<div class="focus-exercise-nav-shell">'+
    '<details class="focus-exercise-nav"><summary>'+
-   '<div class="focus-exercise-position">EXERCISE '+(ei+1)+' OF '+w.exercises.length+'</div>'+
+   '<div class="focus-exercise-kicker-row"><div class="focus-exercise-position">EXERCISE '+(ei+1)+' OF '+w.exercises.length+'</div>'+
+   '<div class="focus-session-mini-tools"><span class="focus-session-mini-count">'+counts.done+'/'+counts.total+' sets</span>'+
+   (workoutCoach?'<button type="button" class="focus-session-note-link" onclick="event.preventDefault();event.stopPropagation();openFocusedSessionCoachNote()" aria-label="Read Coach session note">Session note</button>':'')+'</div></div>'+
    '<div class="focus-exercise-title-line"><span class="focus-exercise-name">'+esc(ex&&ex.name||'Exercise')+'</span>'+
    '<button type="button" class="focus-howto-inline" onclick="event.preventDefault();event.stopPropagation();openFocusedExerciseHowTo('+ei+')" aria-label="How to do '+esc(ex&&ex.name||'this exercise')+'" title="How to"><span aria-hidden="true">i</span></button></div>'+
    '<div class="focus-exercise-bottom-row"><div class="focus-exercise-meta">'+esc(p.complete?'Complete':workoutActiveSetText(e))+' · '+esc(ex&&ex.muscle||'')+' · '+workingSetIndexes(e).length+' working sets</div>'+
    '<span class="focus-nav-switch" aria-hidden="true">Switch exercise</span></div>'+
+   '<div class="focus-exercise-overall-progress" role="progressbar" aria-label="Overall workout progress" aria-valuemin="0" aria-valuemax="'+counts.total+'" aria-valuenow="'+counts.done+'"><span style="width:'+percent+'%"></span></div>'+
    '</summary><div class="focus-nav-list">'+rows+addRow+'</div></details>'+
    '</div>';
+}
+function openFocusedSessionCoachNote(){
+ const note=workoutCoachSignal();
+ if(!state.activeWorkout||!note)return;
+ openModal('Coach session note',
+  '<div class="coachbox '+esc(note.level)+'"><div class="coach-text">'+esc(note.text)+'</div>'+
+  (note.level==='reset'?'<div class="actions"><button class="btn small secondary" onclick="closeModal();applyLightSession()">Use a 7.5% lighter session</button></div>':'')+
+  '</div><div class="actions" style="margin-top:16px"><button class="btn" onclick="closeModal()">Back to workout</button></div>');
 }
 function openFocusedExerciseHowTo(ei){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],ex=e?exById(e.exerciseId):null;if(!w||!e||!ex)return;
@@ -942,6 +1413,7 @@ function openFocusedExerciseHowTo(ei){
 
 function selectWorkoutExercise(ei){
  const w=state.activeWorkout;if(!w||!w.exercises||!w.exercises[ei]||w.exercises[ei].skipped)return;
+ workoutSetEditSession=null;
  const current=normalizeWorkoutFocusState(w);
  const currentName=exById(w.exercises[current]&&w.exercises[current].exerciseId);
  const wasIncomplete=current!==ei&&current>=0&&!exerciseSetProgress(w.exercises[current]).complete&&!w.exercises[current].skipped;
@@ -950,7 +1422,9 @@ function selectWorkoutExercise(ei){
  if(wasIncomplete)showToast(((currentName&&currentName.name)||'Exercise')+' saved as pending');
 }
 function selectWorkoutSet(ei,si){
- const w=state.activeWorkout;if(!w||!w.exercises||!w.exercises[ei]||!w.exercises[ei].sets||!w.exercises[ei].sets[si])return;
+ const w=state.activeWorkout,set=w?.exercises?.[ei]?.sets?.[si];if(!w||!set)return;
+ if(set.done){beginWorkoutSetEdit(ei,si);return}
+ workoutSetEditSession=null;
  setWorkoutFocus(ei,si,{deferCurrent:false,render:false});
  saveActiveWorkout();renderWorkout();
 }
@@ -964,8 +1438,9 @@ function deferFocusedExercise(){
 }
 function focusedSetRailHtml(e,ei,si){
  const setPills=e.sets.map(function(set,i){
-   const cls=set.done?'done':i===si?'current':'future';
-   return '<button class="focus-set-pill '+cls+'" onclick="selectWorkoutSet('+ei+','+i+')" aria-label="Open '+esc(setDisplayLabel(e,i))+'">'+(set.done?'✓ ':'')+(i+1)+'</button>';
+   const editing=!!workoutSetEditTarget(ei,i),cls=editing?'done editing':set.done?'done':i===si?'current':'future';
+   const aria=set.done?('Edit completed '+setDisplayLabel(e,i)):('Open '+setDisplayLabel(e,i));
+   return '<button class="focus-set-pill '+cls+'" onclick="selectWorkoutSet('+ei+','+i+')" aria-label="'+esc(aria)+'" title="'+esc(set.done?'Tap to edit completed set':setDisplayLabel(e,i))+'">'+(set.done?'✓ ':'')+(i+1)+(editing?'<span class="focus-set-edit-mark" aria-hidden="true">✎</span>':'')+'</button>';
  }).join('');
  return '<div class="focus-set-rail" aria-label="Workout sets">'+setPills+
   '<button class="focus-set-add" onclick="addWorkoutSet('+ei+',\'working\')" aria-label="Add working set"><span aria-hidden="true">＋</span> Set</button></div>';
@@ -979,11 +1454,12 @@ function openFocusedSetOptions(ei,si){
   '<div class="actions"><button class="btn secondary" onclick="moveWorkoutSet('+ei+','+si+',-1);closeModal()">Move earlier</button>'+
   '<button class="btn secondary" onclick="moveWorkoutSet('+ei+','+si+',1);closeModal()">Move later</button>'+
   '<button class="btn danger" onclick="removeWorkoutSet('+ei+','+si+');closeModal()">Remove set</button>'+
+  (set.done?'<button class="btn secondary" onclick="reopenWorkoutSet('+ei+','+si+');closeModal()">Mark incomplete</button>':'')+
   '<button class="btn secondary" onclick="closeModal()">Done</button></div>');
 }
 function openFocusedExerciseMore(ei){
  const w=state.activeWorkout,e=w&&w.exercises&&w.exercises[ei],ex=e?exById(e.exerciseId):null;if(!e)return;
- const prev=previousExercise(e.exerciseId),target=liveSetTarget(e,firstWorkingSetIndex(e),prev),warmups=warmupGuide(target.weight,ex),superset=supersetMeta(ei),hasRemaining=workoutHasRemainingProgrammedWork(w);
+ const prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),target=liveSetTarget(e,firstWorkingSetIndex(e),prev),warmups=warmupGuide(target.weight,ex),superset=supersetMeta(ei),hasRemaining=workoutHasRemainingProgrammedWork(w);
  openModal(esc(ex&&ex.name||'Exercise')+' · More',
   '<div class="notice">Keep the live screen focused on logging. Everything here stays available when you need to change the exercise or the session.</div>'+
   '<div class="workout-more-section"><div class="eyebrow">EXERCISE</div><div class="actions">'+
@@ -999,49 +1475,132 @@ function openFocusedExerciseMore(ei){
   '<button class="btn danger" onclick="closeModal();cancelWorkout()">Cancel workout</button></div></div>');
 }
 function focusedCoachTargetHtml(e,ei,ex,prev){
- const rec=buildRecommendation(e.config,prev,e.exerciseId),coach=coachSignal(e.exerciseId,e.config);
+ const rec=buildRecommendation(e.config,prev,e.exerciseId),coach=exerciseMeasurementType(e.exerciseId,e.config)==='reps'&&exerciseLoadType(e.exerciseId,e.config)==='external'?coachSignal(e.exerciseId,e.config):null;
  const firstWorking=firstWorkingSetIndex(e),firstTarget=liveSetTarget(e,firstWorking,prev),plateText=plateLoadText(firstTarget.weight,ex),compactTarget=compactTargetText(e,ex,prev);
- const title=e.targetOverride?(e.targetOverride.weight+' '+state.profile.unit+' × '+e.targetOverride.reps):rec.headline;
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config);
+ const title=e.targetOverride?targetBadgeText(firstTarget,ex,e.config):rec.headline;
  const detail=e.targetOverride?('Session-only '+(e.targetOverride.reason||'override')+'. Routine progression is unchanged.'):rec.detail;
+ const previousLabel=measurement!=='reps'?(prev&&progressionSets(prev).length?'Last workout: '+setReference(prev,0,e.exerciseId,e.config):'First recorded '+(measurement==='duration'?'hold':'carry')):'';
  return '<details class="workout-guidance focus-guidance" '+(e.targetOverride?'open':'')+'><summary>'+
-  '<div class="workout-guidance-copy"><div class="eyebrow">COACH TARGET</div><div class="workout-guidance-title">'+esc(title)+'</div>'+
-  '<div class="workout-guidance-meta">'+esc((coach&&coach.title)||compactTarget)+' · '+(e.config.restSeconds||120)+'s rest</div></div><span class="workout-guidance-more">Why</span></summary>'+
+  '<div class="workout-guidance-copy"><div class="eyebrow">'+(measurement==='reps'?'COACH TARGET':'TODAY\'S TARGET')+'</div><div class="workout-guidance-title">'+esc(measurement==='reps'?title:compactTarget)+'</div>'+
+  '<div class="workout-guidance-meta">'+esc(measurement==='reps'?((coach&&coach.title)||compactTarget)+' · '+(e.config.restSeconds||120)+'s rest':previousLabel+' · '+(e.config.restSeconds||120)+'s suggested rest')+'</div></div><span class="workout-guidance-more">Why</span></summary>'+
   '<div class="workout-guidance-detail"><div class="mini">'+esc(detail)+'</div>'+
   (coach?'<div class="mini guidance-coach-copy"><b>'+esc(coach.title)+':</b> '+esc(coach.text)+'</div>':'')+
   (plateText?'<div class="plates">🏋 '+esc(plateText)+'</div>':'')+
   (coach&&coach.canReset&&!e.targetOverride?'<div class="actions compact-guidance-action"><button class="btn small secondary" onclick="applyCoachReset('+ei+')">Apply '+coach.resetPercent+'% reset for today</button></div>':'')+
   '</div></details>';
 }
-function focusedSetCardHtml(e,ei,si,ex,prev){
- const s=e.sets[si],type=setType(s),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev),ref=type==='working'?setReference(prev,wi):'Not used for progression',pt=plateLoadText(s.weight||target.weight,ex);
- const rirOptions=[0,1,2,3,4,5].map(function(v){return '<option value="'+v+'" '+(String(s.rir)===String(v)?'selected':'')+'>'+v+'</option>'}).join('');
- const increment=Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5));
- return '<div class="focus-set-card set-card type-'+type+' '+(s.done?'completed':'')+'" data-set-index="'+si+'">'+
-  '<div class="focus-set-head"><div><div class="exercise-kicker">'+esc(setDisplayLabel(e,si))+' · '+(si+1)+' OF '+e.sets.length+'</div><div class="focus-set-reference">'+(type==='working'?('Previous: '+esc(ref)):'Logged separately from progression')+'</div></div>'+
-  '<button class="focus-set-options" onclick="openFocusedSetOptions('+ei+','+si+')" aria-label="Set options">•••</button></div>'+
-  (type==='working'?'<div class="focus-set-target"><span class="set-target">'+esc(targetBadgeText(target,ex))+'</span></div>':'<div class="set-nonprogress-note">'+esc(setProgressionNote(type))+'</div>')+
-  '<div class="live-entry"><div class="live-input-wrap numeric-entry"><label>'+((ex&&ex.equipment)==='bodyweight'?'Added weight':'Weight')+' ('+state.profile.unit+')</label><div class="numeric-stepper">'+
-  '<button class="numeric-step-btn" aria-label="decrease weight" onclick="changeSetValue('+ei+','+si+',\'weight\',-'+increment+')">−</button>'+
-  '<input class="direct-number" type="number" inputmode="decimal" enterkeyhint="done" step=".25" min="0" value="'+displaySetWeightValue(s.weight)+'" placeholder="'+((ex&&ex.equipment)==='bodyweight'?'0':'Enter')+'" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+',\'weight\',this.value)" onblur="commitFirstExerciseWeightAutofill('+ei+','+si+')" aria-label="weight">'+
-  '<button class="numeric-step-btn" aria-label="increase weight" onclick="changeSetValue('+ei+','+si+',\'weight\','+increment+')">+</button></div></div>'+
-  '<div class="live-input-wrap numeric-entry"><label>Reps</label><div class="numeric-stepper">'+
-  '<button class="numeric-step-btn" aria-label="decrease reps" onclick="changeSetValue('+ei+','+si+',\'reps\',-1)">−</button>'+
-  '<input class="direct-number" type="number" inputmode="numeric" enterkeyhint="done" min="0" value="'+s.reps+'" placeholder="Reps" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+',\'reps\',this.value)" aria-label="reps">'+
-  '<button class="numeric-step-btn" aria-label="increase reps" onclick="changeSetValue('+ei+','+si+',\'reps\',1)">+</button></div></div>'+
-  '<div class="live-input-wrap rir-small"><div class="input-label-row"><label>RIR</label></div><select onchange="updateSet('+ei+','+si+',\'rir\',this.value)"><option value="">—</option>'+rirOptions+'</select></div></div>'+
-  (pt?'<div class="plates">'+esc(pt)+'</div>':'')+
-  '<button class="complete-set '+(s.done?'done':'')+'" onclick="toggleSet('+ei+','+si+')">'+(s.done?'✓ Completed · tap to reopen':'Complete Set')+'</button>'+
-  (s.pr?'<div class="pr-banner"><span class="inline-pr-mark">PR</span> '+esc(s.pr)+'</div>':'')+'</div>';
+// The hold stopwatch records an actual duration, never a prescribed target.
+// It is transient, pauses if the app becomes hidden, and never auto-completes a set.
+let workoutHoldClock=null;
+function workoutHoldTimerMatches(ei,si){return !!workoutHoldClock&&workoutHoldClock.ei===ei&&workoutHoldClock.si===si}
+function holdTimerDisplay(ei,si){
+ const elapsed=workoutHoldTimerMatches(ei,si)?Math.max(0,(Date.now()-workoutHoldClock.startedAt)/1000+workoutHoldClock.elapsed):0;
+ const seconds=Math.floor(elapsed);return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
 }
-function focusedExerciseCanvasHtml(w,ei){
- const e=w.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId),si=workoutFocusedSetIndex(w),prog=exerciseSetProgress(e),superset=supersetMeta(ei);
+function paintWorkoutHoldTimer(){
+ const el=document.getElementById('workoutHoldTimerReadout');
+ if(el&&workoutHoldClock)el.textContent=holdTimerDisplay(workoutHoldClock.ei,workoutHoldClock.si);
+}
+function stopWorkoutHoldTimer(record=true){
+ const clock=workoutHoldClock;if(!clock)return false;
+ clearInterval(clock.interval);workoutHoldClock=null;
+ const e=state.activeWorkout?.exercises?.[clock.ei],set=e?.sets?.[clock.si];
+ if(record&&set&&!set.done){
+  const actual=Math.max(0,Math.round((clock.elapsed+(Date.now()-clock.startedAt)/1000)*10)/10);
+  if(actual>0){set.durationSeconds=actual;set.metricRecorded=true;set.pr='';saveActiveWorkout()}
+ }
+ paintWorkoutHoldTimer();return true;
+}
+function toggleWorkoutHoldTimer(ei,si){
+ const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];
+ if(!e||!set||set.done||exerciseMeasurementType(e.exerciseId,e.config)!=='duration')return;
+ if(workoutHoldTimerMatches(ei,si)){
+  stopWorkoutHoldTimer(true);renderWorkout();return;
+ }
+ if(workoutHoldClock)stopWorkoutHoldTimer(true);
+ workoutHoldClock={ei,si,startedAt:Date.now(),elapsed:0,interval:setInterval(paintWorkoutHoldTimer,200)};
+ renderWorkout();
+}
+function repeatPreviousWorkoutSet(ei,si){
+ const e=state.activeWorkout?.exercises?.[ei],set=e?.sets?.[si];
+ const old=workoutMetricPreviousSet(e,si);if(!set||set.done||!old)return;
+ if(workoutHoldClock)stopWorkoutHoldTimer(true);
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config);
+ set.weight=Number(old.weight)||0;set.weightEntered=old.weightEntered!==false;
+ if(measurement==='duration')set.durationSeconds=Number(old.durationSeconds)||0;
+ else if(measurement==='distance')set.distanceMeters=Number(old.distanceMeters)||0;
+ else {set.reps=Number(old.reps)||0;set.rir=old.rir??''}
+ if(measurement!=='reps')set.metricRecorded=true;
+ set.pr='';saveActiveWorkout();renderWorkout();showToast('Previous set values copied. Complete when ready.');
+}
+function guardWorkoutHoldClockVisibility(){
+ if(document.visibilityState==='hidden')stopWorkoutHoldTimer(true);
+}
+document.addEventListener('visibilitychange',guardWorkoutHoldClockVisibility);
+
+function focusedSetCardHtml(e,ei,si,ex,prev){
+ const base=e.sets[si],edit=workoutSetEditTarget(ei,si),set=edit?edit.draft:base;
+ const type=setType(set),wi=workingSetOrdinal(e,si),target=liveSetTarget(e,si,prev);
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config),loadType=exerciseLoadType(e.exerciseId,e.config);
+ const lastSet=workoutMetricPreviousSet(e,si);
+ const reference=type==='working'?setReference(prev,wi,e.exerciseId,e.config):'Not used for progression';
+ const recentLabel=lastSet?'Last set today: '+setMeasurementText(e,lastSet)+(loadType!=='bodyweight'&&Number(lastSet.weight)>0?' @ '+lastSet.weight+' '+state.profile.unit:''):'';
+ const plateText=measurement==='reps'?plateLoadText(set.weight||target.weight,ex):'';
+ const increment=Math.max(.25,Number(e.config.increment||state.settings.defaultIncrement||5));
+ const options=[0,1,2,3,4,5].map(v=>'<option value="'+v+'" '+(String(set.rir)===String(v)?'selected':'')+'>'+v+'</option>').join('');
+ const recorded=measurement==='reps'||set.done||set.metricRecorded===true;
+ function numericField(label,key,value,step,mode='decimal'){
+  let displayed=key==='weight'?displaySetWeightValue(value):key==='distanceMeters'?compactMetricNumber(distanceFromMeters(value)):value;
+  if((key==='durationSeconds'||key==='distanceMeters')&&!recorded)displayed='';
+  const quoted='&quot;'+key+'&quot;';
+  return '<div class="live-input-wrap numeric-entry"><label>'+esc(label)+'</label><div class="numeric-stepper">'+
+   '<button class="numeric-step-btn" aria-label="decrease '+esc(label)+'" onclick="changeSetValue('+ei+','+si+','+quoted+','+(-step)+')">−</button>'+
+   '<input class="direct-number" type="number" inputmode="'+mode+'" enterkeyhint="done" step="'+(key==='reps'?1:key==='weight'?.25:.1)+'" min="0" value="'+displayed+'" placeholder="'+esc(label)+'" onfocus="workoutNumberFocus(this)" onclick="workoutNumberFocus(this)" oninput="updateSet('+ei+','+si+','+quoted+',this.value)" '+(key==='weight'&&!edit?'onblur="commitFirstExerciseWeightAutofill('+ei+','+si+')"':'')+' aria-label="'+key+'">'+
+   '<button class="numeric-step-btn" aria-label="increase '+esc(label)+'" onclick="changeSetValue('+ei+','+si+','+quoted+','+step+')">+</button></div></div>';
+ }
+ let loadField='';
+ if(loadType!=='bodyweight'){
+  const label=measurement==='distance'?carryLoadLabel(ex)+' ('+state.profile.unit+')':(loadType==='assistance'?'Assistance':ex?.equipment==='bodyweight'?'Added weight':'Weight')+' ('+state.profile.unit+')';
+  loadField=numericField(label,'weight',set.weight,increment);
+ }
+ const measureLabel=measurement==='duration'?'Actual hold (seconds)':measurement==='distance'?'Actual distance ('+distanceUnitLabel()+')':'Reps';
+ const measureField=measurement==='duration'
+  ?numericField(measureLabel,'durationSeconds',set.durationSeconds||0,5)
+  :measurement==='distance'
+  ?numericField(measureLabel,'distanceMeters',set.distanceMeters||0,distanceUnitLabel()==='ft'?5:2.5)
+  :numericField(measureLabel,'reps',set.reps,1,'numeric');
+ const metricHint=measurement==='reps'?'':'<div class="metric-logging-hint">Suggested target is shown above. Enter what you actually '+(measurement==='duration'?'held':'traveled')+'.</div>';
+ const timer=measurement==='duration'&&!edit?'<div class="hold-timer-panel">'+
+   '<div class="hold-timer-display"><span class="hold-timer-caption">Hold stopwatch</span><strong id="workoutHoldTimerReadout">'+esc(holdTimerDisplay(ei,si))+'</strong></div>'+
+   '<button class="btn hold-timer-action" id="workoutHoldTimerButton" onclick="toggleWorkoutHoldTimer('+ei+','+si+')">'+(workoutHoldTimerMatches(ei,si)?'Stop · Save time':'Start hold')+'</button>'+
+   '</div>':'';
+ const repeat=lastSet&&!edit&&!base.done?'<button class="repeat-previous-set" onclick="repeatPreviousWorkoutSet('+ei+','+si+')">↻ Repeat previous set values</button>':'';
+ const measureMode=measurement==='reps'?(loadType==='bodyweight'?' is-bodyweight':''):' is-metric'+(loadField?' is-loaded':' is-unloaded');
+ return '<div class="focus-set-card set-card type-'+type+' '+(base.done?'completed ':'')+(edit?'editing':'')+'" data-set-index="'+si+'">'+
+  '<div class="focus-set-head"><div><div class="exercise-kicker">'+esc(setDisplayLabel(e,si))+' · '+(si+1)+' OF '+e.sets.length+'</div>'+
+  '<div class="focus-set-reference">'+(type==='working'?(reference==='No comparable prior set'?'First recorded session for this exercise':'Last workout: '+esc(reference)):'Not used for progression')+'</div>'+
+  (recentLabel?'<div class="focus-set-today">'+esc(recentLabel)+'</div>':'')+'</div>'+
+  (edit?'<button class="focus-set-edit-cancel" onclick="cancelWorkoutSetEdit()">Cancel</button>':'<button class="focus-set-options" onclick="openFocusedSetOptions('+ei+','+si+')" aria-label="Set options">•••</button>')+'</div>'+
+  (edit?'<div class="focus-set-edit-banner"><b>Editing completed set</b><span>Adjust your actual logged values, then update this set.</span></div>':'')+
+  (type==='working'?'<div class="focus-set-target"><span class="set-target">'+esc(targetBadgeText(target,ex,e.config))+'</span>'+(loadType==='bodyweight'?'<span class="metric-bodyweight-chip">Bodyweight</span>':'')+'</div>':'<div class="set-nonprogress-note">'+esc(setProgressionNote(type))+'</div>')+
+  metricHint+
+  '<div class="live-entry'+measureMode+'">'+loadField+measureField+
+  (measurement==='reps'?'<div class="live-input-wrap rir-small"><div class="input-label-row"><label>RIR</label></div><select onchange="updateSet('+ei+','+si+',&quot;rir&quot;,this.value)"><option value="">—</option>'+options+'</select></div>':'')+'</div>'+
+  timer+repeat+
+  (plateText?'<div class="plates">'+esc(plateText)+'</div>':'')+
+  (edit?'<button class="complete-set update-set" onclick="commitWorkoutSetEdit()">Update Set</button>':'<button class="complete-set '+(base.done?'done':'')+'" onclick="'+(base.done?('beginWorkoutSetEdit('+ei+','+si+')'):('toggleSet('+ei+','+si+')'))+'">'+(base.done?'Edit Set':'Complete Set')+'</button>')+
+  (!edit&&base.pr?'<div class="pr-banner"><span class="inline-pr-mark">PR</span> '+esc(base.pr)+'</div>':'')+'</div>';
+}
+function focusedExerciseCanvasHtml(w,ei,workoutCoach=null,counts=null){
+ const e=w.exercises[ei],ex=exById(e.exerciseId),prev=previousExercise(e.exerciseId,state.activeWorkout?.programId||null,e.config),si=workoutFocusedSetIndex(w),prog=exerciseSetProgress(e),superset=supersetMeta(ei);
  const next=nextWorkoutExerciseIndex(ei,w),allDone=!workoutHasRemainingProgrammedWork(w);
- return '<div class="focus-exercise-stage" data-exercise-index="'+ei+'">'+workoutExerciseNavigatorHtml(w,ei)+
+ return '<div class="focus-exercise-stage" data-exercise-index="'+ei+'">'+workoutExerciseNavigatorHtml(w,ei,workoutCoach,counts)+
   '<div id="workoutExercise-'+ei+'" class="focus-exercise-canvas tone-'+(ei%4)+' '+(prog.complete?'complete-block':'')+'">'+
   '<div class="focus-exercise-actions"><button class="btn secondary" onclick="openWorkoutSubstitute('+ei+')">⇄ Substitute</button>'+
   '<button class="btn secondary focus-more-btn" onclick="openFocusedExerciseMore('+ei+')">More ···</button></div>'+
   focusedCoachTargetHtml(e,ei,ex,prev)+
-  (superset?'<div class="superset-note"><b>Superset '+superset.label+'</b> · '+esc(supersetNames(superset.id))+'<br>Complete this set, then Swole Cat will rotate to the paired movement.</div>':'')+
+  (superset?supersetFlowHtml(w,ei,si):'')+
   focusedSetRailHtml(e,ei,si)+focusedSetCardHtml(e,ei,si,ex,prev)+
   (allDone?'<div class="focus-workout-complete"><div><div class="eyebrow">SESSION READY</div><b>All programmed sets complete.</b></div><button class="btn green" onclick="finishWorkout()">Finish Workout</button></div>':
    (prog.complete&&next>=0?'<div class="focus-exercise-footer"><button class="btn secondary" onclick="deferFocusedExercise()">Go to unfinished exercise</button></div>':''))+
@@ -1049,6 +1608,22 @@ function focusedExerciseCanvasHtml(w,ei){
 }
 
 let workoutKeyboardAnchorBound=false;
+let workoutKeyboardDockBound=false;
+function bindWorkoutKeyboardDock(){
+ if(workoutKeyboardDockBound)return;
+ workoutKeyboardDockBound=true;
+ document.addEventListener('focusin',function(event){
+  if(event.target?.matches?.('#workout .focus-set-card input.direct-number'))
+   document.documentElement.classList.add('workout-keyboard-active');
+ });
+ document.addEventListener('focusout',function(event){
+  if(!event.target?.matches?.('#workout .focus-set-card input.direct-number'))return;
+  setTimeout(function(){
+   if(!document.activeElement?.matches?.('#workout .focus-set-card input.direct-number'))
+    document.documentElement.classList.remove('workout-keyboard-active');
+  },80);
+ });
+}
 function anchorFocusedWorkoutSet(behavior='auto'){
  const card=document.querySelector('.focus-set-card');if(!card)return;
  const header=Math.max(0,Math.round((document.querySelector('header')&&document.querySelector('header').getBoundingClientRect().height)||0));
@@ -1057,6 +1632,7 @@ function anchorFocusedWorkoutSet(behavior='auto'){
  window.scrollTo({top:top,behavior:behavior});
 }
 function bindWorkoutKeyboardAnchor(){
+ bindWorkoutKeyboardDock();
  if(workoutKeyboardAnchorBound||!window.visualViewport)return;
  workoutKeyboardAnchorBound=true;
  window.visualViewport.addEventListener('resize',function(){
@@ -1066,6 +1642,7 @@ function bindWorkoutKeyboardAnchor(){
  });
 }
 function workoutNumberFocus(el){
+ document.documentElement.classList.add('workout-keyboard-active');
  smartNumberFocus(el);
  setTimeout(function(){
    if(document.activeElement!==el)return;
@@ -1075,21 +1652,31 @@ function workoutNumberFocus(el){
 
 
 function renderWorkout(){
+ document.documentElement.classList.remove('workout-keyboard-active');
  const w=state.activeWorkout;
+ if(workoutHoldClock){
+  const same=w&&Number(w.focusExerciseIndex)===workoutHoldClock.ei&&Number(w.focusSetIndex)===workoutHoldClock.si;
+  if(!same)stopWorkoutHoldTimer(true);
+ }
  if(!w){document.getElementById('workoutArea').innerHTML='<div class="empty">No active workout.</div>';return;}
  const focus=normalizeWorkoutFocusState(w);
  const counts=workoutCounts(),pct=counts.total?Math.round(counts.done/counts.total*100):0,workoutCoach=workoutCoachSignal();
  let html='<div class="focus-session-strip">'+
-  '<div class="focus-session-primary"><span class="focus-session-label"><span class="active-pulse"></span>ACTIVE</span><b class="focus-session-name" title="'+escAttr(w.routineName)+'">'+esc(w.routineName)+'</b></div>'+
+  '<div class="focus-session-primary"><span class="focus-session-label"><span class="active-pulse"></span>'+(w.programPhase==='deload'?'DELOAD':'ACTIVE')+'</span><b class="focus-session-name" title="'+escAttr(w.routineName)+'">'+esc(w.routineName)+'</b></div>'+
   '<div class="focus-session-stats"><span>'+counts.done+'/'+counts.total+' sets</span><span>'+pct+'%</span><span>'+workoutElapsed()+'</span></div></div>'+
   '<div class="focus-session-progress"><div style="width:'+pct+'%"></div></div>';
+ if(w.programPhase==='deload')html+='<div class="workout-deload-note"><b>☾ Deload week · intentionally lighter training</b><span>Fewer working sets and controlled reps. Your normal progression targets are preserved for the next training week. You can adjust today\'s sets.</span></div>';
  if(workoutCoach)html+='<details class="focus-session-coach"><summary>Coach session note</summary><div class="coachbox '+workoutCoach.level+'"><div class="coach-text">'+esc(workoutCoach.text)+'</div>'+
   (workoutCoach.level==='reset'?'<div class="actions"><button class="btn small secondary" onclick="applyLightSession()">Use a 7.5% lighter session</button></div>':'')+'</div></details>';
- html+=focus>=0?focusedExerciseCanvasHtml(w,focus):'<div class="empty">No available exercise.</div>';
+ html+=focus>=0?focusedExerciseCanvasHtml(w,focus,workoutCoach,counts):'<div class="empty">No available exercise.</div>';
  document.getElementById('workoutArea').innerHTML=html;
  bindWorkoutKeyboardAnchor();
  applyWorkoutMotionCues();
  requestAnimationFrame(syncWorkoutStickyOffsets);
+ if(workoutViewportFocusQueued){
+  workoutViewportFocusQueued=false;
+  requestAnimationFrame(()=>requestAnimationFrame(focusWorkoutViewportAfterAdvance));
+ }
 }
 
 const firstExerciseWeightSeedTimers=new Map();
@@ -1104,6 +1691,7 @@ function paintWorkoutSetWeight(ei,si){
 }
 function applyFirstExerciseWeightAutofill(ei,sourceSi){
  const e=state.activeWorkout?.exercises?.[ei],source=e?.sets?.[sourceSi];
+ if(e&&exerciseLoadType(e.exerciseId,e.config)==='bodyweight')return false;
  if(!e||!source||e.firstWeightAutofillDone)return false;
  if(exerciseHasLoggedWeightHistory(e.exerciseId))return false;
  if(!isProgressionSet(source))return false;
@@ -1145,17 +1733,32 @@ function commitFirstExerciseWeightAutofill(ei,si){
  return applyFirstExerciseWeightAutofill(ei,si);
 }
 function updateSet(ei,si,k,v){
- const s=state.activeWorkout.exercises[ei].sets[si];
- if(k==='rir')s[k]=(v===''?'':+v);
+ const edit=workoutSetEditTarget(ei,si),s=edit?edit.draft:state.activeWorkout.exercises[ei].sets[si];
+ if(k==='durationSeconds'&&workoutHoldClock)stopWorkoutHoldTimer(false);
+ if(k==='rir')s[k]=(v===''?'':Math.max(0,+v||0));
+ else if(k==='distanceMeters')s[k]=v===''?0:Math.max(0,distanceToMeters(Number(v)||0));
  else s[k]=(v===''?0:Math.max(0,+v||0));
+ if(k==='durationSeconds'||k==='distanceMeters')s.metricRecorded=v!==''&&Number(v)>0;
+ if(k==='weight')s.weightEntered=v!=='';
  if(k!=='rir')s.pr='';
- saveActiveWorkout(true);
+ if(edit)return;
+ saveActiveWorkout(true,false);
  if(k==='weight')scheduleFirstExerciseWeightAutofill(ei,si);
 }
 function toggleSet(ei,si){
  const w=state.activeWorkout,e=w.exercises[ei],set=e.sets[si];
+ const measurement=exerciseMeasurementType(e.exerciseId,e.config);
+ if(!set.done&&measurement==='duration'&&workoutHoldTimerMatches(ei,si))stopWorkoutHoldTimer(true);
+ if(!set.done&&actualMetricValue(e,set)<=0){
+  showToast(measurement==='duration'?'Measure or enter your actual hold time first':measurement==='distance'?'Enter the distance you actually traveled':'Enter completed repetitions first');
+  return;
+ }
+ if(!set.done&&measurement==='distance'&&exerciseLoadType(e.exerciseId,e.config)==='external'&&!set.weightEntered&&!(Number(set.weight)>0)){
+  showToast('Enter the weight carried, including 0 if intentionally unloaded');return;
+ }
  set.done=!set.done;w.focusExerciseIndex=ei;
  if(set.done){
+  queueWorkoutViewportFocus();
    set.pr=isProgressionSet(set)?detectPR(e.exerciseId,set):'';
    haptic(set.pr?[35,40,70]:25);
    if(isProgressionSet(set)&&advanceSupersetAfterSet(ei,si))return;
@@ -1170,23 +1773,114 @@ function toggleSet(ei,si){
  }
  saveActiveWorkout();renderWorkout();
 }
-function updateNotes(ei,v){state.activeWorkout.exercises[ei].notes=v;saveActiveWorkout(true);}
+function updateNotes(ei,v){state.activeWorkout.exercises[ei].notes=v;saveActiveWorkout(true,false);}
 let restInterval=null,restLeft=0;
 function workoutHasRemainingProgrammedWork(w=state.activeWorkout){
  return !!w?.exercises?.some(e=>!e.skipped&&(e.sets||[]).some(s=>!s.done));
 }
-function syncRestTimerDock(){
- const nav=document.querySelector('nav'),root=document.documentElement;
- const navHeight=Math.max(58,Math.round(nav?.getBoundingClientRect().height||0));
- root.style.setProperty('--rest-nav-height',navHeight+'px');
+let restNotchClearanceFrame=0;
+function syncRestDockHousing(){
+ const nav=document.querySelector('nav'),box=document.getElementById('restTimer');
+ const svg=document.getElementById('restNavHousing');
+ const fill=document.getElementById('restNavHousingFill');
+ const contour=document.getElementById('restNavHousingContour');
+ if(!nav||!box||!svg||!fill||!contour||!nav.classList.contains('rest-notch-integrated'))return;
+ const width=nav.getBoundingClientRect().width;
+ if(!Number.isFinite(width)||width<120)return;
+ // One contour owns the entire nav rail and the raised countdown crest.
+ // Reuse existing notch geometry, rather than moving or resizing the timer.
+ const notchWidth=box.offsetWidth||parseFloat(window.getComputedStyle(box).width)||154;
+ const notchHeight=box.offsetHeight||parseFloat(window.getComputedStyle(box).height)||35;
+ const recess=parseFloat(box.style.getPropertyValue('--rest-notch-recess'))||17;
+ const rise=Math.max(3,Math.min(150,Math.round(notchHeight-recess)));
+ const center=width/2,left=center-notchWidth/2,right=center+notchWidth/2;
+ const a=Math.max(4,left-20),b=Math.min(width-4,right+20);
+ const fmt=n=>Math.round(n*10)/10;
+ const edge='M 0 '+rise+' L '+fmt(a)+' '+rise+
+  ' C '+fmt(left-8)+' '+rise+' '+fmt(left-10)+' 1 '+fmt(left+4)+' 1'+
+  ' L '+fmt(right-4)+' 1'+
+  ' C '+fmt(right+10)+' 1 '+fmt(right+8)+' '+rise+' '+fmt(b)+' '+rise+
+  ' L '+fmt(width)+' '+rise;
+ const bottom=rise+7;
+ const shape=edge+' L '+fmt(width)+' '+bottom+' L 0 '+bottom+' Z';
+ svg.setAttribute('viewBox','0 0 '+fmt(width)+' '+bottom);
+ svg.style.setProperty('--rest-housing-rise',rise+'px');
+ fill.setAttribute('d',shape);
+ contour.setAttribute('d',edge);
 }
+function syncRestNotchSeam(){
+ const box=document.getElementById('restTimer'),nav=document.querySelector('nav'),root=document.documentElement;
+ if(!nav)return;
+ const visible=!!box?.classList.contains('show')&&!root.classList.contains('workout-keyboard-active')&&
+  !root.classList.contains('keyboard-open');
+ // One complete full-width rail lifts rigidly; the notch geometry never
+ // changes when the controls open. The five nav buttons remain stationary.
+ nav.classList.toggle('rest-notch-integrated',visible);
+ nav.classList.toggle('rest-rail-raised',visible&&box.classList.contains('expanded'));
+ if(visible)syncRestDockHousing();
+}
+function syncRestNotchClearance(){
+ const box=document.getElementById('restTimer'),nav=document.querySelector('nav');
+ if(!box||!nav)return;
+ if(!box.classList.contains('show')){
+  box.classList.remove('rest-notch-obstructed');
+  syncRestNotchSeam();return;
+ }
+ const navRect=nav.getBoundingClientRect();
+ const centerGlyph=nav.querySelector('[data-go="exercises"] .nav-glyph');
+ const glyphTop=Number(centerGlyph?.getBoundingClientRect().top);
+ const maxRecess=Number.isFinite(glyphTop)?Math.max(0,glyphTop-navRect.top-5):17;
+ // The rest countdown stays pinned while the user reviews their workout.
+ // No action-position-based hiding, sliding, or scrolling on scroll events.
+ const recess=Math.min(17,maxRecess);
+ box.classList.remove('rest-notch-obstructed');
+ box.style.setProperty('--rest-notch-recess',Math.round(recess)+'px');
+ syncRestNotchSeam();
+}
+function queueRestNotchClearance(){
+ if(restNotchClearanceFrame)return;
+ restNotchClearanceFrame=requestAnimationFrame(()=>{
+  restNotchClearanceFrame=0;
+  syncRestTimerDock();
+  syncRestNotchClearance();
+ });
+}
+function syncRestTimerDock(){
+ const nav=document.querySelector('nav');if(!nav)return;
+ const root=document.documentElement,rect=nav.getBoundingClientRect();
+ root.style.setProperty('--rest-nav-height',Math.max(58,Math.round(rect.height||0))+'px');
+ root.style.setProperty('--rest-nav-offset',Math.max(0,Math.round(window.innerHeight-rect.top))+'px');
+ root.style.setProperty('--rest-nav-center',Math.round(rect.left+rect.width/2)+'px');
+ root.style.setProperty('--rest-nav-width',Math.round(rect.width)+'px');
+}
+window.addEventListener('resize',queueRestNotchClearance,{passive:true});
+window.visualViewport?.addEventListener('resize',queueRestNotchClearance,{passive:true});
+window.addEventListener('scroll',queueRestNotchClearance,{passive:true});
 function paintRestTimer(){
- const box=document.getElementById('restTimer'),txt=document.getElementById('restTimerText');if(!box||!txt)return;
- const m=Math.floor(restLeft/60),s=String(Math.max(0,restLeft%60)).padStart(2,'0');txt.textContent=`${m}:${s}`;
+ const box=document.getElementById('restTimer'),txt=document.getElementById('restTimerText');
+ const m=Math.floor(restLeft/60),s=String(Math.max(0,restLeft%60)).padStart(2,'0'),time=`${m}:${s}`;
+ if(box&&txt)txt.textContent=time;
+ const homeTxt=document.getElementById('homeActiveRestText');
+ if(homeTxt)homeTxt.textContent=time;
+}
+function syncRestTrayControls(){
+ const box=document.getElementById('restTimer');if(!box)return;
+ const expanded=box.classList.contains('show')&&box.classList.contains('expanded');
+ const main=box.querySelector('.rest-main'),actions=box.querySelector('.rest-actions');
+ main?.setAttribute('aria-expanded',String(expanded));
+ main?.setAttribute('aria-label',expanded?'Hide rest timer controls':'Show rest timer controls');
+ actions?.setAttribute('aria-hidden',String(!expanded));
+ actions?.querySelectorAll('button').forEach(button=>{button.tabIndex=expanded?0:-1});
+ syncRestNotchSeam();
 }
 function toggleRestTimerExpanded(){
  const box=document.getElementById('restTimer');if(!box?.classList.contains('show'))return;
  box.classList.toggle('expanded');
+ // The entire nav contour and the countdown translate together. Buttons
+ // appear beneath the lifted crest. Overlaying workout content while expanded
+ // is intentional: never shift the user's carefully positioned workout.
+ syncRestTrayControls();
+ if(!box.classList.contains('expanded'))queueRestNotchClearance();
 }
 function startRestTimer(seconds){
  stopRestTimer();
@@ -1194,15 +1888,18 @@ function startRestTimer(seconds){
  restLeft=Math.max(0,Number(seconds)||120);
  syncRestTimerDock();
  const box=document.getElementById('restTimer');
- box?.classList.remove('expanded');box?.classList.add('show');paintRestTimer();
+ box?.classList.remove('expanded','rest-notch-obstructed');
+ box?.classList.add('show');syncRestTrayControls();paintRestTimer();
+ queueRestNotchClearance();
  restInterval=setInterval(()=>{restLeft--;paintRestTimer();if(restLeft<=0){stopRestTimer();haptic([120,80,120]);}},1000);
 }
 function adjustRestTimer(delta){restLeft=Math.max(0,restLeft+delta);paintRestTimer();if(restLeft===0)stopRestTimer();}
 function stopRestTimer(){
  if(restInterval)clearInterval(restInterval);restInterval=null;restLeft=0;
- const box=document.getElementById('restTimer');box?.classList.remove('show','expanded');
+ const box=document.getElementById('restTimer');box?.classList.remove('show','expanded','rest-notch-obstructed');
+ syncRestTrayControls();
 }
-function cancelWorkout(){confirmAction('Cancel active workout?','This deletes the autosaved active workout draft. Completed workout history is not affected.',()=>{stopRestTimer();state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();go('home',{resetHistory:true});showToast('Active workout cancelled');});}
+function cancelWorkout(){confirmAction('Cancel active workout?','This deletes the autosaved active workout draft. Completed workout history is not affected.',()=>{stopRestTimer();stopWorkoutHoldTimer(false);state.activeWorkout=null;save();updateActiveWorkoutChrome();releaseWakeLock();go('home',{resetHistory:true});showToast('Active workout cancelled');});}
 
 function unfinishedWorkoutExercises(w){
  w=w||state.activeWorkout;if(!w)return [];
@@ -1242,12 +1939,17 @@ function openUnfinishedWorkoutReview(){
 function finishWorkout(allowIncomplete=false){
  const w=state.activeWorkout;if(!w)return;
  const completed=w.exercises.some(function(e){return e.sets.some(function(s){return s.done})});
- if(!completed&&!allowIncomplete&&!confirm('No sets are marked complete. Save anyway?'))return;
+ if(!completed&&!allowIncomplete){
+   openModal('No completed sets',
+    '<div class="notice"><b>No sets are marked complete yet.</b><br>If you finish now, Swole Cat will save this workout with no completed sets.</div>'+
+    '<div class="actions"><button class="btn danger" onclick="finishWorkout(true)">Finish Anyway</button><button class="btn secondary" onclick="closeModal()">Keep Working Out</button></div>');
+   return;
+ }
  const unfinished=unfinishedWorkoutExercises(w);
  if(unfinished.length&&!allowIncomplete){openUnfinishedWorkoutReview();return}
  closeModal();
  const routine=state.routines.find(function(x){return x.id===w.routineId});
- if(w.structureDirty&&routine){
+ if(w.structureDirty&&routine&&w.programPhase!=='deload'){
    openModal('Update your routine?',
     '<div class="notice">You changed today’s workout structure. Choose whether those structural changes stay only in this session or become the new saved version of <b>'+esc(routine.name)+'</b>.<br><br><b>Skip status is always today-only.</b> Updating the routine saves the current exercise order, today-only additions or removals, substitutions, supersets, and number of working sets.</div>'+
     '<div class="actions"><button class="btn green" onclick="finalizeWorkout(true)">Finish + Update Routine</button>'+
@@ -1259,11 +1961,15 @@ function finishWorkout(allowIncomplete=false){
 }
 function finalizeWorkout(updateRoutine=false){
  const w=state.activeWorkout;if(!w)return;
+ stopWorkoutHoldTimer(true);
  stopRestTimer();
- if(updateRoutine)syncActiveWorkoutStructureToRoutine();
+ if(updateRoutine&&!syncActiveWorkoutStructureToRoutine())updateRoutine=false;
  closeModal();
  const end=new Date(),duration=Math.max(0,Math.round(workoutElapsedMs(w,end.getTime())/60000));
- const session={id:w.id,routineId:w.routineId,routineName:w.routineName,trainingMode:normalizeTrainingMode(w.trainingMode),programId:w.programId||null,status:'finished',date:end.toISOString(),startDate:w.startDate,durationMinutes:duration,exercises:w.exercises};
+ const session={id:w.id,routineId:w.routineId,routineName:w.routineName,trainingMode:normalizeTrainingMode(w.trainingMode),
+  programId:w.programId||null,programPhase:w.programPhase==='deload'?'deload':'normal',
+  programWeekKey:w.programWeekKey||null,programWeekIndex:w.programWeekIndex||null,
+  status:'finished',date:end.toISOString(),startDate:w.startDate,durationMinutes:duration,exercises:w.exercises};
  const progressHighlights=sessionProgressHighlights(session,state.sessions);
  state.sessions=[...state.sessions,session];
  advanceProgramAfterWorkout(session);

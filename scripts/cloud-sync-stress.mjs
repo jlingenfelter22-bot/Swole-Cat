@@ -12,8 +12,8 @@ const settingsSource=fs.readFileSync('src/js/09-settings-ui-bootstrap.js','utf8'
 const coreSource=fs.readFileSync('src/js/01-core-runtime.js','utf8');
 const html=fs.readFileSync('/tmp/swole-cat-test.html','utf8');
 
-assert.equal(pkg.version,'0.73.1');
-assert.equal(pkg.swoleCat.androidVersionCode,104);
+assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'package version should be a semantic x.y.z app version');
+assert(Number.isInteger(pkg.swoleCat.androidVersionCode)&&pkg.swoleCat.androidVersionCode>=1,'Android versionCode should be a positive integer');
 assert.match(syncSource,/SWOLE_CAT_SYNC_AUTO_DELAY_MS=4000/);
 assert.match(syncSource,/SWOLE_CAT_SYNC_AUTO_REFRESH_MS=5\*60\*1000/);
 assert.match(syncSource,/syncScheduleAuto\('save'\)/,'ordinary state saves should schedule background sync');
@@ -113,7 +113,7 @@ async function makeApp(initial){
     async signInWithGoogle(){return {user:{id:'sync-user-1',email:'sync@example.com',provider:'google'}};},
     async reauthenticateWithGoogle(){return {redirecting:true};},
     async deleteAccount(){return {ok:true};},
-    async signOut(){return {ok:true};}
+    async signOut(){if(w.__fakeSignOutFails)throw new Error('Sign-out provider unavailable');return {ok:true};}
   });
   assert.equal(identity.snapshot().signedIn,true);
   const probe={z:2,a:'hash compatibility'};
@@ -357,4 +357,139 @@ assert(!backend.records.has(recordKey('sync-user-1','routine','never-synced')),'
 
 a.dom.window.close();
 b.dom.window.close();
-console.log('Swole Cat v0.69.0 record-level multi-device sync PASS');
+
+// An established local account must never cross-upload history to another
+// Google identity merely because the user signs out and signs in differently.
+backend.devices.clear();
+backend.records.clear();
+backend.seq=0;
+const accountState=baseState('Account A training');
+accountState.sessions=[{id:'private-session-a',date:'2026-10-10T10:00:00.000Z',routineName:'Private A',exercises:[]}];
+const accountApp=await makeApp(accountState);
+await accountApp.sync.registerProvider(backendProvider());
+await accountApp.sync.syncNow();
+assert(backend.records.has(recordKey('sync-user-1','session','private-session-a')),
+  'initial cloud owner receives its own completed workout');
+
+const rawA=accountApp.w.localStorage.getItem('overload_v3');
+
+// Refuse to switch when cloud is unavailable, or when the current workout is
+// unfinished. Both refusals preserve the signed-in identity and local state.
+backend.fail=true;
+await assert.rejects(()=>accountApp.identity.signOut(),/offline/);
+assert.equal(accountApp.identity.snapshot().user.id,'sync-user-1');
+assert.equal(accountApp.w.localStorage.getItem('overload_v3'),rawA);
+backend.fail=false;
+
+accountApp.w.eval("state.activeWorkout={id:'incomplete',status:'active',exercises:[]};save()");
+await assert.rejects(()=>accountApp.identity.signOut(),/Finish your active workout/);
+assert.equal(accountApp.identity.snapshot().user.id,'sync-user-1');
+accountApp.w.eval('state.activeWorkout=null;save()');
+
+// A provider sign-out failure must leave the old account live and its local
+// training intact. The pending transaction is rolled back safely.
+accountApp.w.__fakeSignOutFails=true;
+await assert.rejects(()=>accountApp.identity.signOut(),/Sign-out provider unavailable/);
+assert.equal(accountApp.identity.snapshot().user.id,'sync-user-1');
+assert.equal(JSON.parse(accountApp.w.localStorage.getItem('overload_v3')).sessions[0].id,'private-session-a');
+assert.equal(accountApp.w.localStorage.getItem('swolecat-account-exit-pending-v1'),null);
+accountApp.w.__fakeSignOutFails=false;
+
+// The second cloud owner already has unrelated real training.
+const bSession={
+  owner_id:'sync-user-2',record_type:'session',record_id:'private-session-b',
+  payload_json:{id:'private-session-b',date:'2026-10-12T10:00:00.000Z',routineName:'Private B',exercises:[]},
+  record_version:1,server_change_seq:++backend.seq,source_device_id:'other-device',
+  client_updated_at:new Date().toISOString(),server_updated_at:new Date().toISOString(),
+  deleted_at:null,schema_version:1,last_mutation_id:'other-mutation'
+};
+backend.records.set(recordKey('sync-user-2','session','private-session-b'),bSession);
+
+// Generic recovery/undo snapshots must be replaced by the owner-specific
+// safety copy rather than leaking into a different Google workspace.
+accountApp.w.localStorage.setItem('overload_v3_recovery_v1',JSON.stringify({raw:'old A recovery'}));
+accountApp.w.localStorage.setItem('overload_v3_pre_import_v1',JSON.stringify({raw:'old A import undo'}));
+const beforeExit=accountApp.w.localStorage.getItem('overload_v3');
+const syncBeforeExit=[...backend.records.values()].filter(row=>row.owner_id==='sync-user-1').length;
+await accountApp.identity.signOut();
+assert.equal(accountApp.identity.snapshot().signedIn,false,'sign-out should complete only after owner A sync');
+assert.equal(JSON.parse(accountApp.w.localStorage.getItem('overload_v3')).sessions.length,0,'signed-out workspace has no A workouts');
+const snapshotA=JSON.parse(accountApp.w.localStorage.getItem('swolecat-account-exit-snapshot-v1:sync-user-1'));
+assert.equal(snapshotA.ownerId,'sync-user-1');
+assert.equal(JSON.parse(snapshotA.raw).sessions[0].id,'private-session-a','A history is kept in a durable account-specific snapshot');
+assert.equal(snapshotA.raw,beforeExit,'exit snapshot includes exactly the last synced device state');
+assert.equal(accountApp.w.localStorage.getItem('swolecat-account-exit-pending-v1'),null);
+assert.equal(accountApp.w.localStorage.getItem('overload_v3_recovery_v1'),null,'old generic recovery must not leak to B');
+assert.equal(accountApp.w.localStorage.getItem('overload_v3_pre_import_v1'),null,'old import undo must not leak to B');
+assert.equal(JSON.parse(accountApp.w.localStorage.getItem('swolecat-sync-local-v1')).ownerId,null,
+ 'new workspace cannot carry A sync bookkeeping into B');
+assert([...backend.records.values()].filter(row=>row.owner_id==='sync-user-1').length>=syncBeforeExit,
+ 'A records remain in its own cloud without deletions');
+const secondIdentityProvider={
+  async restoreSession(){return {user:{id:'sync-user-2',email:'other@example.com',provider:'google'}};},
+  async signInWithGoogle(){return {user:{id:'sync-user-2',email:'other@example.com',provider:'google'}};},
+  async reauthenticateWithGoogle(){return {redirecting:true};},
+  async deleteAccount(){return {ok:true};},
+  async signOut(){return {ok:true};}
+};
+await accountApp.identity.registerProvider(secondIdentityProvider);
+assert.equal(accountApp.identity.snapshot().user.id,'sync-user-2');
+await accountApp.sync.syncNow();
+const stateB=JSON.parse(accountApp.w.localStorage.getItem('overload_v3'));
+assert.deepEqual(stateB.sessions.map(s=>s.id),['private-session-b'],
+  'B first imports only its own cloud sessions, never A local history');
+assert(!backend.records.has(recordKey('sync-user-2','session','private-session-a')),
+ 'switching to B cannot upload A workout');
+assert(accountApp.sync.canUse(),'fresh B workspace must sync without legacy account-mismatch errors');
+
+// Switching back to A should first sync B, then create its own safety snapshot,
+// and restore A only from A's cloud, with no B history crossing back.
+await accountApp.identity.signOut();
+const snapshotB=JSON.parse(accountApp.w.localStorage.getItem('swolecat-account-exit-snapshot-v1:sync-user-2'));
+assert.equal(JSON.parse(snapshotB.raw).sessions[0].id,'private-session-b');
+const firstProvider={
+  ...secondIdentityProvider,
+  async restoreSession(){return {user:{id:'sync-user-1',email:'sync@example.com',provider:'google'}};}
+};
+await accountApp.identity.registerProvider(firstProvider);
+await accountApp.sync.syncNow();
+const roundTrip=JSON.parse(accountApp.w.localStorage.getItem('overload_v3'));
+assert.deepEqual(roundTrip.sessions.map(s=>s.id),['private-session-a'],'A cloud restores only A');
+assert(!backend.records.has(recordKey('sync-user-1','session','private-session-b')),'B workout cannot leak into A');
+
+// Existing v0.87.9 erase protection still pauses automatic rehydration until
+// a user deliberately selects Sync Now.
+accountApp.sync.resetLocalMetadata();
+accountApp.w.eval('state=freshState();save()');
+let isolated=JSON.parse(accountApp.w.localStorage.getItem('swolecat-sync-local-v1'));
+assert.equal(isolated.ownerId,'sync-user-1');
+assert.equal(isolated.pausedAfterErase,true);
+accountApp.sync.scheduleAuto('erase-test',5,true);
+await wait(70);
+assert.equal(JSON.parse(accountApp.w.localStorage.getItem('overload_v3')).sessions.length,0);
+await accountApp.sync.syncNow();
+isolated=JSON.parse(accountApp.w.localStorage.getItem('swolecat-sync-local-v1'));
+assert.equal(isolated.pausedAfterErase,false);
+
+// Assisted/bodyweight movements legitimately have no external-load Coach
+// signal. They still need to render the complete Progress dashboard.
+const assistanceExercise=accountApp.w.allExercises().find(ex=>ex.loadType==='assistance'||/assisted pull.?up/i.test(ex.name));
+assert(assistanceExercise,'the movement library should include an assisted exercise');
+accountApp.w.eval('state.sessions=[{id:"progress-assistance-fixture",date:new Date().toISOString(),routineName:"Training",exercises:[{exerciseId:'+JSON.stringify(assistanceExercise.id)+',sets:[{done:true,type:"working",weight:15,reps:12}]}]}];save()');
+accountApp.w.renderAnalytics();
+assert.match(accountApp.w.document.getElementById('analyticsArea').textContent,/Progress at a glance/,
+ 'assistance movements must show normal Progress, not a blank screen or recovery fallback');
+
+// An unexpected analytics calculation must show a useful state instead of
+// replacing the entire Progress area with a blank screen.
+accountApp.w.eval("renderAnalyticsContent=()=>{throw new Error('Synthetic analytics mismatch')}");
+accountApp.w.renderAnalytics();
+const visible=accountApp.w.document.getElementById('analyticsArea').textContent;
+assert.match(visible,/Progress could not display/);
+assert.match(visible,/Synthetic analytics mismatch/);
+assert.match(visible,/Export safety backup/);
+assert.equal(accountApp.w.localStorage.getItem('overload_v3')!==null,true,
+ 'analytics fallback must never erase local workout data');
+accountApp.dom.window.close();
+
+console.log('Swole Cat v0.88.0 safe cloud account handoff, owner-specific snapshots, and Progress fallback PASS');

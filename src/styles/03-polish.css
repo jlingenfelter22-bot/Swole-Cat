@@ -767,16 +767,16 @@
   .workout-context-control{display:none}
   .workout-context-control.show{display:inline-flex}
   .workout-context-control[data-state="pause"]{
-    color:#ffd7ec;
-    border-color:rgba(255,46,136,.58);
+    color:#ffd79a;
+    border-color:color-mix(in srgb,var(--signal-warning) 58%,transparent);
     box-shadow:
       inset 0 1px 0 rgba(255,255,255,.045),
-      0 0 0 1px rgba(34,211,238,.055),
+      0 0 0 1px color-mix(in srgb,var(--signal-warning) 6%,transparent),
       0 8px 18px rgba(0,0,0,.22);
   }
   .workout-context-control[data-state="resume"]{
-    color:#bff8ff;
-    border-color:rgba(34,211,238,.58);
+    color:#caffdc;
+    border-color:color-mix(in srgb,var(--signal-active) 58%,transparent);
   }
   .workout-context-control .header-control-svg{
     width:20px;
@@ -785,16 +785,16 @@
     z-index:1;
   }
   .workout-context-control[data-state="pause"] .header-control-svg{
-    color:#ff4fa4;
+    color:var(--signal-warning);
     fill:currentColor;
     stroke:none;
-    filter:drop-shadow(0 0 5px rgba(255,46,136,.28));
+    filter:drop-shadow(0 0 5px color-mix(in srgb,var(--signal-warning) 28%,transparent));
   }
   .workout-context-control[data-state="resume"] .header-control-svg{
-    color:#4eeaff;
+    color:var(--signal-active);
     fill:currentColor;
     stroke:none;
-    filter:drop-shadow(0 0 5px rgba(34,211,238,.28));
+    filter:drop-shadow(0 0 5px color-mix(in srgb,var(--signal-active) 28%,transparent));
   }
   .settings-header-control{
     display:inline-flex;
@@ -861,6 +861,131 @@
   .coach-question{font-size:1.15rem;font-weight:950;margin:3px 0 10px}
   .coach-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   @media(max-width:430px){.coach-exercise{grid-template-columns:34px minmax(0,1fr)}.coach-exercise-actions{grid-column:2;justify-content:flex-start}.coach-choice-grid{grid-template-columns:1fr 1fr}}
+
+  /* COACH v0.93 // narrow Android preview and day-editor usability.
+     Scoped to Coach; do not alter established workout/session cards. */
+  .coach-program-day-card{min-width:0}
+  .coach-program-day-head{align-items:flex-start}
+  .coach-program-day-summary,.coach-preview-heading{min-width:0;flex:1 1 auto}
+  .coach-program-day-head>.tag{flex:0 0 auto}
+  .coach-program-exercise-row>.grow{min-width:0}
+  .coach-program-exercise-row .exercise-name{overflow-wrap:anywhere}
+  .coach-program-exercise-actions{flex:0 0 auto}
+  .coach-day-editor{min-width:0}
+  .coach-day-editor .search{min-width:0;min-height:48px;font-size:16px}
+  .coach-day-editor label{line-height:1.45;margin-bottom:6px}
+  .coach-day-custom-field[hidden]{display:none!important}
+  .coach-split-guidance .btn{text-align:left;white-space:normal;min-height:48px;line-height:1.4}
+  .coach-split-guidance .btn .mini{display:block;margin-top:4px;font-weight:500;line-height:1.5}
+  @media(max-width:430px){
+    .coach-choice-grid.coach-split-guidance{grid-template-columns:minmax(0,1fr)}
+    .coach-preview-head{flex-wrap:wrap}
+    .coach-preview-head>.tag{flex-shrink:0}
+    .coach-program-day-head{flex-wrap:wrap;gap:8px}
+    .coach-program-day-card{padding:12px}
+    .coach-program-exercise-row{flex-wrap:wrap;gap:7px;align-items:flex-start}
+    .coach-program-exercise-row>.grow{flex:1 1 100%}
+    .coach-program-exercise-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px}
+    .coach-program-exercise-actions .btn{min-width:0;min-height:44px}
+    .coach-program-save-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+    .coach-program-save-actions .btn{min-height:48px;white-space:normal}
+    .coach-day-editor .actions{display:grid;grid-template-columns:minmax(0,1fr)}
+    .coach-day-editor .actions .btn{min-height:48px;white-space:normal}
+  }
+
+  /* v0.93.2 / Android phone review: the previous sticky composer lived
+     inside the sheet's *only* scrollport. IME resizing moved the entire
+     sheet while the compositor floated over scrolled exercise rows.
+     Keep header + composer in one stable upper rail and scroll ONLY body. */
+  .modal-mode-coach-program .sheet{
+    display:flex;
+    flex-direction:column;
+    margin:0 auto;
+    height:calc(100dvh - max(var(--sc-safe-top,0px),24px) - 8px);
+    max-height:calc(100dvh - max(var(--sc-safe-top,0px),24px) - 8px);
+    overflow:hidden;
+    padding-bottom:0;
+  }
+  /* The default decorative "COACH // LOCAL" pseudo-label duplicates and
+     overlaps the Program Build heading at narrow Android widths. */
+  .modal-mode-coach-program .coach-builder > .coach-console:first-child::after{display:none}
+  .modal-mode-coach-program .sheet-head{
+    flex:0 0 auto;
+    min-height:50px;
+    margin:0;
+    padding:0 2px 10px;
+    border-bottom:1px solid rgba(167,139,250,.21);
+    background:#111722;
+  }
+  .modal-mode-coach-program #modalBody{
+    flex:1 1 auto;
+    min-height:0;
+    margin:0 -18px;
+    padding:0 18px calc(18px + var(--sc-safe-bottom,0px));
+    overflow-y:auto;
+    overscroll-behavior-y:contain;
+    -webkit-overflow-scrolling:touch;
+    scroll-padding-top:0;
+    scroll-padding-bottom:16px;
+  }
+
+  /* v0.93.1: the native WebView already shrinks for IME; do not double
+     count the keyboard inset in Coach's persistent refinement area. */
+  .modal-mode-coach-program .sheet,.modal-mode-coach-saved .sheet{scroll-padding-bottom:16px}
+  .modal-mode-coach-program .coach-program-composer,
+  .modal-mode-coach-saved .coach-program-composer{
+    position:sticky;bottom:-18px;z-index:5;overflow:visible;
+    margin:4px -14px -18px;padding:12px 14px calc(12px + var(--sc-safe-bottom,0px));
+    border-radius:14px 14px 0 0;border:1px solid rgba(167,139,250,.56);
+    background:linear-gradient(120deg,#171428,#0d1725);
+    box-shadow:0 -8px 28px rgba(1,4,12,.6);
+  }
+  /* The floating prompt docks immediately below the stationary modal head.
+     NEVER disable sticky at keyboard-sized heights: that was causing the
+     prompt to jump back into document flow whenever Gboard appeared. */
+  .modal-mode-coach-program .coach-program-composer{
+    position:sticky;top:0;bottom:auto;z-index:6;
+    margin:0 -18px 12px;
+    padding:10px 18px 12px;
+    border-radius:0 0 14px 14px;
+    background:linear-gradient(120deg,#171428,#0d1725);
+    box-shadow:0 7px 18px rgba(1,4,12,.38);
+  }
+  .coach-program-composer:after{display:none}
+  .coach-program-composer .eyebrow{color:#d9c7ff}
+  .coach-program-composer input{min-height:48px;font-size:16px}
+  .coach-program-composer .home-coach-row>.btn{min-height:48px}
+  .coach-program-composer .coach-mic-btn{min-height:42px;min-width:42px;width:42px;height:42px}
+  .coach-program-prompt-tips{margin:4px 0 9px}
+  .coach-program-prompt-tips summary{color:#bba5ec;font-size:.7rem;cursor:pointer}
+  .coach-program-day-details{margin-top:10px}
+  .coach-program-day-details>summary,
+  .coach-program-secondary>summary{
+    list-style:none;cursor:pointer;padding:11px 12px;border-radius:10px;
+    border:1px solid rgba(117,89,171,.36);background:rgba(103,72,151,.11);
+    color:#d5c4fa;font-size:.75rem;font-weight:800;
+    min-height:44px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .coach-program-day-details>summary:after,.coach-program-secondary>summary:after{content:'⌄';font-size:1rem}
+  .coach-program-day-details[open]>summary:after,.coach-program-secondary[open]>summary:after{content:'⌃'}
+  .coach-program-day-details>summary::-webkit-details-marker,
+  .coach-program-secondary>summary::-webkit-details-marker{display:none}
+  .coach-program-secondary{margin:6px 0}
+  .coach-program-secondary .coach-rationale{margin-top:6px}
+  .modal-mode-coach-program .coach-program-save-actions{margin-top:8px}
+  .program-coach-edit-btn{border-color:rgba(174,129,235,.62)!important;background:rgba(128,79,178,.17)!important;color:#e1d2ff!important}
+  .coach-saved-editor .coach-program-save-actions{margin:8px 0 0}
+  .modal-mode-coach-saved .coach-program-composer{margin-bottom:0}
+  .coach-saved-editor .coach-program-day-details>summary{overflow-wrap:anywhere}
+  .home-coach-go{background:rgba(128,79,178,.22)!important;border-color:rgba(174,129,235,.66)!important;color:#e1d2ff!important}
+  .home-coach-go:focus-visible,.coach-program-day-details>summary:focus-visible,.coach-program-secondary>summary:focus-visible{outline:2px solid #d2aeff;outline-offset:2px}
+  @media(max-width:430px){
+    .modal-mode-coach-program .coach-program-composer,.modal-mode-coach-saved .coach-program-composer{margin-inline:-14px}
+    .coach-program-composer .home-coach-row{grid-template-columns:minmax(0,1fr) auto}
+    .coach-program-composer .home-coach-row>.btn{width:auto;min-width:78px}
+  }
+  .native-app.keyboard-open .modal-mode-coach-program .sheet,
+  .native-app.keyboard-open .modal-mode-coach-saved .sheet{scroll-padding-bottom:16px}
 
   /* V41 PERFORMANCE PASS 1 */
   :root{
@@ -1129,6 +1254,42 @@
 #workout .focus-set-pill{min-width:38px;height:34px;padding:0 9px;border-radius:999px;border:1px solid rgba(73,91,120,.66);background:rgba(18,27,40,.8);color:#96a6ba;font-weight:900}
 #workout .focus-set-pill.current{border-color:rgba(34,211,238,.72);background:rgba(34,211,238,.10);color:#bff8ff;box-shadow:0 0 0 2px rgba(34,211,238,.06)}
 #workout .focus-set-pill.done{border-color:rgba(53,233,138,.4);background:rgba(53,233,138,.07);color:#8ce9a4}
+#workout .focus-set-pill.done{gap:4px}
+#workout .focus-set-edit-mark{margin-left:3px;color:#7ce9c4;font-size:.62rem;opacity:.82}
+#workout .focus-set-pill.editing{border-color:rgba(34,211,238,.82);background:linear-gradient(120deg,rgba(34,211,238,.14),rgba(53,233,138,.09));color:#d9fbff;box-shadow:0 0 0 2px rgba(34,211,238,.08),0 0 20px rgba(34,211,238,.08)}
+#workout .focus-set-card.editing{border-color:rgba(34,211,238,.62)!important;background:linear-gradient(145deg,rgba(10,27,35,.98),rgba(8,16,27,.98))!important}
+#workout .focus-set-edit-banner{display:grid;gap:2px;margin:0 0 8px;padding:8px 10px;border:1px solid rgba(34,211,238,.28);border-radius:8px 13px 8px 13px;background:rgba(34,211,238,.055)}
+#workout .focus-set-edit-banner b{color:#bdf7ff;font-size:.72rem}
+#workout .focus-set-edit-banner span{color:#8fa8b8;font-size:.64rem;line-height:1.35}
+#workout .focus-set-edit-cancel{min-width:56px;min-height:36px;padding:0 10px;border:1px solid rgba(121,143,171,.55);border-radius:9px;background:rgba(18,27,40,.82);color:#aebdcd;font-size:.68rem;font-weight:900}
+#workout .complete-set.update-set{border-color:rgba(34,211,238,.5);background:linear-gradient(100deg,rgba(34,211,238,.2),rgba(53,233,138,.16));color:#e8ffff;box-shadow:0 0 24px rgba(34,211,238,.09)}
+
+#workout .superset-flow{position:relative;margin:7px 0 8px;padding:10px;border:1px solid rgba(250,204,21,.62);border-radius:8px 16px 8px 16px;background:linear-gradient(125deg,rgba(250,204,21,.12),rgba(245,158,11,.055) 52%,rgba(34,211,238,.025)),rgba(9,15,25,.96);box-shadow:inset 3px 0 0 rgba(250,204,21,.72),0 0 22px rgba(250,204,21,.045)}
+#workout .superset-flow-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
+#workout .superset-flow-title-wrap{display:flex;align-items:center;gap:8px;min-width:0}
+#workout .superset-flow-bolt{display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:30px;height:30px;border:1px solid rgba(250,204,21,.62);border-radius:8px;background:rgba(250,204,21,.12);color:#ffe66f;font-size:1rem;filter:drop-shadow(0 0 7px rgba(250,204,21,.16))}
+#workout .superset-flow-head .eyebrow{color:#ffe56b;font-size:.63rem;letter-spacing:.12em;text-shadow:0 0 12px rgba(250,204,21,.16)}
+#workout .superset-flow-order{display:flex;align-items:center;gap:6px;margin-top:3px}
+#workout .superset-flow-order span{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border:1px solid rgba(117,137,166,.5);border-radius:50%;color:#9cadc1;font-family:var(--display);font-size:.65rem;font-weight:950}
+#workout .superset-flow-order span.active{border-color:rgba(250,204,21,.8);background:rgba(250,204,21,.14);color:#fff3a3;box-shadow:0 0 16px rgba(250,204,21,.13)}
+#workout .superset-flow-order i{color:#6f8198;font-style:normal;font-size:.7rem}
+#workout .superset-flow-badge{padding:4px 7px;border:1px solid rgba(250,204,21,.48);border-radius:999px;background:rgba(250,204,21,.11);color:#ffe66f;font-size:.56rem;font-weight:950;letter-spacing:.1em}
+#workout .superset-flow-track{display:flex;gap:6px;overflow-x:auto}
+#workout .superset-flow-step{position:relative;display:grid;grid-template-columns:28px minmax(0,1fr) 18px;align-items:center;gap:6px;flex:1 1 0;min-width:128px;min-height:54px;padding:7px;border:1px solid rgba(72,89,116,.5);border-radius:8px 12px 8px 12px;background:rgba(12,20,32,.82);color:#dbe6f2;text-align:left}
+#workout .superset-flow-step:not(:disabled):active{transform:translateY(1px)}
+#workout .superset-flow-step.active{border-color:rgba(250,204,21,.68);background:linear-gradient(110deg,rgba(250,204,21,.13),rgba(25,31,48,.9))}
+#workout .superset-flow-step.done{border-color:rgba(53,233,138,.28);background:rgba(53,233,138,.045);opacity:.72}
+#workout .superset-flow-letter{display:flex;align-items:center;justify-content:center;width:27px;height:27px;border-radius:50%;border:1px solid rgba(118,139,169,.5);color:#b8c7d7;font-family:var(--display);font-size:.68rem;font-weight:950}
+#workout .superset-flow-step.active .superset-flow-letter{border-color:rgba(250,204,21,.76);color:#fff0a0}
+#workout .superset-flow-copy{min-width:0}
+#workout .superset-flow-copy b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.69rem}
+#workout .superset-flow-copy small{display:block;margin-top:2px;color:#7589a0;font-size:.55rem;font-weight:950;letter-spacing:.08em}
+#workout .superset-flow-step.active small{color:#f8d85f}
+#workout .superset-flow-state{color:#8296ad;font-size:.72rem;text-align:center}
+#workout .superset-flow-step.active .superset-flow-state{color:#ffe26a}
+#workout .superset-flow-step.done .superset-flow-state{color:#70dda0}
+#workout .superset-flow-footer{margin-top:7px;color:#a5b2c2;font-size:.64rem;font-weight:760;line-height:1.3}
+
 #workout .focus-set-card{margin:0!important;padding:13px!important;border-radius:7px 17px 7px 17px!important;box-shadow:none!important}
 #workout .focus-set-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
 #workout .focus-set-reference{margin-top:4px;color:#8ea0b4;font-size:.69rem;line-height:1.25}
@@ -2119,4 +2280,1637 @@ html[data-workout-transition="back"]::view-transition-new(workout-exercise-stage
 @media(max-width:390px){
  .app-update-version-card{grid-template-columns:1fr}
  .app-update-state{max-width:none;justify-self:start}
+}
+
+
+/* v0.80.0 SEMANTIC VISUAL LANGUAGE
+   Cyan = info/navigation/data
+   Violet = planning/creation/Coach
+   Green = active/completed/success
+   Pink = PR/achievement/history
+   Orange = warning/drop-set
+   Red = destructive/failure
+   Yellow = SUPERSET ONLY for workout-linkage language
+*/
+
+/* Screen identity is consistent without turning every surface into a neon card. */
+#routines{--screen-accent:var(--signal-plan);--screen-accent-soft:rgba(168,85,247,.12)}
+#exercises{--screen-accent:var(--signal-info);--screen-accent-soft:rgba(34,211,238,.10)}
+#history{--screen-accent:var(--signal-history);--screen-accent-soft:rgba(244,114,182,.10)}
+#analytics{--screen-accent:var(--signal-info);--screen-accent-soft:rgba(34,211,238,.10)}
+.screen-banner{
+ border-color:color-mix(in srgb,var(--screen-accent,var(--signal-info)) 24%,rgba(81,108,147,.48));
+ background:
+   linear-gradient(145deg,rgba(255,255,255,.018),transparent 38%),
+   linear-gradient(105deg,var(--screen-accent-soft,rgba(34,211,238,.07)),transparent 44%),
+   linear-gradient(180deg,rgba(9,15,28,.98),rgba(6,11,20,.98));
+}
+.screen-banner:before{
+ background:linear-gradient(90deg,var(--screen-accent,var(--signal-info)),color-mix(in srgb,var(--screen-accent,var(--signal-info)) 55%,var(--violet)),transparent);
+}
+.screen-code{color:var(--screen-accent,var(--signal-info))}
+
+/* Bottom navigation inherits the destination's identity. */
+.navbtn.active{--nav-accent:var(--signal-info)}
+.navbtn[data-go="routines"].active{--nav-accent:var(--signal-plan)}
+.navbtn[data-go="history"].active{--nav-accent:var(--signal-history)}
+.navbtn[data-go="home"].active{--nav-accent:var(--signal-info)}
+.navbtn[data-go="exercises"].active{--nav-accent:var(--signal-info)}
+.navbtn[data-go="analytics"].active{--nav-accent:var(--signal-info)}
+.navbtn.active .nav-glyph,
+.navbtn.active .nav-label{color:var(--nav-accent)!important}
+.navbtn.active:before{background:var(--nav-accent)!important}
+.navbtn.active .nav-glyph{filter:drop-shadow(0 0 4px color-mix(in srgb,var(--nav-accent) 28%,transparent))}
+
+/* Universal state meanings. */
+.btn.green{
+ background:linear-gradient(135deg,#19c96c,var(--signal-active))!important;
+ border-color:color-mix(in srgb,var(--signal-active) 34%,transparent)!important;
+}
+.complete-set.done{background:var(--signal-active)!important}
+.btn.danger,
+.set-icon-btn.danger{border-color:color-mix(in srgb,var(--signal-danger) 42%,transparent)!important}
+.good,.trend-up{color:var(--signal-active)}
+.warn{color:var(--signal-warning)}
+.danger-note{border-color:color-mix(in srgb,var(--signal-danger) 40%,transparent)!important;background:color-mix(in srgb,var(--signal-danger) 6%,transparent)!important}
+
+/* Active workout/session state is always green. */
+#home .home-active-stats,
+#home .home-active-now,
+#routines .active-routine{
+ border-color:color-mix(in srgb,var(--signal-active) 38%,transparent)!important;
+}
+#home .home-active-stats{border-left-color:color-mix(in srgb,var(--signal-active) 72%,transparent)!important}
+#home .home-active-now-head>span,
+#home .home-active-route-item.current i{color:var(--signal-active)}
+#routines .active-routine{
+ background:
+   linear-gradient(90deg,color-mix(in srgb,var(--signal-active) 4%,transparent),transparent 38%),
+   linear-gradient(180deg,rgba(10,17,30,.97),rgba(7,12,22,.98))!important;
+}
+
+/* Planning + Coach intelligence are violet. */
+#routines .program-card.active-program{
+ border-color:color-mix(in srgb,var(--signal-plan) 48%,transparent)!important;
+ box-shadow:inset 2px 0 0 color-mix(in srgb,var(--signal-plan) 62%,transparent)!important;
+}
+#routines .routine-view-tab.active{
+ border-color:color-mix(in srgb,var(--signal-plan) 72%,transparent)!important;
+ background:
+   linear-gradient(100deg,color-mix(in srgb,var(--signal-plan) 17%,transparent),rgba(34,211,238,.07) 52%,color-mix(in srgb,var(--signal-plan) 15%,transparent))!important;
+ box-shadow:
+   inset 0 1px 0 rgba(255,255,255,.07),
+   0 0 0 1px color-mix(in srgb,var(--signal-plan) 12%,transparent),
+   0 0 18px color-mix(in srgb,var(--signal-plan) 12%,transparent)!important;
+}
+#routines .routine-view-tab.active span{
+ border-color:color-mix(in srgb,var(--signal-plan) 52%,transparent)!important;
+ background:color-mix(in srgb,var(--signal-plan) 10%,transparent)!important;
+ color:#eadbff!important;
+}
+.home-coach-launcher,
+.home-coach-insight,
+.coach-console,
+.coach-rationale{
+ border-color:color-mix(in srgb,var(--signal-coach) 38%,rgba(71,93,130,.48))!important;
+}
+.home-coach-launcher,
+.home-coach-insight{
+ border-left-color:color-mix(in srgb,var(--signal-coach) 68%,transparent)!important;
+}
+.coach-rationale{border-left-color:color-mix(in srgb,var(--signal-coach) 68%,transparent)!important}
+.coach-exercise-index{
+ border-color:color-mix(in srgb,var(--signal-coach) 30%,transparent)!important;
+ background:color-mix(in srgb,var(--signal-coach) 6%,transparent)!important;
+ color:#e6d8ff!important;
+}
+
+/* PR/achievement language is pink everywhere, not yellow. */
+.pr-glyph,.inline-pr-mark{color:var(--signal-pr)!important}
+.pr-icon,.pr-tag,.summary-pr,.pr-banner{
+ border-color:color-mix(in srgb,var(--signal-pr) 34%,transparent)!important;
+}
+.pr-icon,.summary-pr,.pr-banner{
+ background:color-mix(in srgb,var(--signal-pr) 8%,transparent)!important;
+}
+.pr-banner{color:#ffd2e8!important}
+.summary-pr b{color:#ffe0ef}
+.history-metrics .has-pr b{color:var(--signal-pr)!important}
+
+/* Warning and special-set language stays separate from supersets. */
+.set-card.type-drop,
+.set-card.type-drop .app-select-compact .app-select-trigger{
+ border-color:color-mix(in srgb,var(--signal-warning) 42%,transparent)!important;
+}
+.set-card.type-drop .app-select-compact .app-select-trigger{color:#ffd38a!important}
+.set-card.type-failure,
+.set-card.type-failure .app-select-compact .app-select-trigger{
+ border-color:color-mix(in srgb,var(--signal-danger) 42%,transparent)!important;
+}
+.set-card.type-failure .app-select-compact .app-select-trigger{color:#fecdd3!important}
+
+/* SUPERSETS: protected yellow semantic language across every presentation. */
+.superset-badge,
+#workout .superset-flow-badge{
+ border-color:color-mix(in srgb,var(--signal-superset) 58%,transparent)!important;
+ background:color-mix(in srgb,var(--signal-superset) 11%,transparent)!important;
+ color:var(--signal-superset-soft)!important;
+}
+.superset-note{
+ border-color:color-mix(in srgb,var(--signal-superset) 34%,transparent)!important;
+ background:color-mix(in srgb,var(--signal-superset) 6%,transparent)!important;
+ color:#eadb91!important;
+}
+.exercise-block.superset-member{
+ box-shadow:
+   inset 4px 0 0 var(--ex-accent),
+   inset 0 3px 0 color-mix(in srgb,var(--signal-superset) 72%,transparent),
+   0 10px 26px rgba(0,0,0,.16)!important;
+}
+#workout .superset-flow{
+ border-color:color-mix(in srgb,var(--signal-superset) 62%,transparent)!important;
+ background:
+   linear-gradient(125deg,color-mix(in srgb,var(--signal-superset) 12%,transparent),rgba(245,158,11,.055) 52%,rgba(34,211,238,.025)),
+   rgba(9,15,25,.96)!important;
+ box-shadow:inset 3px 0 0 color-mix(in srgb,var(--signal-superset) 72%,transparent),0 0 22px color-mix(in srgb,var(--signal-superset) 5%,transparent)!important;
+}
+#workout .superset-flow-bolt,
+#workout .superset-flow-order span.active,
+#workout .superset-flow-step.active,
+#workout .superset-flow-step.active .superset-flow-letter{
+ border-color:color-mix(in srgb,var(--signal-superset) 76%,transparent)!important;
+}
+#workout .superset-flow-bolt,
+#workout .superset-flow-order span.active,
+#workout .superset-flow-step.active{
+ background:color-mix(in srgb,var(--signal-superset) 13%,rgba(12,20,32,.82))!important;
+}
+#workout .superset-flow-bolt,
+#workout .superset-flow-head .eyebrow,
+#workout .superset-flow-order span.active,
+#workout .superset-flow-step.active .superset-flow-letter,
+#workout .superset-flow-step.active small,
+#workout .superset-flow-step.active .superset-flow-state{
+ color:var(--signal-superset-soft)!important;
+}
+
+/* Neutral UI stays neutral so semantic colors retain meaning. */
+.tag:not(.pr-tag):not(.superset-badge),
+.toolchip,
+.home-route-btn,
+.history-manage-btn,
+.routine-manage-btn{
+ box-shadow:none;
+}
+
+
+/* v0.81.0 COMPACT ROUTINE / EXERCISE NAVIGATION POLISH
+   Keep the existing Routine / Program segmented switch unchanged. */
+#routines .routine-page-section > .section-title.routine-compact-head{
+ display:grid;
+ grid-template-columns:minmax(0,1fr) auto;
+ align-items:center;
+ column-gap:8px;
+ margin:9px 2px 10px;
+}
+#routines .routine-compact-head h2{
+ min-width:0;
+ font-size:clamp(.84rem,3.4vw,1.12rem);
+ line-height:1.18;
+}
+#routines .routine-compact-head .section-title-actions{
+ display:flex;
+ align-items:center;
+ justify-content:flex-end;
+ gap:6px;
+ flex-wrap:nowrap;
+ min-width:0;
+}
+#routines .routine-compact-head .btn.small{
+ flex:0 0 auto;
+ min-height:36px;
+ padding:8px 9px;
+ white-space:nowrap;
+ font-size:.76rem;
+ line-height:1.1;
+}
+#exercises .exercise-filter-controls{
+ display:grid;
+ grid-template-columns:minmax(0,1fr);
+ gap:8px;
+ margin:0 0 10px;
+}
+#exercises .exercise-status-field,
+#exercises .exercise-attribute-fields{
+ min-width:0;
+}
+#exercises .exercise-attribute-fields{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:8px;
+}
+#exercises .exercise-filter-controls .app-select-trigger{
+ min-height:42px;
+ padding:8px 10px;
+ gap:8px;
+}
+#exercises .exercise-filter-controls .app-select-value{
+ white-space:normal;
+ overflow:visible;
+ text-overflow:clip;
+ line-height:1.24;
+ font-size:.76rem;
+}
+#exercises #exerciseSearch{margin-bottom:8px}
+#history .history-sequence{
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ gap:3px;
+ padding:5px 2px;
+}
+#history .history-sequence small{
+ order:0;
+ font-size:.39rem;
+ letter-spacing:.09em;
+ line-height:1;
+}
+#history .history-sequence span{
+ order:1;
+ font-size:.97rem;
+ line-height:1.05;
+}
+@media(max-width:355px){
+ #routines .routine-compact-head .section-title-actions{gap:4px}
+ #routines .routine-compact-head .btn.small{
+  padding:7px 6px;
+  font-size:.70rem;
+ }
+}
+
+
+/* v0.82.0 · Guided program recovery phases, visible without relying on color alone. */
+.program-mode-validation{min-height:0;color:#ffadc0;font-size:.8rem;font-weight:750;margin-top:5px}
+.program-deload-config{
+ border:1px solid rgba(168,85,247,.35);border-radius:5px 16px 5px 16px;
+ background:rgba(17,15,34,.65);padding:13px;margin:12px 0;
+}
+.program-deload-toggle{display:flex;align-items:center;gap:12px;cursor:pointer;margin-top:8px;line-height:1.3}
+.program-deload-toggle input{height:21px;width:21px;flex:0 0 21px;accent-color:#a855f7}
+.program-deload-toggle span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.program-deload-toggle small{font-size:.71rem;color:#a7b6c9;font-weight:500}
+.program-deload-config .field{margin-top:13px}
+.program-deload-preview{
+ margin-top:10px;padding:10px 11px;border-radius:4px 10px 4px 10px;
+ background:rgba(34,211,238,.07);border:1px solid rgba(34,211,238,.19);
+ color:#dcfaff;font-size:.76rem;line-height:1.4;
+}
+.program-deload-state{
+ font-family:var(--display);font-size:.64rem;line-height:1.4;letter-spacing:.025em;
+ padding:8px 10px;margin:8px 0;border:1px solid rgba(87,103,135,.35);border-radius:4px 9px 4px 9px;color:#9eb4ca;
+}
+.program-deload-state.is-upcoming,.program-deload-state.is-deload{
+ border-color:rgba(245,158,11,.48);background:rgba(245,158,11,.09);color:#ffe2a8;
+}
+.program-deload-review h3{font-family:var(--display);margin:8px 0;font-size:1.15rem}
+.program-deload-review p{font-size:.89rem;color:#d5e1f1;line-height:1.5}
+.program-deload-choices{display:flex;flex-direction:column;gap:9px;margin-top:15px}
+.program-deload-choices .btn{min-height:44px;white-space:normal;text-align:center}
+.workout-deload-note{
+ display:flex;flex-direction:column;gap:4px;
+ margin:9px 0 11px;padding:10px 12px;background:rgba(245,158,11,.08);
+ border:1px solid rgba(245,158,11,.38);border-radius:4px 12px 4px 12px;
+ color:#ffe4b3;font-size:.77rem;line-height:1.38;
+}
+.workout-deload-note span{color:#d4c5a7}
+.history-deload-label{
+ font-family:var(--display);font-size:.6rem;letter-spacing:.02em;
+ color:#ffd8a1;margin-top:5px;white-space:normal;line-height:1.35;
+}
+
+#analytics .calendar-day.calendar-deload{
+ border-color:rgba(245,158,11,.58)!important;
+ background:rgba(245,158,11,.095)!important;
+}
+#analytics .calendar-day .calendar-deload-icon{
+ display:inline-block;position:absolute;right:5px;top:4px;
+ color:#ffe2ac;font-size:.71rem;line-height:1;
+}
+
+/* v0.85 · Real exercise measurements, ergonomic mobile input and keyboard dock */
+#workout .live-entry.is-metric{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr)!important;
+ gap:12px!important;
+ margin-top:9px;
+}
+#workout .live-entry.is-metric .numeric-entry{min-width:0;width:100%;max-width:100%}
+#workout .live-entry.is-metric .numeric-entry>label{
+ font-size:.72rem!important;
+ color:#cbdde9;
+ line-height:1.35;
+ white-space:normal;
+ overflow:visible;
+ text-overflow:clip;
+ letter-spacing:.015em;
+ margin-bottom:6px;
+}
+#workout .live-entry.is-metric .numeric-stepper{
+ grid-template-columns:44px minmax(0,1fr) 44px!important;
+ gap:9px!important;
+}
+#workout .live-entry.is-metric .numeric-step-btn{
+ width:44px!important;
+ min-width:44px!important;
+ height:54px!important;
+ min-height:54px!important;
+ font-size:1.18rem;
+}
+#workout .live-entry.is-metric .direct-number{
+ font-size:1.28rem!important;
+ text-align:center;
+ height:56px!important;
+ min-width:0;
+ padding:6px 10px!important;
+}
+#workout .live-entry.is-metric.is-unloaded .numeric-entry{width:100%}
+#workout .live-entry.is-bodyweight{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr) 74px!important;
+ gap:12px!important;
+}
+#workout .metric-logging-hint{
+ color:#9eb6c9;
+ font-size:.73rem;
+ line-height:1.5;
+ margin-top:7px;
+ padding:0 2px;
+}
+#workout .focus-set-target{
+ display:flex;
+ align-items:center;
+ flex-wrap:wrap;
+ gap:6px;
+ min-width:0;
+}
+#workout .metric-bodyweight-chip{
+ display:inline-block;
+ font-size:.61rem;
+ font-weight:850;
+ letter-spacing:.04em;
+ color:#b8d1e5;
+ padding:4px 7px;
+ border:1px solid rgba(120,153,175,.28);
+ border-radius:7px;
+ background:rgba(75,112,147,.09);
+}
+#workout .focus-set-today{
+ margin-top:5px;
+ font-size:.69rem;
+ color:#a8dfce;
+ font-weight:750;
+ line-height:1.4;
+}
+#workout .repeat-previous-set{
+ width:100%;
+ min-height:41px;
+ margin-top:8px;
+ border:1px solid rgba(50,196,181,.35);
+ border-radius:10px;
+ background:rgba(39,122,128,.075);
+ color:#b8f1e4;
+ font-size:.76rem;
+ font-weight:800;
+}
+#workout .hold-timer-panel{
+ display:grid;
+ grid-template-columns:minmax(0,1fr) auto;
+ gap:12px;
+ align-items:center;
+ border:1px solid rgba(79,168,192,.37);
+ border-radius:10px 15px 10px 15px;
+ background:rgba(20,49,63,.19);
+ padding:10px 12px;
+ margin-top:12px;
+}
+#workout .hold-timer-display{
+ display:flex;
+ flex-direction:column;
+ min-width:0;
+ gap:2px;
+}
+#workout .hold-timer-caption{
+ color:#a0bcd1;
+ text-transform:uppercase;
+ letter-spacing:.065em;
+ font-size:.63rem;
+ font-weight:800;
+}
+#workout .hold-timer-display strong{
+ font-variant-numeric:tabular-nums;
+ font-size:1.65rem;
+ font-weight:950;
+ color:#f0fdff;
+ line-height:1.15;
+}
+#workout .hold-timer-action{
+ padding:10px 14px;
+ min-width:116px;
+ min-height:48px;
+ white-space:normal;
+ background:rgba(34,211,238,.13);
+ border-color:rgba(34,211,238,.47);
+}
+html.workout-keyboard-active #restTimer.resttimer.show{
+ display:none!important;
+}
+@media(max-width:350px){
+ #workout .live-entry.is-metric .numeric-stepper{grid-template-columns:40px minmax(0,1fr) 40px!important;gap:6px!important}
+ #workout .live-entry.is-metric .numeric-step-btn{min-width:40px!important;width:40px!important}
+ #workout .hold-timer-panel{gap:7px;padding:9px}
+ #workout .hold-timer-action{min-width:100px;padding:8px}
+}
+
+
+/* Prevent guidance summaries and mixed-metric labels from truncating on phones. */
+#workout .focus-guidance .workout-guidance-title,
+#workout .focus-guidance .workout-guidance-meta{
+ white-space:normal!important;
+ overflow:visible!important;
+ text-overflow:clip!important;
+ overflow-wrap:break-word;
+ line-height:1.4;
+}
+#workout .focus-guidance .workout-guidance-title{font-size:.9rem}
+.recap-metrics .recap-metric span{white-space:normal;overflow-wrap:break-word;line-height:1.35}
+.recap-metrics .recap-metric b{font-variant-numeric:tabular-nums}
+
+/* v0.86: Always-visible session context in the existing sticky exercise header.
+   The progress track and mini controls do not add a new row to the set card. */
+#workout .focus-exercise-kicker-row{position:relative;min-height:0}
+#workout .focus-session-mini-tools{
+ position:absolute;right:0;top:-6px;display:flex;align-items:center;justify-content:flex-end;
+ gap:7px;max-width:66%;white-space:nowrap;
+}
+#workout .focus-session-mini-count{
+ color:#a1ccda;font-size:.61rem;font-weight:850;font-variant-numeric:tabular-nums;
+}
+#workout .focus-session-note-link{
+ min-height:25px;padding:3px 8px;border:1px solid rgba(164,122,247,.4);
+ border-radius:999px;background:rgba(126,79,197,.085);color:#d6c5ff;
+ font-size:.6rem;font-weight:820;white-space:nowrap;
+}
+#workout .focus-session-note-link:focus-visible{
+ outline:2px solid #c8b7ff;outline-offset:2px;
+}
+#workout .focus-exercise-overall-progress{
+ position:absolute;left:0;right:0;bottom:0;height:3px;overflow:hidden;
+ pointer-events:none;background:rgba(86,111,138,.35);
+ border-radius:0 0 8px 8px;
+}
+#workout .focus-exercise-overall-progress>span{
+ display:block;height:100%;background:linear-gradient(90deg,#3bcfea,#49d2a8);
+ transition:width .2s ease;
+}
+@media(max-width:350px){
+ #workout .focus-session-mini-tools{gap:4px}
+ #workout .focus-session-note-link{padding:3px 6px;font-size:.56rem}
+ #workout .focus-session-mini-count{font-size:.56rem}
+}
+@media(prefers-reduced-motion:reduce){
+ #workout .focus-exercise-overall-progress>span{transition:none}
+}
+
+
+/* v0.87.1 // COMPACT CYBER REST COMMAND POD
+   Navigation-adjacent, not a sixth tab. Collapsed: read-only countdown.
+   Expanded: the existing adjustment and skip actions. */
+#restTimer.resttimer{
+ position:fixed;
+ z-index:52;
+ box-sizing:border-box;
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr);
+ align-items:center;
+ gap:0;
+ left:var(--rest-nav-center,50%)!important;
+ right:auto!important;
+ bottom:calc(var(--rest-nav-offset,82px) - 1px)!important;
+ width:188px!important;
+ min-width:0;
+ max-width:calc(100vw - 42px)!important;
+ min-height:44px;
+ padding:2px 6px 0!important;
+ margin:0;
+ border:1px solid rgba(91,166,182,.68)!important;
+ border-bottom:0!important;
+ border-radius:10px 17px 0 0!important;
+ background:
+  linear-gradient(90deg,rgba(194,81,243,.94) 0%,rgba(70,193,222,.95) 49%,rgba(52,223,192,.7) 82%,transparent 100%) top left/100% 2px no-repeat,
+  repeating-linear-gradient(135deg,transparent 0,transparent 17px,rgba(61,164,191,.017) 18px,transparent 19px),
+  linear-gradient(132deg,rgba(33,34,66,.97),rgba(10,24,40,.992) 54%,rgba(5,14,26,.994))!important;
+ box-shadow:
+  inset 0 1px 0 rgba(235,248,255,.08),
+  inset 0 -10px 19px rgba(0,0,0,.12),
+  0 -4px 14px rgba(0,0,0,.22),
+  0 -2px 11px rgba(44,180,203,.10)!important;
+ transform:translate(-50%,calc(100% + 9px))!important;
+ transform-origin:bottom center;
+ opacity:0;
+ visibility:hidden;
+ pointer-events:none;
+ transition:transform 290ms cubic-bezier(.2,.84,.2,1),opacity 180ms ease,
+  width 220ms cubic-bezier(.2,.84,.2,1),border-color 180ms ease,visibility 0s linear 290ms;
+}
+#restTimer.resttimer.show{
+ visibility:visible;
+ opacity:1;
+ pointer-events:auto;
+ transform:translate(-50%,0)!important;
+ transition:transform 290ms cubic-bezier(.2,.84,.2,1),opacity 180ms ease,
+  width 220ms cubic-bezier(.2,.84,.2,1),border-color 180ms ease;
+}
+#restTimer.resttimer.expanded{
+ width:282px!important;
+ border-color:rgba(69,202,220,.78)!important;
+}
+#restTimer.resttimer::before,
+#restTimer.resttimer::after{
+ content:"";
+ position:absolute;
+ bottom:-1px;
+ width:12px;height:12px;
+ pointer-events:none;
+ border-bottom:1px solid rgba(84,126,161,.65);
+}
+#restTimer.resttimer::before{
+ right:100%;
+ border-right:1px solid rgba(84,126,161,.65);
+ border-bottom-right-radius:12px;
+}
+#restTimer.resttimer::after{
+ left:100%;
+ border-left:1px solid rgba(84,126,161,.65);
+ border-bottom-left-radius:12px;
+}
+#restTimer .rest-main{
+ position:relative;
+ display:grid;
+ grid-template-columns:auto minmax(0,1fr) auto;
+ align-items:center;
+ gap:7px;
+ min-width:0;
+ width:100%;
+ min-height:42px;
+ padding:5px 7px!important;
+ border:0;
+ border-radius:7px 11px 0 0;
+ background:transparent;
+ color:#f1fcff;
+ text-align:left;
+ cursor:pointer;
+}
+#restTimer .rest-main:focus-visible,
+#restTimer .rest-actions button:focus-visible{
+ outline:2px solid #7ce9f4;
+ outline-offset:2px;
+}
+#restTimer .rest-main small{
+ display:inline-flex;
+ align-items:center;
+ gap:5px;
+ color:#9fdde8;
+ font-size:.61rem;
+ font-weight:950;
+ letter-spacing:.08em;
+ line-height:1;
+}
+#restTimer .rest-main small::before{
+ content:"";
+ width:5px;height:5px;
+ flex:0 0 5px;
+ border-radius:50%;
+ background:#45efc7;
+ box-shadow:0 0 6px rgba(69,239,199,.65);
+}
+#restTimer .rest-main span#restTimerText{
+ font-family:var(--display);
+ font-size:1.16rem;
+ font-weight:950;
+ line-height:1.1;
+ letter-spacing:.025em;
+ text-align:center;
+ font-variant-numeric:tabular-nums;
+ color:#f5fcff;
+ text-shadow:0 0 10px rgba(45,198,211,.12);
+}
+#restTimer .rest-chevron{
+ font-size:.68rem;
+ color:#a4d5e4;
+ transition:transform 190ms ease;
+}
+#restTimer.expanded .rest-chevron{transform:rotate(180deg)}
+/* Deliberately no quick-add in the static state. */
+#restTimer .rest-quick-add{display:none!important}
+#restTimer .rest-actions{display:none}
+#restTimer.resttimer.expanded .rest-actions{
+ display:grid;
+ grid-column:1/-1;
+ grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:7px;
+ margin-top:1px;
+ padding:8px 0 7px;
+ border-top:1px solid rgba(82,140,162,.28);
+}
+#restTimer .rest-actions button{
+ min-width:0;
+ width:100%;
+ min-height:42px;
+ padding:8px 4px;
+ border:1px solid rgba(85,159,181,.45);
+ border-radius:5px 10px 5px 10px;
+ background:linear-gradient(160deg,rgba(42,68,86,.66),rgba(15,34,52,.72));
+ color:#e1faff;
+ font-size:.74rem;
+ font-weight:900;
+ cursor:pointer;
+}
+#restTimer .rest-actions button:last-child{
+ color:#ffcfdf;
+ border-color:rgba(209,110,149,.47);
+ background:linear-gradient(145deg,rgba(103,33,61,.3),rgba(32,18,35,.52));
+}
+#restTimer .rest-actions button:active{filter:brightness(1.14)}
+html.workout-keyboard-active #restTimer.resttimer.show,
+html.native-app.keyboard-open #restTimer.resttimer.show{
+ display:none!important;
+}
+@media(max-width:350px){
+ #restTimer.resttimer{width:172px!important;max-width:calc(100vw - 28px)!important}
+ #restTimer.resttimer.expanded{width:252px!important}
+ #restTimer .rest-main{padding:5px!important;gap:5px}
+ #restTimer .rest-main small{font-size:.57rem}
+ #restTimer .rest-main span#restTimerText{font-size:1.1rem}
+}
+@media(prefers-reduced-motion:reduce){
+ #restTimer.resttimer,
+ #restTimer.resttimer.show,
+ #restTimer .rest-chevron{transition:none!important}
+}
+
+/* v0.87.2 // Recessed rest notch: passive telemetry belongs to nav chrome,
+   not on top of Complete Set. The expanded tray alone emerges into the page. */
+#restTimer.resttimer:not(.expanded){
+ bottom:calc(var(--rest-nav-offset,82px) - var(--rest-notch-recess,16px))!important;
+ width:154px!important;
+ min-height:35px!important;
+ padding:1px 5px 0!important;
+ border-radius:5px 12px 0 0!important;
+ box-shadow:
+  inset 0 1px 0 rgba(238,251,255,.095),
+  inset 0 -7px 10px rgba(0,0,0,.16),
+  0 -2px 10px rgba(48,176,200,.09)!important;
+}
+#restTimer.resttimer:not(.expanded) .rest-main{
+ min-height:33px!important;
+ padding:3px 5px!important;
+ gap:5px;
+}
+#restTimer.resttimer:not(.expanded) .rest-main small{
+ font-size:.57rem;
+ letter-spacing:.065em;
+}
+#restTimer.resttimer:not(.expanded) .rest-main span#restTimerText{
+ font-size:1.03rem;
+ letter-spacing:0;
+}
+#restTimer.resttimer:not(.expanded) .rest-chevron{font-size:.62rem}
+#restTimer.resttimer.expanded{
+ bottom:calc(var(--rest-nav-offset,82px) - 1px)!important;
+ width:270px!important;
+}
+#restTimer.resttimer{
+ transition:
+  bottom 180ms ease,
+  transform 290ms cubic-bezier(.2,.84,.2,1),
+  opacity 180ms ease,
+  width 220ms cubic-bezier(.2,.84,.2,1),
+  border-color 180ms ease,
+  visibility 0s linear 290ms;
+}
+#restTimer.resttimer.show{
+ transition:
+  bottom 180ms ease,
+  transform 290ms cubic-bezier(.2,.84,.2,1),
+  opacity 180ms ease,
+  width 220ms cubic-bezier(.2,.84,.2,1),
+  border-color 180ms ease;
+}
+/* Emergency collision fallback only if the action is literally pressed against
+   the nav. Never auto-scroll the workout for passive rest information. */
+#restTimer.resttimer.show.rest-notch-obstructed{
+ opacity:0!important;
+ visibility:hidden!important;
+ pointer-events:none!important;
+}
+@media(max-width:350px){
+ #restTimer.resttimer:not(.expanded){width:146px!important}
+ #restTimer.resttimer.expanded{width:246px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #restTimer.resttimer,
+ #restTimer.resttimer.show{transition:none!important}
+}
+
+/* v0.87.3 // CONTINUOUS REST NOTCH SEAM
+   CSS-only visual polish. The nav owns the cutout, while the separate rest
+   control supplies the inset display. No placement, dimensions, or controls
+   change from v0.87.2. */
+nav.rest-notch-integrated{
+ border-top-color:transparent!important;
+}
+/* Interrupt the rail rather than letting a straight line cross underneath
+   the timer. The 92px half-gap tracks the 154px notch plus its 15px bevels. */
+nav.rest-notch-integrated::before{
+ content:"";
+ position:absolute;
+ top:-1px;
+ left:0;
+ right:0;
+ width:auto;
+ height:1px;
+ pointer-events:none;
+ opacity:.75;
+ background:
+  linear-gradient(90deg,rgba(172,88,204,.55),rgba(87,142,176,.70)) left top/calc(50% - 92px) 1px no-repeat,
+  linear-gradient(90deg,rgba(87,142,176,.70),rgba(49,175,198,.53)) right top/calc(50% - 92px) 1px no-repeat;
+ box-shadow:none;
+}
+/* Match the nav's top ink and surface colors; avoid an independently
+   outlined "sticker" below the bar's upper edge. */
+#restTimer.resttimer:not(.expanded){
+ border:0!important;
+ border-top:1px solid rgba(89,142,171,.72)!important;
+ border-radius:5px 11px 0 0!important;
+ background:
+  linear-gradient(90deg,rgba(172,88,204,.62),rgba(86,160,189,.64),rgba(49,175,198,.56)) top/100% 1px no-repeat,
+  linear-gradient(180deg,rgba(89,142,171,.63),rgba(89,142,171,.49)) top left/1px calc(100% - var(--rest-notch-recess,16px)) no-repeat,
+  linear-gradient(180deg,rgba(89,142,171,.63),rgba(89,142,171,.49)) top right/1px calc(100% - var(--rest-notch-recess,16px)) no-repeat,
+  linear-gradient(180deg,rgba(11,19,33,.985),rgba(8,14,25,.98) 78%,rgba(8,14,25,.965))!important;
+ box-shadow:inset 0 1px 0 rgba(233,251,255,.035),0 -2px 10px rgba(34,177,204,.045)!important;
+}
+/* Short beveled ramps make a molded path from the upper notch corners back to
+   the rail. They terminate at nav top, rather than curling into visible hooks. */
+#restTimer.resttimer:not(.expanded)::before,
+#restTimer.resttimer:not(.expanded)::after{
+ position:absolute;
+ top:0;
+ bottom:auto;
+ height:calc(100% - var(--rest-notch-recess,16px));
+ width:15px;
+ border:0;
+ border-radius:0;
+ box-shadow:none;
+ pointer-events:none;
+}
+#restTimer.resttimer:not(.expanded)::before{
+ left:-15px;
+ right:auto;
+ background:
+  linear-gradient(130deg,transparent 45%,rgba(89,142,171,.65) 48%,rgba(89,142,171,.65) 50%,transparent 53%),
+  linear-gradient(130deg,transparent 49%,rgba(8,14,25,.97) 51%);
+}
+#restTimer.resttimer:not(.expanded)::after{
+ left:auto;
+ right:-15px;
+ background:
+  linear-gradient(230deg,transparent 45%,rgba(89,142,171,.65) 48%,rgba(89,142,171,.65) 50%,transparent 53%),
+  linear-gradient(230deg,transparent 49%,rgba(8,14,25,.97) 51%);
+}
+/* When passive rest is hidden for typing, the nav returns to its normal
+   uninterrupted top line without any remaining notch-shaped cutout. */
+html.workout-keyboard-active nav.rest-notch-integrated,
+html.native-app.keyboard-open nav.rest-notch-integrated{
+ border-top-color:rgba(84,110,152,.48)!important;
+}
+html.workout-keyboard-active nav.rest-notch-integrated::before,
+html.native-app.keyboard-open nav.rest-notch-integrated::before{
+ left:22px;
+ right:22px;
+ background:linear-gradient(90deg,var(--pink),var(--violet),var(--cyan));
+ opacity:.72;
+ box-shadow:0 0 13px rgba(168,85,247,.28);
+}
+@media(max-width:350px){
+ nav.rest-notch-integrated::before{
+  background:
+   linear-gradient(90deg,rgba(172,88,204,.55),rgba(87,142,176,.70)) left top/calc(50% - 88px) 1px no-repeat,
+   linear-gradient(90deg,rgba(87,142,176,.70),rgba(49,175,198,.53)) right top/calc(50% - 88px) 1px no-repeat;
+ }
+}
+/* Expanded controls retain the separate upward command tray from v0.87.2. */
+
+/* v0.87.4 // UNIFIED REST DOCK HOUSING
+   A single SVG-filled contour now draws the nav rail and the raised rest crest.
+   It replaces all pseudo-element "hooks", extra base rectangles, and competing
+   borders. Rest position, 154px footprint, control sizes and timer logic unchanged. */
+nav.rest-notch-integrated{
+ border-top-color:transparent!important;
+}
+nav.rest-notch-integrated::before{
+ content:none!important;
+ box-shadow:none!important;
+}
+nav .rest-nav-housing{
+ position:absolute;
+ top:calc(-1px - var(--rest-housing-rise,18px));
+ left:0;
+ width:100%;
+ height:calc(var(--rest-housing-rise,18px) + 7px);
+ display:block;
+ overflow:visible;
+ z-index:1;
+ opacity:0;
+ visibility:hidden;
+ pointer-events:none;
+}
+nav.rest-notch-integrated .rest-nav-housing{
+ opacity:1;
+ visibility:visible;
+}
+nav .rest-nav-housing-fill{
+ fill:rgba(8,14,25,.985);
+ stroke:none;
+}
+nav .rest-nav-housing-contour{
+ fill:none;
+ stroke:rgba(91,139,168,.69);
+ stroke-width:1.2;
+ stroke-linecap:round;
+ stroke-linejoin:round;
+ vector-effect:non-scaling-stroke;
+}
+nav.rest-notch-integrated .inner{z-index:2}
+/* The timer now provides only typography and the tap target, not a second
+   painted panel. The continuous nav surface below it supplies the background. */
+#restTimer.resttimer:not(.expanded){
+ border:0!important;
+ border-radius:0!important;
+ background:transparent!important;
+ box-shadow:none!important;
+}
+#restTimer.resttimer:not(.expanded)::before,
+#restTimer.resttimer:not(.expanded)::after{
+ content:none!important;
+ display:none!important;
+ background:none!important;
+ border:0!important;
+}
+#restTimer.resttimer:not(.expanded) .rest-main{
+ background:transparent!important;
+ border:0!important;
+ box-shadow:none!important;
+}
+/* Keyboard overlay may hide the rest timer while the nav is still classed
+   as integrated for one frame. In that case restore the plain nav outline. */
+html.workout-keyboard-active nav.rest-notch-integrated,
+html.native-app.keyboard-open nav.rest-notch-integrated{
+ border-top-color:rgba(84,110,152,.48)!important;
+}
+html.workout-keyboard-active nav.rest-notch-integrated::before,
+html.native-app.keyboard-open nav.rest-notch-integrated::before{
+ content:""!important;
+}
+html.workout-keyboard-active nav .rest-nav-housing,
+html.native-app.keyboard-open nav .rest-nav-housing{
+ opacity:0!important;
+ visibility:hidden!important;
+}
+
+/* v0.87.5 // SLIDING REST DOCK
+   Reuse one 154px nav-owned housing in both states. As the action shelf reveals
+   itself, the panel grows upward from its recessed base. No wide popup, no
+   scroll-triggered hiding or passive repositioning. */
+#restTimer.resttimer,
+#restTimer.resttimer.expanded,
+#restTimer.resttimer:not(.expanded){
+ width:154px!important;
+ max-width:calc(100vw - 42px)!important;
+ bottom:calc(var(--rest-nav-offset,82px) - var(--rest-notch-recess,17px))!important;
+ grid-template-columns:minmax(0,1fr)!important;
+ grid-template-rows:auto auto!important;
+ min-height:35px!important;
+ padding:1px 5px 0!important;
+ border:0!important;
+ border-radius:0!important;
+ background:transparent!important;
+ box-shadow:none!important;
+}
+#restTimer.resttimer::before,
+#restTimer.resttimer::after{
+ content:none!important;
+ display:none!important;
+}
+#restTimer.resttimer .rest-main{
+ min-height:33px!important;
+ height:33px!important;
+ padding:3px 5px!important;
+ gap:5px;
+ border:0!important;
+ border-radius:0!important;
+ background:transparent!important;
+ box-shadow:none!important;
+}
+#restTimer.resttimer .rest-main small{font-size:.57rem}
+#restTimer.resttimer .rest-main span#restTimerText{font-size:1.03rem}
+#restTimer.resttimer .rest-chevron{font-size:.62rem}
+/* Keep the action row in the layout at zero height, so it unfolds upward
+   smoothly instead of being abruptly inserted after the timer label. */
+#restTimer.resttimer .rest-actions,
+#restTimer.resttimer.expanded .rest-actions{
+ grid-column:1/-1;
+ display:grid!important;
+ grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:4px!important;
+ box-sizing:border-box;
+ max-height:0;
+ min-height:0;
+ padding:0 2px;
+ margin:0;
+ border:0;
+ overflow:hidden;
+ opacity:0;
+ visibility:hidden;
+ pointer-events:none;
+ transition:max-height 260ms cubic-bezier(.2,.8,.2,1),
+  padding 260ms cubic-bezier(.2,.8,.2,1),
+  opacity 160ms ease,visibility 0s linear 260ms;
+}
+#restTimer.resttimer.expanded .rest-actions{
+ max-height:60px;
+ padding:5px 2px 7px;
+ opacity:1;
+ visibility:visible;
+ pointer-events:auto;
+ transition:max-height 260ms cubic-bezier(.2,.8,.2,1),
+  padding 260ms cubic-bezier(.2,.8,.2,1),
+  opacity 160ms ease;
+}
+#restTimer.resttimer .rest-actions button{
+ box-sizing:border-box;
+ width:100%;
+ min-width:0;
+ min-height:44px;
+ padding:6px 1px;
+ border-radius:5px 7px 5px 7px;
+ font-size:.68rem;
+ white-space:nowrap;
+}
+/* The single responsive contour remains continuous while the pod rises.
+   The SVG itself is redrawn to the real animated height each frame. */
+nav.rest-notch-integrated .rest-nav-housing{
+ opacity:1;
+ visibility:visible;
+}
+@media(max-width:350px){
+ #restTimer.resttimer,
+ #restTimer.resttimer.expanded,
+ #restTimer.resttimer:not(.expanded){width:146px!important}
+ #restTimer.resttimer .rest-actions{gap:3px!important;padding-left:1px;padding-right:1px}
+ #restTimer.resttimer .rest-actions button{font-size:.63rem}
+}
+@media(prefers-reduced-motion:reduce){
+ #restTimer.resttimer .rest-actions,
+ #restTimer.resttimer.expanded .rest-actions{transition:none!important}
+}
+
+/* v0.87.6 // RIGID WHOLE-RAIL LIFT
+   One unchanged full-width SVG contour (left rail + raised center bump + right
+   rail) translates upward as a unit. Countdown translates the SAME distance.
+   The nav buttons never move. No shape morph, no height-driven redraw. */
+:root{--rest-rail-lift:62px;--rest-rail-duration:290ms;--rest-rail-ease:cubic-bezier(.22,.82,.22,1)}
+nav .rest-nav-housing{
+ transform:translate3d(0,0,0);
+ transition:transform var(--rest-rail-duration) var(--rest-rail-ease);
+ will-change:transform;
+}
+nav.rest-notch-integrated.rest-rail-raised .rest-nav-housing{
+ transform:translate3d(0,calc(-1 * var(--rest-rail-lift)),0);
+}
+/* The rest header remains the exact original 154px by ~35px bump. An absolute
+   shelf beneath it keeps expanded actions out of layout sizing, ensuring SVG
+   viewBox and full-width rail path are IDENTICAL in both states. */
+#restTimer.resttimer,
+#restTimer.resttimer.expanded,
+#restTimer.resttimer:not(.expanded){
+ display:block!important;
+ box-sizing:border-box;
+ width:154px!important;
+ min-height:35px!important;
+ height:35px!important;
+ padding:1px 5px 0!important;
+ bottom:calc(var(--rest-nav-offset,82px) - var(--rest-notch-recess,17px))!important;
+ background:transparent!important;
+ border:0!important;
+ box-shadow:none!important;
+ transition:
+  transform var(--rest-rail-duration) var(--rest-rail-ease),
+  opacity 180ms ease,visibility 0s linear var(--rest-rail-duration)!important;
+}
+#restTimer.resttimer.show{
+ transition:
+  transform var(--rest-rail-duration) var(--rest-rail-ease),
+  opacity 180ms ease!important;
+}
+#restTimer.resttimer.show.expanded{
+ transform:translate3d(-50%,calc(-1 * var(--rest-rail-lift)),0)!important;
+}
+#restTimer.resttimer.show:not(.expanded){
+ transform:translate3d(-50%,0,0)!important;
+}
+#restTimer.resttimer .rest-main{
+ display:grid;
+ min-height:33px!important;
+ height:33px!important;
+}
+/* Actions occupy a separate fixed-height shelf *below* the lifted timer.
+   The shelf is uncovered by lifting the whole contour, not grown inside it. */
+#restTimer.resttimer .rest-actions,
+#restTimer.resttimer.expanded .rest-actions{
+ position:absolute!important;
+ top:34px!important;
+ left:0!important;
+ width:100%!important;
+ height:59px!important;
+ max-height:none!important;
+ min-height:0!important;
+ display:grid!important;
+ grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ align-items:start;
+ gap:4px!important;
+ margin:0!important;
+ padding:7px 3px 8px!important;
+ border:0!important;
+ overflow:visible!important;
+ box-sizing:border-box;
+ opacity:0;
+ visibility:hidden;
+ pointer-events:none;
+ transition:opacity 130ms ease,visibility 0s linear 130ms!important;
+}
+#restTimer.resttimer.expanded .rest-actions{
+ opacity:1;
+ visibility:visible;
+ pointer-events:auto;
+ transition:opacity 130ms ease 70ms!important;
+}
+#restTimer.resttimer .rest-actions button{
+ min-height:44px;
+ width:100%;
+ padding:6px 1px;
+}
+/* Dark inner shelf exposed below the raised crest. It is not a second outer
+   outline or a taller center bump, and it disappears with the controls. */
+#restTimer.resttimer.expanded::before{
+ content:""!important;
+ display:block!important;
+ position:absolute;
+ left:0;
+ right:0;
+ top:34px;
+ height:59px;
+ width:auto;
+ z-index:-1;
+ border:0!important;
+ border-radius:0!important;
+ background:linear-gradient(180deg,rgba(8,14,25,.985),rgba(8,14,25,.96))!important;
+ box-shadow:none!important;
+ pointer-events:none;
+}
+#restTimer.resttimer:not(.expanded)::before{
+ content:none!important;
+ display:none!important;
+}
+@media(max-width:350px){
+ #restTimer.resttimer,
+ #restTimer.resttimer.expanded,
+ #restTimer.resttimer:not(.expanded){width:146px!important}
+ #restTimer.resttimer .rest-actions{gap:3px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ nav .rest-nav-housing,
+ #restTimer.resttimer,
+ #restTimer.resttimer.show,
+ #restTimer.resttimer .rest-actions,
+ #restTimer.resttimer.expanded .rest-actions{transition:none!important}
+}
+
+/* Last in cascade: input focus always wins over the visual rail layout. */
+html.workout-keyboard-active #restTimer.resttimer.show,
+html.native-app.keyboard-open #restTimer.resttimer.show{
+ display:none!important;
+}
+
+/* v0.87.7 // SOLID COMPACT UNDER-RAIL ACTION POCKET
+   The top contour and idle notch remain pixel-identical. A nav-owned fully
+   opaque pocket grows upward from the fixed bottom rail as the entire rigid
+   contour lifts. This replaces the transparent and negatively-stacked
+   countdown-only backing, which let the workout show through the drawer. */
+:root{--rest-rail-lift:57px}
+nav .rest-dock-pocket{
+ position:absolute;
+ z-index:1;
+ box-sizing:border-box;
+ left:0;
+ right:0;
+ top:calc(-1 * var(--rest-rail-lift));
+ height:var(--rest-rail-lift);
+ background:linear-gradient(180deg,#0a1525 0%,#080f1b 56%,#060c16 100%);
+ box-shadow:inset 1px 0 rgba(84,110,152,.30),inset -1px 0 rgba(84,110,152,.30);
+ transform:scaleY(0);
+ transform-origin:center bottom;
+ visibility:hidden;
+ pointer-events:none;
+ transition:transform var(--rest-rail-duration) var(--rest-rail-ease),
+  visibility 0s linear var(--rest-rail-duration);
+}
+nav.rest-notch-integrated.rest-rail-raised .rest-dock-pocket{
+ transform:scaleY(1);
+ visibility:visible;
+ transition:transform var(--rest-rail-duration) var(--rest-rail-ease);
+}
+nav.rest-notch-integrated.rest-rail-raised .rest-nav-housing-fill{
+ fill:#0a1525;
+}
+/* Never display the old negative-z-index rectangular backing. The single
+   opaque nav pocket is what makes this one coherent slide-out drawer. */
+#restTimer.resttimer.expanded::before,
+#restTimer.resttimer:not(.expanded)::before{
+ content:none!important;
+ display:none!important;
+}
+/* Keep an honest 42px touch target but inset each visible button by 4px,
+   creating compact 34px-tall cyber controls with sharp beveled corners. */
+#restTimer.resttimer .rest-actions,
+#restTimer.resttimer.expanded .rest-actions{
+ top:32px!important;
+ height:53px!important;
+ padding:1px 3px 4px!important;
+ gap:3px!important;
+ align-items:start!important;
+}
+#restTimer.resttimer .rest-actions button{
+ position:relative;
+ isolation:isolate;
+ box-sizing:border-box;
+ display:grid;
+ place-items:center;
+ height:42px!important;
+ min-height:42px!important;
+ padding:0!important;
+ border:0!important;
+ border-radius:0!important;
+ background:transparent!important;
+ box-shadow:none!important;
+ font-size:.68rem!important;
+ line-height:1!important;
+ font-weight:850;
+ color:#dff8ff;
+ -webkit-tap-highlight-color:transparent;
+}
+#restTimer.resttimer .rest-actions button::before{
+ content:"";
+ position:absolute;
+ inset:4px 1px;
+ z-index:-1;
+ border:1px solid rgba(84,154,178,.58);
+ border-radius:3px 7px 3px 7px;
+ background:linear-gradient(155deg,#193147,#0b1d2f);
+ box-shadow:inset 0 1px 0 rgba(233,251,255,.055);
+ pointer-events:none;
+}
+#restTimer.resttimer .rest-actions button:last-child{
+ color:#ffd6e1;
+}
+#restTimer.resttimer .rest-actions button:last-child::before{
+ border-color:rgba(222,105,154,.57);
+ background:linear-gradient(150deg,#381827,#1b1020);
+}
+#restTimer.resttimer .rest-actions button:active::before{
+ filter:brightness(1.23);
+}
+@media(max-width:350px){
+ #restTimer.resttimer .rest-actions button{font-size:.64rem!important}
+}
+@media(prefers-reduced-motion:reduce){
+ nav .rest-dock-pocket,
+ nav.rest-notch-integrated.rest-rail-raised .rest-dock-pocket{
+  transition:none!important;
+ }
+}
+/* Keyboard safety outranks all timer geometry. */
+html.workout-keyboard-active #restTimer.resttimer.show,
+html.native-app.keyboard-open #restTimer.resttimer.show{
+ display:none!important;
+}
+
+/* v0.87.8 // SLEEK ACTION BAY: quiet engine-panel detail + precision keys
+   Everything decorative lives on the existing nav-owned opaque pocket. The
+   idle notch, SVG contour, rigid full-width lift and five nav tabs are intact. */
+:root{--rest-rail-lift:53px}
+/* Etched service rails on either side of the controls. Purely decorative:
+   subdued cyan on the left, soft violet/cyan on the right, no extra actions.
+   These details reveal only with the opaque pocket, never in idle. */
+nav .rest-dock-pocket::before,
+nav .rest-dock-pocket::after{
+ content:"";
+ position:absolute;
+ box-sizing:border-box;
+ top:10px;
+ width:clamp(22px,calc((100% - 190px)/2 - 16px),96px);
+ height:35px;
+ opacity:.46;
+ pointer-events:none;
+ background:
+  linear-gradient(90deg,rgba(77,187,212,.58),rgba(77,187,212,.08) 85%,transparent) 0 3px/100% 1px no-repeat,
+  linear-gradient(90deg,rgba(87,128,159,.45),rgba(87,128,159,.08) 80%,transparent) 0 25px/78% 1px no-repeat,
+  repeating-linear-gradient(120deg,transparent 0 9px,rgba(98,170,189,.19) 9px 10px,transparent 10px 17px) 0 10px/38px 9px no-repeat,
+  radial-gradient(ellipse 75% 95% at 15% 55%,rgba(42,176,205,.095),transparent 82%);
+ border-left:1px solid rgba(87,159,180,.31);
+ transition:opacity 160ms ease;
+}
+nav .rest-dock-pocket::before{left:11px}
+nav .rest-dock-pocket::after{
+ right:11px;
+ transform:scaleX(-1);
+ border-left-color:rgba(171,102,205,.34);
+ background:
+  linear-gradient(90deg,rgba(161,107,205,.5),rgba(161,107,205,.07) 85%,transparent) 0 3px/100% 1px no-repeat,
+  linear-gradient(90deg,rgba(93,135,176,.45),rgba(93,135,176,.07) 80%,transparent) 0 25px/78% 1px no-repeat,
+  repeating-linear-gradient(120deg,transparent 0 9px,rgba(150,111,191,.18) 9px 10px,transparent 10px 17px) 0 10px/38px 9px no-repeat,
+  radial-gradient(ellipse 75% 95% at 15% 55%,rgba(121,69,177,.085),transparent 82%);
+}
+/* Tighten the exposed control shelf, not the actual pointer/keyboard targets. */
+#restTimer.resttimer .rest-actions,
+#restTimer.resttimer.expanded .rest-actions{
+ height:49px!important;
+ padding:1px 4px 3px!important;
+ gap:4px!important;
+}
+#restTimer.resttimer .rest-actions button{
+ height:42px!important;
+ min-height:42px!important;
+ font-size:.66rem!important;
+ letter-spacing:-.015em;
+ font-weight:800;
+}
+#restTimer.resttimer .rest-actions button::before{
+ inset:5px 2px!important; /* 32px painted face within 42px clickable area */
+ border:1px solid rgba(91,160,183,.48);
+ border-radius:2px!important;
+ clip-path:polygon(0 6px,6px 0,calc(100% - 4px) 0,100% 4px,100% 100%,0 100%);
+ background:linear-gradient(155deg,#172c3e,#0b1b29);
+ box-shadow:inset 0 1px 0 rgba(224,245,255,.04);
+}
+#restTimer.resttimer .rest-actions button:last-child::before{
+ border-color:rgba(204,112,148,.5);
+ background:linear-gradient(155deg,#311926,#19121e);
+}
+/* Responsive restraint when side bays are particularly narrow. */
+@media(max-width:350px){
+ nav .rest-dock-pocket::before,
+ nav .rest-dock-pocket::after{
+  width:clamp(18px,calc((100% - 190px)/2 - 16px),70px);
+  opacity:.28;
+ }
+ #restTimer.resttimer .rest-actions,
+ #restTimer.resttimer.expanded .rest-actions{gap:3px!important;padding-left:3px!important;padding-right:3px!important}
+ #restTimer.resttimer .rest-actions button{font-size:.63rem!important}
+}
+/* Existing reduced-motion behavior and keyboard avoidance remain authoritative. */
+
+
+/* Coach program recommendation mobile usability, isolated to preview.
+   One tap = one user choice; no side-by-side, truncated action labels. */
+.modal-mode-coach-program .coach-program-suggestions{
+  min-width:0;
+  overflow:visible;
+}
+.modal-mode-coach-program .coach-program-suggestions .coach-program-suggestion{
+  min-width:0;
+  overflow:visible;
+  border-color:rgba(34,211,238,.26);
+}
+.modal-mode-coach-program .coach-program-suggestion .exercise-name,
+.modal-mode-coach-program .coach-program-suggestion .mini{
+  overflow-wrap:anywhere;
+  white-space:normal;
+  line-height:1.5;
+}
+.modal-mode-coach-program .coach-program-suggestions .actions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  width:100%;
+}
+.modal-mode-coach-program .coach-program-suggestions .actions .btn{
+  min-height:48px;
+  min-width:0;
+  width:100%;
+  padding:11px 10px;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  text-align:center;
+  line-height:1.3;
+}
+.modal-mode-coach-program .coach-program-suggestions > .btn{
+  min-height:48px;
+  white-space:normal;
+  line-height:1.3;
+}
+.modal-mode-coach-program .coach-program-suggestions .btn:focus-visible{
+  outline:2px solid #67e8f9;
+  outline-offset:2px;
+}
+@media(max-width:430px){
+  .modal-mode-coach-program .coach-program-suggestions .actions{
+    grid-template-columns:minmax(0,1fr);
+  }
+  .modal-mode-coach-program .coach-program-suggestions .btn{
+    width:100%;
+    min-height:48px;
+  }
+  .modal-mode-coach-program .coach-program-suggestion .exercise-name{
+    font-size:1rem;
+    line-height:1.45;
+  }
+}
+
+
+/* Phase 4: opt-in Training History Review, phone-width Android usability.
+   Scoped to the review modal so other Coach/Program actions do not change. */
+.coach-phase4-review,.coach-phase4-review .card,
+.coach-phase4-review .coach-console,.coach-phase4-review .coach-rationale{
+  min-width:0;
+  max-width:100%;
+}
+.coach-phase4-review .exercise-name,
+.coach-phase4-review .coach-phase4-description,
+.coach-phase4-review .mini,
+.coach-phase4-review .coach-phase4-slot span{
+  white-space:normal;
+  overflow-wrap:anywhere;
+  text-overflow:clip;
+  max-width:100%;
+}
+.coach-phase4-review .coach-phase4-description{
+  color:var(--text-muted,#cbd5e1);
+  font-size:.94rem;
+  line-height:1.52;
+}
+.coach-phase4-review .coach-phase4-slot-list{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:8px;
+  margin-top:10px;
+}
+.coach-phase4-review .coach-phase4-slot{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:12px;
+  min-width:0;
+  border-bottom:1px solid rgba(148,163,184,.13);
+  padding:0 0 7px;
+}
+.coach-phase4-review .coach-phase4-slot span{flex:1;min-width:0}
+.coach-phase4-review .coach-phase4-slot b{
+  white-space:nowrap;
+  flex:none;
+  font-size:.84rem;
+  font-weight:600;
+}
+.coach-phase4-review .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.coach-phase4-review .actions .btn{
+  min-width:0;
+  min-height:48px;
+  width:100%;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  text-overflow:clip;
+  line-height:1.3;
+  padding:10px 12px;
+}
+.coach-phase4-review .actions .btn:focus-visible{outline:2px solid #67e8f9;outline-offset:2px}
+@media(max-width:430px){
+  .coach-phase4-review .actions{grid-template-columns:minmax(0,1fr)}
+  .coach-phase4-review .coach-phase4-description{font-size:.95rem;line-height:1.55}
+}
+
+
+/* Coach Program Audit quality review, v0.93.7 follow-up.
+   Keep the Phase 4 entrypoint above findings; don't overcrowd small phones. */
+.coach-audit-refresh .coach-audit-primary{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:9px;
+ padding:12px 13px;
+ margin-top:11px;
+ border:1px solid color-mix(in srgb,var(--signal-coach,#a78bfa) 36%,transparent);
+ border-radius:12px;
+ background:color-mix(in srgb,var(--signal-coach,#a78bfa) 7%,transparent);
+}
+.coach-audit-refresh .coach-audit-primary .btn{
+ width:100%;min-height:48px;line-height:1.35;
+ white-space:normal;overflow-wrap:anywhere;
+}
+.coach-audit-refresh .coach-audit-status{
+ margin-top:11px;padding:11px 13px;
+ border-left:3px solid rgba(148,163,184,.55);
+ background:rgba(148,163,184,.065);
+ border-radius:8px;
+}
+.coach-audit-refresh .coach-audit-status .mini{margin-top:4px;line-height:1.5}
+.coach-audit-refresh .coach-audit-disclosure{
+ min-width:0;width:100%;margin-top:10px;
+ border:1px solid rgba(148,163,184,.2);
+ border-radius:10px;padding:10px 11px;
+}
+.coach-audit-refresh .coach-audit-disclosure summary{
+ cursor:pointer;font-size:.92rem;font-weight:600;line-height:1.4;
+ overflow-wrap:anywhere;
+}
+.coach-audit-refresh .coach-audit-disclosure .mini{line-height:1.5;margin-top:8px;overflow-wrap:anywhere}
+.coach-audit-refresh .coach-audit-coverage-rows{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:12px;
+}
+.coach-audit-refresh .coach-audit-coverage-row{
+ display:flex;justify-content:space-between;gap:12px;
+ padding-bottom:7px;border-bottom:1px solid rgba(148,163,184,.13);
+ min-width:0;line-height:1.45;font-size:.88rem;
+}
+.coach-audit-refresh .coach-audit-coverage-row span{overflow-wrap:anywhere;min-width:0}
+.coach-audit-refresh .coach-audit-coverage-row span:last-child{text-align:right}
+.coach-audit-refresh .coach-audit-findings-label{margin-top:15px;font-weight:650}
+.coach-audit-refresh .coach-audit-finding{margin-top:9px;min-width:0}
+.coach-audit-refresh .coach-audit-finding .exercise-name{
+ overflow-wrap:anywhere;white-space:normal;text-overflow:clip;line-height:1.43;
+}
+.coach-audit-refresh .coach-audit-finding .actions{margin-top:11px}
+.coach-audit-refresh .coach-audit-finding .actions .btn{
+ min-height:48px;min-width:0;width:100%;padding:10px 14px;
+ overflow-wrap:anywhere;white-space:normal;
+}
+.coach-audit-refresh .coach-audit-finding .coach-audit-disclosure{
+ background:transparent;padding:8px 9px;
+}
+.coach-audit-refresh .coach-audit-footnote{margin-top:14px;line-height:1.5}
+.coach-audit-refresh .coach-audit-footer{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px;
+}
+.coach-audit-refresh .coach-audit-footer .btn{
+ min-height:48px;min-width:0;width:100%;white-space:normal;
+ overflow-wrap:anywhere;line-height:1.35;
+}
+@media(max-width:430px){
+ .coach-audit-refresh .coach-audit-footer{grid-template-columns:minmax(0,1fr)}
+ .coach-audit-refresh .coach-audit-coverage-row{flex-direction:column;gap:3px}
+ .coach-audit-refresh .coach-audit-coverage-row span:last-child{text-align:left}
+}
+
+
+/* Coach review clarity, Oct 2026. One scannable question at a time.
+   Visual changes only: no audit scoring or save behavior changes. */
+.coach-audit-simple .coach-audit-head{padding:12px 13px}
+.coach-audit-simple .coach-audit-head .exercise-name{font-size:1.08rem;line-height:1.35;margin-top:4px;overflow-wrap:anywhere}
+.coach-audit-simple .coach-audit-head .mini{line-height:1.45;margin-top:5px}
+.coach-audit-simple .coach-audit-primary{
+  background:rgba(148,163,184,.04);
+  border:1px solid rgba(148,163,184,.15);
+  padding:12px;
+  gap:8px;
+}
+.coach-audit-simple .coach-audit-status{
+  border:0;background:transparent;border-radius:0;
+  padding:0;margin:0;
+}
+.coach-audit-simple .coach-audit-status b{font-size:.94rem}
+.coach-audit-simple .coach-audit-status .mini{margin-top:4px;line-height:1.45}
+.coach-audit-simple .coach-audit-primary .btn{
+  min-height:44px;
+  background:rgba(148,163,184,.08);
+  border-color:rgba(148,163,184,.28);
+  box-shadow:none;
+}
+.coach-audit-simple .coach-audit-plan{margin-top:17px}
+.coach-audit-simple .coach-audit-findings-label{
+  font-size:1rem;margin-top:0;line-height:1.35;
+}
+.coach-audit-simple .coach-audit-plan-intro{
+  margin:4px 0 10px;line-height:1.45;overflow-wrap:anywhere;
+}
+.coach-audit-simple .coach-audit-item{
+  display:block;
+  padding:0;
+  margin-top:7px;
+  border-radius:10px;
+  border:1px solid rgba(148,163,184,.2);
+  background:rgba(15,23,42,.26);
+  overflow:hidden;
+}
+.coach-audit-simple .coach-audit-item>summary{
+  display:flex;align-items:center;gap:10px;justify-content:space-between;
+  cursor:pointer;list-style:none;min-height:56px;
+  padding:11px 12px;line-height:1.35;
+}
+.coach-audit-simple .coach-audit-item>summary::-webkit-details-marker{display:none}
+.coach-audit-simple .coach-audit-item-title{
+  font-size:.91rem;font-weight:650;flex:1;min-width:0;
+  white-space:normal;overflow-wrap:anywhere;
+}
+.coach-audit-simple .coach-audit-item-hint{
+  font-size:.74rem;white-space:nowrap;flex:none;opacity:.7;
+}
+.coach-audit-simple .coach-audit-item-hint:after{
+  content:' ▾';display:inline-block;transition:transform .16s ease;
+}
+.coach-audit-simple .coach-audit-item[open] .coach-audit-item-hint:after{transform:rotate(180deg)}
+.coach-audit-simple .coach-audit-item-body{
+  border-top:1px solid rgba(148,163,184,.14);
+  padding:11px 12px 12px;
+}
+.coach-audit-simple .coach-audit-item-body .mini{
+  line-height:1.55;overflow-wrap:anywhere;
+}
+.coach-audit-simple .coach-audit-item-body .btn{
+  display:block;width:100%;min-height:44px;
+  margin-top:10px;white-space:normal;overflow-wrap:anywhere;
+}
+.coach-audit-simple .coach-audit-more{
+  padding:0;border:0;background:transparent;margin-top:9px;
+}
+.coach-audit-simple .coach-audit-more>summary{
+  font-size:.86rem;font-weight:600;padding:10px 2px;
+  min-height:44px;
+}
+.coach-audit-simple .coach-audit-coverage{
+  margin-top:17px;border-color:rgba(148,163,184,.12);
+  background:rgba(148,163,184,.025);
+}
+.coach-audit-simple .coach-audit-coverage>summary{
+  font-size:.83rem;font-weight:500;color:var(--muted,#9ca3af);
+}
+.coach-audit-simple .coach-audit-footnote{
+  font-size:.79rem;line-height:1.45;opacity:.8;margin-top:13px;
+}
+.coach-audit-simple .coach-audit-footer{
+  display:grid;grid-template-columns:minmax(0,1fr);margin-top:12px;
+}
+.coach-audit-simple .coach-audit-footer .btn{
+  min-height:44px;background:transparent;
+}
+.coach-phase4-review .coach-phase4-head{
+  padding:8px 1px 10px;
+}
+.coach-phase4-review .coach-phase4-head .exercise-name{
+  font-size:1.06rem;line-height:1.35;white-space:normal;overflow-wrap:anywhere;
+}
+.coach-phase4-review .coach-phase4-head .mini{margin-top:6px;line-height:1.5}
+.coach-phase4-review .coach-phase4-slots{
+  margin:10px 0 12px;padding:10px 12px;
+  border:1px solid rgba(148,163,184,.18);border-radius:10px;
+}
+.coach-phase4-review .coach-phase4-slots>summary{
+  cursor:pointer;font-size:.89rem;font-weight:600;line-height:1.4;
+}
+.coach-phase4-review .coach-phase4-slot-list{margin-top:10px}
+.coach-phase4-review .coach-phase4-suggestion{
+  border:1px solid rgba(148,163,184,.2);border-radius:11px;
+  padding:12px 13px;min-width:0;
+}
+.coach-phase4-review .coach-phase4-suggestion .eyebrow{
+  font-size:.72rem;margin-bottom:6px;opacity:.78;
+}
+.coach-phase4-review .coach-phase4-suggestion .exercise-name{
+  font-size:.99rem;white-space:normal;overflow-wrap:anywhere;line-height:1.42;
+}
+.coach-phase4-review .coach-phase4-why{
+  margin-top:11px;border-top:1px solid rgba(148,163,184,.16);padding-top:10px;
+}
+.coach-phase4-review .coach-phase4-why summary{
+  cursor:pointer;font-size:.85rem;font-weight:600;
+}
+.coach-phase4-review .coach-phase4-description{margin-top:9px;line-height:1.55;overflow-wrap:anywhere}
+.coach-phase4-review .coach-phase4-suggestion .actions{margin-top:12px}
+.coach-phase4-review .coach-phase4-empty{
+  padding:12px 13px;
+  border:1px solid rgba(148,163,184,.17);
+  border-radius:10px;line-height:1.5;
+}
+.coach-phase4-review .coach-phase4-footnote{
+  margin-top:12px;font-size:.8rem;line-height:1.5;opacity:.78;
+}
+.coach-phase4-review .coach-phase4-footer{margin-top:12px;grid-template-columns:minmax(0,1fr)}
+@media(max-width:430px){
+ .coach-audit-simple .coach-audit-item>summary{align-items:flex-start}
+ .coach-audit-simple .coach-audit-item-hint{padding-top:2px}
 }

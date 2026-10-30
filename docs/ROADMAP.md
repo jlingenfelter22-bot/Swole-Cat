@@ -1,8 +1,40 @@
 # Swole Cat Product Roadmap
 
+## Coach time estimates and live-session flexibility — product principle (October 20, 2026)
+
+**Owner-confirmed direction:** Swole Cat provides a **rough planning time frame**, not a promise of exactly how many minutes a person will take. Typical/low/high estimates may include working sets, rest, warm-ups and equipment transitions; they cannot predict breaks, phone calls, texting, crowded equipment, slower individual pace or other interruptions. Upper-end “time creep” is expected variability, **not itself a Coach quality defect**. Avoid calibrating to false stopwatch precision or treating every estimate slightly above the requested midpoint as a reason to cut useful training.
+
+**Programming intent:** The requested session duration is a planning preference. Preserve meaningful movement coverage, the user's training goals, and their expressly chosen sets/reps before aggressively shrinking plans to an exact clock number. Coach may disclose a realistic time range and offer sensible shorter-session options; an explicitly hard stop requires a distinct, honest feasibility decision rather than silently promising that all planned work will fit. Do not confuse the ordinary broad planning time frame with a guaranteed deadline.
+
+**Control belongs to the lifter in the actual session:** When running late, the user should be able to skip the remaining set(s), skip an exercise, reduce that day's working sets, substitute equipment, defer unfinished work, or finish the session early. Incomplete/skipped work must not be falsely logged as done or automatically rewrite the saved program. Changes should be today-only unless the user deliberately chooses to save them to their routine. The user chooses what to do, not an automated time police.
+
+**Current functionality (source-inspected):** Focus Mode already supports **Skip exercise today**, **Remove set** via advanced set options, **Next Exercise** as a defer-not-skip action, and **Finish Anyway** with an unfinished-work review. **Dedicated “Skip Set” is a future UX/behavior audit item**: verify whether intentional set skipping should be tracked distinctly from removing a planned set and whether that action can be made easy to reach without disrupting the established Focus Mode. Do not claim a dedicated Skip Set control already exists or make an unapproved visual redesign.
+
+**Engineering impact:** Review the open draft Coach quality PR #83's sets-first trimming gate against this principle *before releasing*. It should prioritize program quality and avoid unnecessary edits for trivial estimated differences. Preserve transparent midpoint and lower/upper ranges instead of overfitting to an exact minute. Keep v0.93.4 accepted performance, original UI, cloud data and Beta unchanged. This is a product-direction record, not permission to merge or publish a new APK.
+
+---
+
+
+## Parked future expansion — Swole Cat for Trainers (idea logged October 15, 2026)
+
+**Not in active development.** The owner proposed, after discussing workflows with his father (a personal trainer), a future linked **trainer/client platform**. A trainer would see a roster of distinct client profiles; manage each client's routines, programs, workout history and progress; and publish updates to each client's connected Swole Cat experience. The client logs workouts on their own phone; the trainer can review permitted progress and adjust future plans. A distinct trainer-branded app versus a role-specific interface remains undecided. Priority is AFTER current personal app functionality, Android v0.93.3 performance acceptance, sync/data safety and Coach are stabilized. No change to the existing app, accounts, data model or release plan is authorized by this note.
+
+**[Full captured idea, candidate MVP, alternatives, competition and security principles](FUTURE_TRAINER_PLATFORM_CONCEPT.md)**. Do not merge clients' workout data, expose private logs without consent or overwrite completed workouts; future architecture must enforce per-client workspace isolation. Owner can revisit this as an entirely separate product/discovery initiative.
+
+---
+
+
 This document is the canonical product roadmap for Swole Cat. Features listed as **Locked** are intended product direction unless a later technical or product decision explicitly replaces them.
 
 ## Product Principles
+
+**Cloud account switching safeguard (Testing v0.88.0, 2026-10-13):** Implemented user-approved final sync before Google sign-out, verified per-owner safety snapshot, fresh active local workspace and cloud-only rehydrate for the next account. Offline/conflicted/unfinished-workout switching is denied, prior account data remains recoverable from an owner-specific device snapshot, and old generic recovery keys no longer leak between accounts. A→B→A isolation, signout failures and legacy recovery tests passed. Existing historically crossed cloud records have not been cleaned, changed or deleted. Real Android switch UX awaits acceptance; Beta remains untouched.
+
+
+**Priority safety incident (Testing v0.87.9, 2026-10-11):** Account-switch record crossover and blank Progress screen found in real use. v0.87.9 fixes the null Coach signal Progress crash, blocks a foreign cloud owner from uploading preexisting local training data, pauses automatic rehydration immediately after an erase, and checks ownership during pull/push. Existing already-mixed cloud history needs a backup-first, user-approved recovery plan; no cloud data has been altered. Separate per-account local workspaces with intentional account switching remain an important follow-up, before more cloud-side feature work. Beta remains untouched.
+
+
+**Exercise-intelligence foundation (v0.84.0 engine; v0.85.0 logging UX implemented in Testing):** [EXERCISE_INTELLIGENCE_FOUNDATION.md](EXERCISE_INTELLIGENCE_FOUNDATION.md) records lightweight movement-family and goal-aware defaults for 308 built-in exercises, including Dead Hang. Time-based holds and distance-based carries/sleds now use real measurement fields, metric-aware PRs and history; exercise-specific loading and manual overrides remain intact. Field review pending. v0.85.0 added manual hold stopwatches and honest real-time hold/carry entry. v0.86.0 added smart workout viewport positioning, sticky overall progress and accessible Coach Session note, while preserving full-width Repeat and Complete Set. v0.87.0 redesigned the active rest timer into a separate, nav-matched sliding tray with compact/expanded controls, keyboard avoidance and clearance for Complete Set. Real Android visual review pending. v0.87.1 then narrowed the collapsed rest timer to an 188px countdown-only nav pod, moving all adjustments to tap-to-expand while adding angular, textured cyan/violet cyber styling. Physical Android review of that v0.87.1 design found the passive timer still obscured Complete Set; in v0.87.2, the passive countdown is now a ~154px recessed notch in the nav shell's upper edge, with collision-aware yielding rather than moving the workout, and expanded controls only on tap. Real Android testing accepted the v0.87.2 notch size/placement/no-overlap, but requested seam polish; v0.87.3 now visually integrates the notch into the nav rail with bevels and a shared surface and border, without changing size or behavior. v0.87.3 Android screenshot still looked assembled, so v0.87.4 replaced the separate sticker panel and faux-shoulder edges with one responsive nav-owned SVG silhouette and a transparent countdown foreground, preserving size and behavior. Android video accepted the v0.87.4 passive stealth look but revealed over-sensitive hiding on scroll and a mismatched wide expansion; v0.87.5 now keeps the notch visible during workout scrolling and slides the original narrow nav-owned housing upward to reveal three controls, then down again when collapsed. Owner's v0.87.5 Android screenshot revealed a morphing giant center crest. v0.87.6 implements their corrected intention: the entire unmodified full-width nav rail silhouette and timer move upward together as a rigid fixture, revealing three controls underneath, then slide back down without changing shape or moving the workout. Android screenshot accepted v0.87.6 whole-rail behavior but revealed a hollow transparent expanded pocket and chunky controls. v0.87.7 adds a fully opaque nav-owned slide-out backing and sharp 34px visual/42px touch controls, shortening lift 62px to 57px without changing the rail silhouette, idle placement or timer logic. v0.87.7 Android screenshot was accepted as the right interaction and shell, with a request for sleeker buttons and more deliberate side cavities. v0.87.8 retains 42px touch areas but reduces visible faces to 32px, shortens the full rigid lift to 53px, and adds restrained cyan/violet etched engine-bay accents on the otherwise empty sides. Real-device v0.87.8 visual acceptance pending. Combined time-and-distance measurements, side-specific measurements, deeper equipment modeling and further optimization remain future work. Beta unchanged.
 
 1. **Local-first stays valuable.** Core workout tracking should remain usable without an account or network connection.
 2. **A routine is a blueprint.** Workout history, weights, reps, progression, notes, and personal stats belong to the individual user, even when a routine is shared.
@@ -84,7 +116,7 @@ Every routine/program should have a configurable training mode. The first versio
 
 ## Phase 2 — Training Engine and Smarter Progression
 
-**Status: Core mode-aware engine complete in v0.31.0. Advanced progression research remains an expansion area.**
+**Status: Core mode-aware engine implemented since v0.31.0. Program-based Guided Progressive Overload and optional deload cycles implemented and CI-validated in Testing v0.82.0; real-device field review remains open. Advanced exercise-specific personalization and recovery design continue to evolve.**
 
 **Priority: High**
 
@@ -100,6 +132,13 @@ Goal: expand Swole Cat from a single progressive-overload workflow into a flexib
 - [x] Preserve manual changes as part of workout history
 
 ### Research/spec work before implementation
+**Program-based Guided Progressive Overload design (DRAFT, updated 2026-10-08):** [PROGRAM_GUIDED_OVERLOAD_DESIGN_PROPOSAL.md](PROGRAM_GUIDED_OVERLOAD_DESIGN_PROPOSAL.md) captures the required new-program mode selection, program-phase labeling and analytics isolation. Owner-confirmed scope: **only Guided Progressive Overload programs** show deload settings, **off by default**, opt-in via a toggle; when enabled the editable suggested interval is **every fourth training week** (three normal weeks, fourth deload), with choices for every third through eighth week and a custom interval. Deload is a **one-week** phase in the initial design, scheduled by training weeks rather than routine rotations. Four weeks is a UX starting preset, not a scientifically established optimum. Remaining scheduling/behavior edge cases need specification and user approval; **no runtime behavior has been changed**.
+
+
+**Exercise load semantics (2026-10-08, Testing v0.83.0 candidate):** [EXERCISE_LOAD_BEHAVIOR.md](EXERCISE_LOAD_BEHAVIOR.md) specifies when a load must decrease (assisted counterweight), when exercise is reps-only (ordinary bodyweight), and when added resistance increases (weighted variants). Includes routine override, PR, Coach and historical analytics safeguards. Field review required before Beta.
+
+**Canonical research checkpoint (2026-10-08):** [TRAINING_SCIENCE_FOUNDATION.md](TRAINING_SCIENCE_FOUNDATION.md) is required reading before modifying workout, progression, Coach, strength, fatigue or deload rules. It separates established findings, limited trials, coach consensus and implementation hypotheses. This is a research reference only: no changes to algorithm behavior, mode defaults or approved future feature scope.
+
 The strength and progression systems should be based on established training concepts rather than treating “strength” and “progressive overload” as scientifically unrelated ideas. Product modes are different **workflows and recommendation strategies**, while progressive overload remains a broad training principle.
 
 Areas to evaluate:
@@ -158,6 +197,57 @@ Preserve unless testing shows a real UX problem:
 
 ### Why this phase comes here
 The visual system should be established before building the workout-completion recap, muscle heat maps, richer history screens, sharing surfaces, and social/group UI. That avoids styling each major new feature twice.
+
+---
+
+## Phase 3.5 — Product UX Refinement and Retention
+
+**Status: In progress beginning with v0.76.0. Home hierarchy is complete through v0.76.2. History density is complete through v0.77.1. Routines action cleanup is complete through v0.78.1. Progress simplification is complete in v0.79.0. Final whole-app visual-language refinement begins in v0.80.0 with semantic color tokens, unified state meanings, documented screen identity, and protected yellow superset language.**
+
+**Priority: High**
+
+Goal: refine the established Swole Cat interface into a faster, calmer, more distinctive product without changing the core navigation or adding artificial engagement mechanics. The app should make the next useful action obvious, surface progress quickly, and reduce visual competition between secondary features.
+
+### Locked refinement order
+
+1. **Home hierarchy**
+   - Make the next workout / Resume Workout the unquestioned primary action.
+   - Move weekly progress into a compact, glanceable strip directly below the training hero.
+   - Keep Coach Swolecat prominent but visually secondary to starting a workout.
+   - Compress Saved Workouts / Build Manually into lightweight shortcuts.
+   - Show one secondary intelligence surface at a time: a useful Coach insight when available, otherwise the latest-workout recap.
+   - Hide secondary dashboard content while a workout is actively in progress so Resume remains dominant.
+
+2. **History density**
+   - Make session cards easy to scan by default: workout, date, duration, volume, working sets, and PRs.
+   - Move full exercise/set detail behind View Recap instead of rendering the entire workout in the feed.
+   - Visually demote destructive actions such as Delete Workout.
+
+3. **Routines action cleanup**
+   - Keep Start as the primary action.
+   - Keep Edit easy to reach.
+   - Move low-frequency actions such as Share and Archive into a compact overflow surface where appropriate.
+   - Evaluate a Routines / Programs segmented switch if it improves long-list navigation without adding another bottom-nav destination.
+
+4. **Progress simplification**
+   - Lead with motivating results and trends before detailed analysis.
+   - Keep charts, muscle workload, and deeper analytics available without forcing explanatory copy into the main scan path.
+   - Move methodology/help text behind contextual “How this works” affordances where useful.
+
+5. **Final visual-language refinement**
+   - Reduce the sense that every piece of content is an equally glowing bordered card.
+   - Strengthen semantic color roles: green for train/complete/success, violet for Coach/create/intelligence, cyan for navigation/data/neutral interaction, yellow for linked/superset behavior, pink as a restrained Swole Cat brand accent.
+   - Vary surface treatment so only important interactive modules receive the strongest futuristic framing.
+   - Preserve the current dark retro-futurist/cyberpunk identity, typography, bottom navigation, workout console, and large gym-friendly touch targets.
+   - Revisit the header’s local/cloud status wording after the primary screen refinements are complete.
+
+### Retention principle
+
+Swole Cat should earn repeat use through **fast time-to-value, effortless workout logging, visible progress, useful intelligence, and trust**, not through intrusive streak pressure, coins, daily quests, ads, or generic social-feed mechanics.
+
+### Iteration rule
+
+Each major surface is implemented and reviewed on a real device before moving to the next phase. User feedback may tune sizing, density, ordering, or emphasis without reopening the entire visual system.
 
 ---
 
@@ -1042,6 +1132,17 @@ The feature should remain training-focused. Full social-media feeds, public foll
 
 These are intentionally later because they depend on the data model and core experience being stable.
 
+### Deferred — Cloud Coach Memory (Lifetime Pro exploration)
+
+**Owner-approved roadmap direction (2026-10-14); not approved for implementation or release yet.** Revisit after the current Coach conversational intake, whole-week coverage, per-day constraint-quality work, actual Android acceptance, and cloud-account isolation testing have stabilized. Do **not** interrupt the current v0.90–v0.92 quality work or change cloud schemas/accounts now.
+
+- **What it could unlock:** An optional, owner-specific Coach memory synchronized across a person's devices: explicitly confirmed equipment access, typical time limits, preferred/excluded movements, program structure, user-approved coaching preferences, and compact summaries derived from the user's own completed workouts (e.g. recent actual session duration, consistent substitutions, comparable performance patterns).
+- **Why it matters:** Coach can personalize a new program or answer a history-informed question without repeatedly asking for context already consented to. Suggestions must cite the underlying history/assumption, distinguish observations from recommendations, and offer user review before changing any program.
+- **Architecture direction:** Keep the free **local Coach** fully functional offline; cloud is a complementary account-owned context/sync layer, not a required source of reasoning. Prefer bounded deterministic analysis and syncable summarized data first, behind existing provider-neutral runtime service contracts.
+- **Privacy and safety prerequisites:** Strict Google/Supabase account ownership and verified row-level security, no cross-account merges or shared memory, explicit opt-in for retaining durable coaching preferences, review/edit/delete controls, conservative data retention, and no training a general model on private workout data. Never mistake synthetic/partial sessions for evidence or infer medical readiness.
+- **Monetization guardrail:** Explore as a value-add to the optional **one-time Swole Cat Pro lifetime unlock** (initial target $7.99); preserve the no-subscription, ad-free/free-core principles. Storage and bounded analyses have ongoing operating costs to budget. Unlimited paid-model conversations carry recurring per-use expense and are **not** included in this commitment; any optional LLM offering needs a separate product/financial/privacy decision.
+- **Implementation gate:** Owner approval of exact data inventory, permission and revocation UX, storage/RLS design, bounded compute budget, export/account switching behavior, non-regression tests and real Android UX. No Supabase deployment, subscription changes, keys, or API spend authorized by this roadmap entry.
+
 Possible directions:
 - advanced Coach Swole Cat intelligence beyond the Phase 6 local builder
 - program templates
@@ -1120,7 +1221,7 @@ The following product ideas are explicitly retained on the roadmap:
 
 ## Immediate next development task
 
-**In-app update infrastructure on Swole Cat Testing** is the current active task. Build and prove Testing self-update first; only then create the new one-time Beta baseline. Beta must never advance from ordinary main-branch development without explicit promotion approval.
+**The v0.73.1 Beta baseline branch is promoted and fully validated (77/77).** Signed publication is the active gate. The permanent Beta signing identity has been generated; the user must add its four repository secrets before the signed Beta build can publish the fresh-install baseline.
 
 After the phone validation/iteration, return to the remaining **Settings cleanup and reorganization** work. The v0.71.0 short-share real-device check also remains an independent cloud exit test.
 

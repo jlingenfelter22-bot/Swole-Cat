@@ -235,5 +235,5 @@ function coachDeepInsightHtml(){
  else if(insight.routineId)action='<button class="btn small secondary" onclick="openCoachRoutineControl(\''+escAttr(insight.routineId)+'\')">Review Routine</button>';
  else if(insight.exerciseId)action='<button class="btn small secondary" onclick="openExerciseProgress(\''+escAttr(insight.exerciseId)+'\')">Open Progress</button>';
  else action='<button class="btn small secondary" onclick="go(\'analytics\')">Open Progress</button>';
- return '<div class="home-signal-card" style="margin-top:8px"><div class="grow"><div class="eyebrow">COACH INSIGHT</div><div class="signal-copy"><b>'+esc(insight.title)+'</b> '+esc(insight.text)+' <span class="mini">Log-based observation only.</span></div></div>'+action+'</div>';
+ return '<div class="home-smart-card home-coach-insight"><div class="grow"><div class="eyebrow">COACH INSIGHT</div><div class="signal-copy"><b>'+esc(insight.title)+'</b> '+esc(insight.text)+' <span class="mini">Log-based observation only.</span></div></div>'+action+'</div>';
 }

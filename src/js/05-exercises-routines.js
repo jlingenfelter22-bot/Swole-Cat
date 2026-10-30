@@ -11,13 +11,46 @@ function populateMuscles(force=false){
  exerciseFilterOptionsKey=key;
 }
 let exerciseHistoryFilter='all',exerciseRenderFrame=null;
+// Bounded DOM creation for the library. All matching exercises remain in the
+// source list, with more existing rows appended on scroll (no visual changes).
+const EXERCISE_LIBRARY_RENDER_BATCH=32;
+let exerciseLibraryMatches=[],exerciseLibraryRenderedCount=0,exerciseLibraryFilterKey=null;
+let exerciseLibraryScrollBound=false,exerciseLibraryScrollFrame=0;
+function exerciseLibraryRowHtml(x){
+ return `
+   <div class="list-item">
+     <div class="iconbox schematic-exercise-thumb">${catExerciseThumbnail(x)}</div>
+     <div class="grow exercise-link" onclick="openExerciseProgress('${x.id}')"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini" style="margin:4px 0">${muscleChip(x.muscle)}</div><div class="mini">${esc(x.equipment)} · ${esc(patternLabel(x.pattern))}</div></div>
+     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
+     ${x.custom?`<button class="btn small secondary" onclick="editExercise('${x.id}')">Edit</button>`:''}
+   </div>`;
+}
+function exerciseLibraryAppendNextBatch(){
+ const el=document.getElementById('exerciseList');
+ if(!el||exerciseLibraryRenderedCount>=exerciseLibraryMatches.length)return false;
+ const end=Math.min(exerciseLibraryMatches.length,exerciseLibraryRenderedCount+EXERCISE_LIBRARY_RENDER_BATCH);
+ el.insertAdjacentHTML('beforeend',exerciseLibraryMatches.slice(exerciseLibraryRenderedCount,end).map(exerciseLibraryRowHtml).join(''));
+ exerciseLibraryRenderedCount=end;
+ return true;
+}
+function exerciseLibraryScrollMaybeAppend(){
+ if(exerciseLibraryScrollFrame)return;
+ exerciseLibraryScrollFrame=requestAnimationFrame(()=>{
+  exerciseLibraryScrollFrame=0;
+  const view=document.getElementById('exercises'),list=document.getElementById('exerciseList');
+  if(!view?.classList.contains('active')||!list||exerciseLibraryRenderedCount>=exerciseLibraryMatches.length)return;
+  if(list.getBoundingClientRect().bottom<=window.innerHeight+Math.min(600,window.innerHeight))
+   exerciseLibraryAppendNextBatch();
+ });
+}
 function scheduleExerciseRender(){
  if(exerciseRenderFrame)cancelAnimationFrame(exerciseRenderFrame);
  exerciseRenderFrame=requestAnimationFrame(()=>{exerciseRenderFrame=null;renderExercises()});
 }
 
 function setExerciseHistoryFilter(filter){
- exerciseHistoryFilter=filter;
+ const valid=['all','done','new','favorite','prefer','hidden'];
+ exerciseHistoryFilter=valid.includes(filter)?filter:'all';
  renderExercises();
 }
 
@@ -29,9 +62,8 @@ function renderExercises(){
  const all=allExercises(),visible=all.filter(x=>!isHiddenExercise(x.id)),hidden=all.filter(x=>isHiddenExercise(x.id));
  const loggedIds=derivedSessionData().loggedExerciseIds;
 
- document.querySelectorAll('[data-history-filter]').forEach(btn=>{
-   btn.classList.toggle('active',btn.dataset.historyFilter===exerciseHistoryFilter);
- });
+ const statusSelect=document.getElementById('exerciseHistoryFilterSelect');
+ if(statusSelect&&statusSelect.value!==exerciseHistoryFilter)statusSelect.value=exerciseHistoryFilter;
  const counts={
    all:visible.length,
    done:visible.filter(x=>loggedIds.has(x.id)).length,
@@ -48,7 +80,8 @@ function renderExercises(){
    exerciseFilterPrefer:`Prefer (${counts.prefer})`,
    exerciseFilterHidden:`Hidden (${counts.hidden})`
  };
- Object.entries(labels).forEach(([id,label])=>{const el=document.getElementById(id);if(el)el.textContent=label});
+ Object.entries(labels).forEach(([id,label])=>{const el=document.getElementById(id);if(el&&el.textContent!==label)el.textContent=label});
+ if(statusSelect&&typeof syncAppSelect==='function')syncAppSelect(statusSelect);
 
  const source=exerciseHistoryFilter==='hidden'?hidden:visible;
  const list=sortExerciseChoices(source.filter(x=>{
@@ -72,13 +105,18 @@ function renderExercises(){
          :exerciseHistoryFilter==='hidden'
            ?'No hidden exercises match these filters.'
            :'Nothing matched that search.';
- document.getElementById('exerciseList').innerHTML=list.length?list.map(x=>`
-   <div class="list-item">
-     <div class="iconbox schematic-exercise-thumb">${catExerciseThumbnail(x)}</div>
-     <div class="grow exercise-link" onclick="openExerciseProgress('${x.id}')"><div class="exercise-name">${esc(x.name)} ${preferenceBadgeHtml(x.id)}</div><div class="mini" style="margin:4px 0">${muscleChip(x.muscle)}</div><div class="mini">${esc(x.equipment)} · ${esc(patternLabel(x.pattern))}</div></div>
-     <button class="favbtn ${isFavorite(x.id)?'on':''}" onclick="toggleFavorite('${x.id}')" title="Favorite">${isFavorite(x.id)?'★':'☆'}</button>
-     ${x.custom?`<button class="btn small secondary" onclick="editExercise('${x.id}')">Edit</button>`:''}
-   </div>`).join(''):`<div class="empty">${emptyMessage}</div>`;
+ const host=document.getElementById('exerciseList');if(!host)return;
+ const filterKey=[q,m,eq,exerciseHistoryFilter].join('\\u001f');
+ if(filterKey!==exerciseLibraryFilterKey)exerciseLibraryRenderedCount=0;
+ exerciseLibraryFilterKey=filterKey;
+ exerciseLibraryMatches=list;
+ exerciseLibraryRenderedCount=Math.min(list.length,Math.max(EXERCISE_LIBRARY_RENDER_BATCH,exerciseLibraryRenderedCount));
+ host.innerHTML=list.length?list.slice(0,exerciseLibraryRenderedCount).map(exerciseLibraryRowHtml).join(''):`<div class="empty">${emptyMessage}</div>`;
+ if(!exerciseLibraryScrollBound){
+  window.addEventListener('scroll',exerciseLibraryScrollMaybeAppend,{passive:true});
+  window.addEventListener('resize',exerciseLibraryScrollMaybeAppend,{passive:true});
+  exerciseLibraryScrollBound=true;
+ }
 }
 function patternLabel(p){return String(p||'other').replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())}
 
@@ -355,37 +393,90 @@ function catExerciseThumbnail(ex){
 function routineIsArchived(r){return !!r?.archivedAt}
 function activeRoutines(){return state.routines.filter(r=>!routineIsArchived(r))}
 function archivedRoutines(){return state.routines.filter(r=>routineIsArchived(r))}
+let routinePageMode='routines';
+function setRoutinePageMode(mode){
+ routinePageMode=mode==='programs'?'programs':'routines';
+ syncRoutinePagePriority();
+}
 function syncRoutinePagePriority(){
- const host=document.getElementById('routinePageSections'),programs=document.getElementById('programsSection'),routines=document.getElementById('workoutRoutinesSection');
- if(!host||!programs||!routines)return;
- if(state.programs.length){
-   host.append(programs,routines);
- }else{
-   host.append(routines,programs);
- }
+ const programs=document.getElementById('programsSection'),routines=document.getElementById('workoutRoutinesSection');
+ const routinesTab=document.getElementById('routineViewRoutines'),programsTab=document.getElementById('routineViewPrograms');
+ const routineCount=document.getElementById('routineViewRoutineCount'),programCount=document.getElementById('routineViewProgramCount');
+ if(!programs||!routines)return;
+ const showPrograms=routinePageMode==='programs';
+ routines.hidden=showPrograms;
+ programs.hidden=!showPrograms;
+ routinesTab?.classList.toggle('active',!showPrograms);
+ programsTab?.classList.toggle('active',showPrograms);
+ routinesTab?.setAttribute('aria-selected',String(!showPrograms));
+ programsTab?.setAttribute('aria-selected',String(showPrograms));
+ if(routinesTab)routinesTab.tabIndex=showPrograms?-1:0;
+ if(programsTab)programsTab.tabIndex=showPrograms?0:-1;
+ if(routineCount)routineCount.textContent=String(activeRoutines().length);
+ if(programCount)programCount.textContent=String((state.programs||[]).length);
+}
+function openRoutineCardMenu(id){
+ const r=state.routines.find(x=>x.id===id);if(!r)return;
+ openModal('Routine options',`
+   <div class="routine-manage-summary">
+     <div class="eyebrow">ROUTINE OPTIONS</div>
+     <div class="routine-manage-title">${esc(r.name||'Routine')}</div>
+     <div class="mini">${esc(trainingModeLabel(r.trainingMode))} · ${r.exercises.length} exercise${r.exercises.length===1?'':'s'}</div>
+   </div>
+   <div class="routine-manage-actions">
+     <button class="btn" onclick="closeModal();editRoutine('${escAttr(r.id)}')">Edit Routine</button>
+     <button class="btn secondary" onclick="closeModal();openRoutineShare('${escAttr(r.id)}')">Share Routine</button>
+     <button class="btn secondary" onclick="closeModal();duplicateRoutine('${escAttr(r.id)}')">Duplicate Routine</button>
+     <button class="btn danger" onclick="closeModal();archiveRoutine('${escAttr(r.id)}')">Archive Routine</button>
+   </div>
+ `);
+}
+function openArchivedRoutineMenu(id){
+ const r=state.routines.find(x=>x.id===id);if(!r||!routineIsArchived(r))return;
+ openModal('Archived routine',`
+   <div class="routine-manage-summary">
+     <div class="eyebrow">ARCHIVED ROUTINE</div>
+     <div class="routine-manage-title">${esc(r.name||'Routine')}</div>
+     <div class="mini">Archived ${new Date(r.archivedAt).toLocaleDateString()} · completed history preserved</div>
+   </div>
+   <div class="routine-manage-actions">
+     <button class="btn" onclick="closeModal();restoreRoutine('${escAttr(r.id)}')">Restore Routine</button>
+     <button class="btn danger" onclick="closeModal();deleteRoutine('${escAttr(r.id)}')">Delete Permanently</button>
+   </div>
+ `);
 }
 function renderRoutines(){
- syncRoutinePagePriority();
  renderPrograms();
  const el=document.getElementById('routineList'),activeList=activeRoutines(),archived=archivedRoutines();
  const activeHtml=activeList.length?activeList.map(r=>{
    const active=state.activeWorkout?.routineId===r.id;
    const counts=active?activeWorkoutCounts():null;
    return `
- <div class="card" style="${active?'border-color:rgba(34,197,94,.42)':''}">
-   <div class="row">
+ <div class="card routine-card ${active?'active-routine':''}">
+   <div class="routine-card-head">
      <div class="grow"><div class="exercise-name">${esc(r.name)}</div><div class="mini">${esc(trainingModeLabel(r.trainingMode))} · ${active?`${counts.done} of ${counts.total} sets complete · active workout is autosaved`:(r.exercises.map(x=>esc(exById(x.exerciseId)?.name||'Unknown')).join(' · ')||'No exercises yet')}</div></div>
-     <button class="btn small ${active?'green':''}" onclick="${active?'resumeActiveWorkout()':`openRoutine('${r.id}')`}">${active?'Resume':'Start'}</button>
+     <button class="routine-manage-btn" onclick="openRoutineCardMenu('${escAttr(r.id)}')" aria-label="Manage ${escAttr(r.name||'routine')}">•••</button>
    </div>
-   <div class="actions">${active?'<span class="tag">● ACTIVE</span>':''}<button class="btn small secondary" onclick="openRoutineShare('${r.id}')">Share</button><button class="btn small secondary" onclick="editRoutine('${r.id}')">Edit routine</button><button class="btn small secondary" onclick="archiveRoutine('${r.id}')">Archive</button></div>
+   <div class="routine-card-actions">
+     <button class="btn small ${active?'green':''} routine-start-btn" onclick="${active?'resumeActiveWorkout()':`openRoutine('${r.id}')`}">${active?'Resume Workout':'Start Workout'}</button>
+     <button class="btn small secondary routine-edit-btn" onclick="editRoutine('${escAttr(r.id)}')">Edit</button>
+     ${active?'<span class="tag">● ACTIVE</span>':''}
+   </div>
  </div>`;
  }).join(''):`<div class="empty">You don't have any active routines yet.</div>`;
- const archivedHtml=archived.length?`<div class="picker-section" style="margin-top:18px">Archived routines</div>${archived.map(r=>`
- <div class="card">
-   <div class="row"><div class="grow"><div class="exercise-name">${esc(r.name)}</div><div class="mini">${esc(trainingModeLabel(r.trainingMode))} · archived ${new Date(r.archivedAt).toLocaleDateString()} · history preserved</div></div><span class="tag">ARCHIVED</span></div>
-   <div class="actions"><button class="btn small secondary" onclick="restoreRoutine('${r.id}')">Restore</button><button class="btn small danger" onclick="deleteRoutine('${r.id}')">Delete permanently</button></div>
+ const archivedHtml=archived.length?`<div class="picker-section routine-archived-title">Archived routines</div>${archived.map(r=>`
+ <div class="card routine-card archived-routine-card">
+   <div class="routine-card-head">
+     <div class="grow"><div class="exercise-name">${esc(r.name)}</div><div class="mini">${esc(trainingModeLabel(r.trainingMode))} · archived ${new Date(r.archivedAt).toLocaleDateString()} · history preserved</div></div>
+     <button class="routine-manage-btn" onclick="openArchivedRoutineMenu('${escAttr(r.id)}')" aria-label="Manage archived ${escAttr(r.name||'routine')}">•••</button>
+   </div>
+   <div class="routine-card-actions">
+     <button class="btn small secondary routine-restore-btn" onclick="restoreRoutine('${escAttr(r.id)}')">Restore</button>
+     <span class="tag">ARCHIVED</span>
+   </div>
  </div>`).join('')}`:'';
  el.innerHTML=activeHtml+archivedHtml;
+ syncRoutinePagePriority();
  updateActiveWorkoutChrome();
 }
 let routinePickerSelection=new Set(),routinePickerCategory='home',routinePickerMovement='';
@@ -452,10 +543,7 @@ function saveRoutine(id,editing){
  const ids=[...routinePickerSelection];
  let old=state.routines.find(x=>x.id===id);
  const oldMap=new Map((old?.exercises||[]).map(x=>[x.exerciseId,x]));
- const exercises=ids.map(exerciseId=>oldMap.get(exerciseId)||{
-   exerciseId,sets:state.settings.defaultSets,minReps:state.settings.defaultMin,maxReps:state.settings.defaultMax,
-   increment:state.settings.defaultIncrement,mode:'double',restSeconds:120
- });
+ const exercises=ids.map(exerciseId=>oldMap.get(exerciseId)||exerciseDefaultRoutineConfig(exerciseId));
  const obj={...(old||{}),id,name,trainingMode:normalizeTrainingMode(old?.trainingMode),description:old?.description||'',exercises};
  if(editing) state.routines=state.routines.map(x=>x.id===id?obj:x); else state.routines.push(obj);
  save();closeModal();renderRoutines();renderHome();
@@ -533,8 +621,8 @@ function routineEditorHtml(r){
         <div class="mini">${esc(ex?.muscle||'')} · ${esc(patternLabel(ex?.pattern||''))} · ${esc(ex?.equipment||'')}</div>
         <div class="editor-summary">
           <span class="tag">${re.sets} sets</span>
-          <span class="tag">${re.minReps}-${re.maxReps} reps</span>
-          <span class="tag">+${re.increment} ${state.profile.unit}</span>
+          <span class="tag">${exerciseMeasurementType(re.exerciseId,re)==='duration'?(Number(re.minDurationSeconds)||20)+'-'+(Number(re.maxDurationSeconds)||45)+' sec':exerciseMeasurementType(re.exerciseId,re)==='distance'?compactMetricNumber(distanceFromMeters(Number(re.minDistanceMeters)||10))+'-'+compactMetricNumber(distanceFromMeters(Number(re.maxDistanceMeters)||30))+' '+distanceUnitLabel():re.minReps+'-'+re.maxReps+' reps'}</span>
+          <span class="tag">${exerciseLoadType(re.exerciseId,re)==='bodyweight'?(exerciseMeasurementType(re.exerciseId,re)==='reps'?'Reps only':'No external load'):(exerciseLoadType(re.exerciseId,re)==='assistance'?'−':'+' )+re.increment+' '+state.profile.unit}</span>
           <span class="tag">${re.setStructure?.type==='top_backoff'?`Top + ${re.setStructure.backoffSets||0} backoff @ ${re.setStructure.backoffPercent||90}%`:(re.mode==='range'||re.mode==='double')?'Double progression · +1/set':re.mode==='total'?'Beat total reps':'Manual'}</span>
           <span class="tag">${goalLabel(re.trainingGoal||'general')}</span>
           ${routineSupersetMeta(r,i)?`<span class="superset-badge">⚡ Superset ${routineSupersetMeta(r,i).label}</span>`:''}
@@ -576,6 +664,7 @@ function removeRoutineExercise(id,index){
 function editRoutineExerciseSettings(id,index){
  const r=state.routines.find(x=>x.id===id),re=r?.exercises[index]; if(!re)return;
  const ex=exById(re.exerciseId),topBackoff=re.setStructure?.type==='top_backoff',structure=re.setStructure||{};
+ const measurement=exerciseMeasurementType(re.exerciseId,re);
  const structureFields=topBackoff?`
  <div class="notice">This exercise uses real top-set + backoff progression. Edit the two roles separately so saved set counts and live targets stay aligned.</div>
  <div class="form-grid three">
@@ -601,8 +690,37 @@ function editRoutineExerciseSettings(id,index){
    <option value="manual" ${re.mode==='manual'?'selected':''}>Manual</option>
  </select></div>`;
  openModal(`${esc(ex?.name||'Exercise')} progression`,`
- ${structureFields}
- <div class="field"><label>Weight jump (${state.profile.unit})</label><input type="number" step=".5" id="reInc" value="${re.increment}"></div>
+ <div id="reRepsFields" style="display:${measurement==='reps'?'block':'none'}">${structureFields}</div>
+ <div id="reMetricSetsFields" style="display:${measurement!=='reps'?'block':'none'}">
+  <div class="field"><label>Working sets</label><input id="reMetricSets" type="number" min="1" max="10" value="${re.sets}"></div>
+  <div class="field"><label>Progression</label><select id="reMetricMode">
+   <option value="double" ${!['manual','total'].includes(re.mode)?'selected':''}>Build each set's time / distance</option>
+   <option value="total" ${re.mode==='total'?'selected':''}>Build one set at a time</option>
+   <option value="manual" ${re.mode==='manual'?'selected':''}>Manual</option>
+  </select></div>
+ </div>
+ <div class="field"><label>What does this exercise track?</label><select id="reMeasurement" onchange="changeRoutineMeasurementFields(this.value)">
+    <option value="auto" ${!re.measurementType||re.measurementType==='auto'?'selected':''}>Automatic · ${measurement==='duration'?'Hold time':measurement==='distance'?'Distance':'Repetitions'}</option>
+    <option value="reps" ${re.measurementType==='reps'?'selected':''}>Repetitions</option>
+    <option value="duration" ${re.measurementType==='duration'?'selected':''}>Hold time (seconds)</option>
+    <option value="distance" ${re.measurementType==='distance'?'selected':''}>Distance (${distanceUnitLabel()})</option>
+  </select>
+  <div class="native-note">Recommended by this movement's profile. You can change how custom or unusual equipment is measured.</div></div>
+  <div id="reTimedFields" style="display:${measurement==='duration'?'block':'none'}"><div class="form-grid">
+    <div><label>Min hold (seconds)</label><input id="reMinDuration" type="number" min="1" step="1" value="${Number(re.minDurationSeconds)||20}"></div>
+    <div><label>Max hold (seconds)</label><input id="reMaxDuration" type="number" min="1" step="1" value="${Number(re.maxDurationSeconds)||45}"></div>
+  </div></div>
+  <div id="reDistanceFields" style="display:${measurement==='distance'?'block':'none'}"><div class="form-grid">
+    <div><label>Min distance (${distanceUnitLabel()})</label><input id="reMinDistance" type="number" min="1" step=".1" value="${compactMetricNumber(distanceFromMeters(Number(re.minDistanceMeters)||10))}"></div>
+    <div><label>Max distance (${distanceUnitLabel()})</label><input id="reMaxDistance" type="number" min="1" step=".1" value="${compactMetricNumber(distanceFromMeters(Number(re.maxDistanceMeters)||30))}"></div>
+  </div></div>
+  <div class="field"><label>How does load work?</label><select id="reLoadType">
+   <option value="auto" ${!re.loadType||re.loadType==='auto'?'selected':''}>Automatic · ${esc(exerciseLoadLabel(exerciseLoadType(re.exerciseId,re)))}</option>
+   <option value="external" ${re.loadType==='external'?'selected':''}>Added resistance (more weight is harder)</option>
+   <option value="assistance" ${re.loadType==='assistance'?'selected':''}>Assistance (less weight is harder)</option>
+   <option value="bodyweight" ${re.loadType==='bodyweight'?'selected':''}>Bodyweight · no added load</option>
+ </select><div class="native-note">Assisted machines progress by reducing counterweight. Unweighted movements track reps. Weighted variants track added resistance. Override automatic classification for custom setups.</div></div>
+ <div class="field"><label>External weight step (${state.profile.unit}, used only for loaded movements)</label><input type="number" step=".25" min="0" id="reInc" value="${re.increment}"></div>
  <div class="form-grid">
    <div><label>Training goal</label><select id="reGoal">
     <option value="general" ${(re.trainingGoal||'general')==='general'?'selected':''}>General progression</option>
@@ -616,13 +734,25 @@ function editRoutineExerciseSettings(id,index){
    </select></div>
  </div>
  <div class="field"><label>Rest seconds</label><input type="number" id="reRest" value="${re.restSeconds||120}"></div>
- <div class="notice">Goal changes how Coach interprets effort and stalls. It does not silently invent working weights.</div>
+ <div class="notice">Your goal influences suggested ranges and effort context. Exercise tracking follows its measurement type, and your saved targets remain yours to customize.</div>
  <div class="actions"><button class="btn" onclick="saveRoutineExerciseSettings('${id}',${index})">Save</button><button class="btn secondary" onclick="editRoutineDetails('${id}')">Back</button></div>`);
+}
+function changeRoutineMeasurementFields(value){
+ const inferred=document.getElementById('reMeasurement')?.options?.[0]?.textContent||'';
+ const mode=value==='auto'?(inferred.includes('Hold time')?'duration':inferred.includes('Distance')?'distance':'reps'):value;
+ for(const [id,show] of [['reTimedFields',mode==='duration'],['reDistanceFields',mode==='distance'],['reRepsFields',mode==='reps'],['reMetricSetsFields',mode!=='reps']]){
+  const el=document.getElementById(id);if(el)el.style.display=show?'block':'none';
+ }
 }
 function saveRoutineExerciseSettings(id,index){
  const r=state.routines.find(x=>x.id===id),re=r?.exercises[index]; if(!re)return;
- const topBackoff=re.setStructure?.type==='top_backoff'&&document.getElementById('reTopSets');
- if(topBackoff){
+ const selectedMeasure=document.getElementById('reMeasurement')?.value;
+ const chosenMeasurement=selectedMeasure==='auto'?exerciseMeasurementType(re.exerciseId):selectedMeasure;
+ const topBackoff=chosenMeasurement==='reps'&&re.setStructure?.type==='top_backoff'&&document.getElementById('reTopSets');
+ if(chosenMeasurement!=='reps'){
+  re.sets=Math.max(1,Math.min(10,Number(document.getElementById('reMetricSets')?.value)||3));
+  re.mode=document.getElementById('reMetricMode')?.value||'double';
+ }else if(topBackoff){
    const topSets=Math.max(1,Math.min(2,+document.getElementById('reTopSets').value||1));
    const topMin=Math.max(1,+document.getElementById('reTopMin').value||3);
    const topMax=Math.max(topMin,+document.getElementById('reTopMax').value||topMin);
@@ -642,6 +772,15 @@ function saveRoutineExerciseSettings(id,index){
    re.maxReps=Math.max(re.minReps,+document.getElementById('reMax').value||12);
    re.mode=document.getElementById('reMode').value;
  }
+ re.measurementType=['reps','duration','distance'].includes(document.getElementById('reMeasurement')?.value)?document.getElementById('reMeasurement').value:'auto';
+ const minDuration=Math.max(1,Math.round(Number(document.getElementById('reMinDuration')?.value)||20));
+ const maxDuration=Math.max(minDuration,Math.round(Number(document.getElementById('reMaxDuration')?.value)||45));
+ re.minDurationSeconds=minDuration;re.maxDurationSeconds=maxDuration;
+ const minDistance=Math.max(.25,distanceToMeters(Number(document.getElementById('reMinDistance')?.value)||distanceFromMeters(10)));
+ const maxDistance=Math.max(minDistance,distanceToMeters(Number(document.getElementById('reMaxDistance')?.value)||distanceFromMeters(30)));
+ re.minDistanceMeters=minDistance;re.maxDistanceMeters=maxDistance;
+ if(exerciseMeasurementType(re.exerciseId,re)!=='reps'){re.setStructure=null;re.progressionStrategy='double';}
+ re.loadType=['external','assistance','bodyweight'].includes(document.getElementById('reLoadType')?.value)?document.getElementById('reLoadType').value:'auto';
  re.increment=Math.max(0,+document.getElementById('reInc').value||0);
  re.trainingGoal=document.getElementById('reGoal').value;
  re.resetPercent=+document.getElementById('reReset').value||7.5;
@@ -676,7 +815,7 @@ function refreshRoutineSwap(id,index){
 }
 function applyRoutineSwap(id,index,newExerciseId){
  const r=state.routines.find(x=>x.id===id);if(!r)return;
- r.exercises[index].exerciseId=newExerciseId;save();editRoutineDetails(id);
+ r.exercises[index].exerciseId=newExerciseId;r.exercises[index].loadType='auto';save();editRoutineDetails(id);
 }
 function openRoutineExerciseAdder(id){
  routinePickerSelection=new Set(); routinePickerCategory='home';routinePickerMovement='';
@@ -712,7 +851,7 @@ function addRoutineCategoryView(id,cat){
 function appendSelectedRoutineExercises(id){
  const r=state.routines.find(x=>x.id===id); if(!r)return;
  for(const exerciseId of routinePickerSelection){
-   r.exercises.push({exerciseId,sets:state.settings.defaultSets,minReps:state.settings.defaultMin,maxReps:state.settings.defaultMax,increment:state.settings.defaultIncrement,mode:'double',trainingGoal:'general',resetPercent:7.5,restSeconds:120});
+   r.exercises.push({...exerciseDefaultRoutineConfig(exerciseId),trainingGoal:'general',resetPercent:7.5});
  }
  save(); editRoutineDetails(id);
 }

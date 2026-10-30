@@ -37,7 +37,11 @@ const audit=w.coachProgramAudit('p');
 assert(audit);assert.equal(audit.routines.length,3);
 assert(audit.coverageRows.find(x=>x.key==='lower body').plannedSets>0);
 assert.equal(audit.coverageRows.find(x=>x.key==='lower body').actualSets,0);
-for(const type of ['adherence','slot_gap','actual_coverage_gap','redundancy','distribution','plateau_high_effort','progressing'])assert(audit.findings.some(x=>x.type===type),'missing '+type);
+for(const type of ['adherence','slot_gap','redundancy','distribution','plateau_high_effort','progressing'])assert(audit.findings.some(x=>x.type===type),'missing '+type);
+assert(!audit.findings.some(x=>x.type==='actual_coverage_gap'),
+ 'Missed workouts alone cannot justify a muscle-coverage shortfall warning');
+assert(!w.coachProgramAuditHasComparableCoverage(audit),
+ 'This schedule is below target: should not claim comparable planned-vs-actual weekly coverage');
 const distribution=audit.findings.find(x=>x.type==='distribution'&&x.evidence==='actual_adjacent_sessions');
 assert(distribution,'distribution must be supported by actual adjacent completed Program sessions rather than positional preferred-day assumptions');
 assert.match(distribution.text,/completed Program days|on .* and .* on /i);
@@ -48,7 +52,7 @@ assert.equal(w.coachProgramAuditIntent('audit my program').handled,true);
 assert.equal(w.coachProgramAuditIntent('build me a 3 day program').handled,false);
 assert.equal(w.coachTryProgramAuditQuestion('how is my program actually going?',{render:false}),true);
 w.coachTryProgramAuditQuestion('audit my program',{render:true});
-assert.match(w.document.getElementById('modalBody').textContent,/PROGRAM AUDIT/i);
+assert.match(w.document.getElementById('modalBody').textContent,/COACH REVIEW/i);
 
 const plateau=audit.findings.find(x=>x.type==='plateau_high_effort');
 w.coachProgramAuditAction('p',plateau.id);
@@ -58,6 +62,8 @@ assert.match(routineSession.lastResponse,/Program audit:/i);
 assert.equal(JSON.stringify({programs:read().programs,routines:read().routines,sessions:read().sessions}),before);
 
 w.eval('coachRoutineSession=null');w.renderPrograms();
-assert.match(w.document.getElementById('programList').textContent,/Coach Audit/i);
+assert.doesNotMatch(w.document.getElementById('programList').textContent,/Coach Audit/i,'Coach Audit should not clutter the primary program card');
+w.openProgramCardMenu('p');
+assert.match(w.document.getElementById('modalBody').textContent,/Coach Audit/i,'Coach Audit should remain available in Program Options');
 console.log('Coach Swolecat v0.63 Program auditor PASS');
 dom.window.close();

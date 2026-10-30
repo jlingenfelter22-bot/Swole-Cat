@@ -1,0 +1,2124 @@
+{
+  "phase": "phase1",
+  "sourceVersion": "0.93.4",
+  "catalogSize": 310,
+  "scenarios": [
+    {
+      "id": "2day_general_full_gym",
+      "generated": true,
+      "focus": [],
+      "days": [
+        {
+          "label": "Full Body A",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 38,
+            "typical": 44,
+            "max": 54
+          },
+          "exercises": [
+            {
+              "id": "lib_8",
+              "sets": 3
+            },
+            {
+              "id": "lib_17",
+              "sets": 3
+            },
+            {
+              "id": "lib_0",
+              "sets": 3
+            },
+            {
+              "id": "lib_26",
+              "sets": 3
+            },
+            {
+              "id": "lib_35",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Full Body B",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 37,
+            "typical": 42,
+            "max": 52
+          },
+          "exercises": [
+            {
+              "id": "lib_13",
+              "sets": 3
+            },
+            {
+              "id": "lib_60",
+              "sets": 3
+            },
+            {
+              "id": "lib_28",
+              "sets": 3
+            },
+            {
+              "id": "lib_34",
+              "sets": 3
+            },
+            {
+              "id": "lib_22",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        }
+      ],
+      "weekly": {
+        "roleCounts": {
+          "knee": 2,
+          "hinge": 1,
+          "posterior": 2,
+          "press": 4,
+          "horizontal_pull": 2
+        },
+        "primary": {
+          "quads": 6,
+          "glutes": 12,
+          "hamstrings": 3,
+          "chest": 6,
+          "upper_back": 6,
+          "lats": 6,
+          "front_delts": 6,
+          "side_delts": 6
+        },
+        "secondary": {
+          "adductors": 3,
+          "lower_back": 1.5,
+          "front_delts": 3,
+          "triceps": 6,
+          "rear_delts": 3,
+          "biceps": 3,
+          "hamstrings": 1.5
+        },
+        "directFocus": [],
+        "indirectFocus": [],
+        "absentFocus": []
+      },
+      "signals": []
+    },
+    {
+      "id": "3day_full_gym",
+      "generated": true,
+      "focus": [],
+      "days": [
+        {
+          "label": "Full Body A",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 38,
+            "typical": 44,
+            "max": 54
+          },
+          "exercises": [
+            {
+              "id": "lib_8",
+              "sets": 3
+            },
+            {
+              "id": "lib_17",
+              "sets": 3
+            },
+            {
+              "id": "lib_0",
+              "sets": 3
+            },
+            {
+              "id": "lib_26",
+              "sets": 3
+            },
+            {
+              "id": "lib_35",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_54"
+          ]
+        },
+        {
+          "label": "Full Body B",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 36,
+            "typical": 41,
+            "max": 51
+          },
+          "exercises": [
+            {
+              "id": "lib_13",
+              "sets": 3
+            },
+            {
+              "id": "lib_60",
+              "sets": 3
+            },
+            {
+              "id": "lib_28",
+              "sets": 3
+            },
+            {
+              "id": "lib_34",
+              "sets": 3
+            },
+            {
+              "id": "lib_22",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_54"
+          ]
+        },
+        {
+          "label": "Full Body C",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 35,
+            "typical": 41,
+            "max": 50
+          },
+          "exercises": [
+            {
+              "id": "lib_9",
+              "sets": 3
+            },
+            {
+              "id": "lib_2",
+              "sets": 3
+            },
+            {
+              "id": "lib_91",
+              "sets": 3
+            },
+            {
+              "id": "lib_128",
+              "sets": 3
+            },
+            {
+              "id": "lib_188",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_54"
+          ]
+        }
+      ],
+      "weekly": {
+        "roleCounts": {
+          "knee": 3,
+          "hinge": 1,
+          "posterior": 3,
+          "press": 6,
+          "horizontal_pull": 3
+        },
+        "primary": {
+          "quads": 9,
+          "glutes": 18,
+          "hamstrings": 3,
+          "chest": 9,
+          "upper_back": 9,
+          "lats": 9,
+          "front_delts": 9,
+          "side_delts": 9
+        },
+        "secondary": {
+          "adductors": 4.5,
+          "lower_back": 1.5,
+          "front_delts": 4.5,
+          "triceps": 9,
+          "rear_delts": 4.5,
+          "biceps": 4.5,
+          "hamstrings": 3
+        },
+        "directFocus": [],
+        "indirectFocus": [],
+        "absentFocus": []
+      },
+      "signals": []
+    },
+    {
+      "id": "3day_ppl_gym",
+      "generated": true,
+      "focus": [],
+      "days": [
+        {
+          "label": "Push",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 46,
+            "typical": 53,
+            "max": 65
+          },
+          "exercises": [
+            {
+              "id": "lib_0",
+              "sets": 3
+            },
+            {
+              "id": "lib_35",
+              "sets": 3
+            },
+            {
+              "id": "lib_1",
+              "sets": 3
+            },
+            {
+              "id": "lib_5",
+              "sets": 3
+            },
+            {
+              "id": "lib_38",
+              "sets": 3
+            },
+            {
+              "id": "lib_149",
+              "sets": 3
+            },
+            {
+              "id": "lib_47",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Pull",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 40,
+            "typical": 46,
+            "max": 57
+          },
+          "exercises": [
+            {
+              "id": "lib_26",
+              "sets": 3
+            },
+            {
+              "id": "lib_30",
+              "sets": 3
+            },
+            {
+              "id": "lib_120",
+              "sets": 3
+            },
+            {
+              "id": "lib_40",
+              "sets": 3
+            },
+            {
+              "id": "lib_150",
+              "sets": 3
+            },
+            {
+              "id": "lib_41",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Legs",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 46,
+            "typical": 53,
+            "max": 66
+          },
+          "exercises": [
+            {
+              "id": "lib_8",
+              "sets": 3
+            },
+            {
+              "id": "lib_17",
+              "sets": 3
+            },
+            {
+              "id": "lib_13",
+              "sets": 3
+            },
+            {
+              "id": "lib_20",
+              "sets": 3
+            },
+            {
+              "id": "lib_22",
+              "sets": 3
+            },
+            {
+              "id": "lib_200",
+              "sets": 3
+            },
+            {
+              "id": "lib_241",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        }
+      ],
+      "weekly": {
+        "roleCounts": {
+          "press": 3,
+          "lateral_delt": 1,
+          "horizontal_pull": 1,
+          "vertical_pull": 1,
+          "rear_delt": 1,
+          "knee": 2,
+          "hinge": 1,
+          "posterior": 3,
+          "knee_flexion": 1,
+          "calf": 1
+        },
+        "primary": {
+          "chest": 9,
+          "front_delts": 3,
+          "side_delts": 12,
+          "traps": 6,
+          "triceps": 3,
+          "upper_back": 3,
+          "lats": 9,
+          "rear_delts": 3,
+          "biceps": 3,
+          "quads": 6,
+          "glutes": 12,
+          "hamstrings": 6,
+          "adductors": 3,
+          "calves": 3
+        },
+        "secondary": {
+          "front_delts": 4.5,
+          "triceps": 6,
+          "biceps": 6,
+          "rear_delts": 3,
+          "upper_back": 4.5,
+          "forearms": 1.5,
+          "adductors": 3,
+          "lower_back": 1.5,
+          "hamstrings": 1.5
+        },
+        "directFocus": [],
+        "indirectFocus": [],
+        "absentFocus": []
+      },
+      "signals": []
+    },
+    {
+      "id": "4day_upper_lower_gym",
+      "generated": true,
+      "focus": [],
+      "days": [
+        {
+          "label": "Upper Body A",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 36,
+            "typical": 41,
+            "max": 51
+          },
+          "exercises": [
+            {
+              "id": "lib_0",
+              "sets": 3
+            },
+            {
+              "id": "lib_26",
+              "sets": 3
+            },
+            {
+              "id": "lib_35",
+              "sets": 3
+            },
+            {
+              "id": "lib_38",
+              "sets": 3
+            },
+            {
+              "id": "lib_40",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_1"
+          ]
+        },
+        {
+          "label": "Lower Body A",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 35,
+            "typical": 40,
+            "max": 49
+          },
+          "exercises": [
+            {
+              "id": "lib_8",
+              "sets": 3
+            },
+            {
+              "id": "lib_17",
+              "sets": 3
+            },
+            {
+              "id": "lib_20",
+              "sets": 3
+            },
+            {
+              "id": "lib_22",
+              "sets": 3
+            },
+            {
+              "id": "lib_241",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_200"
+          ]
+        },
+        {
+          "label": "Upper Body B",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 36,
+            "typical": 41,
+            "max": 51
+          },
+          "exercises": [
+            {
+              "id": "lib_60",
+              "sets": 3
+            },
+            {
+              "id": "lib_28",
+              "sets": 3
+            },
+            {
+              "id": "lib_34",
+              "sets": 3
+            },
+            {
+              "id": "lib_37",
+              "sets": 3
+            },
+            {
+              "id": "lib_140",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_1"
+          ]
+        },
+        {
+          "label": "Lower Body B",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 40,
+            "typical": 45,
+            "max": 56
+          },
+          "exercises": [
+            {
+              "id": "lib_13",
+              "sets": 3
+            },
+            {
+              "id": "lib_283",
+              "sets": 3
+            },
+            {
+              "id": "lib_19",
+              "sets": 3
+            },
+            {
+              "id": "lib_188",
+              "sets": 3
+            },
+            {
+              "id": "lib_200",
+              "sets": 3
+            },
+            {
+              "id": "lib_243",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        }
+      ],
+      "weekly": {
+        "roleCounts": {
+          "press": 4,
+          "horizontal_pull": 2,
+          "lateral_delt": 2,
+          "rear_delt": 2,
+          "knee": 2,
+          "hinge": 2,
+          "posterior": 6,
+          "knee_flexion": 2,
+          "calf": 2
+        },
+        "primary": {
+          "chest": 6,
+          "upper_back": 6,
+          "lats": 6,
+          "front_delts": 6,
+          "side_delts": 12,
+          "rear_delts": 6,
+          "quads": 9,
+          "glutes": 18,
+          "hamstrings": 9,
+          "calves": 6,
+          "adductors": 6
+        },
+        "secondary": {
+          "front_delts": 3,
+          "triceps": 6,
+          "rear_delts": 3,
+          "biceps": 3,
+          "upper_back": 3,
+          "adductors": 3,
+          "lower_back": 3,
+          "hamstrings": 4.5,
+          "forearms": 1.5,
+          "core": 1.5
+        },
+        "directFocus": [],
+        "indirectFocus": [],
+        "absentFocus": []
+      },
+      "signals": []
+    },
+    {
+      "id": "4day_upper_lower_dumbbells",
+      "generated": true,
+      "focus": [],
+      "days": [
+        {
+          "label": "Upper Body A",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 34,
+            "typical": 39,
+            "max": 48
+          },
+          "exercises": [
+            {
+              "id": "lib_69",
+              "sets": 3
+            },
+            {
+              "id": "lib_27",
+              "sets": 3
+            },
+            {
+              "id": "lib_35",
+              "sets": 3
+            },
+            {
+              "id": "lib_37",
+              "sets": 3
+            },
+            {
+              "id": "lib_140",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_73"
+          ]
+        },
+        {
+          "label": "Lower Body A",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 39,
+            "typical": 45,
+            "max": 56
+          },
+          "exercises": [
+            {
+              "id": "lib_13",
+              "sets": 3
+            },
+            {
+              "id": "lib_18",
+              "sets": 3
+            },
+            {
+              "id": "lib_10",
+              "sets": 3
+            },
+            {
+              "id": "lib_23",
+              "sets": 3
+            },
+            {
+              "id": "lib_197",
+              "sets": 3
+            },
+            {
+              "id": "lib_241",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Upper Body B",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 34,
+            "typical": 39,
+            "max": 48
+          },
+          "exercises": [
+            {
+              "id": "lib_7",
+              "sets": 3
+            },
+            {
+              "id": "lib_92",
+              "sets": 3
+            },
+            {
+              "id": "lib_128",
+              "sets": 3
+            },
+            {
+              "id": "lib_134",
+              "sets": 3
+            },
+            {
+              "id": "lib_141",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_73"
+          ]
+        },
+        {
+          "label": "Lower Body B",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 39,
+            "typical": 45,
+            "max": 56
+          },
+          "exercises": [
+            {
+              "id": "lib_164",
+              "sets": 3
+            },
+            {
+              "id": "lib_18",
+              "sets": 3
+            },
+            {
+              "id": "lib_10",
+              "sets": 3
+            },
+            {
+              "id": "lib_23",
+              "sets": 3
+            },
+            {
+              "id": "lib_197",
+              "sets": 3
+            },
+            {
+              "id": "lib_243",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        }
+      ],
+      "weekly": {
+        "roleCounts": {
+          "press": 4,
+          "horizontal_pull": 2,
+          "lateral_delt": 2,
+          "rear_delt": 2,
+          "knee": 4,
+          "hinge": 2,
+          "posterior": 4,
+          "calf": 2
+        },
+        "primary": {
+          "chest": 6,
+          "upper_back": 6,
+          "lats": 6,
+          "front_delts": 6,
+          "side_delts": 12,
+          "rear_delts": 6,
+          "quads": 12,
+          "glutes": 30,
+          "hamstrings": 6,
+          "calves": 6
+        },
+        "secondary": {
+          "front_delts": 3,
+          "triceps": 6,
+          "rear_delts": 3,
+          "biceps": 3,
+          "upper_back": 3,
+          "adductors": 6,
+          "lower_back": 3,
+          "hamstrings": 3
+        },
+        "directFocus": [],
+        "indirectFocus": [],
+        "absentFocus": []
+      },
+      "signals": []
+    },
+    {
+      "id": "4day_shoulder_priority_gym",
+      "generated": true,
+      "focus": [
+        "side_delts",
+        "rear_delts"
+      ],
+      "days": [
+        {
+          "label": "Upper Body A",
+          "requestedMinutes": 50,
+          "estimate": {
+            "min": 42,
+            "typical": 48,
+            "max": 60
+          },
+          "exercises": [
+            {
+              "id": "lib_35",
+              "sets": 3
+            },
+            {
+              "id": "lib_38",
+              "sets": 3
+            },
+            {
+              "id": "lib_40",
+              "sets": 3
+            },
+            {
+              "id": "lib_0",
+              "sets": 3
+            },
+            {
+              "id": "lib_26",
+              "sets": 3
+            },
+            {
+              "id": "lib_1",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_5"
+          ]
+        },
+        {
+          "label": "Lower Body A",
+          "requestedMinutes": 50,
+          "estimate": {
+            "min": 41,
+            "typical": 47,
+            "max": 58
+          },
+          "exercises": [
+            {
+              "id": "lib_8",
+              "sets": 3
+            },
+            {
+              "id": "lib_17",
+              "sets": 3
+            },
+            {
+              "id": "lib_13",
+              "sets": 3
+            },
+            {
+              "id": "lib_20",
+              "sets": 3
+            },
+            {
+              "id": "lib_22",
+              "sets": 3
+            },
+            {
+              "id": "lib_241",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_200"
+          ]
+        },
+        {
+          "label": "Upper Body B",
+          "requestedMinutes": 50,
+          "estimate": {
+            "min": 42,
+            "typical": 48,
+            "max": 60
+          },
+          "exercises": [
+            {
+              "id": "lib_34",
+              "sets": 3
+            },
+            {
+              "id": "lib_37",
+              "sets": 3
+            },
+            {
+              "id": "lib_140",
+              "sets": 3
+            },
+            {
+              "id": "lib_60",
+              "sets": 3
+            },
+            {
+              "id": "lib_28",
+              "sets": 3
+            },
+            {
+              "id": "lib_30",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_120"
+          ]
+        },
+        {
+          "label": "Lower Body B",
+          "requestedMinutes": 50,
+          "estimate": {
+            "min": 40,
+            "typical": 46,
+            "max": 57
+          },
+          "exercises": [
+            {
+              "id": "lib_9",
+              "sets": 3
+            },
+            {
+              "id": "lib_179",
+              "sets": 3
+            },
+            {
+              "id": "lib_169",
+              "sets": 3
+            },
+            {
+              "id": "lib_19",
+              "sets": 3
+            },
+            {
+              "id": "lib_188",
+              "sets": 3
+            },
+            {
+              "id": "lib_243",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_200"
+          ]
+        }
+      ],
+      "weekly": {
+        "roleCounts": {
+          "press": 5,
+          "lateral_delt": 2,
+          "rear_delt": 2,
+          "horizontal_pull": 2,
+          "knee": 4,
+          "hinge": 2,
+          "posterior": 6,
+          "knee_flexion": 2,
+          "calf": 2,
+          "vertical_pull": 1
+        },
+        "primary": {
+          "front_delts": 6,
+          "side_delts": 12,
+          "rear_delts": 6,
+          "chest": 9,
+          "upper_back": 6,
+          "lats": 9,
+          "quads": 12,
+          "glutes": 24,
+          "hamstrings": 12,
+          "calves": 6
+        },
+        "secondary": {
+          "triceps": 7.5,
+          "upper_back": 4.5,
+          "front_delts": 4.5,
+          "rear_delts": 4.5,
+          "biceps": 4.5,
+          "adductors": 6,
+          "lower_back": 3,
+          "hamstrings": 3
+        },
+        "directFocus": [
+          "side_delts",
+          "rear_delts"
+        ],
+        "indirectFocus": [],
+        "absentFocus": []
+      },
+      "signals": []
+    },
+    {
+      "id": "4day_glute_priority_dumbbells",
+      "generated": true,
+      "focus": [
+        "glutes"
+      ],
+      "days": [
+        {
+          "label": "Upper Body A",
+          "requestedMinutes": 50,
+          "estimate": {
+            "min": 40,
+            "typical": 46,
+            "max": 56
+          },
+          "exercises": [
+            {
+              "id": "lib_69",
+              "sets": 3
+            },
+            {
+              "id": "lib_27",
+              "sets": 3
+            },
+            {
+              "id": "lib_35",
+              "sets": 3
+            },
+            {
+              "id": "lib_37",
+              "sets": 3
+            },
+            {
+              "id": "lib_140",
+              "sets": 3
+            },
+            {
+              "id": "lib_73",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_121"
+          ]
+        },
+        {
+          "label": "Lower Body A",
+          "requestedMinutes": 50,
+          "estimate": {
+            "min": 40,
+            "typical": 46,
+            "max": 57
+          },
+          "exercises": [
+            {
+              "id": "lib_13",
+              "sets": 3
+            },
+            {
+              "id": "lib_18",
+              "sets": 3
+            },
+            {
+              "id": "lib_10",
+              "sets": 3
+            },
+            {
+              "id": "lib_308",
+              "sets": 3
+            },
+            {
+              "id": "lib_23",
+              "sets": 3
+            },
+            {
+              "id": "lib_241",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_197"
+          ]
+        },
+        {
+          "label": "Upper Body B",
+          "requestedMinutes": 50,
+          "estimate": {
+            "min": 40,
+            "typical": 46,
+            "max": 56
+          },
+          "exercises": [
+            {
+              "id": "lib_7",
+              "sets": 3
+            },
+            {
+              "id": "lib_92",
+              "sets": 3
+            },
+            {
+              "id": "lib_128",
+              "sets": 3
+            },
+            {
+              "id": "lib_134",
+              "sets": 3
+            },
+            {
+              "id": "lib_141",
+              "sets": 3
+            },
+            {
+              "id": "lib_121",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_42"
+          ]
+        },
+        {
+          "label": "Lower Body B",
+          "requestedMinutes": 50,
+          "estimate": {
+            "min": 40,
+            "typical": 46,
+            "max": 57
+          },
+          "exercises": [
+            {
+              "id": "lib_164",
+              "sets": 3
+            },
+            {
+              "id": "lib_18",
+              "sets": 3
+            },
+            {
+              "id": "lib_10",
+              "sets": 3
+            },
+            {
+              "id": "lib_308",
+              "sets": 3
+            },
+            {
+              "id": "lib_23",
+              "sets": 3
+            },
+            {
+              "id": "lib_243",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_197"
+          ]
+        }
+      ],
+      "weekly": {
+        "roleCounts": {
+          "press": 4,
+          "horizontal_pull": 2,
+          "lateral_delt": 2,
+          "rear_delt": 2,
+          "knee": 6,
+          "hinge": 2,
+          "posterior": 4,
+          "calf": 2
+        },
+        "primary": {
+          "chest": 9,
+          "upper_back": 6,
+          "lats": 9,
+          "front_delts": 6,
+          "side_delts": 12,
+          "rear_delts": 6,
+          "quads": 18,
+          "glutes": 30,
+          "hamstrings": 6,
+          "calves": 6
+        },
+        "secondary": {
+          "front_delts": 4.5,
+          "triceps": 7.5,
+          "rear_delts": 3,
+          "biceps": 3,
+          "upper_back": 4.5,
+          "adductors": 9,
+          "lower_back": 3,
+          "hamstrings": 3
+        },
+        "directFocus": [
+          "glutes"
+        ],
+        "indirectFocus": [],
+        "absentFocus": []
+      },
+      "signals": [
+        {
+          "kind": "repeated_family_in_day",
+          "day": 2,
+          "repeated": [
+            {
+              "family": "squat",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "kind": "repeated_family_in_day",
+          "day": 4,
+          "repeated": [
+            {
+              "family": "squat",
+              "count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "5day_balanced_gym",
+      "generated": true,
+      "focus": [],
+      "days": [
+        {
+          "label": "Upper Body",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 36,
+            "typical": 41,
+            "max": 51
+          },
+          "exercises": [
+            {
+              "id": "lib_0",
+              "sets": 3
+            },
+            {
+              "id": "lib_26",
+              "sets": 3
+            },
+            {
+              "id": "lib_35",
+              "sets": 3
+            },
+            {
+              "id": "lib_38",
+              "sets": 3
+            },
+            {
+              "id": "lib_40",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_1"
+          ]
+        },
+        {
+          "label": "Lower Body",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 35,
+            "typical": 40,
+            "max": 49
+          },
+          "exercises": [
+            {
+              "id": "lib_8",
+              "sets": 3
+            },
+            {
+              "id": "lib_17",
+              "sets": 3
+            },
+            {
+              "id": "lib_20",
+              "sets": 3
+            },
+            {
+              "id": "lib_22",
+              "sets": 3
+            },
+            {
+              "id": "lib_241",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_200"
+          ]
+        },
+        {
+          "label": "Push",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 35,
+            "typical": 41,
+            "max": 50
+          },
+          "exercises": [
+            {
+              "id": "lib_60",
+              "sets": 3
+            },
+            {
+              "id": "lib_34",
+              "sets": 3
+            },
+            {
+              "id": "lib_1",
+              "sets": 3
+            },
+            {
+              "id": "lib_5",
+              "sets": 3
+            },
+            {
+              "id": "lib_47",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_37"
+          ]
+        },
+        {
+          "label": "Pull",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 39,
+            "typical": 45,
+            "max": 55
+          },
+          "exercises": [
+            {
+              "id": "lib_28",
+              "sets": 3
+            },
+            {
+              "id": "lib_30",
+              "sets": 3
+            },
+            {
+              "id": "lib_120",
+              "sets": 3
+            },
+            {
+              "id": "lib_140",
+              "sets": 3
+            },
+            {
+              "id": "lib_149",
+              "sets": 3
+            },
+            {
+              "id": "lib_41",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Legs",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 40,
+            "typical": 45,
+            "max": 56
+          },
+          "exercises": [
+            {
+              "id": "lib_13",
+              "sets": 3
+            },
+            {
+              "id": "lib_283",
+              "sets": 3
+            },
+            {
+              "id": "lib_19",
+              "sets": 3
+            },
+            {
+              "id": "lib_188",
+              "sets": 3
+            },
+            {
+              "id": "lib_200",
+              "sets": 3
+            },
+            {
+              "id": "lib_243",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        }
+      ],
+      "weekly": {
+        "roleCounts": {
+          "press": 5,
+          "horizontal_pull": 2,
+          "lateral_delt": 1,
+          "rear_delt": 2,
+          "knee": 2,
+          "hinge": 2,
+          "posterior": 6,
+          "knee_flexion": 2,
+          "calf": 2,
+          "vertical_pull": 1
+        },
+        "primary": {
+          "chest": 12,
+          "upper_back": 6,
+          "lats": 12,
+          "front_delts": 6,
+          "side_delts": 12,
+          "rear_delts": 6,
+          "quads": 9,
+          "glutes": 18,
+          "hamstrings": 9,
+          "calves": 6,
+          "triceps": 3,
+          "traps": 3,
+          "biceps": 3,
+          "adductors": 6
+        },
+        "secondary": {
+          "front_delts": 6,
+          "triceps": 9,
+          "rear_delts": 4.5,
+          "biceps": 6,
+          "upper_back": 6,
+          "adductors": 3,
+          "lower_back": 3,
+          "hamstrings": 4.5,
+          "forearms": 3,
+          "core": 1.5
+        },
+        "directFocus": [],
+        "indirectFocus": [],
+        "absentFocus": []
+      },
+      "signals": []
+    },
+    {
+      "id": "6day_ppl_gym",
+      "generated": true,
+      "focus": [],
+      "days": [
+        {
+          "label": "Push A",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 46,
+            "typical": 53,
+            "max": 65
+          },
+          "exercises": [
+            {
+              "id": "lib_0",
+              "sets": 3
+            },
+            {
+              "id": "lib_35",
+              "sets": 3
+            },
+            {
+              "id": "lib_1",
+              "sets": 3
+            },
+            {
+              "id": "lib_5",
+              "sets": 3
+            },
+            {
+              "id": "lib_38",
+              "sets": 3
+            },
+            {
+              "id": "lib_149",
+              "sets": 3
+            },
+            {
+              "id": "lib_47",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Pull A",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 40,
+            "typical": 46,
+            "max": 57
+          },
+          "exercises": [
+            {
+              "id": "lib_26",
+              "sets": 3
+            },
+            {
+              "id": "lib_30",
+              "sets": 3
+            },
+            {
+              "id": "lib_120",
+              "sets": 3
+            },
+            {
+              "id": "lib_40",
+              "sets": 3
+            },
+            {
+              "id": "lib_150",
+              "sets": 3
+            },
+            {
+              "id": "lib_41",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Legs A",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 46,
+            "typical": 53,
+            "max": 66
+          },
+          "exercises": [
+            {
+              "id": "lib_8",
+              "sets": 3
+            },
+            {
+              "id": "lib_17",
+              "sets": 3
+            },
+            {
+              "id": "lib_13",
+              "sets": 3
+            },
+            {
+              "id": "lib_20",
+              "sets": 3
+            },
+            {
+              "id": "lib_22",
+              "sets": 3
+            },
+            {
+              "id": "lib_200",
+              "sets": 3
+            },
+            {
+              "id": "lib_241",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Push B",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 47,
+            "typical": 54,
+            "max": 66
+          },
+          "exercises": [
+            {
+              "id": "lib_60",
+              "sets": 3
+            },
+            {
+              "id": "lib_34",
+              "sets": 3
+            },
+            {
+              "id": "lib_3",
+              "sets": 3
+            },
+            {
+              "id": "lib_73",
+              "sets": 3
+            },
+            {
+              "id": "lib_37",
+              "sets": 3
+            },
+            {
+              "id": "lib_146",
+              "sets": 3
+            },
+            {
+              "id": "lib_219",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Pull B",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 39,
+            "typical": 45,
+            "max": 55
+          },
+          "exercises": [
+            {
+              "id": "lib_28",
+              "sets": 3
+            },
+            {
+              "id": "lib_106",
+              "sets": 3
+            },
+            {
+              "id": "lib_140",
+              "sets": 3
+            },
+            {
+              "id": "lib_121",
+              "sets": 3
+            },
+            {
+              "id": "lib_149",
+              "sets": 3
+            },
+            {
+              "id": "lib_42",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Legs B",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 46,
+            "typical": 53,
+            "max": 65
+          },
+          "exercises": [
+            {
+              "id": "lib_9",
+              "sets": 3
+            },
+            {
+              "id": "lib_179",
+              "sets": 3
+            },
+            {
+              "id": "lib_169",
+              "sets": 3
+            },
+            {
+              "id": "lib_19",
+              "sets": 3
+            },
+            {
+              "id": "lib_188",
+              "sets": 3
+            },
+            {
+              "id": "lib_200",
+              "sets": 3
+            },
+            {
+              "id": "lib_243",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        }
+      ],
+      "weekly": {
+        "roleCounts": {
+          "press": 6,
+          "lateral_delt": 2,
+          "horizontal_pull": 2,
+          "vertical_pull": 2,
+          "rear_delt": 2,
+          "knee": 4,
+          "hinge": 2,
+          "posterior": 6,
+          "knee_flexion": 2,
+          "calf": 2
+        },
+        "primary": {
+          "chest": 18,
+          "front_delts": 9,
+          "side_delts": 21,
+          "traps": 9,
+          "triceps": 6,
+          "upper_back": 6,
+          "lats": 18,
+          "rear_delts": 6,
+          "biceps": 6,
+          "quads": 12,
+          "glutes": 24,
+          "hamstrings": 12,
+          "adductors": 6,
+          "calves": 6
+        },
+        "secondary": {
+          "front_delts": 9,
+          "triceps": 12,
+          "biceps": 10.5,
+          "rear_delts": 6,
+          "upper_back": 9,
+          "forearms": 3,
+          "adductors": 6,
+          "lower_back": 3,
+          "hamstrings": 3
+        },
+        "directFocus": [],
+        "indirectFocus": [],
+        "absentFocus": []
+      },
+      "signals": []
+    },
+    {
+      "id": "6day_ppl_strength",
+      "generated": true,
+      "focus": [],
+      "days": [
+        {
+          "label": "Push A",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 41,
+            "typical": 47,
+            "max": 58
+          },
+          "exercises": [
+            {
+              "id": "lib_0",
+              "sets": 3
+            },
+            {
+              "id": "lib_35",
+              "sets": 3
+            },
+            {
+              "id": "lib_5",
+              "sets": 3
+            },
+            {
+              "id": "lib_38",
+              "sets": 3
+            },
+            {
+              "id": "lib_47",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Pull A",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 41,
+            "typical": 47,
+            "max": 58
+          },
+          "exercises": [
+            {
+              "id": "lib_26",
+              "sets": 3
+            },
+            {
+              "id": "lib_30",
+              "sets": 3
+            },
+            {
+              "id": "lib_120",
+              "sets": 3
+            },
+            {
+              "id": "lib_40",
+              "sets": 3
+            },
+            {
+              "id": "lib_41",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Legs A",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 42,
+            "typical": 48,
+            "max": 59
+          },
+          "exercises": [
+            {
+              "id": "lib_8",
+              "sets": 3
+            },
+            {
+              "id": "lib_283",
+              "sets": 3
+            },
+            {
+              "id": "lib_20",
+              "sets": 3
+            },
+            {
+              "id": "lib_22",
+              "sets": 3
+            },
+            {
+              "id": "lib_241",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Push B",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 42,
+            "typical": 48,
+            "max": 59
+          },
+          "exercises": [
+            {
+              "id": "lib_0",
+              "sets": 3
+            },
+            {
+              "id": "lib_34",
+              "sets": 3
+            },
+            {
+              "id": "lib_5",
+              "sets": 3
+            },
+            {
+              "id": "lib_37",
+              "sets": 3
+            },
+            {
+              "id": "lib_219",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Pull B",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 40,
+            "typical": 46,
+            "max": 56
+          },
+          "exercises": [
+            {
+              "id": "lib_28",
+              "sets": 3
+            },
+            {
+              "id": "lib_106",
+              "sets": 3
+            },
+            {
+              "id": "lib_121",
+              "sets": 3
+            },
+            {
+              "id": "lib_140",
+              "sets": 3
+            },
+            {
+              "id": "lib_42",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        },
+        {
+          "label": "Legs B",
+          "requestedMinutes": 60,
+          "estimate": {
+            "min": 41,
+            "typical": 47,
+            "max": 58
+          },
+          "exercises": [
+            {
+              "id": "lib_13",
+              "sets": 3
+            },
+            {
+              "id": "lib_17",
+              "sets": 3
+            },
+            {
+              "id": "lib_19",
+              "sets": 3
+            },
+            {
+              "id": "lib_188",
+              "sets": 3
+            },
+            {
+              "id": "lib_241",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": []
+        }
+      ],
+      "weekly": {
+        "roleCounts": {
+          "press": 4,
+          "lateral_delt": 2,
+          "horizontal_pull": 2,
+          "vertical_pull": 2,
+          "rear_delt": 2,
+          "knee": 2,
+          "hinge": 2,
+          "posterior": 6,
+          "knee_flexion": 2,
+          "calf": 2
+        },
+        "primary": {
+          "chest": 12,
+          "front_delts": 6,
+          "side_delts": 12,
+          "triceps": 6,
+          "upper_back": 6,
+          "lats": 18,
+          "rear_delts": 6,
+          "biceps": 6,
+          "quads": 9,
+          "glutes": 18,
+          "adductors": 3,
+          "hamstrings": 9,
+          "calves": 6
+        },
+        "secondary": {
+          "front_delts": 6,
+          "triceps": 9,
+          "rear_delts": 6,
+          "biceps": 6,
+          "upper_back": 9,
+          "forearms": 4.5,
+          "adductors": 3,
+          "hamstrings": 4.5,
+          "lower_back": 3,
+          "core": 1.5
+        },
+        "directFocus": [],
+        "indirectFocus": [],
+        "absentFocus": []
+      },
+      "signals": []
+    },
+    {
+      "id": "3day_full_bodyweight_limit",
+      "generated": false,
+      "focus": [],
+      "days": [],
+      "weekly": null,
+      "signals": [
+        "equipment_limited_or_infeasible"
+      ]
+    },
+    {
+      "id": "3day_full_dumbbells",
+      "generated": true,
+      "focus": [],
+      "days": [
+        {
+          "label": "Full Body A",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 35,
+            "typical": 40,
+            "max": 50
+          },
+          "exercises": [
+            {
+              "id": "lib_13",
+              "sets": 3
+            },
+            {
+              "id": "lib_18",
+              "sets": 3
+            },
+            {
+              "id": "lib_69",
+              "sets": 3
+            },
+            {
+              "id": "lib_27",
+              "sets": 3
+            },
+            {
+              "id": "lib_35",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_274"
+          ]
+        },
+        {
+          "label": "Full Body B",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 34,
+            "typical": 39,
+            "max": 49
+          },
+          "exercises": [
+            {
+              "id": "lib_10",
+              "sets": 3
+            },
+            {
+              "id": "lib_7",
+              "sets": 3
+            },
+            {
+              "id": "lib_92",
+              "sets": 3
+            },
+            {
+              "id": "lib_128",
+              "sets": 3
+            },
+            {
+              "id": "lib_23",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_274"
+          ]
+        },
+        {
+          "label": "Full Body C",
+          "requestedMinutes": 45,
+          "estimate": {
+            "min": 34,
+            "typical": 39,
+            "max": 49
+          },
+          "exercises": [
+            {
+              "id": "lib_164",
+              "sets": 3
+            },
+            {
+              "id": "lib_69",
+              "sets": 3
+            },
+            {
+              "id": "lib_93",
+              "sets": 3
+            },
+            {
+              "id": "lib_130",
+              "sets": 3
+            },
+            {
+              "id": "lib_23",
+              "sets": 3
+            }
+          ],
+          "removedByDuration": [
+            "lib_274"
+          ]
+        }
+      ],
+      "weekly": {
+        "roleCounts": {
+          "knee": 3,
+          "hinge": 1,
+          "posterior": 3,
+          "press": 6,
+          "horizontal_pull": 3
+        },
+        "primary": {
+          "quads": 9,
+          "glutes": 18,
+          "hamstrings": 3,
+          "chest": 9,
+          "upper_back": 9,
+          "lats": 9,
+          "front_delts": 9,
+          "side_delts": 9
+        },
+        "secondary": {
+          "adductors": 4.5,
+          "lower_back": 1.5,
+          "front_delts": 4.5,
+          "triceps": 9,
+          "rear_delts": 4.5,
+          "biceps": 4.5,
+          "hamstrings": 3
+        },
+        "directFocus": [],
+        "indirectFocus": [],
+        "absentFocus": []
+      },
+      "signals": []
+    }
+  ]
+}

@@ -212,7 +212,13 @@ function coachExerciseChunkText(value){
    .replace(/\b(?:for|at|targeting|aiming for|to)\s*\d+(?:\s*(?:-|to)\s*\d+)?\s*(?:reps?)?\b/gi,' ')
    .replace(/\b(?:a|an|one)\s+sets?\s+(?:of\s+)?/gi,' '));
 }
-function coachAnalyzeExerciseMentions(text){
+// Fast path for general multi-day planning: exact aliases/exclusions remain
+// recognized, but a full fuzzy catalog search is reserved for requests which
+// explicitly ask for named movements, exercise lists or set prescriptions.
+function coachProgramNeedsFuzzyExerciseScan(text){
+ return /\b(?:include|including|add|exercise|exercises|movement|movements|lift|lifts|specifically|sets?|reps?|prescribe|swap|replace)\b|\b\d+\s*x\s*\d+\b/i.test(String(text||''));
+}
+function coachAnalyzeExerciseMentions(text,{allowFuzzy=true}={}){
  const raw=coachNormalizeGymText(coachNumbersToDigits(text)),mentions=[],occupied=[],ambiguities=[];
  coachExerciseMentionCandidates().forEach(({phrase,ex})=>{
    const pattern=new RegExp('(?:^|\\s)'+coachRegexEscape(phrase)+'s?(?=\\s|$)','g');let m;
@@ -224,6 +230,7 @@ function coachAnalyzeExerciseMentions(text){
    }
  });
  let cursor=0;
+ if(allowFuzzy){
  const chunks=raw.split(/\s*(?:,|;|\band\b|\bthen\b)\s*/).filter(Boolean);
  chunks.forEach(chunk=>{
    const start=raw.indexOf(chunk,cursor);cursor=Math.max(cursor,start+chunk.length);
@@ -238,6 +245,7 @@ function coachAnalyzeExerciseMentions(text){
      ambiguities.push({phrase:cleaned,segmentText:chunk,start:Math.max(0,start),end:Math.max(0,end),alternatives:understood.alternatives});
    }
  });
+ }
  const deduped=[];const seenIds=new Set();
  mentions.sort((a,b)=>a.start-b.start).forEach(m=>{if(!seenIds.has(m.exerciseId)){seenIds.add(m.exerciseId);deduped.push(m)}});
  return {mentions:deduped,ambiguities};
@@ -282,8 +290,8 @@ function coachPrescriptionNumbersAround(text,mention,index,mentions,goal,globalR
    explicitSets:!!sets,explicitReps:!!minReps||!!globalRep
  };
 }
-function coachParseExplicitWorkout(text,goal=coachPromptGoal){
- const normalized=coachNumbersToDigits(text),lower=normalized.toLowerCase(),normalizedWords=coachNormalizeGymText(normalized),analysis=coachAnalyzeExerciseMentions(normalized);
+function coachParseExplicitWorkout(text,goal=coachPromptGoal,{allowFuzzy=true}={}){
+ const normalized=coachNumbersToDigits(text),lower=normalized.toLowerCase(),normalizedWords=coachNormalizeGymText(normalized),analysis=coachAnalyzeExerciseMentions(normalized,{allowFuzzy});
  const excludedExerciseIds=coachParseExerciseExclusions(normalized,analysis),excludedSet=new Set(excludedExerciseIds);
  const mentions=analysis.mentions.filter(mention=>!excludedSet.has(mention.exerciseId)),items=[],seen=new Set();
  let globalRep=null;
@@ -355,6 +363,14 @@ function coachTryTeachAlias(text){
  const choices=understood.alternatives?.slice(0,2).map(x=>x.exercise.name).join(' or ');
  return {handled:true,ok:false,message:choices?`I’m not sure what “${meaning}” means. Did you mean ${choices}?`:'I could not match that exercise yet.'};
 }
+function coachRefreshExplicitDraftTime(draft=coachBuildDraft){
+ if(!draft?.explicitPrescription||typeof coachBrainSessionTimeEstimate!=='function')return null;
+ // Defaults do not imply the user requested a 45-minute deadline.
+ const timeRequest=draft.explicitDurationRequested?draft.request:{...draft.request,duration:0};
+ draft.brainTime=coachBrainSessionTimeEstimate(draft.selectedIds,timeRequest,draft.defaults,
+   {explicitConfigById:draft.explicitConfigById||{}});
+ return draft.brainTime;
+}
 function coachGenerateExplicitWorkout(request,prescription){
  if(!prescription?.items?.length)return null;
  const defaults=coachApplyLiftingGrammarToDefaults(coachProgrammingDefaults(request.goal,request.duration||45),request.liftingGrammar),regions=[],labels=[];
@@ -366,9 +382,11 @@ function coachGenerateExplicitWorkout(request,prescription){
  req.targetLabels=labels.length?labels:['Custom'];req.targetRegions=[...new Set(regions)];
  coachBuildDraft={
    request:req,defaults,selectedIds:prescription.items.map(x=>x.exerciseId),
-   explicitPrescription:true,explicitConfigById:Object.fromEntries(prescription.items.map(x=>[x.exerciseId,{...x}])),
+   explicitPrescription:true,explicitDurationRequested:Number(request.duration)>0,
+   explicitConfigById:Object.fromEntries(prescription.items.map(x=>[x.exerciseId,{...x}])),
    createdAt:new Date().toISOString(),lastRefinement:'',sourcePrompt:request.prompt||''
  };
+ coachRefreshExplicitDraftTime(coachBuildDraft);
  return coachBuildDraft;
 }
 function coachResolveExercisePhrase(phrase,ids=null){
@@ -441,6 +459,10 @@ function coachExplicitEditNumbers(text,draft,exerciseId,{forAdd=false}={}){
  let m;
  if((m=normalized.match(/\b(?:a|an)\s+sets?\b/i)))out.sets=1;
  if((m=normalized.match(/\b(\d+)\s+sets?\b/i)))out.sets=Number(m[1]);
+ // "4 sets of 6" updates both dimensions rather than inheriting old reps.
+ if((m=normalized.match(/\b\d+\s+sets?\s+of\s+(\d+)(?:\s*(?:-|to)\s*(\d+))?(?:\s*reps?)?\b/i))){
+   out.minReps=Number(m[1]);out.maxReps=Number(m[2]||m[1]);
+ }
  if((m=normalized.match(/\b(\d+)\s*x\s*(\d+)(?:\s*(?:-|to)\s*(\d+))?\b/i))){
    out.sets=Number(m[1]);out.minReps=Number(m[2]);out.maxReps=Number(m[3]||m[2]);
  }
@@ -499,7 +521,17 @@ function coachRefineExplicitDraftText(text){
 
  if(isModify){
    const ex=coachResolveExplicitEditExercise(normalized,draft,{selectedOnly:true});
-   if(!ex)return {ok:false,message:'I could not tell which current exercise you want changed.'};
+   if(!ex){
+     // A time change never downgrades explicitly requested working sets.
+     const timing=coachParsePrompt(normalized,draft.request.goal);
+     if(timing.duration&&!/\b(?:sets?|reps?)\b/i.test(lower)){
+       draft.request.duration=timing.duration;
+       draft.explicitDurationRequested=true;
+       draft.lastRefinement=raw;
+       return {ok:true,message:'Workout time target updated; your sets and reps are unchanged.'};
+     }
+     return {ok:false,message:'I could not tell which current exercise you want changed.'};
+   }
    const cfg=coachExplicitEditNumbers(normalized,draft,ex.id);
    draft.explicitConfigById[ex.id]=coachExplicitConfigForExercise(draft,ex.id,cfg);
    draft.lastRefinement=`Updated ${ex.name}`;
@@ -520,7 +552,11 @@ function coachRefineExplicitDraftText(text){
 
  const parsedPrompt=coachParsePrompt(normalized,draft.request.goal),goal=coachExplicitGoal(normalized);
  let metadataChanged=false;
- if(parsedPrompt.duration){draft.request.duration=parsedPrompt.duration;metadataChanged=true}
+ if(parsedPrompt.duration){
+   draft.request.duration=parsedPrompt.duration;
+   draft.explicitDurationRequested=true;
+   metadataChanged=true;
+ }
  if(goal&&goal!==draft.request.goal){
    draft.request.goal=goal;
    draft.defaults=coachProgrammingDefaults(goal,draft.request.duration||45);
@@ -531,7 +567,24 @@ function coachRefineExplicitDraftText(text){
 }
 function coachRefineDraftText(text){
  const draft=coachBuildDraft,raw=String(text||'').trim();if(!draft||!raw)return {ok:false,message:'Tell Coach what you want changed.'};
- if(draft.explicitPrescription)return coachRefineExplicitDraftText(raw);
+ if(draft.explicitPrescription){
+   const result=coachRefineExplicitDraftText(raw);
+   if(result.ok)coachRefreshExplicitDraftTime(draft);
+   return result;
+ }
+ const clauses=coachBrainSplitEditClauses(raw);
+ if(clauses.length>1){
+   const previous=coachBuildDraft;
+   for(const clause of clauses){
+     const result=coachRefineDraftText(clause);
+     if(!result.ok){
+       coachBuildDraft=previous;
+       return {ok:false,message:'No changes applied. '+result.message,failedClause:clause};
+     }
+   }
+   coachBuildDraft.lastRefinement=raw;
+   return {ok:true,message:'Updated all '+clauses.length+' instructions.'};
+ }
  const lower=raw.toLowerCase(),req={...draft.request};
  req.targetKeys=[...(req.targetKeys||[])];req.targetLabels=[...(req.targetLabels||[])];req.targetRegions=[...(req.targetRegions||[])];
  req.allowedEquipment=[...(req.allowedEquipment||[])];req.excludedEquipment=[...(req.excludedEquipment||[])];
@@ -549,8 +602,14 @@ function coachRefineDraftText(text){
  if(parsed.experienceLevel&&parsed.experienceLevel!=='auto'&&parsed.experienceLevel!==req.experienceLevel){req.experienceLevel=parsed.experienceLevel;changed=true}
  if(parsed.lateralityPreference&&parsed.lateralityPreference!=='auto'&&parsed.lateralityPreference!==req.lateralityPreference){req.lateralityPreference=parsed.lateralityPreference;changed=true}
  if(equipment.allowed.length){
+   req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:raw,allowedEquipment:equipment.allowed});
    req.allowedEquipment=[...equipment.allowed];
    req.excludedEquipment=req.excludedEquipment.filter(x=>!equipment.allowed.includes(x));
+   changed=true;
+ }
+ if(/\b(?:full|commercial|standard|well[- ]equipped)\s+gym\b/i.test(raw)){
+   req.brainEquipment=coachBrainExplicitEquipment({...req,prompt:raw,allowedEquipment:[]});
+   req.allowedEquipment=[...(req.brainEquipment?.allowed||[])];
    changed=true;
  }
  if(equipment.excluded.length){
@@ -592,6 +651,21 @@ function coachRefineDraftText(text){
    }
    changed=true;
  }
+ const brainNatural=coachBrainApplyNaturalExerciseChange(req,raw);
+ if(brainNatural.changed){
+   req.excludedMovementPatterns=brainNatural.request.excludedMovementPatterns;
+   changed=true;
+ }
+ const swapInstruction=raw.match(/\b(?:replace|swap|change)\s+(.+?)\s+(?:with|for|to)\s+(.+?)(?:[.!?]|$)/i);
+ if(swapInstruction){
+   const oldExercise=coachResolveExercisePhrase(swapInstruction[1],draft.selectedIds);
+   const newExercise=coachResolveExercisePhrase(swapInstruction[2]);
+   if(oldExercise&&newExercise){
+     req.excludedExerciseIds=[...new Set([...(req.excludedExerciseIds||[]),oldExercise.id])];
+     req.requiredExerciseIds=[...new Set([...(req.requiredExerciseIds||[]).filter(x=>x!==oldExercise.id),newExercise.id])];
+     changed=true;
+   }
+ }
  const segments=raw.split(/[,;]|\bthen\b/i).map(x=>x.trim()).filter(Boolean);
  segments.forEach(segment=>{
    let m=segment.match(/^(?:remove|drop|skip)\s+(.+)$/i);
@@ -616,11 +690,20 @@ function coachRefineDraftText(text){
    }
  });
  if(!req.targetRegions.length)return {ok:false,message:'That would remove every target muscle. Tell Coach what you still want to train.'};
- if(!changed)return {ok:false,message:'I did not find a workout change there. Try “30 minutes,” “no barbells,” “more chest,” “strength focused,” or “remove bench press.”'};
+ if(!changed)return {ok:false,message:'I did not find a workout change there. Try “something other than squats,” “swap a leg press for a glute bridge,” “30 minutes,” “no barbells,” or “more glutes.”'};
  req.lastRefinement=raw;
- const defaults=coachProgrammingDefaults(req.goal,req.duration||45),selected=coachSelectExercises(req,defaults.exerciseCount);
+ const defaults=coachProgrammingDefaults(req.goal,req.duration||45);
+ const initial=coachSelectExercises(req,defaults.exerciseCount);
+ const plan=coachBrainTrimToTime(initial,req,defaults);
+ const selected=plan.exercises;
+ if(!plan.feasible)return {ok:false,message:'That combination needs more time with these movement roles and rest periods. Try longer or simplify the request.'};
  if(!selected.length)return {ok:false,message:'Those constraints leave no matching exercises. Broaden the equipment or muscle target.'};
- coachBuildDraft={...draft,request:req,defaults,selectedIds:selected.map(ex=>ex.id),lastRefinement:raw};
+ const brainComparison=req.brainEquipment?{
+   originalIds:coachSelectExercises({...req,brainEquipment:null,excludedMovementPatterns:[]},defaults.exerciseCount).map(ex=>ex.id),
+   selectedIds:selected.map(ex=>ex.id),
+   reason:'Draft rebuilt with corrected equipment and user exercise constraints.'
+ }:null;
+ coachBuildDraft={...draft,request:req,defaults,selectedIds:selected.map(ex=>ex.id),brainComparison,brainTime:plan.time,brainTimeRemoved:plan.removed,brainSetCounts:plan.setCounts,lastRefinement:raw};
  return {ok:true,message:'Workout updated.'};
 }
 function coachApplyRefinement(){

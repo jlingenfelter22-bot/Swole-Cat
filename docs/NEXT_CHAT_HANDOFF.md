@@ -1,8 +1,483 @@
 # Swole Cat - Next Chat Handoff
 
-Last updated: 2026-10-06
+## PHASE 2 BUILT — READ-ONLY WHOLE-WEEK QUALITY AUDIT (October 20, 2026)
+
+- Owner approved starting **Phase 2** after Phase 1's real 310-exercise / 12-scenario, 44-day locked baseline. New **draft [PR #87](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/87)** branch `quality/coach-phase2-projected-week-audit-v0934` is based on **unmerged Phase 1 PR #86** (stacked). PR targets `main` so the existing CI runs, but must NOT be merged/published without owner-approved version-safe Testing process.
+- Implemented `coachProjectedWeekAudit(draft)` in existing `src/js/04d-coach-program-builder.js`, as a **pure read-only diagnostic function not invoked in existing generator or UI**. It checks in-scope *split-specific* weekly roles (press, horizontal pull, knee, posterior; complementary vertical pull, knee flexion, calves, core), **plus major-muscle absence** (chest, lats, upper back, quads, hamstrings, glutes) only when the chosen split includes them and equipment-confirmed options exist, reports only **confirmed equipment-feasible** missing roles on days where they belong, and doesn't call excluded equipment/movements feasible. Distinguishes planned muscles as primary + already half-weighted secondary sets (heuristic), user-requested priorities as `specific_direct`, `broad_primary`, `secondary_only`, `absent`, same-day family redundancies, explicit required exercise omissions, and confirmed equipment violations.
+- Non-goals: no workout selection changes, new UI/copy, history writes, data migrations, Supabase/cloud, APK/Testing/Beta releases. Time remains an approximate range, and no universal per-muscle sets quota is imposed. Deliberate specialist splits must not be accused of missing unrelated body areas.
+- Added `scripts/coach-phase2-weekly-audit-stress.mjs` testing **identical Phase 1 golden output** across 11 supported programs/44 days (one impossible floor-only full body), repeat audit determinism, snapshot immutability, real gym full-body vertical pull/knee curl/calf opportunities, two same-family squat overlaps in glute-priority dumbbell legs, preserved direct shoulder and PPL coverage, honest limited equipment, custom arms split, explicit exclusion/required exercise, bench secondary-only triceps and squat's broad glute role. `.github/workflows/validate.yml` runs new test and archives diagnostic artifact.
+- Canonical doc `docs/coach-quality/phase2-read-only-weekly-audit.md` records full intent, classification meanings, acceptance and Phase 3 plan. Phase 1 golden remains frozen in `docs/coach-quality/phase1-baseline-v0934.json`.
+- The first Phase 2 CI failed because **test output called the field `feasibility` but asserted `roleFeasibility`**. Corrected test-only name. Need latest exact-head CI green, plus synthetic performance validation before delivery. No production changes to Coach selection.
+- Next after Phase 2 validation: meaningful human review of flagged weeks, then bounded, deterministic **swap-first** repair (Phase 3), preserving anchors and user/equipment hard constraints. Keep signed Testing **v0.93.4 / code 139** and Beta/cloud data safe. Existing [PR #84](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/84) is separate multiweek history gap work; [PR #83](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/83) strict time compression remains incompatible with the user's approximate-time philosophy unless revised.
+
+---
+
+
+## PHASE 1 BUILT: Coach 310-exercise catalog audit + frozen 44-workout-day baseline (October 20, 2026)
+
+- Owner explicitly approved entering **Phase 1** of research-informed Whole-Week Quality Engine. Active **draft [PR #86](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/86)** on `quality/coach-phase1-catalog-baseline-v0934`. No production selection rule, UI, time trimming, Beta, Supabase, personal workout data, version or APK changed.
+- New test `scripts/coach-phase1-catalog-audit.mjs`: all **310** catalog IDs checked, 310 Brain profiles, **zero fatal** data errors, **three live-vs-earlier-desk profile disagreements** need adjudication: Renegade Row `lib_93` (stabilizer muscles), Push Press `lib_123` (explosive leg drive vs shoulders), Roman Chair Back Extension `lib_285` (hip/hamstring vs erector primary). Modeled gym/dumbbells/bodyweight eligible movements: 183/53/16 under the internal equipment model, not real gym guarantees.
+- New `scripts/coach-phase1-weekly-baseline.mjs`: **12 scenarios**, **11 programs generated**, **one bodyweight-only full-body intentionally rejected** rather than fabricate pulling, **44 workout days** recorded. Each exercise ID/order/sets, estimated **time range**, role tally, primary and half-credit secondary regions, user focus and same-family repetitions is captured; generation confirmed to leave saved sessions/routines/programs unchanged.
+- Exact real-source, reproducible golden snapshot: `docs/coach-quality/phase1-baseline-v0934.json` (45 KB), first captured from successful CI log after running baseline twice and comparing output. Full catalog and human-review reports uploaded as 30-day GitHub Actions artifacts. When snapshot is present, new CI baseline test enforces exact current choices and makes future generator changes require deliberate before/after review.
+- **Read `docs/coach-quality/phase1-findings.md` for detailed hands-on qualitative review** of actual current output. Examples: 3-day full-body gym week has 0 vertical pulls, 0 knee curls, 0 calves, hamstring primary 3 vs glutes primary 18; 4-day glute-priority dumbbells repeats Goblet Squat + Bodyweight Squat on both lower days while counting glutes primary 30 (a planning approximation, not actual physiological dose). Positive controls: direct shoulder priority covered, six-day PPL roles good, infeasible floor-only full-body rejected correctly.
+- Latest completed Phase 1 initial-head GitHub [CI #39452967221](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39452967221) **100/100 steps PASS**, including new catalog and twice-deterministic baseline. **Require final exact-head rerun** now that golden/docs have been committed. PR remains draft; do not merge without release-signing/version safeguards.
+- **Phase 2 next:** pure read-only `auditProjectedWeek` for in-scope *feasible* missing movement roles, explicit primary/secondary priorities and low-value redundancies. Only after objective + qualitative review should Phase 3 consider bounded, deterministic swap-first repair. Avoid minute-perfect optimization. Separate [PR #84](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/84) multiweek gap intelligence is validated but unmerged, while old [PR #83](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/83) is strict midpoint time-fitting and must be reconciled with owner's approximate-time preference. [PR #85](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/85) provides approved design blueprint. Testing v0.93.4/code 139 baseline remains installed and Beta unchanged.
+
+---
+
+
+## OWNER CLARIFICATION: time is an estimate, not a guaranteed workout deadline (October 20, 2026)
+
+- Owner strongly clarified Coach Swole Cat's product philosophy: planned 20/30/45/60-minute sessions are **rough typical time frames**, NOT a promise of exact minute completion. Actual timing varies with the individual, warmup, crowded equipment, phone calls, texting and life; a lower/typical/upper estimate is useful, but over-range creep does **not by itself** count as a failure of Coach.
+- Focus on useful programming and full-body/weekly movement coverage; avoid cutting exercises or sets just to hit an overly precise engineering midpoint. If a user expressly states a strict hard stop, handle that separately and transparently (never misleadingly guarantee an infeasible workout).
+- Make in-session autonomy central. User wants the ability to say "I need to skip this set" / "skip this exercise", shorten the day, adjust to time remaining, and stop early without false completion or accidentally rewriting the routine. **Existing implementation already supports skip-exercise-today, advanced Remove Set, deferred Next Exercise, and unfinished-session Finish Anyway.** Distinct one-tap **Skip Set** is a **future UX/behavior opportunity**, not confirmed as currently implemented; needs separate design/recording semantics review, with no UI-redesign authorization today.
+- **Open [draft PR #83](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/83)** includes sets-first time compression and passed full regression as of its documented head; before merge, REASSESS whether strict `estimateMinutes > requestedMinutes` trimming is overly precise given this explicit user preference. Retain estimate ranges and preserve training quality over arbitrary one-minute conformity. User's comment is **not** approval to merge, bump versions or publish a new Testing APK.
+- Canonical design principle recorded in `docs/ROADMAP.md` under "Coach time estimates and live-session flexibility". Testing signed **v0.93.4** and Beta/cloud records untouched; trainer-client idea still parked.
+
+---
+
+
+## DEVICE ACCEPTANCE: Testing v0.93.4 "running like butter" (October 20, 2026)
+
+- Owner installed Swole Cat **Testing v0.93.4 / Android build 139** and reported **"everything is running like butter"**. Treat as strong *subjective real-device performance acceptance*: no issue raised with current installed build, including the Exercise Library optimization. Prior v0.93.3 feedback similarly reported smoother operation and nothing strange.
+- **Do not claim** instrumented frame rate, memory, battery, startup latency, full exhaustive functionality testing, or verified behavior for every edge case; the user's statement is general.
+- Current signed Testing baseline **v0.93.4** is accepted for perceived smoothness. There is **no need for an immediate performance hotfix or UI redesign** based on the current feedback.
+- Prior [PR #82](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/82) successfully shipped nonvisual 32-item bounded Exercise Library DOM rendering after 97/97 regression checks and signed package/update manifest verification. Legacy PR #80 superseded/closed.
+- **Next development choice:** return to highest-value functionality and Coach plan-quality work (accurate time budgets, full-week muscle distribution/priority, ability/equipment handling, realistic multi-day program generation and human-review quality checks) while preserving the accepted snappy UI; separately monitor Progress/analytics costs only where measured. Future trainer-client concept remains parked.
+- Keep draft [PR #81](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/81) **unmerged**: experimental release/R8 APK reduction is package-size evidence, not runtime gain, and native secure-storage/updater plugin compatibility is unproven. No new Testing APK/build variant change without approval, no Beta changes, no data/account/Supabase operations, and retain current visual UI freeze.
+
+---
+
+
+## LATEST: TESTING v0.93.4 SIGNED/PUBLISHED — Exercise Library performance (October 19, 2026)
+
+- Owner affirmed continuing to next Testing checkpoint following favorable real-device v0.93.3 feedback. Released **Swole Cat Testing v0.93.4 (Android build 139)** containing validated, nonvisual Exercise Library progressive DOM rendering: first 32 exercise cards immediately, next 32 per scroll batch. No CSS or card-layout redesign; preserve search, filters, favorites, hidden/custom movements and full results.
+- Original draft PR #80 conflicted with current main handoff. Created fresh release branch from latest main, ported the exact validated code and checks, safely bumped `package.json` **0.93.3/code 138 → 0.93.4/code 139**, merged [PR #82](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/82) as commit `bb17a555ffcdcafbf8b90884f840b3621cef0255` only after exact-head [97-step validation #39338674929](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39338674929) and [synthetic benchmark #39338674936](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39338674936) **both PASSED**. Closed superseded stale draft PR #80; future changes must use current main, not its old branch.
+- [Signed Android workflow #39338953839](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39338953839) completed **SUCCESS**. Verified installed app identity `com.jlingenfelter.swolecat.testing`, persistent Testing signer SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`. The GitHub release's APK SHA-256 `544dc920bf2dee86b877b46880fb63e51103519dff9c419945dade990e6e2ded` **matches published `updates/testing.json`** alongside version, code and download URL. Signed release asset: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.93.4/swole-cat-testing-v0.93.4-signed.apk . In-app updater supports standard in-place Android update; **never uninstall or clear storage**.
+- **Next:** owner installs/tests v0.93.4 Exercise Library scrolling at 32/64/96 boundary, search/filter/favorite/hidden exercise operations and regular sessions. User's previous v0.93.3 "smoother / nothing weird" is positive subjective feedback, NOT instrumented FPS. Real-device v0.93.4 acceptance is still pending.
+- **Beta untouched:** v0.73.1 and separate permanent signer. No real user account, workout/cloud data, Supabase, visual UX changes or migration performed.
+- [Draft PR #81](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/81) remains separate **CI-only Android debug/release/R8 comparison** (experimental APK 67.6% smaller, not proven faster); DO NOT merge or change shipping Android build mode based on size alone until native plugin security/updater/secure-storage and on-device regression validations. Trainer-client app concept remains parked in `docs/FUTURE_TRAINER_PLATFORM_CONCEPT.md` until core app is dialed in.
+ 
+---
+
+
+## REAL-DEVICE TESTING FEEDBACK: v0.93.3 smoother; no odd behavior noticed (October 19, 2026)
+
+- **Owner directly reported from using signed Android Testing v0.93.3 (code 138): "Yeah, it is smoother. I don't find something weird or off."** This is a **positive real-device subjective smoke-test signal** for the combined Coach general-program parsing and progressively loaded History release. No reported visual, functional or stability defect as of this feedback.
+- **Do not misrepresent this as instrumented FPS, startup/jank measurements or exhaustive validation** of every History 24/48/72 batch boundary, recap/edit workflow or specific phone model. More rigorous on-device profiling remains optional if a hitch is noticed.
+- The prior Testing release v0.93.3 is now **provisionally accepted for perceived responsiveness/no observed regressions**. No bugfix or UI redraw needed based on feedback. Respect the existing **UI/UX visual freeze**.
+- **Next release candidate for owner approval** is the already green, draft **PR #80** (Exercise Library initial 32-item rendering + progressive scroll loading, full validation and synthetic benchmark passed). Advance only with a **new version and incremented Android versionCode**, the original persistent Testing keystore, and in-place update safeguards. **Do not merge into main or publish automatically merely from this feedback**. Physical performance of that new optimization will need its own device acceptance.
+- Keep separate draft **PR #81** as R8/Android variant research only; size improvement is measured, native plugin reliability and phone performance not established. Do **not** change Android build mode or Beta as part of the next routine Testing release.
+- Trainer/client platform idea remains parked in `docs/FUTURE_TRAINER_PLATFORM_CONCEPT.md`, no active implementation. No changes to cloud accounts, Supabase, workout data or Beta were requested.
+
+---
+
+
+## ACTIVE PERFORMANCE WORK (October 18, 2026) — next steps while owner tests signed v0.93.3
+
+- Owner requested that engineering proceed while he checks real-device **Testing v0.93.3 / code 138**. Personal trainer/client future concept remains parked and documented separately; **do not touch it for the active development phase**. Current visual UI/UX freeze remains.
+- **Draft PR #80** https://github.com/jlingenfelter22-bot/Swole-Cat/pull/80: nonvisual Exercise Library initial 32-card rendering + automatic 32-card append on scroll; unchanged row HTML, search, filter, favorites. Both [full 97-step validation](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39151646810) and [synthetic performance baseline](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39151646858) PASSED on PR exact HEAD. Initial library rendering ~20–27 ms, compared with ~120–140 ms before (not physical Android FPS). **Do not merge/publish/republish same-version v0.93.3 by accident.**
+- **Draft PR #81** https://github.com/jlingenfelter22-bot/Swole-Cat/pull/81: isolated, **read-only CI Android variant lab** completed successfully [run #39152331866](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/39152331866). From identical v0.93.3 JavaScript/CSS, built ephemeral debug / unsigned release-no-R8 / unsigned release-R8 wrappers without real signing secrets, release tags, APK uploads, manifest writes or private data access. Size bytes respectively **5,206,278 / 3,717,901 / 1,688,225**. DEX uncompressed bytes **9,364,024 / 7,582,320 / 1,450,012**. **R8 package ~67.6% smaller, but NOT proven 67.6% faster or any runtime speedup.** All web assets have identical SHA-256. Native plugin behavior, updater, secure storage and actual WebView jank must be tested before changing shipped build configuration. **Keep PR #81 draft/unmerged** and never install ephemeral/unsigned experiment APK over existing Testing installation. Report in `docs/ANDROID_BUILD_VARIANT_AUDIT.md` (draft branch) and PR body.
+- Next priorities: obtain user's physical v0.93.3 results (Coach three-day response, History 24/48 scrolling, older recaps/edit and responsiveness), decide if any regression needs an urgent fix. After acceptance, consider **safely versioned signed Testing** candidate for PR #80 Exercise Library only if user approves; separately research R8/Capacitor native plugin keep rules, secure-storage/updater runtime validation and actual Android startup/frame traces before any build-mode change. Current Beta remains v0.73.1 untouched.
+- **No current app release changed by PR #80 or PR #81**; published Testing still v0.93.3 and update feed unchanged. Nothing about trainer-client roadmap authorizes development today.
+
+---
+
+
+## PARKED FUTURE IDEA: Swole Cat for Trainers (captured Oct 15, 2026)
+
+- Owner installed signed Testing **v0.93.3 (Android build 138)** and expects to test Coach/History speed shortly. **Immediate engineering focus remains real-device performance/functional acceptance, no UI redesign.** Beta unchanged.
+- While speaking with his father, a working personal trainer, owner identified a **future trainer-focused branch or app**: a trainer can manage many **independent client profiles**, each with their own workouts, routines, programs, progress and history; a client links their own Swole Cat experience to that trainer and receives trainer-published future program changes, while sending permitted workout logs/results back. Support in-person switching of selected client as well as remote programs.
+- Captured full vision, candidate phased MVP, professional product alternatives (Trainerize, TrueCoach, Everfit), unsolved separate app vs role design, sync authorization, client ownership, invitation/unlink safety, offline conflicts, privacy and permission boundaries in **[`docs/FUTURE_TRAINER_PLATFORM_CONCEPT.md`](FUTURE_TRAINER_PLATFORM_CONCEPT.md)**. Cross-linked in **`docs/ROADMAP.md`**.
+- **Parked/not approved to build:** no new trainer architecture or Supabase schema changes, no separate Android APK, no UI/UX changes and no trainer development until personal app stability and owner explicitly prioritizes it. Preserve personal free-core model; trainer pricing is TBD.
+- Files are documentation only; should **not trigger an Android Testing release**. Continue receiving owner feedback on installed v0.93.3.
+
+---
+
+
+## LATEST: Testing v0.93.3 SIGNED PUBLISHED — Android phone performance acceptance next (October 15, 2026)
+
+- Owner approved next checkpoint for on-device acceptance of Coach and History optimizations; [PR #79](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/79) **merged** after exact-head [96/96 full CI](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38759510312) and [synthetic benchmark](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38759510281) both passed.
+- Android signed workflow [38759979718](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38759979718) completed **SUCCESS**. [Published Testing v0.93.3 GitHub prerelease](https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.93.3) signed APK: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.93.3/swole-cat-testing-v0.93.3-signed.apk . Android **versionCode 138**, package `com.jlingenfelter.swolecat.testing`, expected original signer SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`. APK's GitHub asset SHA-256 `5d94aa6e36d1b85a39b6fa563f0af6dfcff2380650bebb1e004791a66cd4453b` matches live `updates/testing.json` URL/version/code/cert/digest. Check all passed. APK size 5,206,278 bytes; **non-forced update**. In-place update from v0.93.2 should preserve Testing local data. Do not uninstall/clear storage.
+- Included nonvisual changes: eliminate needless Coach whole-program fuzzy catalog scanning (synthetic generation ~1.16 s → ~52–62 ms previously), and first History paint with 24 original cards and additional batches as user scrolls (~460 ms for 300 cards → ~26–28 ms first 24 cards in jsdom). Existing styling/cards, recaps, edits, programs, cloud account semantics unchanged. **Real Android performance not yet accepted; jsdom is not an FPS trace.**
+- Beta app/branch remains independent at v0.73.1, branch `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, untouched; no cloud/account/data migration.
+- **NEXT:** User installs Testing v0.93.3 and tests: same detailed 3-day Coach prompt, compare response to 0.93.2, open History, scroll through boundaries at sessions 24/48/72, open old workout recap, Edit/Manage, back navigation, ensure scrolling doesn't jump or stall, and confirm stored history unchanged. No visual redesign. If History scroll batching janks, profile on Android and adjust scheduling/size without changing appearance. Next broader phase: further library/Progress performance and optimized Android build comparison, ONLY after owner feedback.
+
+---
+
+
+## SIGNED TESTING v0.93.3 RELEASE AUTHORIZED (October 15, 2026)
+
+- After validating Coach parser and History progressive render benchmarks and all 96 prior tests on draft PR #79, owner explicitly agreed to the next checkpoint: **publish an in-place signed Testing Android build for device acceptance**. Testing version bumped **0.93.2 → 0.93.3**, Android **versionCode 137 → 138** in `package.json` on PR #79. User specifically does NOT want visual UI/UX changes.
+- This release includes **only nonvisual Coach program language-parse fast path, History 24-card progressive on-scroll DOM rendering, synthetic non-production CPU/DOM profiling and regression tests**, plus version metadata and reports. No app UI CSS redesign or new Coach features.
+- Require exact-head Validate + synthetic performance workflow **both successful before merge**; then run Android `.github/workflows/android.yml`, requiring original persistent Testing signer `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`, package `com.jlingenfelter.swolecat.testing`, v0.93.3/code 138, prerelease asset `swole-cat-testing-v0.93.3-signed.apk`, digest in `updates/testing.json` equal to actual release asset. Never clobber a prior version APK, delete accounts, uninstall or reset local storage. Beta remains unchanged.
+- **Device acceptance pending**: after installing over existing Testing v0.93.2, create 3-day Coach plan and gauge responsiveness, open History with accumulated sessions, scroll through multiple 24-card boundaries, tap older Recap/Edit/Manage, ensure scroll/focus/visuals remain stable and original data preserved. Real Android compositor/FPS cannot be declared validated by jsdom. If phone feedback reports jank, adjust only nonvisual scroll batching.
+
+---
+
+
+## HISTORY RENDERING OPTIMIZATION, DEVELOPMENT-ONLY (October 15, 2026)
+
+- User requested advancing next highest priority after Coach parser fix: optimize **History rendering** while honoring hard visual UI/UX freeze and no production/cloud/Beta changes.
+- Draft [PR #79](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/79) now includes `src/js/07-history-editor.js` performance change (and existing Coach parser optimization): render newest **24 History cards** on opening (unchanged HTML/controls/sequence numbering), append next 24 when scrolled near bottom. Preserve visible depth across save/edit/delete, no observer-based visible UI, no new buttons/stylesheet. Passive window scroll handler with animation-frame coalescing; does no work when History view is inactive.
+- Existing 300-session first History render ~460 ms in synthetic Node+jsdom [old CI #38696266821](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38696266821), now **~26 ms initial 24 cards** [benchmark #38757877040](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38757877040). Full append of remaining 276 cards still has cost (~246ms cumulatively), just spread across scroll; not a claim of phone FPS or total work elimination. New regression `scripts/history-progressive-render-stress.mjs` verifies 75 sessions accessible, sequence numbers, actions, scroll append, preservation of already rendered nodes/depth, empty view and synthetic deletion. Initial CI assertion bugs were test-side (30-card expectation after new 24-item window and ID-prefix false match) and have been fixed.
+- Full validation CI must pass on the final HEAD before release action; **PR still draft/unmerged**, owner hasn't authorized a new Testing APK, and merging to `main` could spuriously republish unchanged v0.93.2 APK because Android workflow watches `scripts/**`. Beta v0.73.1 remains unchanged, Testing published v0.93.2 (build 137), cloud/account/history data untouched.
+- Detailed report in `docs/PERFORMANCE_AUDIT_CHECKPOINT.md`. Next is final exact-HEAD CI, then safe release strategy and real Android scroll/frame validation only when owner approves. Longer-term large-history windowing can be explored if first batches still cause jank, without visual redesigns.
+
+---
+
+
+## PRIORITY PERFORMANCE FIX PREPARED (draft PR #79; October 15, 2026)
+
+- Owner approved proceeding from v0.93.2 accepted Coach keyboard functionality to nonvisual performance/reliability improvements. **No UI/UX design changes.**
+- Deep synthetic code profiling isolated a dominant multi-day Coach delay: `coachParseExplicitWorkout()` fuzzy scanned the exercise catalog for general weekday/time/equipment text, costing **~1.14–1.15 seconds** for a PPL request before actual program generation (~46–61 ms). History 300-session DOM insert (~388 ms) dominated HTML construction (~80 ms). See [pre-change CI 38696266821](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38696266821).
+- In draft [PR #79](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/79) on `audit/functionality-performance-baseline-v0932`, optimized Coach `src/js/04c-coach-language-refinement.js` and `04e-coach-ui.js`: skip *fuzzy* matching when program-wide request is general (no explicitly named movement list), retaining exact matches/aliases, negative exclusions, and full fuzzy handling for standalone or explicitly requested exercise prescriptions. Both main and Home Coach entrypoints covered. Added targeted `scripts/coach-program-parse-fastpath-stress.mjs` to standard Validate workflow. Note an initial test mistakenly used a phrase with an exact alias and asserted fuzzy work; corrected to a truly typo-only phrase for meaningful coverage. Full tests on corrected HEAD still require green before any merge.
+- [Post-change synthetic CI 38696932123](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38696932123) **PASS**, same program brief `coachParseExplicitWorkout` ~17–21 ms, full generated program median ~52–62 ms, down from previous median ~1.16–1.18s (runner-dependent, **not actual Android FPS/latency**). Use real Android evaluation after a safely versioned Testing release.
+- The audit instrumentation now splits History HTML computation vs DOM parsing and profiles Coach stages; `docs/PERFORMANCE_AUDIT_CHECKPOINT.md` records evidence and limitations. Do not modify History UI/layout/interaction until separate profiling and owner approval.
+- **Safety:** PR #79 remains **draft/unmerged**, no new APK, Testing stays v0.93.2 build 137, Beta v0.73.1 unchanged, cloud data/accounts untouched. CAUTION: `.github/workflows/android.yml` triggers signed Testing release on any `scripts/**` merge to main and can overwrite the *same version* APK if release version not bumped. Protect permanent Testing signing and in-place update integrity. Next: ensure final exact-head 94+ regression checks pass; then choose safe release gating/version bump if user authorizes, and continue Android profiling + History nonvisual efficiency work.
+
+---
+
+
+## ACTIVE AUDIT PHASE: Swole Cat functionality/performance architecture (October 15, 2026)
+
+- v0.93.2 signed Testing (code 137) real-device Coach keyboard and preview **functionality accepted**; visuals **frozen** by explicit owner instruction. Do not interpret pending visual taste as functional regression or start a redesign. User explicitly authorized moving to comprehensive performance/reliability audit *before* advanced Coach expansion.
+- Open **draft** [PR #79](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/79) on `audit/functionality-performance-baseline-v0932`, containing ONLY `scripts/performance-audit-baseline.mjs`, `.github/workflows/performance-baseline.yml`, `docs/PERFORMANCE_AUDIT_CHECKPOINT.md`, and this handoff. These create a reproducible, zero-network synthetic 30/150/300/1000 completed-session benchmark using the real app DOM and local storage, and clear source-backed risk inventory and physical Android profiling acceptance plan. No actual UI code, cloud/account data, Android package, Beta or signing changes.
+- Audit scripts executed successfully in [baseline CI #38692442211](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38692442211) and generated artifact `synthetic-performance-baseline`. Observational GitHub Node/jsdom measurements: 300-session History DOM ~350–440ms depending on run, exercise-library DOM ~139–181ms, Progress ~73–106ms, focused workout canvas ~4–5ms. Full three-day Coach input+generation ~746–1204ms; existing-preview DOM rerender only ~5–9ms, one-day standalone exercise selection ~5–9ms and duration trim ~0.1ms; root cause of bulk end-to-end delay needs deeper instrumentation. With 1000 synthetic sessions: full local state ~3.95MB and whole-state save ~8–11ms on CI. Built combined JS 1,122,166 bytes and CSS 229,723 bytes. **NONE are Android FPS or proof of user-device performance.**
+- High-priority code-backed concerns: full session list `innerHTML` regeneration in History; Coach submit/generation main-thread computation; exercise library full-list rerender; Progress recomputation; growing monolithic local WebView state. Existing derived-session caching and deferred saves are real wins. `.github/workflows/android.yml` signs an `assembleDebug` APK for users; carefully compare a test-isolated optimized variant **with correct persistent signing** and backups before changing any release workflow.
+- **Do not merge PR #79 yet**: `.github/workflows/android.yml` publishes Testing from `main` changes under `scripts/**` and could overwrite same-version v0.93.2 APK when a benchmark script merges. No APK publication/version change currently authorized. Audit is ongoing; follow-up is deeper Coach sub-stage CPU analysis plus real-device Perfetto/Android Studio frame, heap, startup and keyboard trace on owner-approved isolated Testing setup. Full regression CI must stay green before any production action.
+- Reference complete audit and prioritized measurement gates: `docs/PERFORMANCE_AUDIT_CHECKPOINT.md`. Beta remains independently signed v0.73.1, unchanged.
+
+---
+
+
+## CURRENT PRIORITY: Freeze visual design, audit functionality + performance (October 15, 2026)
+
+- **User's real-device acceptance on signed Testing v0.93.2 (build 137): Coach floating input and Android keyboard functionality now work correctly.** Their qualifier "not perfect" refers **only to visual design/UI aesthetics**, not functional or keyboard failures. **Do not start another keyboard/UI polish pass based on that qualifier.**
+- **Explicit visual-design freeze:** no changes to current UI appearance, layout, colors, animations, or UX styling until user requests them. Do not suggest cosmetic polish as the next task.
+- **Next engineering phase:** comprehensive, measurement-driven **functionality + performance + architecture audit** before expanding Coach or adding major features. First gather a reproducible Android baseline and assess startup, screen navigation, 60Hz scrolling/jank, keyboard responsiveness, active workout/set entry, Coach generation, long history and Progress, memory and local storage size, background/cloud sync overhead, JavaScript main-thread stalls and unnecessary render work, and debug-vs-optimized build comparison. Record baselines, prioritize bottlenecks, implement nonvisual fixes only with performance regression checks and data integrity safeguards.
+- **Release/data boundaries:** keep separate Testing and Beta applications; Beta remains v0.73.1 until owner explicitly approves promotion. No account switching, clearing storage, cloud data edits, migrations or history modifications to run benchmarks. Prefer synthetic/test fixtures or a safe test-only workspace. Do not change the signed release/update flow without authorization.
+- **Status:** Phone UI functionality accepted by owner; **whole-app performance has not yet been measured or certified**. Audit is next, not already complete. Do not conflate 94 green correctness checks with Android frame-time/memory profiling.
+
+---
+
+
+## LATEST RELEASE: Signed Testing v0.93.2, Android code 137 (October 14, 2026)
+
+- **Owner explicitly authorized Testing-only publication to verify floating Coach composer alignment and native Android Gboard smoothness.** [Release PR #78](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/78) merged using squash into `main` as `40e7b31a8f8c266e2ac19228e5b3f39cadbff8d3`. Contains validated dev PR #77's scoped Coach preview keyboard/scroll structure, title and prompt polish, and package version bump to 0.93.2 / code 137.
+- Exact-head release PR automated [CI 38629960773](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38629960773) **PASS, all 94 steps**. Signed Android Testing [workflow 38630527904](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38630527904) **SUCCESS** with original Testing signing key and signing verification.
+- **LIVE:** [Testing v0.93.2 GitHub prerelease](https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.93.2) and [signed in-place-update APK](https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.93.2/swole-cat-testing-v0.93.2-signed.apk). `updates/testing.json` is version `0.93.2`, versionCode `137`, package `com.jlingenfelter.swolecat.testing`, SHA-256 `fad0f6186bcea6b7f6e4763190d132e043193319f4cbdeb157c4d92aaa98214a`, signer cert SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`. Manifest URL and digest exactly match the actual GitHub release asset. Update is **optional**, not forced. User may install with existing in-app updater or directly over existing Testing APK; **do not uninstall, reset storage or switch cloud accounts**.
+- **Beta remains v0.73.1, branch `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, unchanged.** No Supabase/account/schema/cloud migration or historical workout modifications.
+- **Next checkpoint: real-device owner acceptance**. Owner to reproduce original screen-video bug while scrolling through long Coach program preview and opening/closing Gboard repeatedly; verify header and floating input stay joined, exercise section doesn't jump upward, back/voice/focus behave normally, and scrolling is smooth. See `docs/coach-brain/ANDROID_FLOATING_COMPOSER_FIELD_REVIEW_V0932.md`. Automated success does not certify physical Android behavior. Hold broader Coach full-program conversational editing until on-device outcome reviewed.
+
+---
+
+
+## ACTIVE: Physical Android v0.93.1 Coach floating-bar feedback, v0.93.2 development-only correction (Oct 14, 2026)
+
+- User's ~44-second real phone capture of Testing v0.93.1: floating Coach composer is a positive direction but looks disconnected from upper modal region; day exercise text peeks **above** the dock at the top, and opening/closing the Android software keyboard repositions the long workout content/jumps around. Keep floating experience, fix scroll/IME layout deliberately without visual patch animations.
+- Current development branch `feature/coach-v0932-keyboard-dock-stability`: Coach preview only now uses a bottom-aligned, safe-top-aware single-`100dvh`-sized flex sheet with fixed normal-flow modal header and a **separately scrolling `#modalBody`**. Coach input remains sticky at the top of this inner scrollport, directly below modal header, no exposed overlay gap. Removed `@media(max-height:540px)` composer demotion that flipped sticky to relative when Gboard reduced viewport height; continue existing Android `resize:native` without JS scroll hacks. Saved-program editor and other modal modes untouched.
+- `scripts/coach-mobile-program-acceptance.mjs` expanded to enforce viewport/header/body/sticky rules. Field analysis + follow-up hardware test: `docs/coach-brain/ANDROID_FLOATING_COMPOSER_FIELD_REVIEW_V0932.md`. **Real Android keyboard smoothness still requires a second owner recording**, not guaranteed by CSS contract or JSDOM.
+- **No release permission inferred:** signed Testing remains v0.93.1 build 136, Beta v0.73.1 unchanged. Do not merge/publish APK without explicit owner go-ahead, CI pass and new signing/checksum verification. Full-program Coach conversation still postponed until on-device interaction accepted.
+
+---
+
+
+## CURRENT SIGNED TESTING — v0.93.1 / Android build 136 (Oct 14, 2026)
+
+- Owner requested **physical Android validation first**, ahead of broader full-program conversational editing. This is a **Testing-only** release authorization. Release PR [#76](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/76) squash-merged into `main` as `8f4649824f6f11c5104e59ae4e39a0a69dddfa62`. Code is consolidated from development [PR #75](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/75), including parent #72/#73 and the safe top-of-list Coach refinement UI from #74. It uses #73's full guarded contextual saved-program draft editor, not #74's narrower routine picker.
+- Release PR exact-head full validate **SUCCESS, all 94 workflow steps**, run [38601381548](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38601381548). Permanently signed Android Testing workflow **SUCCESS**, run [38601818071](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38601818071); main push validation triggered separately. No new signing key, no Beta push, no Supabase/account schema/data work.
+- **LIVE SIGNED APK**: [v0.93.1 prerelease](https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.93.1), downloadable [signed Testing APK](https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.93.1/swole-cat-testing-v0.93.1-signed.apk). Android `versionCode=136`; same package `com.jlingenfelter.swolecat.testing`. SHA256 `c87ad62db8a97c2cc16c52766fdda74ceeeb6bcd37e90a96d043a66e826b2c66` matches release asset and `updates/testing.json`. Original Testing signer cert SHA256 remains `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`. Testing updater feed advanced correctly, not forced.
+- **CURRENT NEXT ACTION**: owner updates existing installed Testing app *in place*, **never uninstall/clear storage or switch cloud accounts**, follows [Android phone acceptance checklist](coach-brain/ANDROID_PHONE_ACCEPTANCE_V0931.md). Focus: Gboard open/close and scroll jumping, composer located above day cards, tapping/scrolling through collapsed days, Wednesday-only update, summary scroll resets, saved-program Coach review/Cancel and guarded Apply on disposable data. Collect annotated screenshots/video and fix any true Android regressions.
+- **PHYSICAL ANDROID ACCEPTANCE STILL PENDING**. Successful CI and signed release do not mean real hardware layout/IME works. Do **not** implement broader saved-program full-freeform conversation until owner feedback/signoff; do not promote any of these changes to Beta. Beta branch stays at `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, v0.73.1. Optional intake design PR #71 remains separate. Cloud Coach Memory remains deferred.
+
+---
+
+
+## CURRENT DEVELOPMENT CHECKPOINT — Unified Coach phone UX + protected saved-program editing (Oct 14, 2026)
+
+- Integration work is on `feature/coach-v094-consolidated-phone-ux`, based **directly on draft PR #73** (`feature/coach-v094-saved-program-edit`), which already includes parent PR #72. PR #74 was independently based on v0.93 main, **not** a descendant of #73; do not directly merge it over the more capable program editor.
+- Consolidated priority from PR #74: **Talk to Coach now appears before** the generated program exercise-day breakdown. Program refinement remains one actual input, with sticky top placement (and short-viewport fall-back), compact optional prompt tips, one expanded day and the rest collapsed. Shared modal reset-to-top, nearest keyboard scroll, and optional method review already exist in #72/#73 and are preserved. Saved-program editing retains its *separate* bottom proposal input and explicit Apply/Cancel.
+- Keep PR #73's contextual saved-program draft editor, not PR #74's simpler routine picker. Current editor supports named day time targets, move weekday, named exercise add/remove/same-pattern replacement, training-mode changes, multi-clause draft isolation, review-before-apply, copy-on-write for modified routines, original history preservation, stale snapshot guard, account-switch guard, and active-workout guard. Full freeform program redesign is **not** implemented.
+- Strengthened `scripts/coach-mobile-program-acceptance.mjs` to verify above-list composer ordering, exactly one Coach input, scoped sticky mobile styling, shared Android/modal protections, and that saved-program editor safety entry points survived integration. Existing dedicated `scripts/coach-saved-program-edit-stress.mjs` tests scoped editing/copy-on-write/history/conflicts. Full CI on **integration exact HEAD** is mandatory; real Android Gboard/voice/screen-size validation remains pending and cannot be inferred from synthetic tests.
+- **NO RELEASE AUTHORIZATION:** Signed Testing remains v0.93.0 / code 135, Beta v0.73.1 unchanged. No signed APK, no merging into main/beta, no account/Supabase/history writes. Optional first-run profile design PR #71 remains separate. Subsequent checkpoint: inspect CI, Android QA for sticky refinements and saved-editor review/cancel/apply, then determine whether a separate Testing candidate is warranted.
+
+---
+
+
+## CURRENT DEVELOPMENT — Owner Walkthrough Remediation (Oct 14, 2026)
+
+- Owner approved moving ahead with the prioritized findings of the actual signed **Testing v0.93.0** Coach walkthrough and detailed research report. No explicit new signed release/Beta promotion authorization was given; **Testing remains signed v0.93.0 build 135**, **Beta v0.73.1 untouched**, no Supabase/account mutations.
+- First stacked development PR [#72](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/72) branch `feature/coach-v0931-android-interaction`: Android IME input no longer triggers smooth centered autoscroll while WebView resizes; shared modal resets scroll to top on open, including Workout Complete; 3-day Coach preview begins with one day expanded, extra muscle/weekly rationale collapsed, sticky violet **Ask Coach** composer, clearer Coach/Home tonal emphasis. Full 94-step CI **PASS** [38592886190](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38592886190). Physical keyboard/layout acceptance still pending.
+- Next stacked development PR [#73](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/73) branch `feature/coach-v094-saved-program-edit`: visible **Edit with Coach** on saved Program cards and options; open existing Program and cloned workout routines, propose narrow exact day/session changes without changing saved records; show before/after notes and untouched days; Apply after explicit review only. Scope supports day time *target* (not automatic training-volume trimming), weekday move, named exercise add/remove/same-pattern replacement and training mode. Copy-on-write changed routines keeps other Programs and old History intact, preserves same Program ID/nextIndex, compares original snapshots to reject stale edits, checks current cloud owner and blocks active-workout edits. Wider split rebuilding is **not implemented**; unknown commands explain limitations instead of guessing. Read `docs/coach-brain/SAVED_PROGRAM_EDIT_V094.md` for exact acceptance contract.
+- New `scripts/coach-saved-program-edit-stress.mjs` runs through existing Coach duration/program CI, tests local proposal isolation, scoped edits, copy-on-write and original history, conflict and active-workout guards. At latest handoff check exact PR #73 HEAD CI; source was updated after an earlier green result, so **do not claim the newest HEAD green without checking**. Parent PR #72 validated and remains development-only.
+- Intake/profile direction captured in separate design-only [#71](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/71), unmerged. New-user intake work and deeper Coach personalization follow the immediate Android UX and saved-program continuity passes; do not add injury/health notes directly into cloud-synced `state.profile`.
+- **Next approval/checkpoint:** confirm full current v0.94 development CI, restore stacked PR #73 base to parent PR #72 branch after validation. Request **separate signed Testing candidate** approval for a real-device trial when ready; Beta promotion requires a different approval. During owner physical Android test: Gboard/open/close/speech keyboard behavior, summary opens at top, default collapsed days, anchored composer, saved Program → Edit with Coach → change Wednesday only → Cancel/Apply, subsequent history and progression. Do not infer real phone acceptance from JSDOM.
+
+---
+
+
+## CURRENT RELEASE: Signed Testing v0.93.0 · Owner's real Android Coach acceptance (October 14, 2026)
+
+- The user authorized publishing a **Testing-only** candidate; no Beta authorization. Combined v0.90–v0.93 Coach release PR [#70](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/70) merged to `main` at `05f65acf2506408abfe493b93b0ec437d76145be`. Older development PR #66–#69 are superseded. Main contains conversational split intake, whole-week quality review, per-day duration/equipment/focus, and narrow-screen day editor.
+- **SIGNED TESTING LIVE**: v0.93.0, Android versionCode **135**, package `com.jlingenfelter.swolecat.testing`. Prerelease https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.93.0; signed APK https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.93.0/swole-cat-testing-v0.93.0-signed.apk.
+- Release PR full CI **94/94 PASS**: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38581996912. Main push full CI **94/94 PASS** https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38582524614. Permanently signed Testing Android build, manifest advance **PASS** https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38582524189.
+- `updates/testing.json` live version **0.93.0**, code **135**, SHA-256 `9730aafc2b16b22f855a28e3e5d656076d40dff5ed5a4294af3599d312bfaf4c`, same original Testing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`. GitHub release asset digest matches manifest.
+- **Beta untouched** branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, Beta v0.73.1. No Supabase changes, no account switching, no data destruction, no Beta release.
+- **IMMEDIATE NEXT:** user upgrades installed Testing in place via in-app updater or signed APK. Do not uninstall Testing, clear storage, change Google cloud accounts, or experiment on Beta. Review actual phone with `docs/coach-brain/ANDROID_ACCEPTANCE_V093.md`: ask for vague 3-day split and opt-in guidance, then mixed Monday/Wednesday/Friday gym/dumbbell PPL (30/45/75 min), inspect weekly review, adjust Wednesday to 55 min, keyboard/scroll/voice behavior, Swap/Remove, Save Program vs Save + Start. Review screenshots/video and fix observed usability problems before discussing Beta.
+- **Android signoff remains PENDING** until user's actual device review; synthetic DOM checks do not establish physical rendering. Stopwatch-based duration calibration and deeper training quality follow afterward. Cloud Coach Memory is **deferred** in Phase 12 roadmap, not in this release.
+
+---
+
+
+## ACTIVE DEVELOPMENT CHECKPOINT: Coach v0.93 Mobile Acceptance (October 14, 2026)
+
+- User explicitly authorized proceeding to the next Coach checkpoint after deferring Cloud Coach Memory in the Phase 12 roadmap. No APK release or Beta promotion approval was given.
+- Draft PR [#69](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/69) branch `feature/coach-v093-mobile-acceptance` adds narrow-screen polish and acceptance tests on top of v0.92 [#68](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/68), v0.91 [#67](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/67), v0.90 [#66](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/66). Temporary PR #69 base `main` is solely to trigger existing full CI; restore base to `feature/coach-v092-per-day-planning` after green checks.
+- Mobile UX: rich split recommendation cards one-column at <=430px, readable program exercise rows with Swap/Remove below title, better touch targets, stacked Save/Save+Start controls, 16px day-edit form inputs. Custom equipment remains hidden/disabled unless selected; correct overview label for equipment scoped by day. No Coach programming logic, cloud schema, auth, sync or saved history changes.
+- Mobile DOM acceptance `scripts/coach-mobile-program-acceptance.mjs` is now a `validate.yml` CI gate; it renders actual modal HTML, checks labels, split advice, day card actions, custom gear disclosure, validation rollback, per-day refinements, save-button separation, CSS contracts and no history writes.
+- **Important limit:** Synthetic JSDOM tests do **not** show Android WebView visuals, actual keyboard behavior, true hit target measurements, device scrolling or speech recognition. A physical Android owner review remains **PENDING** per `docs/coach-brain/ANDROID_ACCEPTANCE_V093.md`; do not conflate a green CI with device signoff.
+- Latest signed Testing remains v0.89.0 code 134; separate Beta v0.73.1 unchanged; owner must separately approve any signed Testing release. Cloud Coach Memory remains deferred in `docs/ROADMAP.md`.
+
+---
+
+
+## OWNER DIRECTION: Cloud Coach Memory deferred; continue Coach quality (October 14, 2026)
+
+- Explicit owner request: document **Cloud Coach Memory** in canonical future roadmap and **continue existing Coach engineering first**. Logged as **deferred** in `docs/ROADMAP.md` → Phase 12. Proposed optional Lifetime Pro value: private account-owned preferences, compact workout-history context and cross-device memory; preserve free/offline local Coach. No schema migrations, Supabase mutations, entitlements, new AI vendor, unlimited inference promise or added subscription.
+- Continued qualitative review of v0.92's real generated 30/45/75-minute mixed-equipment week. Friday gym Legs originally included Back Squat + Sumo Deadlift even though a less demanding posterior-chain alternative exists. A narrowly scoped candidate-score heuristic now discourages this **for auto-generated hypertrophy/general programs up to 90 minutes**, without banning the combination or affecting strength plans/user-pinned exercises. Time budget is a cap, not an instruction to fill every minute. Added explicit scenario and user-override regression to `scripts/coach-brain-duration-program-stress.mjs`.
+- Exact approval gate remains unchanged: all stacked PRs #66/#67/#68 development-only, latest signed Testing v0.89.0, Beta untouched. New reviewer/CI pass required on latest v0.92 HEAD; no physical Android acceptance or release has occurred.
+
+---
+
+## ACTIVE DEVELOPMENT CHECKPOINT: Per-Day Coach Planning v0.92 (October 13, 2026)
+
+- User explicitly authorized proceeding to the next Coach quality pass after v0.91 (follow-up in same Swole Cat conversation). **Development only.** No APK publication authorization; signed Testing remains v0.89.0 (code 134), Beta remains v0.73.1. Do not touch Supabase or recovery history.
+- Draft PR [#68](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/68), branch `feature/coach-v092-per-day-planning`, stacked on v0.91 [#67](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/67) and v0.90 [#66](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/66). PR #68's base is temporarily main solely for full Actions CI; retarget to #67 branch after its HEAD validates.
+- v0.92 recognizes weekday-scoped time/equipment/focus directives (e.g. `Mon 30 min gym, Wed 45 min dumbbells, Fri 75 min gym`), asks for a common time/equipment when some days lack it, and builds independent exercise/time/equipment settings per day without assuming a weekday's gear/time applies globally.
+- Program preview has accessible `Adjust day` editor (15–120 min, inherit/gym/dumbbells/bodyweight/custom gear, emphasis on that day's muscles), atomic validation/regeneration and per-day range review. Saved Program includes `coachPlannedDays` contextual metadata and per-day routine descriptions. No existing workout session changes.
+- Day focus incompatible with slot (e.g. Friday Legs, more shoulders) triggers clarification, offering to keep split and remove emphasis or change split. Does not silently ignore or spread priorities globally.
+- `scripts/coach-brain-duration-program-stress.mjs` tests full prompt routing, partial defaults, mixed gym/dumbbells/gym, weekday refinements, day editor, rollback, saved metadata, conflicts, and history non-mutation. Generated output logged as `COACH_V092_DAILY`.
+- Initial full CI **PASS** https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38514095460. Later head(s) include the additional focus conflict; verify latest run's result and inspect logs before claiming green. Design and limitations: `docs/coach-brain/PER_DAY_PLANNING_V092.md`.
+- Immediate next: confirm newest CI on HEAD, retarget #68 to #67 stacked base, run qualitative review and request real physical Android UX validation from owner before any signed Testing release. Next potential engineering step: human-reviewed time calibration, more sophisticated multi-week/cycle intent, nonuniform recovery day-spacing checks. No Beta release.
+
+---
+
+## ACTIVE DEVELOPMENT CHECKPOINT: Whole-Week Coach Review + Split Guidance v0.91 (October 13, 2026)
+
+- Owner approved starting the next intent-first Coach improvements after v0.90. This is **development-only** and does not authorize publishing an APK. Signed Testing stays v0.89.0 build 134; Beta unchanged v0.73.1. Do not touch accounts, recovery, Supabase data, or workout history.
+- Draft PR [#67](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/67) on `feature/coach-v091-whole-week-review`, stacked conceptually over v0.90 guided program-intake [PR #66](https://github.com/jlingenfelter22-bot/Swole-Cat/pull/66). Its base may temporarily point to `main` to run required GitHub Actions CI. **Retarget to #66's feature branch after a green full run.**
+- Program setup "Help me choose" and text "recommend something" now ask for the goal if missing and give **explicit opt-in split explanations**, without choosing Full Body or any other split automatically.
+- Current generated Program preview displays **read-only whole-week review**, recalculated from selected exercise IDs on render. Checks presence of press, pull, knee and posterior movement families; choice-based notices for custom-split primary chest omission, requested priority-region gaps, or days with no primary involvement in named focus. Never overrides user selections or diagnoses fatigue/injury.
+- New tests in `scripts/coach-brain-duration-program-stress.mjs`: vague split recommendation consent, focused Arms/Back/Legs weekly role flags, manual addition updates the review, no manufactured flags for represented roles, missing priority-region visibility and no session-history writes.
+- Full design and scientific caveats: `docs/coach-brain/WHOLE_WEEK_REVIEW_V091.md`; owner-approved north star `docs/coach-brain/COACH_INTENT_CONTRACT.md`.
+- **Next:** full CI on latest PR #67 SHA, inspect actual program output for false warnings, refine copy/decision thresholds if needed, then physical Android acceptance before any signed Testing release approval. No Beta promotion.
+
+---
+
+## ACTIVE DEVELOPMENT CHECKPOINT: Guided Coach Program Intake v0.90 (October 13, 2026)
+
+- **Owner-confirmed north star** documented in [Coach Intent Contract](coach-brain/COACH_INTENT_CONTRACT.md): understand intent, separate knowns/unknowns, ask consequential questions only, evaluate week-long program quality, negotiate incompatible constraints, explain decisions, respect exact user choices and learn from consented real-world feedback. Priority after v0.90: intent confidence/clarification → full-program audit → per-day constraint negotiation → feedback/personalization. These are design principles and proposed follow-ups, not claims of already-shipped functionality. This agreement does not authorize a new Testing or Beta APK.
+
+
+- User found a real v0.89.0 **program conversation defect**: "3-day split" gets treated as full-body by default and setup asks only frequency/time/equipment, not what each day should train, schedule, progression mode, or deloads. Owner explicitly requested a deeper conversational program intake with these decisions.
+- Draft PR **#66** https://github.com/jlingenfelter22-bot/Swole-Cat/pull/66, head `feature/coach-program-guided-intake-v090` from signed v0.89.0 `main`. **Development-only.** Signed Testing v0.89.0, build 134 remains published; no new APK. Beta v0.73.1 unchanged, no cloud or workout-history mutation.
+- Implemented: vague frequency -> **choose split** (PPL, Upper/Lower rotation, Custom Body-Part, explicit Full Body), optional custom target per day (e.g. Arms / Back / Legs), duration, equipment, weekdays or flexible, training goal, training mode (Guided / Strength / Track), optional Guided deload every 3–8 training weeks. If prompt already contains a detail, skip redundant question. **Each intake step also has a free-text/voice input:** a multi-detail response such as PPL, 45 minutes, gym, Mon/Wed/Fri, Guided and deload every 4 weeks fills several unanswered constraints at once. Never change an already chosen 4-day frequency because a reply lists only 3 weekdays. The home Coach 3-day example now opens this guided flow. Never infer "3-day split" means full body.
+- Persistence uses existing per-program `trainingMode` + `deload` schema, preserving confirmation for actual deload weeks; no new database schema. Generated day exercise selection honors chosen `customSlots`. Existing direct generator without interactive intake remains backward-compatible. Chat program refinement recognizes an explicit progression-mode and deload change.
+- Synthetic test `scripts/coach-brain-duration-program-stress.mjs` exercises an entire three-day custom intake and verifies saved weekdays, routines, mode/deload plus unchanged history; checks fully specified PPL skip and full-body intentional choice.
+- Research/scoping `docs/coach-brain/PROGRAM_INTAKE_DESIGN_V090.md` explains scientific uncertainty and acceptance.
+- CI: PR #66 requires its **latest commit** green full regression; the new conversational multi-detail test is in `scripts/coach-brain-duration-program-stress.mjs`. Prior complete workflows (e.g. 38475744307) green, but check last branch HEAD after latest text/voice fixture. Existing generated v0.89 review remains available but a new qualitative v0.90 review is still needed before a release. **Do not claim a phone release or Beta approval.**
+- Next steps: inspect CI, fix actual regressions, review generated custom Arms/Back/Legs and other split quality, verify user-friendly phone layout and confirm time/planning semantics. Only then request user approval to promote the next signed Testing build (likely v0.90.0). Real Android owner acceptance remains open.
+
+---
+
+
+## CURRENT RESUME CHECKPOINT: v0.89.0 SIGNED TESTING RELEASE (October 13, 2026)
+
+**Latest Testing: v0.89.0 / Android build 134, signed APK and in-app update live. Owner-approved Testing promotion complete.**
+- User explicitly approved v0.89.0 release into Testing `main`. All Coach v0.89 engineering from PR #62, #63, #64 was integrated through **release PR #65** https://github.com/jlingenfelter22-bot/Swole-Cat/pull/65 (merged as `6fe9c089d579af7b6d174cd6db6ee375316a7c5c`). #62 recognized as merged; #63/#64 stacked drafts closed as integrated, no Beta merge.
+- Signed Testing release workflow **PASS** https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469988579; candidate full regression **PASS** https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469539367; generated-workout review **PASS** https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469539499. Main validate https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38469988653, verify result before asserting main CI success.
+- APK release https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.89.0; direct download https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/testing-v0.89.0/swole-cat-testing-v0.89.0-signed.apk; `updates/testing.json` version 0.89.0, code 134, checksum `9b09502d0b41ed86a15b66cbef55fb818bd2268c3a57c14a1c17c55374045ace`; cert SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`; package `com.jlingenfelter.swolecat.testing`.
+- What changed: Coach Brain equipment clarifications, multi-turn multi-clause parsing, realistic duration planning with explicit set/rep preservation, refusal of unsupported full-body floor-only pulling coverage, program-day balancing and muscle priorities, Swap/Remove preview time refresh and uncertainty notices.
+- **Immediate next:** user installs Testing v0.89.0 **over existing Testing**, preferably using in-app updater. Do NOT uninstall, reset app data or switch cloud accounts to test Coach. User can send a narrated screen recording, screenshots, notes. Test exact `5 x 5 deadlift in 20 minutes`, follow-up `make it 15 minutes` (5×5 stays), `make deadlift 4 sets of 6`, generated 20-min gym legs Swap/Remove and preview consistency, 3-day 45-min gym full-body, floor-only limitations, real session times and physical-phone usability. Consult `docs/coach-brain/PRE_RELEASE_PHONE_ACCEPTANCE_V089.md`. Owner approval for broader beta launch remains **not given**. Phone validation not performed yet.
+- **Safety:** No Supabase cloud data or identities changed during this development/release. Prior cross-account leak and unsupervised recovery strictly forbidden; v0.88.0 signout safeguard remains, separate Android acceptance pending. Beta still **v0.73.1** and SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`.
+- After real-world feedback, run a focused bug-fix pass in Testing before requesting any Beta promotion. Never invent field measurements from engineering time estimates.
+
+Older checkpoints below are archives.
+
+---
+
+
+Last updated: 2026-10-13
 
 This file is the canonical resume point for the next ChatGPT conversation. Read this first, then `docs/CURRENT_STATE.md` and `docs/ROADMAP.md` only if deeper evidence is needed.
+
+## LATEST DEVELOPMENT CHECKPOINT: Coach v0.89 PRE-RELEASE ACCEPTANCE (October 13, 2026)
+
+**Pick up here in the next chat. This supersedes the older v0.89 draft handoff below.**
+
+- **Current development stack:** PR #62 `feature/brain-v089-quality-remediation` (passes original 20-scenario test); PR #63 `feature/brain-v089-explicit-duration-acceptance` (full CI green, exact user-specified 5×5 and `4 sets of 6` preserved); and new draft **PR #64** https://github.com/jlingenfelter22-bot/Swole-Cat/pull/64 from `feature/brain-v089-preview-refresh-acceptance` (stacked atop #63).
+- **New finding:** 13/13 singles and 25/25 generated program days met the *engineering midpoint* time; however, **11/13 singles** and **23/25 program days** had *upper time estimates* over requested target. These are uncertainty ranges, **not** observed real-world overruns. Original post-remediation 20-case fixture: `docs/coach-brain/QUALITY_REMEDIATION_SCENARIOS_V089.json`.
+- **Implemented draft PR #64:** Fix generated session duration preview staying stale when user manually Swaps/Removes an exercise; recompute current exercise IDs/actual adjusted sets. Clean up removed/swapped automatic set overrides, without silently trimming the user's replacement. Preview now explains high-side time risks for singles and multi-day programs even when midpoint fits. Regression added to existing `scripts/coach-brain-quality-remediation-stress.mjs`.
+- **New acceptance document:** `docs/coach-brain/PRE_RELEASE_PHONE_ACCEPTANCE_V089.md` includes precise on-phone validation flow for exact 5×5, time-only edits, 20-minute gym legs, manual Swap/Remove, three-day full-body and measured real sessions. This is **not** Android testing completion or permission to release.
+- **Validation:** PR #64 full **94-step CI PASS**: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38463629529; separate **real generated-workout capture PASS**: https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38463629638. New assertions for Remove/Swap time rows, saved sets, single upper-range warning and program upper-range warning all passed. Documentation-only commits after those runs require a final head check before release review. PR #64 is draft, no merge or release. Real Android owner acceptance and measured workouts remain undone.
+- **Release safety:** signed Testing is still v0.88.0/build 133, Beta remains v0.73.1. No account/data/cloud mutation or release. Owner approval needed for Testing promotion **after** CI and review; separate Beta approval. Do not claim real-device timing has been measured.
+
+---
+
+## ACTIVE DEVELOPMENT CHECKPOINT: Coach Brain v0.89 (October 13, 2026)
+
+**THIS IS THE WORK TO RESUME IN THE NEXT CHAT, not the previous cloud account feature.**
+
+- **Shipped apps remain unchanged:** signed Testing v0.88.0 (Android 133), Beta v0.73.1. No new signed APK, Testing updater update, cloud mutation or account changes in the Brain work.
+- **Baseline review:** PR #61, `review/brain-v089-session-program-acceptance`, captured 20 real synthetic workout/program scenarios. Initial coach-quality acceptance was denied despite green CI because of session-time overruns, false floor-only coverage and poor week distribution.
+- **Approved remediation:** PR #62, `feature/brain-v089-quality-remediation`, reran the same 20-scenario matrix (GitHub Actions 38457817270, successful). 13/13 generated single sessions met the engineering time midpoint; 25/25 generated program days met midpoint. A floor-only full-body program now *fails honestly* due to missing true pulling equipment, rather than being labeled comprehensive. Two floor-leg exercises were added with stable IDs `lib_308` and `lib_309`, keeping original 308 IDs intact. Quality remediation is still **development only**, not an Android release.
+- **Follow-up explicit-list time gap:** draft PR #63, `feature/brain-v089-explicit-duration-acceptance`, is layered atop #62. Exact user-authored workouts (e.g. `5 x 5 deadlift in 20 minutes`) were not receiving the time estimate, so duration feasibility and saved-set fidelity were not visible in previews. This branch computes the engineering time from exact sets/reps without trimming them; displays the range and warns when the midpoint exceeds the requested time. An untimed exact list is no longer presented as a requested 45-minute target. An explicit "make it 15 minutes" edit changes only the target, not exercise counts. Preview estimates recalculate after edits, removal and swaps.
+- **Tests:** `scripts/coach-brain-quality-remediation-stress.mjs` extended for an exact 5×5 user-authored list, time-only refinement, set edit and untimed preview; already invoked by `.github/workflows/validate.yml`. PR #63 is a **draft, not accepted**. See `docs/coach-brain/EXPLICIT_DURATION_ACCEPTANCE_V089.md`.
+- **Validation completed:** Initial PR #63 CI [38460441747](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38460441747) failed the new 4-sets-of-6 assertion and exposed a real explicit-edit rep parsing bug (sets changed, reps did not). Parser corrected in the branch. **Full revalidation PASS** [38460708958](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38460708958); independent generated-workout review PASS [38460708849](https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38460708849). No real Android validation, Testing promotion or owner acceptance yet.
+- **Remaining development/acceptance:** Inspect realistic 20-case outputs, then Android Testing-only owner review of preview readability and actual session timing (warmups, rest, waiting, unilateral work). Neither the 20-scenario generator nor the duration model measures stopwatch workouts.
+- **Nonnegotiables:** Preserve existing accounts, cloud records, workout history, custom set/rep prescriptions, per-exercise load semantics and Testing/Beta signing separation. No Beta promotion. Do not merge/publish without explicit approval and a green full suite. Real-phone review remains a separate gate.
+
+Older shipped-version handoffs follow below.
+
+---
+
+## CURRENT RESUME CHECKPOINT (v0.88.0 supersedes older instructions)
+
+- **Latest Testing:** v0.88.0 / Android build 133; signed APK + Testing updater published: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.88.0. PR #54 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/54 merged into `main`; PR suite https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413146562 PASS, main suite https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413588809 PASS, Android signing https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38413588869 PASS. APK SHA-256 `e28302b7bc268119be1d493db3f56a59c4828a548fc71ceb1e72205d656b5bb9`; permanent cert unchanged.
+- **User mandate:** safeguard Google cloud switches so **current account fully syncs BEFORE signout**, then active phone workspace is cleared and next account retrieves only its own data. Absolutely no cleanup/deletion/mutation of existing Supabase cloud accounts or historic records. Testing field only; Beta untouched v0.73.1 SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`.
+- **Implemented:** `Sync & sign out` calls `cloudSync.prepareAccountExit` for final sync, verifies no unsynced queue/conflicts, blocks offline/unavailable cloud, storage failures and unfinished active workouts, snapshots old full workout state per owner into a verified persistent `swolecat-account-exit-snapshot-v1:<ownerId>`, then signs out. Once sign-out succeeds, `cloudSync.completeAccountExit` resets in-use `overload_v3`, sync metadata and generic recovery/pre-import snapshots (previous owner data backed up under its own safety key). Next sign-in pulls own cloud only. Provider logout failure leaves old owner signed in and local state intact. Prepared/signed-out markers conservatively support recovery after interruption; irregular OAuth changes fail closed.
+- **Regression:** extended `scripts/cloud-sync-stress.mjs` A→B→A fixtures, offline/provider failures, unfinished workout, snapshot preservation and legacy recovery isolation. Adapted shell/backup signout tests to mock offline sync so no real Supabase SDK/network. Full validation green.
+- **Known caveat:** Existing cloud data that crossed accounts in the original incident is intentionally left as-is; v0.88.0 prevents new crossover but does not retroactively unmerge or delete any record. Switching normally requires internet, storage and no unfinished active workout. Device-local owner safety snapshots are recovery-only, not an auto-restore source.
+- **Immediate next:** ask user to install Testing update in place, export backup, validate Android sync-before-sign-out and clean account B rehydrate. Review screenshot/video. Later consider recoverable per-owner snapshot management UX and supervised cleanup of pre-existing crossover, only with separate explicit owner approval. Do not promote Beta.
+- Earlier checkpoints below are archival.
+
+---
+
+## CURRENT RESUME CHECKPOINT (v0.87.9 supersedes older instructions)
+
+- **Latest Testing:** v0.87.9 / Android build 132, signed APK and Testing updater published: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.9; PR #53 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/53 merged into `main`. PR CI https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38161922914 PASS, main CI https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38162099922 PASS, signed Android https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38162099916 PASS. Testing SHA-256 APK `c1e0119ab329abb377b6cff28a7307687e06a848f7dcc2b7e0c166de6c737d89`; original Testing cert unchanged.
+- **Critical user incident:** Real Android Testing user moved from secondary test Google account back to everyday main Google account after clearing local data and sync. Histories from both accounts mixed; Progress tab went blank (header still visible).
+- **Confirmed cloud bug:** `syncEnsureOwner` previously cleared metadata on account switch but not actual local workout state, allowing old account data to sync into the new account. Erase while still signed into the old account could auto-sync and repopulate immediately. Read-only Supabase audit: 38 session IDs occurred under multiple owners, structural session rows intact; six backup metadata records. We have **not** modified the cloud DB, restored or deleted anything. Do not automatically clean up copied sessions.
+- **Confirmed Progress bug:** analytics filtered `x.signal.stalled` even though `coachSignal()` intentionally returns null for assistance/bodyweight movements. Direct null guard fixed in v0.87.9. Non-destructive error fallback prevents blank screen for future unexpected analytics exceptions.
+- **Safeguards shipped:** fail-closed guard on account switch when previous owner's local data still present; backup-first alert in Cloud settings; reset local metadata pauses auto-sync after erase until explicit Sync Now; owner checks mid-network pull and push. Tests added in existing `scripts/cloud-sync-stress.mjs`, full suite green. This is NOT yet automatic per-owner local partitioning and does not repair already copied cloud records.
+- **Beta unchanged:** v0.73.1 branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. No promotion without explicit user instruction.
+- **Immediate follow-up:** user updates Testing and confirms Progress renders. Advise user to turn off automatic sync for now, export current local backup (Settings > Cloud settings > Data safety > Export backup), and preserve each cloud account unchanged. Ask before any record-level recovery. Review cloud backup histories/provenance, identify original sessions, separate accounts safely, and later implement account-partitioned local state with explicit switching.
+- Earlier checkpoint headings below are archival.
+
+---
+
+## CURRENT RESUME CHECKPOINT (v0.87.8 supersedes older instructions)
+
+- **Latest Testing:** v0.87.8 / Android build 131, signed permanent Testing APK and in-app updater live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.8. PR #52 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/52 merged into `main`, full tests passed. Beta remains v0.73.1 at SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, untouched. Do not promote to Beta without explicit owner approval.
+- **User's approved v0.87.8 design:** After screenshot of expanded v0.87.7 opaque whole-rail rest pocket, requested slimmer, sharper button faces with less bulk and tighter padding, a modestly shorter lift, and subtle *blend of A+C* in blank left/right spaces: etched tech-panel/mechanical vents plus minimal cyan/violet ambient accents. Not additional controls or brighter busy styling. Do NOT change the approved idle stealth timer, one rigid unchanged full-width rail shape, fixed nav tabs, scroll behavior or timer math.
+- **Implemented:** pure CSS visual pass in `src/styles/03-polish.css`. Rail lift **57→53px**, shelf **53→49px**, visible button faces **34→32px** within unchanged **42px tap targets**, sharper asymmetric clipped corners and lower-weight text. Nav-owned `.rest-dock-pocket::before/::after` provide pointer-events-none low opacity mirrored technical lines/vents, left cyan and right violet, scaling back on narrow screens. No new images, control elements or JS changes. `scripts/rest-tray-stress.mjs` includes visual contract tests.
+- **Verified:** PR full regression PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38005935548, main regression PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38006156361, Testing APK signed/published PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/38006156392. `updates/testing.json`: v0.87.8 build 131, package `com.jlingenfelter.swolecat.testing`, APK SHA-256 `9a2e0b7632fbba4c2d6bf9c1063106d11b59f728cdd5be3672789cf0a3dea81a`, Testing signing SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Next:** user installs via Settings > App & Updates and inspects real Android expanded timer and normal idle position. Assess tight visible button weight, real tap comfort, restrained side engine-bay style, minimal lift and seamless complete-rail translation. Await physical-device feedback before future polish. Older checkpoints below archival.
+
+---
+
+## CURRENT RESUME CHECKPOINT (v0.87.7 supersedes older instructions)
+
+- **Latest Testing:** v0.87.7 / Android build 130, signed permanent Testing APK and in-app updater live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.7. PR #51 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/51 merged into `main` with full validations passing. Beta remains v0.73.1 (branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`), untouched.
+- **User feedback:** Real Android v0.87.6 screenshot demonstrated the correct rigid lift of the *entire* full-width rail and unchanged raised center timer bump. Expanded area beneath it was hollow/see-through, and −30/+30/Skip controls looked oversized and chunky. User wanted a solid dark pocket, tighter sharp cyber buttons, and smaller rise, **not** another rail redesign. User permits temporary Complete Set overlap when intentionally expanded and does not want forced workout scrolling.
+- **v0.87.7 solution:** Added `#restDockPocket` inside nav (decorative, fully opaque, click-through). Nav-owned backing scales from bottom to cover the whole revealed width during the rigid rail lift, exactly matching original timing and shape. Removed ineffective negative-z-index timer pseudo-backdrop. Rail lift shortened 62→57px; action shelf 59→53px; buttons keep 42px touch area but visually inset to 34px crisp beveled faces. Timer collapsed size/location, original SVG outline, stationary nav tabs, keyboard/scroll and workout logic unchanged.
+- **Checks:** PR full PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37993571101; main PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37993817592; signed Android PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37993817611. Testing package `com.jlingenfelter.swolecat.testing`, APK SHA-256 `7a52c0f6cf5a6e44b1dd4d7bd752caec380102886b749b6b8b3a5899b32e5622`; original Testing signing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Next:** user installs Testing v0.87.7, shares screenshot of expanded pocket and possibly video of movement. Focus on truly opaque action backing, slim/sharp button look, whole-rail rigidity, restored idle state and nav/keyboard usability. Await physical-device acceptance. Do not promote to Beta without explicit instruction.
+- Older checkpoint sections below are archival.
+
+---
+
+## CURRENT RESUME CHECKPOINT (v0.87.6 supersedes older instructions)
+
+- **Latest Testing:** v0.87.6 / Android build 129, signed permanent Testing APK and in-app updater live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.6. PR #50 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/50 merged into `main` as `8fb0feb4e2e3a4b7da9fd9284589eb82649738e3`.
+- **User's clarified design intent:** v0.87.5 expanded screenshot showed a tall crest with sloped sides and attached-looking controls. **Do not solve this by making room for Complete Set**; the user explicitly accepts deliberate expansion overlapping Complete Set. What they want is the **entire full-width bottom fixture**, with its left rail, timer bump and right rail, to translate upward in the SAME unchanged shape, reveal the three buttons *below*, then slide the entire rail back down upon collapse. The five nav tabs do not move.
+- **v0.87.6 changes:** Fixed `#restTimer` height to ~35px in all states. The three buttons are absolutely positioned beneath the countdown, no longer expanding the timer box or changing nav SVG geometry. `nav.rest-rail-raised` and `#restTimer.show.expanded` use identical `--rest-rail-lift:62px` and matching 290ms easing. Nav SVG path/viewBox remain identical in both states, only entire rail translates. Resting visual and scroll persistence preserved. Removed expansion-triggered workout scrolling. Keyboard hiding CSS was corrected after CI found an override; reduced motion and timer logic unchanged.
+- **Validated:** PR full PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37987273404, main full PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37987624116, signed Android PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37987624164. Manifest `updates/testing.json` says v0.87.6, build 129, APK SHA-256 `48a2f2fed2df6846ee51ac354a8b934b568823043c05398d0b1d2216ce3463c5`, permanent Testing cert `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta unchanged** v0.73.1 on `beta` SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. Never promote without owner's explicit direction.
+- **Immediate next action:** user installs Testing v0.87.6 and shares Android screenshot/video of expanding/collapsing rail. Assess same silhouette from left to right, all segments rising together, action reveal under lifted rail, stationary tab buttons and preservation of stealth idle state. Await real-device feedback before changes. Older checkpoints below archival.
+
+---
+
+## CURRENT RESUME CHECKPOINT (v0.87.5 supersedes older instructions)
+
+- **Latest Testing:** v0.87.5, Android build 128, source `main`. PR #49 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/49 merged after full validation. Signed Testing APK and updater live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.5.
+- **Driving feedback:** In ~96 sec real Android video `1000004562.mp4`, user **loves v0.87.4 passive stealth-rest shape**, but it sometimes disappears while scrolling and expansion becomes an entirely different much wider control panel. User approved keeping the notch visible during scrolling and letting the **same narrow shell slide upward to expose −30/+30/Skip**, then back down on collapse. No more visual redesign.
+- **v0.87.5:** Removed scroll/action collision-based hiding and passive repositioning. Same 154px width in collapsed and expanded (146px small screens); three equal columns of ~44px touch buttons. CSS action shelf unfolds ~260ms while timer grows upward from fixed nav recess. `followSlidingRestHousing()` redraws one shared SVG nav contour against the changing measured height; notch and nav stay one continuous silhouette throughout. Auto protective scroll only when user intentionally expands, keyboard concealment and reduced-motion preserved.
+- **Regression and build:** PR full PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37979464907, main PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37979808037, signed Android PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37979808085. Testing APK SHA-256 `8ed4613c2d29cd355c4c1789d2d20101bb23f8abbb3f8772a7949d685d638aab`; original permanent Testing signing certificate `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta:** remains v0.73.1 at SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. Never promote without user's express approval.
+- **Next:** user installs v0.87.5 using in-app update and tests continuous countdown visibility while scrolling, same-body upward slide to three controls and collapse, Complete Set and nav taps, keyboard handling. Because old collision hiding was removed at user request, visually verify unusual near-nav scroll positions do not create obstructions. Await real-phone feedback before another change. Earlier checkpoints below archival.
+
+---
+
+## CURRENT RESUME CHECKPOINT (v0.87.4 supersedes older instructions)
+
+- **Latest Testing:** v0.87.4, Android versionCode 127 on `main`. PR #48 merged after green full regression suite: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/48. Signed permanent-identity Testing APK and in-app update feed live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.4.
+- **Why:** Owner approved v0.87.2 notch size/position/no-overlap, but v0.87.3 real Android screenshot still looked crudely assembled, with diagonal wings and timer's black base visible on the nav. Asked to implement a unified molded outline instead of extra decorations.
+- **v0.87.4:** One decorative `#restNavHousing` SVG inside the existing nav, with one continuous contour and matching shared fill across the rail and the raised notch crest. Path generated from existing centered notch width and rest recess by `syncRestDockHousing()` on visible passive state and viewport updates. Collapsed timer becomes transparent with no own borders, shadows, or hooked pseudo-wings; text sits over the shared nav housing. No changes to approved 154px / ~35px footprint, bottom offset, Complete Set collision handling, tap to expand, 3 expanded controls, keyboard or workouts. Default nav restores in all non-passive states.
+- **Validation:** PR full PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37969150495, main full PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37969468006, signed Android PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37969467800. Testing APK SHA-256 `d12da094a1ecc7149bd6288c8323b36e382ae05d484b6f4ec9ce6ef383983431`; permanent cert SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta:** v0.73.1 on branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, untouched. Requires separate explicit owner permission to promote.
+- **Next:** Have owner update Testing via in-app updater and report real Android visual result. Check seamless molded surface, no rectangle/wings, same Complete Set clearance, expanded timer and navigation controls. Await feedback, do not assume on-device visual approval from DOM tests. Older checkpoints below archival.
+
+---
+
+## CURRENT RESUME CHECKPOINT (v0.87.3 supersedes older instructions)
+
+- **Current Testing:** v0.87.3 / Android build 126, `main`. PR #47 merged after successful complete regression suite https://github.com/jlingenfelter22-bot/Swole-Cat/pull/47. Signed APK and updater live: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.3.
+- **User feedback:** v0.87.2 successfully fixed timer size, location and no-overlap with Complete Set on real Android, but showed a visual **sticker effect**, old curled side hooks, mismatched timer/nav borders and straight nav highlight passing behind the module. User explicitly approved **pure visual seam polish** preserving v0.87.2 positioning and all functionality.
+- **v0.87.3:** Added state-aware nav class `rest-notch-integrated` for visible collapsed notch only, top rail is broken across the notch's width plus beveled shoulders. Removed full sticker-style border and heavy independent glow from passive timer, matched nav ink and background, replaced side hooks with short diagonal beveled ramps terminating at nav top. Nav rail restores during expanded controls, stopped rest, keyboard hiding, and obstructed fallback. Countdown, time controls, scroll protection, timer size and position unchanged.
+- **Validation:** full PR run https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37966245495 PASS, main run https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37966558650 PASS, Testing APK signed and published by https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37966558602 PASS. Build 126. APK SHA-256 `97274f6a1a1d27b1161035aaef5f68c9e25f0906b78106374cb7e4a3f0b6a340`, permanent cert `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta:** v0.73.1 on `beta` at `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`. Untouched; do not promote without explicit user approval.
+- **Next:** Have owner update Swole Cat Testing to 0.87.3 and share real phone screenshot. Judge seam continuity, whether timer finally feels recessed and molded into bar, and whether the approved positioning is still intact. Continue only after their feedback. Older v0.87.2/v0.87.1 checkpoints below are archival.
+
+---
+
+## CURRENT RESUME CHECKPOINT (v0.87.2 supersedes older instructions)
+
+- **Current Testing:** v0.87.2, Android build 125, source `main`; PR #46 https://github.com/jlingenfelter22-bot/Swole-Cat/pull/46 merged and full validation passed. Signed APK released https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.2. Testing in-app updater manifest verified, signing identity unchanged.
+- **User feedback driving this pass:** v0.87.1 rest timer was still intrusive and overlapped the lower Complete Set button at the exact desired natural workout scroll position. Owner explicitly approved trying a **recessed notch** mostly embedded into the nav visual housing, not another floating timer.
+- **v0.87.2 changes:** collapsed timer ~154px wide and ~35px high, partially recessed into the top edge of bottom nav. It remains a separate overlay/component, not a sixth nav tab. Measures top of middle nav icon to avoid obscuring it. Passive countdown never forces workout scroll; notch checks Complete Set clearance and yields when available geometry makes no-overlap impossible. Expanded controls remain −30/+30/Skip, rise only after user tap and can invoke protective scroll. Retains cyber styling, keyboard hiding, reduced motion and nav alignment.
+- **Validation:** PR regression PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37953019259, main PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37953366178; signed APK workflow PASS https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37953366078. Published Testing APK SHA-256 `8ce83daa5e60b63ae91bf4e7e1cb6181922c656c8d0daec6e095c5f51b2603c0`, persistent Testing certificate SHA-256 `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta:** v0.73.1 branch at SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, untouched. Owner must separately approve any Beta update.
+- **Next task:** owner updates Testing APK via Settings > App & Updates, screenshots passive timer with Complete Set in natural workout position, taps to expand, verifies buttons/keyboard/nav tab hitboxes. Await honest real-phone visual feedback. Do not claim final aesthetic acceptance from tests.
+- Older checkpoint headings below are archival.
+
+---
+
+## CURRENT RESUME CHECKPOINT (v0.87.1 supersedes older instructions)
+
+- **Current Testing:** v0.87.1 / Android build 124, `main`. PR #45 merged, full validation passed; signed APK released: https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.1. Testing updater `updates/testing.json` verified for v0.87.1, code 124.
+- **Micro-pass decision:** user liked v0.87.0 nav-connected tray, but shared Android screenshot and said its resting state was far too large and visually boring. Explicitly approved a smaller, sharper cyberpunk timer: ~188px width/~44px height with only REST, countdown and expand cue; compact state removes quick +30. Tapping expands to ~282px panel showing −30, +30, Skip. Angular asymmetric corners, violet-cyan edge detail, fine technical texture and small illuminated status dot, in existing Swole Cat theme.
+- Keep the separate-from-nav structure, 5 nav tabs, slide-out behavior, keyboard concealment, reduced-motion handling, and Complete Set clearance. `scripts/rest-tray-stress.mjs` tests new states. Two older tests had contradictory +30-in-collapsed expectations and were corrected to honor the new approved behavior.
+- Signed Android release workflow https://github.com/jlingenfelter22-bot/Swole-Cat/actions/runs/37949452821 completed successfully. Testing APK checksum `2e2f592616792b8f5ab282810f42b18e73e044e64754b5ac0e95e43691d12ac9`, original persistent Testing signing cert `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`.
+- **Beta** stays v0.73.1 on branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`; never promote without user approval.
+- **Immediate next task:** user updates on Android, checks the compact/expanded timer aesthetic against their screenshot and exercises +30, -30, Skip, keyboard concealment, and touch/scroll clearance. Wait for their feedback before another pass.
+- Earlier "CURRENT RESUME CHECKPOINT" headings below are archival.
+
+---
+
+## CURRENT RESUME CHECKPOINT (supersedes older version instructions)
+
+- **Current Testing:** v0.87.0 / Android versionCode 123, source `main`, signed Testing APK and in-app Testing update feed published. https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.87.0. PR #44: https://github.com/jlingenfelter22-bot/Swole-Cat/pull/44.
+- **User-approved v0.87:** a sliding compact rest tray visually extends the bottom navigation without being part of nav or a sixth tab. Dark nav-matched panel, rounded shoulder seam, quick +30, expanded −30/+30/Skip, measured nav alignment, keyboard concealment, reduced motion, correct accessible states. Smart Workout Focus accounts for tray height so Complete Set is not covered.
+- **PR validation and main validation successful; Android signed workflow successful.** APK SHA-256 `0cb09996b7eb515076394933d255d16286c11a03d2db3cf9b6f0bc7f8618f538`, Testing cert `d53f277c5b92311d78e9eb3bdb692ad489734797f2430827400213f38b7cee53`; release run 37870364765.
+- **Field Beta:** still v0.73.1 at `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`, unchanged. Never promote Testing to Beta without explicit user approval.
+- **Immediate next action:** Have owner update Testing to v0.87 via Settings > App & Updates, then review actual visual result from a real Android workout. Focus on whether the rest tray's silhouette appears integrated with the navigation, whether its slide motion and collapsed/expanded controls look/feel right, and whether it avoids covering Complete Set or keyboard inputs. Iterate only after feedback.
+- **Last approved v0.86:** Smart Workout Focus with full-width Repeat previous set values and Complete Set, sticky workout progress and Session Note. User explicitly loved the real-phone result. Preserve it.
+- **All older v0.86 and v0.72 instructions below are archival; do not mistake them for the active next task.**
+
+---
+
+## CURRENT RESUME CHECKPOINT (supersedes older v0.72 text below)
+
+- **Swole Cat Testing:** v0.86.0, Android build 122, source `main`. Signed Testing APK and in-app update channel published and verified. https://github.com/jlingenfelter22-bot/Swole-Cat/releases/tag/testing-v0.86.0
+- **Field Beta:** v0.73.1, `beta` branch SHA `7ac10d9e8eecdf9570221d96250a16c2cc5459d3`; separate signing/channel, still untouched by v0.74–v0.86 Testing passes. Only promote on explicit owner instruction.
+- PR #43 implemented **Smart Workout Focus** after user reviewed v0.85 Android screenshot. Full-width "Repeat Previous Set Values" was explicitly kept, not replaced with ambiguous "Repeat" next to Complete Set. After a set advance, the screen now positions the sticky exercise header, Coach Target and set inputs/action together, while retaining user manual scroll. Sticky exercise header shows overall set progress with a thin bar and a **Session note** control for accessing complete Coach guidance.
+- PR full validation and main validation both passed; signed Testing Android publication completed. Refer to `docs/CURRENT_STATE.md` top section for workflow links, cert/hash, implementation and limitations.
+- **Immediate task:** user installs v0.86.0 using Settings → App & Updates, then reports real-device comfort of automatic scroll, visibility of Complete Set, clear Repeat wording, session progress + Coach note, subsequent set/exercise transitions, and keyboard/timed/carry edge cases. No further design/code changes until their impressions.
+- **Older sections below are archival** and contain older versions and superseded "next task" instructions. Do not resume from v0.72.3 or assume Settings cleanup is the active task. Do not begin unrelated cloud phases.
+
+---
 
 ## Immediate resume instruction
 
@@ -10,7 +485,7 @@ Do not begin a new cloud phase by default.
 
 The next product task is:
 
-**Build and real-device validate the in-app updater on Swole Cat Testing before promoting a new Beta baseline. Testing remains the development channel; Beta must move only after explicit promotion approval.**
+**Testing in-app updates are now real-device proven. Do not change Beta until the user explicitly says to promote the tested checkpoint into a new Beta baseline.**
 
 The user wants to review the Settings screen, clean up all settings, decide where each setting belongs, improve grouping/order/labels, and make the Settings menu feel intentional and easy to scan.
 
@@ -1121,3 +1596,102 @@ Locked rules:
 
 Immediate next task:
 **Implement the Testing updater and prove a real signed Testing version N -> N+1 in-app update before Beta promotion.**
+
+
+## Latest updater handoff: proof-ready
+
+The Testing updater is implemented. Do not rebuild it from scratch.
+
+Real-device proof pair:
+- install baseline v0.73.0 / build 103
+- Testing feed target v0.73.1 / build 104
+- baseline artifact ID `11451167705`
+- target artifact ID `11450429897`
+- baseline direct APK SHA-256 `8c8461a21b7f6620da3bfab4927edfa48b0a2e274ff139bf6b725cbe51310dea`
+
+Next action is the real phone proof only:
+v0.73.0 -> Settings -> App & updates -> v0.73.1.
+
+Do not mark updater proof complete until the user confirms Android installed v0.73.1 in place and local data/auth survived.
+
+
+## Latest authoritative updater status
+
+Testing updater proof: **COMPLETE**
+
+Real-device result:
+- v0.73.0 / build 103 -> v0.73.1 / build 104
+- initiated through Settings -> App & updates
+- Android normal approval/install flow completed successfully
+- user reported the update worked perfectly
+
+Interpretation:
+- Testing self-update is proven on the real phone
+- manual APK handoff is no longer the normal Testing update path
+- keep all ongoing development on Testing/main
+- Beta remains frozen until explicit user promotion approval
+- when approved, create a new Beta baseline containing the updater and signed permanently for `com.jlingenfelter.swolecat`
+- expect the current v0.66.1 beta cohort may need one last manual/fresh-install migration before future in-app Beta updates begin
+
+Do not silently promote Beta.
+
+
+
+## 2026-10-06 Beta baseline promotion checkpoint
+
+Status: **Beta branch promoted and validated; signed baseline publication blocked only on missing permanent release secrets.**
+
+Approved source:
+- updater-proven Testing checkpoint: v0.73.1 / Android versionCode 104
+- proven source commit: `b116cd08bca04408187044abc6eba7c95386aa51`
+
+Beta promotion:
+- PR #18 promoted the approved application checkpoint to `beta`
+- Beta package: `com.jlingenfelter.swolecat`
+- Beta app name: `Swole Cat`
+- Beta updater feed: `updates/beta.json`
+- Beta feed starts disabled and cannot publish until the signed release workflow succeeds
+- updater now chooses Testing or Beta manifest from the native package channel
+- Android OAuth redirect now derives from the actual package identity at build time
+- PR #19 corrected only a malformed auth regression matcher
+- current Beta branch commit after hotfix: `38ca71f05cd8c874aa321733291a45f80ad597eb`
+- full Beta validation run 758: PASS, 77 steps
+
+Signed Beta workflow:
+- workflow: `Build Signed Swole Cat Beta Android`
+- run 2 reached the signing-secret gate after Beta promotion/updater/auth regressions passed
+- publication stopped safely because `SWOLE_CAT_ANDROID_KEYSTORE_B64` was not configured
+- no Beta release asset was published
+- `updates/beta.json` remains disabled
+- no tester-facing update was exposed
+
+Permanent Beta signing identity generated for the new fresh-install baseline:
+- alias: `swolecat-beta`
+- certificate SHA-256: `6942d0f5e2f809fd998e88c73b272b460145551e2bf6bbcd631c577f1d9defc8`
+- sensitive keystore/password values must never be committed to the repository
+- GitHub repository secrets required:
+  - `SWOLE_CAT_ANDROID_KEYSTORE_B64`
+  - `SWOLE_CAT_ANDROID_STORE_PASSWORD`
+  - `SWOLE_CAT_ANDROID_KEY_ALIAS`
+  - `SWOLE_CAT_ANDROID_KEY_PASSWORD`
+
+Immediate next action:
+1. user adds the four permanent Beta signing secrets from the generated secure backup
+2. rerun/trigger the Beta signed build from `beta`
+3. verify package/name/auth/updater/signature/hash
+4. publish `beta-v0.73.1`
+5. enable `updates/beta.json` only from the successful signed workflow
+6. hand the fresh-install Beta APK to testers
+7. perform one final fresh-install migration for the current v0.66.1 cohort
+8. verify the new Beta baseline can later receive a Beta in-app update before calling the Beta updater fully proven
+
+Do not regenerate or rotate the Beta signing identity after testers install the new baseline.
+
+
+## Latest Beta release blocker
+
+The v0.73.1 Beta baseline is promoted and 77/77 validated. Signed publication is blocked only because GitHub's `SWOLE_CAT_ANDROID_STORE_PASSWORD` secret does not match the permanent Beta keystore.
+
+The local signing backup is valid and opens successfully with its generated store password. User must replace that one repository Actions secret with the exact generated value, then rerun `Build Signed Swole Cat Beta Android`.
+
+Beta feed remains disabled; no tester-facing release exists yet.

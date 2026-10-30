@@ -28,7 +28,7 @@ function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
      const ex=exById(exerciseId),explicit=draft.explicitConfigById?.[exerciseId];
      const p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,r,d):d;
      return {
-       exerciseId,sets:explicit?.sets||p.sets,minReps:explicit?.minReps||p.minReps,maxReps:explicit?.maxReps||p.maxReps,increment:state.settings.defaultIncrement,
+       exerciseId,sets:explicit?.sets||draft.brainSetCounts?.[exerciseId]?.sets||p.sets,minReps:explicit?.minReps||p.minReps,maxReps:explicit?.maxReps||p.maxReps,increment:state.settings.defaultIncrement,
        mode:'double',progressionStrategy:p.progressionStrategy||'double',adaptiveProgression:!!p.adaptiveProgression,setStructure:p.setStructure?cloneData(p.setStructure):null,
        trainingGoal:d.goal,resetPercent:7.5,restSeconds:p.restSeconds,
        autoWarmup:exerciseId===firstWarmupId,
@@ -43,21 +43,35 @@ function coachDraftRoutine(draft=coachBuildDraft,id=uid()){
 function coachPreviewExercisePrescription(exerciseId,draft){
  const ex=exById(exerciseId),d=draft?.defaults||{},r=draft?.request||{},explicit=draft?.explicitConfigById?.[exerciseId];
  const p=typeof coachExercisePrescription==='function'?coachExercisePrescription(ex,r,d):d;
- const sets=explicit?.sets||p.sets,min=explicit?.minReps||p.minReps,max=explicit?.maxReps||p.maxReps;
+ const sets=explicit?.sets||draft.brainSetCounts?.[exerciseId]?.sets||p.sets,min=explicit?.minReps||p.minReps,max=explicit?.maxReps||p.maxReps;
  const structure=p.setStructure?.type==='top_backoff'
    ?` · top ${p.setStructure.topMinReps}–${p.setStructure.topMaxReps} + ${p.setStructure.backoffSets} backoff @ ${p.setStructure.backoffPercent}%`
    :'';
  return sets+' sets · '+min+(max!==min?'–'+max:'')+' reps · '+p.restSeconds+'s rest'+(Number.isFinite(Number(p.targetRIR))?' · '+p.targetRIR+' RIR':'')+structure;
 }
+function coachRefreshDraftPreviewTime(draft=coachBuildDraft){
+ if(!draft)return null;
+ if(draft.explicitPrescription){
+   return typeof coachRefreshExplicitDraftTime==='function'?coachRefreshExplicitDraftTime(draft):null;
+ }
+ // Keep legacy, unconstrained generation unchanged. For time-planned drafts,
+ // re-estimate the *actual current* selection, including adjusted set counts.
+ if(!draft.brainTime||typeof coachBrainSessionTimeEstimate!=='function')return draft.brainTime||null;
+ draft.brainTime=coachBrainSessionTimeEstimate(draft.selectedIds,draft.request,draft.defaults,
+   {explicitConfigById:draft.brainSetCounts||{}});
+ return draft.brainTime;
+}
 function renderCoachPreview(){
  const draft=coachBuildDraft;if(!draft)return;
+ coachRefreshDraftPreviewTime(draft);
  const req=draft.request,d=draft.defaults,routine=coachDraftRoutine(draft,'preview');
- const equipment=req.allowedEquipment.length?req.allowedEquipment.join(', '):'Any available equipment';
+ const hasTimeTarget=!draft.explicitPrescription||!!draft.explicitDurationRequested;
+ const equipment=coachBrainResolveEquipment(req)?.label||(req.allowedEquipment.length?req.allowedEquipment.join(', '):'Equipment not specified');
  openModal('Coach Swolecat',`
    <div class="coach-builder">
     <div class="coach-console">
       <div class="eyebrow">QUICK BUILD // LOCAL ENGINE</div>
-      <div class="coach-preview-head"><div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(routine.name)}</div><div class="mini" style="margin-top:5px">Built from audited Swolecat exercise metadata · local and offline.</div></div><span class="tag">${req.duration} min target</span></div>
+      <div class="coach-preview-head"><div><div class="exercise-name" style="font-size:1.16rem;margin-top:5px">${esc(routine.name)}</div><div class="mini" style="margin-top:5px">Built from audited Swolecat exercise metadata · local and offline.</div></div><span class="tag">${hasTimeTarget?req.duration+' min target':'Custom exercise list'}</span></div>
       ${draft.lastRefinement?`<div class="mini" style="margin-top:8px"><b>Last change:</b> ${esc(draft.lastRefinement)}</div>`:''}
       <div class="coach-preview-meta"><span class="tag">${esc(coachGoalLabel(req.goal))}</span><span class="tag">${esc(equipment)}</span>${draft.explicitPrescription?'<span class="tag">Custom sets / reps</span>':'<span class="tag">Per-exercise prescription</span>'}${req.liftingGrammar?.warmupMode==='first_compound'?'<span class="tag">Warm-up first</span>':''}${Number.isFinite(Number(d.targetRIR))?`<span class="tag">Target ${d.targetRIR} RIR</span>`:''}${req.liftingGrammar?.lastSetAmrap?'<span class="tag">Last set AMRAP</span>':''}</div>
     </div>
@@ -68,9 +82,12 @@ function renderCoachPreview(){
         <div class="coach-exercise-actions"><button class="btn small secondary" onclick="coachSwapExercise(${i})">Swap</button><button class="btn small secondary" onclick="coachRemoveExercise(${i})">Remove</button></div>
       </div>`}).join('')}
     </div>
-    <div class="coach-rationale"><b>Why this structure:</b> ${draft.explicitPrescription?'This is your exercise list. Coach preserves the exercises you named and only changes the list when you explicitly ask it to add, remove, swap, or modify something.':'Coach ranked the session from requested muscles, anatomical roles, weekly primary/secondary set-equivalents, recent movement overlap, exercise progression continuity, movement demand, equipment, target priority, and your exercise preferences.'} Swolecat does not invent a starting weight; your own history and progression engine handle load once the workout starts.${draft.intelligenceAudit&&typeof coachIntelligenceSummaryText==='function'?'<br><span class="mini">'+esc(coachIntelligenceSummaryText(draft))+'</span>':''}</div>
+    ${draft.brainTime?`<div class="notice"><b>Estimated time: ${draft.brainTime.estimateMinutes} minutes</b> (rough range ${draft.brainTime.lowerMinutes}–${draft.brainTime.upperMinutes}${hasTimeTarget?', requested '+draft.brainTime.targetMinutes:''}). Includes ${draft.brainTime.warmupMinutes} min warm-up, working sets, rest, station setup and side-to-side work. ${draft.explicitPrescription?'Your chosen exercises, sets and reps have not been reduced to fit the estimate. ':''} ${draft.brainTime.overTarget?'This may run long; consider fewer sets or more time.':hasTimeTarget&&draft.brainTime.upperMinutes>draft.brainTime.targetMinutes?'Extra setup or slower sets could push this past your target.':''} ${draft.brainTimeRemoved?.length?'Coach removed optional movements to stay closer to your time limit.':''}</div>`:''}
+   ${draft.brainSetCounts&&Object.keys(draft.brainSetCounts).length?`<div class="notice">Some automatically proposed set counts were reduced to better fit your time limit. You can change them in the routine after saving; that will change the duration.</div>`:''}
+   <div class="coach-rationale"><b>Why this structure:</b> ${draft.explicitPrescription?'This is your exercise list. Coach preserves the exercises you named and only changes the list when you explicitly ask it to add, remove, swap, or modify something.':'Coach ranked the session from requested muscles, anatomical roles, weekly primary/secondary set-equivalents, recent movement overlap, exercise progression continuity, movement demand, equipment, target priority, and your exercise preferences.'} Swolecat does not invent a starting weight; your own history and progression engine handle load once the workout starts.${draft.intelligenceAudit&&typeof coachIntelligenceSummaryText==='function'?'<br><span class="mini">'+esc(coachIntelligenceSummaryText(draft))+'</span>':''}</div>
+    ${coachBrainEquipmentPreviewNotice(req)?`<div class="notice">${esc(coachBrainEquipmentPreviewNotice(req))}</div>`:''}
     ${coachRecentContextText(req)?`<div class="notice">${esc(coachRecentContextText(req))}</div>`:''}
-    <div class="coach-console" style="margin-top:10px"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">${draft.explicitPrescription?'Edit your exact list. Try “add 1 set of assisted pull-ups,” “make bench 4 sets of 6,” or “remove Bulgarian split squats.”':'Change the draft naturally. Try “make it 30 minutes,” “no barbells,” “more chest,” “strength focused,” “remove bench press,” or “add lateral raise.”'}</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachRefinePrompt" placeholder="${draft.explicitPrescription?'Add 1 set of assisted pull-ups...':'Make it 30 min, no barbells, more chest...'}" onkeydown="if(event.key==='Enter')coachApplyRefinement()">${coachVoiceButtonHtml('coachRefinePrompt')}</div><button class="btn" onclick="coachApplyRefinement()">Update</button></div></div>
+    <div class="coach-console" style="margin-top:10px"><div class="eyebrow">REFINE // TALK TO COACH</div><div class="mini" style="margin:5px 0 9px">${draft.explicitPrescription?'Edit your exact list. Try “add 1 set of assisted pull-ups,” “make bench 4 sets of 6,” or “remove Bulgarian split squats.”':'Keep chatting. Try “something other than squats,” “no lunges,” “just dumbbells,” “more glutes,” “make it 30 minutes,” or “add a leg curl.”'}</div><div class="home-coach-row"><div class="coach-voice-field"><input id="coachRefinePrompt" placeholder="${draft.explicitPrescription?'Add 1 set of assisted pull-ups...':'Make it 30 min, no barbells, more chest...'}" onkeydown="if(event.key==='Enter')coachApplyRefinement()">${coachVoiceButtonHtml('coachRefinePrompt')}</div><button class="btn" onclick="coachApplyRefinement()">Update</button></div></div>
     <div class="notice">Programming presets are evidence-backed practical defaults, not claims that one rep range or exercise is universally best. Completed logs inform weekly overlap, progression continuity, and movement demand, but Coach never treats them as a diagnosis of soreness, recovery, injury, or medical readiness.</div>
     <div class="actions"><button class="btn green" onclick="coachStartWorkoutNow()">Start Workout Now</button><button class="btn" onclick="coachSaveRoutine()">Save as Routine</button><button class="btn secondary" onclick="coachOpenAddToProgram()">Add to Program</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New Request</button></div>
    </div>`);
@@ -81,6 +98,7 @@ function coachRemoveExercise(index){
  coachBuildDraft.request.excludedExerciseIds=[...new Set([...(coachBuildDraft.request.excludedExerciseIds||[]),id])];
  coachBuildDraft.request.requiredExerciseIds=(coachBuildDraft.request.requiredExerciseIds||[]).filter(x=>x!==id);
  if(coachBuildDraft.explicitConfigById)delete coachBuildDraft.explicitConfigById[id];
+ if(coachBuildDraft.brainSetCounts)delete coachBuildDraft.brainSetCounts[id];
  coachBuildDraft.selectedIds.splice(index,1);
  coachBuildDraft.lastRefinement=`Removed ${exById(id)?.name||'exercise'}`;
  renderCoachPreview();
@@ -102,7 +120,13 @@ function coachSwapExercise(index){
    .map(ex=>({ex,score:coachDynamicCandidateScore(ex,draft.request,coverage,patterns,families,primaryCoverage,draft.selectedIds.length)}))
    .filter(x=>Number.isFinite(x.score))
    .sort((a,b)=>b.score-a.score||a.ex.name.localeCompare(b.ex.name))[0]?.ex;
- let replacement=rank(all.filter(ex=>coachMovementFamily(ex)===currentFamily));
+ const brainSwap=coachBrainResolveEquipment(draft.request)?[
+   ...coachBrainAlternativeChoices(currentId,draft.request),
+   ...coachBrainAlternativeChoices(currentId,draft.request,{includeRelated:true})
+ ].find(item=>item.exerciseId!==currentId&&!selectedOther.includes(item.exerciseId)
+      &&coachExerciseAllowedByConstraints(exById(item.exerciseId),draft.request))?.exerciseId:null;
+ let replacement=brainSwap?exById(brainSwap):null;
+ if(!replacement)replacement=rank(all.filter(ex=>coachMovementFamily(ex)===currentFamily));
  if(!replacement){
    const curMeta=exerciseMuscleMetadata(current),curPrimary=new Set(curMeta.primary.filter(m=>targets.has(m)));
    replacement=rank(all.filter(ex=>exerciseMuscleMetadata(ex).primary.some(m=>curPrimary.has(m))));
@@ -113,9 +137,16 @@ function coachSwapExercise(index){
  draft.request.requiredExerciseIds=(draft.request.requiredExerciseIds||[]).filter(id=>id!==currentId);
  if(draft.explicitConfigById){
    const config=draft.explicitConfigById[currentId];delete draft.explicitConfigById[currentId];
-   if(config)draft.explicitConfigById[replacement.id]={...config,exerciseId:replacement.id};
+   const brain=coachBrainExerciseService();
+   const previousMeta=brain?.getProfile(currentId),nextMeta=brain?.getProfile(replacement.id);
+   // Do not carry explicit set targets across a different measurement or loading meaning.
+   if(config&&previousMeta&&nextMeta&&previousMeta.measurement===nextMeta.measurement&&previousMeta.load===nextMeta.load)
+     draft.explicitConfigById[replacement.id]={...config,exerciseId:replacement.id};
  }
  draft.selectedIds[index]=replacement.id;
+ // Automated set-count adjustments apply to the original exercise only.
+ // A replacement retains its own normal suggested sets until the user edits.
+ if(draft.brainSetCounts)delete draft.brainSetCounts[currentId];
  draft.lastRefinement=`Swapped ${current?.name||'exercise'} for ${replacement.name}`;
  renderCoachPreview();
 }
@@ -192,8 +223,45 @@ function coachContinueRequest(){
    openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">ONE QUICK QUESTION</div><div class="coach-question">How much time do we have?</div><div class="coach-choice-grid">${[30,45,60,75].map(m=>`<button class="btn secondary" onclick="coachAnswerDuration(${m})">${m} minutes</button>`).join('')}</div></div>`);
    return;
  }
- if(!coachGenerateWorkout(req)){alert('Coach Swolecat could not build a workout from that request with the available exercise/equipment filters. Try broadening the equipment or target muscles.');return}
+ const brainQuestion=coachBrainNextQuickBuildQuestion(req);
+ if(brainQuestion){
+   openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">LET'S MAKE IT FIT</div><div class="coach-question">${esc(brainQuestion.title)}</div><div class="mini" style="margin:6px 0 12px">${esc(brainQuestion.note)}</div><div class="coach-choice-grid">${brainQuestion.choices.map(choice=>`<button class="btn secondary" onclick="coachAnswerBrainEquipment('${choice.key}')">${esc(choice.label)}</button>`).join('')}</div></div>`);
+   return;
+ }
+ if(!req.brainEquipment){
+   const explicit=coachBrainExplicitEquipment(req);
+   if(explicit)req.brainEquipment=explicit;
+ }
+ if(!coachGenerateWorkout(req)){
+   openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">LET'S ADJUST</div><div class="coach-question">I couldn't build a balanced workout with those equipment limits.</div><div class="mini" style="margin:10px 0">Our current exercise library may be missing a good match for your goal. We won't invent equipment or exercises. Try another equipment choice, or describe exactly what you have.</div><div class="actions"><button class="btn" onclick="coachRetryBrainEquipment()">Change equipment</button><button class="btn secondary" onclick="openCoachSwolecat(true)">New request</button></div></div>`);
+   return;
+ }
  renderCoachPreview();
+}
+function coachRetryBrainEquipment(){
+ if(!coachBuildDraft)return;
+ coachBuildDraft.request.brainEquipment=null;
+ coachBuildDraft.request.allowedEquipment=[];
+ coachContinueRequest();
+}
+function coachAnswerBrainEquipment(choice){
+ if(!coachBuildDraft)return;
+ if(choice==='custom'){
+   openModal('Coach Swolecat',`<div class="coach-console"><div class="eyebrow">YOUR EQUIPMENT</div><div class="coach-question">What do you have available today?</div><div class="mini" style="margin:8px 0">Try "dumbbells and cables", "barbell, bench and dumbbells", or "kettlebells". If a specialist attachment is important, mention that too.</div><input id="coachBrainCustomEquipment" class="search" aria-label="Equipment you have available" placeholder="Dumbbells and cables..." onkeydown="if(event.key==='Enter')coachSubmitBrainCustomEquipment()"><div class="actions"><button class="btn" onclick="coachSubmitBrainCustomEquipment()">Continue</button><button class="btn secondary" onclick="coachRetryBrainEquipment()">Back</button></div></div>`);
+   return;
+ }
+ const result=coachBrainApplyEquipmentChoice(coachBuildDraft.request,choice);
+ if(!result.ok){showToast(result.message);return}
+ coachBuildDraft.request=result.request;
+ coachContinueRequest();
+}
+function coachSubmitBrainCustomEquipment(){
+ const equipment=document.getElementById('coachBrainCustomEquipment')?.value||'';
+ if(!coachBuildDraft)return;
+ const result=coachBrainApplyEquipmentChoice(coachBuildDraft.request,'custom',equipment);
+ if(!result.ok){showToast(result.message);return}
+ coachBuildDraft.request=result.request;
+ coachContinueRequest();
 }
 function coachAnswerTarget(key){
  const g=COACH_TARGET_GROUPS[key];if(!g||!coachBuildDraft)return;
@@ -209,16 +277,27 @@ function coachSubmitPrompt(){
  if(taught.handled){showToast(taught.message);return}
  if(typeof coachTryProgramAuditQuestion==='function'&&coachTryProgramAuditQuestion(prompt,{render:true}))return;
  if(typeof coachTryHistoryQuestion==='function'&&coachTryHistoryQuestion(prompt,{render:true}))return;
- const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt),explicit=coachParseExplicitWorkout(prompt,request.goal);
+ const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt);
+ // Whole-program briefs should not pay for approximate matching against the
+ // complete exercise catalog unless the user requested explicit movements.
+ // Keep exact-name, alias and exclusion matching for every program request.
+ const explicit=coachParseExplicitWorkout(prompt,request.goal,{
+   allowFuzzy:!programIntent.isProgram||coachProgramNeedsFuzzyExerciseScan(prompt)
+ });
  request.excludedExerciseIds=[...new Set([...(request.excludedExerciseIds||[]),...(explicit.excludedExerciseIds||[])])];
  if(explicit.signal&&explicit.ambiguities?.length){coachBeginExerciseClarification({prompt,request,programIntent,explicit});return}
  if(explicit.signal&&explicit.items.length){
    coachProgramBuildDraft=null;coachGenerateExplicitWorkout(request,explicit);renderCoachPreview();return;
  }
  if(programIntent.isProgram){
+   const scoped=Object.values(programIntent.weekdayPlans||{});
+   if(scoped.some(d=>d.duration)&&!/\b(?:each|every|per)\s+(?:single\s+)?workout\b/i.test(prompt))request.duration=0;
+   if(scoped.some(d=>d.equipmentKey)&&!/\b(?:for all|every|each)\s+(?:of\s+)?(?:the\s+)?(?:days?|workouts?)\b[^.]*\b(?:gym|dumbbells|bodyweight)\b/i.test(prompt)){
+     request.allowedEquipment=[];request.brainEquipment=null;request.scopedEquipmentOnly=true;
+   }
    request.programFocusRegions=[...programIntent.focusRegions];request.programFocusLabels=[...programIntent.focusLabels];
    coachBuildDraft=null;
-   coachProgramBuildDraft={request,intent:programIntent,days:[],dayOverrides:[],createdAt:new Date().toISOString()};
+   coachProgramBuildDraft={request,intent:programIntent,days:[],dayOverrides:[],interactiveBrainFlow:true,createdAt:new Date().toISOString()};
    coachContinueProgramRequest();return;
  }
  coachProgramBuildDraft=null;
@@ -234,7 +313,7 @@ function openCoachSwolecat(reset=false){
     <div class="exercise-name" style="font-size:1.17rem;margin-top:5px">What do you need?</div>
      <div class="mini" style="margin-top:5px">Build a workout or ask about your logged training history. Coach routes history questions without creating a workout.</div>
     <div class="coach-voice-field" style="margin-top:12px"><textarea id="coachPrompt" class="coach-prompt" placeholder="Build chest + back... or ask: what did I bench last time?"></textarea>${coachVoiceButtonHtml('coachPrompt')}</div>
-    <div class="coach-example-row"><button class="coach-example" onclick="coachFillExample('Chest and back, 45 minutes, dumbbells and cables')">Chest + back</button><button class="coach-example" onclick="coachFillExample('3-day full body program, Monday Wednesday Friday, 45 minutes')">3-day plan</button><button class="coach-example" onclick="coachFillExample('Push pull legs program, 3 days, 60 minutes')">PPL</button></div>
+    <div class="coach-example-row"><button class="coach-example" onclick="coachFillExample('Chest and back, 45 minutes, dumbbells and cables')">Chest + back</button><button class="coach-example" onclick="coachFillExample('Help me build a 3-day split')">3-day plan</button><button class="coach-example" onclick="coachFillExample('Push pull legs program, 3 days, 60 minutes')">PPL</button></div>
    </div>
    <div><div class="mini" style="margin-bottom:6px">Primary goal</div><div class="picker-chips"><button class="chip active" data-coach-goal="hypertrophy" onclick="coachSetGoal('hypertrophy')">Muscle growth</button><button class="chip" data-coach-goal="strength" onclick="coachSetGoal('strength')">Strength</button><button class="chip" data-coach-goal="general" onclick="coachSetGoal('general')">General</button></div></div>
    <div class="actions"><button class="btn" onclick="coachSubmitPrompt()">Ask / Build</button><button class="btn secondary" onclick="closeModal()">Cancel</button></div>
@@ -256,7 +335,13 @@ function homeCoachBuildPrompt(){
  if(taught.handled){showToast(taught.message);return}
  if(typeof coachTryProgramAuditQuestion==='function'&&coachTryProgramAuditQuestion(prompt,{render:true}))return;
  if(typeof coachTryHistoryQuestion==='function'&&coachTryHistoryQuestion(prompt,{render:true}))return;
- const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt),explicit=coachParseExplicitWorkout(prompt,request.goal);
+ const request=coachParsePrompt(prompt,coachPromptGoal),programIntent=coachParseProgramIntent(prompt);
+ // Whole-program briefs should not pay for approximate matching against the
+ // complete exercise catalog unless the user requested explicit movements.
+ // Keep exact-name, alias and exclusion matching for every program request.
+ const explicit=coachParseExplicitWorkout(prompt,request.goal,{
+   allowFuzzy:!programIntent.isProgram||coachProgramNeedsFuzzyExerciseScan(prompt)
+ });
  request.excludedExerciseIds=[...new Set([...(request.excludedExerciseIds||[]),...(explicit.excludedExerciseIds||[])])];
  if(explicit.signal&&explicit.ambiguities?.length){coachBeginExerciseClarification({prompt,request,programIntent,explicit});return}
  if(explicit.signal&&explicit.items.length){
@@ -265,7 +350,7 @@ function homeCoachBuildPrompt(){
  if(programIntent.isProgram){
    request.programFocusRegions=[...programIntent.focusRegions];request.programFocusLabels=[...programIntent.focusLabels];
    coachBuildDraft=null;
-   coachProgramBuildDraft={request,intent:programIntent,days:[],dayOverrides:[],createdAt:new Date().toISOString()};
+   coachProgramBuildDraft={request,intent:programIntent,days:[],dayOverrides:[],interactiveBrainFlow:true,createdAt:new Date().toISOString()};
    coachContinueProgramRequest();return;
  }
  coachProgramBuildDraft=null;
@@ -278,12 +363,12 @@ function homeCoachExample(text){
 function homeCoachLauncherHtml({embedded=false}={}){
  return `<div class="${embedded?'home-new-user':''}">
    ${embedded?'':`<div class="home-coach-head"><div><div class="home-coach-title">Coach Swolecat</div><div class="mini">Need something different today?</div></div><span class="tag">QUICK BUILD</span></div>`}
-   <div class="home-coach-row"><div class="coach-voice-field"><input id="homeCoachPrompt" placeholder="Build something or ask about your training..." onkeydown="if(event.key==='Enter')homeCoachBuildPrompt()">${coachVoiceButtonHtml('homeCoachPrompt')}</div><button class="btn" onclick="homeCoachBuildPrompt()">Go</button></div>
+   <div class="home-coach-row"><div class="coach-voice-field"><input id="homeCoachPrompt" placeholder="Build something or ask about your training..." onkeydown="if(event.key==='Enter')homeCoachBuildPrompt()">${coachVoiceButtonHtml('homeCoachPrompt')}</div><button class="btn secondary home-coach-go" onclick="homeCoachBuildPrompt()">Ask Coach</button></div>
     <div class="home-coach-chips"><button class="home-coach-chip" onclick="homeCoachExample('30 minute leg workout')">30m legs</button><button class="home-coach-chip" onclick="homeCoachExample('What did I bench last time?')">Last bench?</button><button class="home-coach-chip" onclick="homeCoachExample('What am I progressing on?')">My trends</button><button class="home-coach-chip" onclick="homeCoachExample('Audit my program')">Audit program</button></div>
  </div>`;
 }
 function homeQuickActionsHtml(){
- return `<button class="home-route-btn" onclick="go('routines')"><b>Saved workouts</b><span>Routines and programs</span></button><button class="home-route-btn" onclick="newRoutine()"><b>Build manually</b><span>Choose every exercise yourself</span></button>`;
+ return `<button class="home-route-btn" onclick="go('routines')"><b>Saved workouts</b><span>Routines + programs</span></button><button class="home-route-btn" onclick="newRoutine()"><b>Build manually</b><span>Create from scratch</span></button>`;
 }
 const COACH_INSIGHT_GROUPS=[
  {key:'lower body',label:'Lower body',regions:['quads','hamstrings','glutes','adductors','calves']},
@@ -333,7 +418,84 @@ function coachBuildFromInsight(targetKey){
 function coachInsightHtml(){
  if(typeof coachDeepInsightHtml==='function')return coachDeepInsightHtml();
  const insight=coachHistoryInsight();if(!insight)return '';
- return `<div class="home-signal-card" style="margin-top:8px"><div class="grow"><div class="eyebrow">COACH INSIGHT</div><div class="signal-copy"><b>${esc(insight.group.label)} hasn’t shown up lately.</b> ${esc(insight.text)} <span class="mini">That’s a log observation, not a recovery warning.</span></div></div><button class="btn small secondary" onclick="coachBuildFromInsight('${escAttr(insight.group.key)}')">Build ${esc(insight.group.label)}</button></div>`;
+ return `<div class="home-smart-card home-coach-insight"><div class="grow"><div class="eyebrow">COACH INSIGHT</div><div class="signal-copy"><b>${esc(insight.group.label)} hasn’t shown up lately.</b> ${esc(insight.text)} <span class="mini">Log observation only.</span></div></div><button class="btn small secondary" onclick="coachBuildFromInsight('${escAttr(insight.group.key)}')">Build ${esc(insight.group.label)}</button></div>`;
+}
+function homeWeekSummaryHtml(weekSessions,weekSets,weekPrs){
+ return `<button class="home-week-strip" onclick="go('analytics')" aria-label="Open Progress. This week: ${weekSessions.length} workouts, ${weekSets} working sets, ${weekPrs} personal records.">
+   <div class="home-week-head"><div class="eyebrow">THIS WEEK</div><span class="home-week-open">PROGRESS ›</span></div>
+   <div class="home-week-metrics">
+     <span><b>${weekSessions.length}</b><small>workouts</small></span>
+     <span><b>${weekSets}</b><small>working sets</small></span>
+     <span><b>${weekPrs}</b><small>PR${weekPrs===1?'':'s'}</small></span>
+   </div>
+ </button>`;
+}
+function homeActiveWorkoutSummaryHtml(w,counts){
+ const exercises=(w?.exercises||[]).filter(e=>!e.skipped);
+ const completeExercises=exercises.filter(e=>(e.sets||[]).length&&(e.sets||[]).every(s=>s.done)).length;
+ const elapsed=typeof workoutElapsed==='function'?workoutElapsed():(()=>{
+   const started=new Date(w?.startDate||0).getTime();
+   const mins=Number.isFinite(started)?Math.max(0,Math.floor((Date.now()-started)/60000)):0;
+   return mins<60?`${mins}m`:`${Math.floor(mins/60)}h ${mins%60}m`;
+ })();
+ return `<div class="home-active-stats" aria-label="Live workout summary">
+   <span><b>${elapsed}</b><small>elapsed</small></span>
+   <span><b>${counts.done}/${counts.total}</b><small>sets</small></span>
+   <span><b>${completeExercises}/${counts.activeExercises}</b><small>exercises</small></span>
+ </div>`;
+}
+function homeActiveWorkoutNowHtml(w){
+ if(!w?.exercises?.length)return '';
+ let ei=Number(w.focusExerciseIndex);
+ if(!Number.isInteger(ei)||ei<0||ei>=w.exercises.length||w.exercises[ei]?.skipped){
+   ei=w.exercises.findIndex(e=>!e.skipped&&(e.sets||[]).some(s=>!s.done));
+   if(ei<0)ei=w.exercises.findIndex(e=>!e.skipped);
+ }
+ if(ei<0)return '';
+ const e=w.exercises[ei],ex=exById(e.exerciseId);
+ let si=Number(w.focusSetIndex);
+ if(!Number.isInteger(si)||si<0||si>=(e.sets||[]).length||e.sets?.[si]?.done){
+   const open=(e.sets||[]).findIndex(s=>!s.done);
+   si=open>=0?open:Math.max(0,(e.sets||[]).length-1);
+ }
+ const done=(e.sets||[]).filter(s=>s.done).length,total=(e.sets||[]).length;
+ const remainingExercises=w.exercises.filter((other,index)=>index!==ei&&!other.skipped&&(other.sets||[]).some(s=>!s.done));
+ const next=remainingExercises[0],nextName=next?exById(next.exerciseId)?.name:'';
+ return `<button class="home-active-now" onclick="resumeActiveWorkout()" aria-label="Resume current workout at ${esc(ex?.name||'current exercise')}">
+   <div class="home-active-now-head"><div class="eyebrow">NOW</div><span>RESUME ›</span></div>
+   <div class="home-active-now-name">${esc(ex?.name||'Current exercise')}</div>
+   <div class="home-active-now-meta">Set ${Math.min(si+1,Math.max(1,total))} of ${Math.max(1,total)} · ${done} complete</div>
+   ${nextName?`<div class="home-active-next"><span>NEXT UP</span><b>${esc(nextName)}</b></div>`:''}
+ </button>`;
+}
+function homeActiveWorkoutPulseHtml(w){
+ const exercises=(w?.exercises||[]).filter(e=>!e.skipped);
+ const completedSets=exercises.flatMap(e=>(e.sets||[]).filter(s=>s.done));
+ const totalReps=completedSets.reduce((n,s)=>n+(Number(s.reps)||0),0);
+ const volume=Math.round(completedSets.reduce((n,s)=>n+(Number(s.weight)||0)*(Number(s.reps)||0),0));
+ const prs=completedSets.filter(s=>s.pr).length;
+ let focus=Number(w?.focusExerciseIndex);
+ if(!Number.isInteger(focus)||focus<0||focus>=(w?.exercises||[]).length||w.exercises[focus]?.skipped){
+   focus=(w?.exercises||[]).findIndex(e=>!e.skipped&&(e.sets||[]).some(s=>!s.done));
+ }
+ const restActive=typeof restLeft==='number'&&restLeft>0;
+ const restText=restActive?`${Math.floor(restLeft/60)}:${String(restLeft%60).padStart(2,'0')}`:'';
+ const route=(w?.exercises||[]).map((e,index)=>{
+   if(e.skipped)return '';
+   const sets=e.sets||[],complete=sets.length>0&&sets.every(s=>s.done),current=index===focus&&!complete;
+   const cls=complete?'done':current?'current':'upcoming';
+   const mark=complete?'✓':current?'●':'○';
+   return `<span class="home-active-route-item ${cls}"><i>${mark}</i><b>${esc(exById(e.exerciseId)?.name||'Exercise')}</b></span>`;
+ }).filter(Boolean).join('<span class="home-active-route-arrow">›</span>');
+ return `<div class="home-active-pulse">
+   <div class="home-active-pulse-head"><div class="eyebrow">SESSION PULSE</div>${restActive?`<span class="home-active-rest">RESTING · <b id="homeActiveRestText">${restText}</b></span>`:''}</div>
+   <div class="home-active-pulse-metrics">
+     <span><b>${totalReps.toLocaleString()}</b><small>reps logged</small></span>
+     <span><b>${volume>0?volume.toLocaleString():'—'}</b><small>${volume>0?esc(state.profile.unit)+' × reps':'volume'}</small></span>
+     <span><b>${prs}</b><small>PR${prs===1?'':'s'} hit</small></span>
+   </div>
+   <div class="home-active-route" aria-label="Exercise progress">${route}</div>
+ </div>`;
 }
 function renderHome(){
  const primary=document.getElementById('homePrimary'),coach=document.getElementById('homeCoachLauncher'),quick=document.getElementById('homeQuickActions'),signal=document.getElementById('homeTelemetry'),latest=document.getElementById('homeLatest');
@@ -343,15 +505,19 @@ function renderHome(){
 
  if(active){
    const ac=activeWorkoutCounts(active),saved=active.lastSavedAt?new Date(active.lastSavedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'just now';
-   primary.innerHTML=`<div class="eyebrow"><span class="active-pulse"></span>WORKOUT IN PROGRESS</div><h1>Resume ${esc(active.routineName||'Workout')}</h1><div class="muted">${ac.done} of ${ac.total} sets complete · autosaved ${esc(saved)}</div><div class="home-primary-progress progress-bar"><div style="width:${ac.pct}%"></div></div><div class="actions"><button class="btn green" onclick="resumeActiveWorkout()">Resume Workout</button></div>`;
-   coach.innerHTML='';quick.innerHTML='';
+   primary.innerHTML=`<div class="eyebrow"><span class="active-pulse"></span>WORKOUT IN PROGRESS</div><h1>Resume ${esc(active.routineName||'Workout')}</h1><div class="muted">${ac.done} of ${ac.total} sets complete · autosaved ${esc(saved)}</div><div class="home-primary-progress progress-bar"><div style="width:${ac.pct}%"></div></div><div class="actions"><button class="btn green home-hero-primary" onclick="resumeActiveWorkout()">Resume Workout</button></div>`;
+   coach.innerHTML='';
+   signal.innerHTML=homeActiveWorkoutSummaryHtml(active,ac);
+   latest.innerHTML=homeActiveWorkoutNowHtml(active);
+   quick.innerHTML=homeActiveWorkoutPulseHtml(active);
+   updateActiveWorkoutChrome();return;
  }else if(p&&next){
    const logs=programSessions(p),last=logs[0];
-   primary.innerHTML=`<div class="eyebrow">UP NEXT · ${esc(p.name)}</div><h1>${esc(next.name)}</h1><div class="muted">${next.exercises.length} exercise${next.exercises.length===1?'':'s'} · ${esc(trainingModeLabel(normalizeProgramTrainingMode(p.trainingMode)==='inherit'?next.trainingMode:p.trainingMode))}${last?` · last program session ${new Date(last.date).toLocaleDateString()}`:''}</div><div class="actions"><button class="btn green" onclick="startProgramWorkout('${p.id}')">Start Next Workout</button><button class="btn secondary" onclick="go('routines')">View Program</button></div>`;
+   primary.innerHTML=`<div class="eyebrow">UP NEXT · ${esc(p.name)}</div><h1>${esc(next.name)}</h1><div class="muted">${next.exercises.length} exercise${next.exercises.length===1?'':'s'} · ${esc(trainingModeLabel(normalizeProgramTrainingMode(p.trainingMode)==='inherit'?next.trainingMode:p.trainingMode))}${last?` · last program session ${new Date(last.date).toLocaleDateString()}`:''}</div><div class="actions"><button class="btn green home-hero-primary" onclick="startProgramWorkout('${p.id}')">Start Next Workout</button><button class="btn secondary home-hero-secondary" onclick="go('routines')">View Program</button></div>`;
    coach.innerHTML=`<div class="home-coach-launcher">${homeCoachLauncherHtml()}</div>`;quick.innerHTML=homeQuickActionsHtml();
  }else if(suggested){
    const last=sessionData?.sessionsByRoutine.get(suggested.id)?.[0];
-   primary.innerHTML=`<div class="eyebrow">READY TO TRAIN${name?` · ${esc(name)}`:''}</div><h1>${esc(suggested.name)}</h1><div class="muted">${suggested.exercises.length} exercise${suggested.exercises.length===1?'':'s'} · ${esc(trainingModeLabel(suggested.trainingMode))}${last?` · last trained ${new Date(last.date).toLocaleDateString()}`:''}</div><div class="actions"><button class="btn green" onclick="openRoutine('${suggested.id}')">Start Workout</button><button class="btn secondary" onclick="go('routines')">Choose Another</button></div>`;
+   primary.innerHTML=`<div class="eyebrow">READY TO TRAIN${name?` · ${esc(name)}`:''}</div><h1>${esc(suggested.name)}</h1><div class="muted">${suggested.exercises.length} exercise${suggested.exercises.length===1?'':'s'} · ${esc(trainingModeLabel(suggested.trainingMode))}${last?` · last trained ${new Date(last.date).toLocaleDateString()}`:''}</div><div class="actions"><button class="btn green home-hero-primary" onclick="openRoutine('${suggested.id}')">Start Workout</button><button class="btn secondary home-hero-secondary" onclick="go('routines')">Choose Another</button></div>`;
    coach.innerHTML=`<div class="home-coach-launcher">${homeCoachLauncherHtml()}</div>`;quick.innerHTML=homeQuickActionsHtml();
  }else{
    primary.innerHTML=`<div class="eyebrow">COACH SWOLECAT · QUICK BUILD</div><h1>What are we training today?</h1><div class="muted">Tell Swolecat the muscles, time, equipment, or goal. Or build the workout manually if you already know exactly what you want.</div>${homeCoachLauncherHtml({embedded:true})}`;
@@ -363,9 +529,10 @@ function renderHome(){
  }else{
    const weekStart=startOfWeek(),weekSessions=(sessionData?.sessionsDesc||[]).filter(s=>new Date(s.date)>=weekStart);
    const weekSets=weekSessions.reduce((n,s)=>n+sessionSetCount(s),0),weekPrs=weekSessions.reduce((n,s)=>n+sessionPRCount(s),0);
-   signal.innerHTML=`<div class="home-signal-card" onclick="go('analytics')"><div><div class="eyebrow">THIS WEEK</div><div class="signal-copy"><b>${weekSessions.length} workout${weekSessions.length===1?'':'s'}</b> · ${weekSets} working sets · ${weekPrs} PR${weekPrs===1?'':'s'}</div></div><span class="tag">PROGRESS ›</span></div>`+coachInsightHtml();
+   signal.innerHTML=homeWeekSummaryHtml(weekSessions,weekSets,weekPrs);
    const last=sessionData.sessionsDesc[0],sets=sessionSetCount(last),prs=sessionPRCount(last);
-   latest.innerHTML=`<div class="home-latest" onclick="openHistoricalWorkoutRecap('${last.id}')"><div class="row"><div><div class="eyebrow">LAST WORKOUT</div><div class="home-latest-title">${esc(last.routineName)}</div><div class="home-latest-meta">${new Date(last.date).toLocaleDateString()} · ${sets} working sets${last.durationMinutes!=null?` · ${last.durationMinutes} min`:''}${prs?` · ${prs} PR${prs===1?'':'s'}`:''}</div></div><span class="tag">RECAP ›</span></div></div>`;
+   const insight=coachInsightHtml();
+   latest.innerHTML=insight||`<div class="home-latest home-smart-card" onclick="openHistoricalWorkoutRecap('${last.id}')"><div class="row"><div><div class="eyebrow">LAST WORKOUT</div><div class="home-latest-title">${esc(last.routineName)}</div><div class="home-latest-meta">${new Date(last.date).toLocaleDateString()} · ${sets} working sets${last.durationMinutes!=null?` · ${last.durationMinutes} min`:''}${prs?` · ${prs} PR${prs===1?'':'s'}`:''}</div></div><span class="tag">RECAP ›</span></div></div>`;
  }
  updateActiveWorkoutChrome();
 }

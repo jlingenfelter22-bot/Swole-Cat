@@ -132,7 +132,7 @@ const COACH_EQUIPMENT_TERMS=[
 ];
 const COACH_COMPOUND_PATTERNS=new Set(['horizontal_press','incline_press','vertical_press','horizontal_pull','vertical_pull','squat','lunge','hinge','dip_press']);
 const COACH_PROGRAM_SPLIT_LABELS={
- balanced:'Balanced',full_body:'Full Body',upper_lower:'Upper / Lower',ppl:'Push / Pull / Legs'
+ balanced:'Balanced',full_body:'Full Body',upper_lower:'Upper / Lower',ppl:'Push / Pull / Legs',custom:'Custom Body-Part Split'
 };
 const COACH_WEEKDAY_TERMS=[
  ['sunday',0],['sun',0],['monday',1],['mon',1],['tuesday',2],['tue',2],['tues',2],
@@ -439,6 +439,43 @@ function coachParseProgramFocus(text){
  if(/\bback\b/.test(genericBackWork))add('back');
  return {labels:[...new Set(labels)],regions:[...new Set(regions)]};
 }
+// Scoped weekday instructions are different from a shared workout duration.
+// Keys are real weekdays (0–6), not routine positions. They survive changes
+// to the displayed order without silently becoming another day's constraints.
+function coachParseWeekdayPlans(text){
+ const raw=String(text||''),low=coachNormalizeGymText(coachNumbersToDigits(raw));
+ const re=/\b(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|tues|wed|thu|thurs|fri|sat)\b/gi;
+ const hits=[...low.matchAll(re)];
+ const plans={};
+ for(let i=0;i<hits.length;i++){
+  const name=hits[i][0].toLowerCase();
+  const weekday=COACH_WEEKDAY_TERMS.find(([term])=>term===name)?.[1];
+  if(weekday==null)continue;
+  const snippet=low.slice(hits[i].index+(hits[i][0].length),hits[i+1]?.index??low.length)
+    .replace(/^[\s:,\-]+/,'').trim();
+  if(!snippet)continue;
+  const setting={};
+  const time=snippet.match(/\b(\d{1,3})\s*(?:ish\s*)?(?:m|min|mins|minutes)\b/)
+   ||snippet.match(/\b(\d(?:\.\d+)?)\s*(?:h|hr|hrs|hours)\b/);
+  if(time){
+   const value=Number(time[1])*(time[0].match(/\b(?:h|hr|hrs|hours)\b/) ?60:1);
+   if(Number.isFinite(value)&&value>=15&&value<=120)setting.duration=Math.round(value);
+  }
+  if(/\b(?:at|in|use|using|with|only|home|gym|dumbbells|barbell|cable|bodyweight)\b/.test(snippet)){
+   if(/\b(?:full|commercial|standard|well equipped)\s+gym\b|\bat (?:the )?gym\b|\bin (?:the )?gym\b/.test(snippet))setting.equipmentKey='gym';
+   else if(/\b(?:bodyweight only|no equipment|floor only|floor workout)\b/.test(snippet))setting.equipmentKey='bodyweight';
+   else if(/\b(?:dumbbells?(?: only)?|dumbbells? and bodyweight)\b/.test(snippet)&&!/\b(?:barbells?|cables?|machines?)\b/.test(snippet))setting.equipmentKey='dumbbells';
+  }
+  const focus=snippet.match(/\b(?:more|emphasize|prioritize|focus (?:on|more on))\s+(chest|back|shoulders?|arms?|glutes?|quads?|hamstrings?|calves?|core|biceps?|triceps?)\b/);
+  if(focus){
+   const key=focus[1].replace(/s$/,'');
+   const lookup={shoulder:'shoulders',arm:'arms',glute:'glutes',quad:'quads',hamstring:'hamstrings',calf:'calves',bicep:'biceps',tricep:'triceps'};
+   setting.focusKey=lookup[key]||key;
+  }
+  if(Object.keys(setting).length)plans[weekday]={...(plans[weekday]||{}),...setting};
+ }
+ return plans;
+}
 function coachParseProgramIntent(text){
  let lower=coachNormalizeGymText(coachNumbersToDigits(String(text||'')));
  lower=lower
@@ -463,9 +500,28 @@ function coachParseProgramIntent(text){
  if(/\bpush\s*[\/-]?\s*pull\s*[\/-]?\s*legs\b|\bppl\b/.test(lower))split='ppl';
  else if(/\bupper\s*[\/-]?\s*lower\b/.test(lower))split='upper_lower';
  else if(/\bfull[ -]?body\b/.test(lower))split='full_body';
- const focus=coachParseProgramFocus(lower);
+ else if(/\bcustom (?:body[- ]?part )?split\b|\bbody[- ]?part split\b|\bdifferent muscle (?:group|focus) (?:for )?each day\b/.test(lower))split='custom';
+ let trainingMode='';
+ if(/\b(?:track only|standard workout|just track(?:ing)?(?: workouts)?)\b/.test(lower))trainingMode='track';
+ else if(/\b(?:guided progressive overload|progressive overload)\b/.test(lower))trainingMode='guided';
+ else if(/\bstrength focus\b/.test(lower))trainingMode='strength';
+ let deload=null;
+ if(/\b(?:no|without|skip)\s+(?:scheduled\s+)?deloads?\b/.test(lower))deload={enabled:false,intervalWeeks:4};
+ else{
+  const cadence=lower.match(/\bdeloads?\s+(?:every|each|after)\s+(\d{1,2})(?:st|nd|rd|th)?\s*(?:training\s*)?weeks?\b/);
+  if(cadence){
+   const n=Number(cadence[1]);
+   if(n>=3&&n<=8)deload={enabled:true,intervalWeeks:n};
+  }
+ }
+ const weekdayPlans=coachParseWeekdayPlans(text);
+ // A weekday-specific request for more shoulders does not mean the whole week
+ // should prioritize shoulders. Only unscoped text defines program-wide focus.
+ const firstWeekday=lower.search(/\b(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)\b/);
+ const focusSource=Object.values(weekdayPlans).some(p=>p.focusKey)&&firstWeekday>=0?lower.slice(0,firstWeekday):lower;
+ const focus=coachParseProgramFocus(focusSource);
  const isProgram=/\b(program|plan|split|weekly|week)\b/.test(lower)||!!dayMatch||!!weekMatch||preferredDays.length>=2||!!split;
- return {isProgram,frequency,preferredDays,split,focusLabels:focus.labels,focusRegions:focus.regions};
+ return {isProgram,frequency,preferredDays,split,trainingMode,deload,customSlots:[],weekdayPlans,dayPlans:[],focusLabels:focus.labels,focusRegions:focus.regions};
 }
 function coachDefaultProgramSplit(frequency){
  if(frequency<=3)return 'full_body';
@@ -473,8 +529,9 @@ function coachDefaultProgramSplit(frequency){
  if(frequency===5)return 'balanced';
  return 'ppl';
 }
-function coachProgramSlots(frequency,split){
+function coachProgramSlots(frequency,split,customSlots=[]){
  const f=Math.max(2,Math.min(6,Number(frequency)||3)),mode=split||coachDefaultProgramSplit(f);
+ if(mode==='custom')return Array.isArray(customSlots)&&customSlots.length===f&&customSlots.every(key=>Object.hasOwn(COACH_TARGET_GROUPS,key))?[...customSlots]:[];
  if(mode==='full_body')return Array.from({length:f},()=> 'full body');
  if(mode==='upper_lower')return Array.from({length:f},(_,i)=>i%2===0?'upper body':'lower body');
  if(mode==='ppl'){
