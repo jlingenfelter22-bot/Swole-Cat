@@ -45,4 +45,4 @@ assert.match(release,/applicationId "com\.jlingenfelter\.swolecat"/);
 assert.match(release,/sha256sum/);
 assert.match(release,/updates\/beta\.json/);
 assert.doesNotMatch(release,/updates\/testing\.json/);
-console.log('Swole Cat Beta promotion PASS: v0.94.1/147, package/auth/updater/signing isolation, historical Beta feed and Beta-only publication');
+console.log('Swole Cat Beta updater repair PASS: v0.94.2/148, channel-scoped native manifest guard and Beta package/auth/updater/signing isolation');
