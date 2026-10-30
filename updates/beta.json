@@ -3,12 +3,12 @@
   "enabled": true,
   "channel": "beta",
   "packageId": "com.jlingenfelter.swolecat",
-  "version": "0.94.1",
-  "versionCode": 147,
-  "apkUrl": "https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/beta-v0.94.1/swole-cat-beta-v0.94.1-signed.apk",
-  "sha256": "1c2826221810f3f87e82672662f3391cd7aebb71f7a40df7fe8593ec2fb7358e",
+  "version": "0.94.2",
+  "versionCode": 148,
+  "apkUrl": "https://github.com/jlingenfelter22-bot/Swole-Cat/releases/download/beta-v0.94.2/swole-cat-beta-v0.94.2-signed.apk",
+  "sha256": "29292e370c6c4b5d7579fac2b4563db5b005250f1891e5bc4a0cc405261a2d1f",
   "signingCertSha256": "00e3edf9e8523fdc8e5e38eb95e4914cc08d5bd352964198f30de0774af61fe8",
-  "notes": "Swole Cat Beta v0.94.1",
-  "publishedAt": "2026-10-30T01:33:30.614Z",
+  "notes": "Swole Cat Beta v0.94.2",
+  "publishedAt": "2026-10-30T02:05:30.296Z",
   "required": false
 }
