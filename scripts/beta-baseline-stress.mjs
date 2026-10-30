@@ -7,9 +7,11 @@ const auth=fs.readFileSync('src/js/10c-supabase-auth-provider.js','utf8');
 const configure=fs.readFileSync('scripts/configure-android.mjs','utf8');
 const build=fs.readFileSync('scripts/build-web.mjs','utf8');
 const release=fs.readFileSync('.github/workflows/release-android.yml','utf8');
+const plugin=fs.readFileSync('scripts/android/SwoleCatUpdaterPlugin.java.template','utf8');
 const beta=JSON.parse(fs.readFileSync('updates/beta.json','utf8'));
-assert.equal(pkg.version,'0.94.1','Beta promotion must match accepted Testing v0.94.1');
-assert.equal(pkg.swoleCat.androidVersionCode,147,'Beta promotion build must match accepted Testing build 147');
+assert.match(pkg.version,/^\d+\.\d+\.\d+$/,'Beta version must be valid');
+assert(pkg.version==='0.94.2','Beta updater hotfix version must be v0.94.2');
+assert.equal(pkg.swoleCat.androidVersionCode,148,'Beta hotfix must increment Android build to 148');
 assert.equal(cap.appId,'com.jlingenfelter.swolecat','Beta must never use Testing package');
 assert.equal(cap.appName,'Swole Cat');
 assert.match(updater,/beta:'https:\/\/raw\.githubusercontent\.com\/jlingenfelter22-bot\/Swole-Cat\/beta\/updates\/beta\.json'/);
@@ -18,6 +20,14 @@ assert.match(auth,/SWOLE_CAT_ANDROID_AUTH_SCHEME='__SWOLE_CAT_ANDROID_AUTH_SCHEM
 assert.match(build,/__SWOLE_CAT_ANDROID_AUTH_SCHEME__/);
 assert.match(configure,/ANDROID_AUTH_SCHEME=String\(capacitorConfig\.appId\|\|''\)\.trim\(\)/);
 assert.doesNotMatch(configure,/const ANDROID_AUTH_SCHEME='com\.jlingenfelter\.swolecat\.testing'/);
+// Prior installed Beta v0.73.1 and the first v0.94.1 release rejected the
+// correct Beta feed because the native source guard accepted main/updates only.
+assert.match(plugin,/String channel = currentChannel\(\);/);
+assert.match(plugin,/String branch = "beta"\.equals\(channel\) \? "beta" : "main";/);
+assert.match(plugin,/\+ "\/" \+ branch \+ "\/updates\/" \+ channel \+ "\.json";/);
+assert.match(plugin,/manifestUrl\.equals\(trustedManifestUrl\)/);
+assert.match(plugin,/manifestUrl\.startsWith\(trustedManifestUrl \+ "\?"\)/);
+assert.doesNotMatch(plugin,/String trustedPrefix = "https:\/\/raw\.githubusercontent\.com\/" \+ GITHUB_REPO \+ "\/main\/updates\/";/);
 assert.equal(beta.channel,'beta');
 assert.equal(beta.packageId,'com.jlingenfelter.swolecat');
 assert.equal(beta.schema,1);
@@ -35,4 +45,4 @@ assert.match(release,/applicationId "com\.jlingenfelter\.swolecat"/);
 assert.match(release,/sha256sum/);
 assert.match(release,/updates\/beta\.json/);
 assert.doesNotMatch(release,/updates\/testing\.json/);
-console.log('Swole Cat Beta promotion PASS: v0.94.1/147, package/auth/updater/signing isolation, historical Beta feed and Beta-only publication');
+console.log('Swole Cat Beta updater repair PASS: v0.94.2/148, channel-scoped native manifest guard and Beta package/auth/updater/signing isolation');

@@ -1,5 +1,16 @@
 # Swole Cat Current State
 
+## 2026-10-29 · Beta v0.94.2 native updater feed guard repair
+
+**Observed during owner testing:** Updating from installed Beta v0.73.1 to the recently promoted v0.94.1 using the in-app updater fails. The native updater Java template only trusted manifest URLs starting `https://raw.githubusercontent.com/jlingenfelter22-bot/Swole-Cat/main/updates/`, even though Beta UI correctly requested `https://raw.githubusercontent.com/jlingenfelter22-bot/Swole-Cat/beta/updates/beta.json`. The mismatch causes `Update manifest host is not trusted.` at the check, before a download.
+
+**Fix:** Java native manifest guard selects the exact `main/updates/testing.json` or `beta/updates/beta.json` based solely on installed Android package channel, allowing only optional cache-busting query. Preserve package/signing/Supabase callback/feed validation and Android approval. Version `0.94.2`, code `148`, Beta-only; Testing/main stays `0.94.1`, code `147`. Existing workout data and cloud records untouched. Added Beta-specific regression in Validate and signed Beta workflow.
+
+**One-time install note:** Already-installed Beta v0.73.1 and v0.94.1 cannot download this fix via their own updater (the broken native check runs before any server data can repair it). Owner must **download signed Beta v0.94.2 APK directly and install in place**; no uninstall/storage clear. Verify preserved permanent Beta signing certificate `00e3edf9e8523fdc8e5e38eb95e4914cc08d5bd352964198f30de0774af61fe8`, matching APK and AAB signatures, versioned GitHub release and manifest digest.
+
+---
+
+
 ## 2026-10-29 · Owner-authorized Testing v0.94.1 → Beta promotion (candidate)
 
 The owner explicitly requested promotion of the current accepted main/Testing build to the existing separate Beta channel. Source is main at `a0fe70a1dba0fbb9a0ae44f85969756d07ac8a92`: version **v0.94.1**, Android **versionCode 147**. Prior Beta was v0.73.1 / code 104.

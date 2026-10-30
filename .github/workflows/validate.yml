@@ -332,6 +332,10 @@ jobs:
       - name: Stress test v0.73.0 in-app updater foundation
         run: node scripts/app-updater-stress.mjs
 
+      - name: Verify Beta channel-aware native updater regression
+        if: github.base_ref == 'beta' || github.ref == 'refs/heads/beta'
+        run: node scripts/beta-baseline-stress.mjs
+
       - name: Stress test v0.65 Focus Mode workout flow
         run: node scripts/focus-mode-workout-stress.mjs
 

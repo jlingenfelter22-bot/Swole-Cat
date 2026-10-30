@@ -122,8 +122,15 @@ public class SwoleCatUpdaterPlugin extends Plugin {
     }
 
     private void validateManifestSource(String manifestUrl) {
-        String trustedPrefix = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/main/updates/";
-        if (manifestUrl == null || !manifestUrl.startsWith(trustedPrefix)) {
+        // Channel selection comes from Android's installed package, not from web data.
+        // Beta must read beta/updates/beta.json; Testing must read main/updates/testing.json.
+        String channel = currentChannel();
+        String branch = "beta".equals(channel) ? "beta" : "main";
+        String trustedManifestUrl = "https://raw.githubusercontent.com/" + GITHUB_REPO
+            + "/" + branch + "/updates/" + channel + ".json";
+        // Permit a cache-busting query but never an alternate path or channel.
+        if (manifestUrl == null || !(manifestUrl.equals(trustedManifestUrl)
+                || manifestUrl.startsWith(trustedManifestUrl + "?"))) {
             throw new IllegalArgumentException("Update manifest host is not trusted.");
         }
     }
